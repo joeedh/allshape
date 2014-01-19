@@ -1,7 +1,0 @@
-*** /dev/null
---- /dev/null
-***************
-*** 15
--     name = "PyMySQL",
---- 15 -----
-+     name = "PyMySQL3",

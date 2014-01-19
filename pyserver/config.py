@@ -4,34 +4,30 @@ import os, sys, os.path, math, random, time, io
 import shelve, imp, struct, ctypes, ply
 import mimetypes
 
-serverhost = "joeedh.no-ip.info:8081"
+#example file parameters
+#serverhost = "127.0.0.1:8081"
 
-win32 = sys.platform == "win32"
-if win32:
-  doc_root = "C:\\Users\\JoeEagar\\Google Drive\\WebGL\\"
-else:
-  doc_root = os.path.abspath(os.getcwd())
-  doc_root = doc_root[:doc_root.find("WebGL")+5]
-  if not doc_root.endswith(os.path.sep):
-    doc_root += os.path.sep
+#doc_root = "/home/joeedh/dev/allshape"
+#files_root = os.path.abspath(doc_root+".."+os.path.sep+"formacad_user_files"+os.path.sep)
 
-files_root = os.path.abspath(doc_root+".."+os.path.sep+"formacad_user_files"+os.path.sep)
+#ipaddr = "127.0.0.1"
 
-#"""
-if win32:
-  ipaddr = "192.168.0.43"
-else:
-  ipaddr = "127.0.0.1"
-"""
-ipaddr = "192.168.1.13"
-#"""
+#db_host = "localhost"
+#db_user = "root"
+#db_passwd = ""
+#db_db = "webglmodeller"
 
-db_host = "localhost"
-db_user = "root"
-db_passwd = ""
-db_db = "webglmodeller"
+#json_mimetype = "application/x-javascript"
 
-json_mimetype = "application/x-javascript"
+#import local config file
+
+import config_local
+mself = sys.modules["config"].__dict__
+mlocal = sys.modules["config_local"].__dict__
+ 
+for k in mlocal:
+  mself[k] = mlocal[k]
 
 #private globals
 client_ip = ""
+

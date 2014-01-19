@@ -30,7 +30,7 @@ else:
     version = "%d.%d" % version_tuple[:2]
 
 setup(
-    name = "PyMySQL3",
+    name = "PyMySQL",
     version = version,
     url = 'https://github.com/petehunt/PyMySQL/',
     author = 'yutaka.matsubara',

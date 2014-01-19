@@ -34,11 +34,12 @@ for f in os.listdir("../server/"):
 files.append(["../tinygpu/tinygpu_test.html.in".replace("/", os.path.sep), ""])
 
 win32 = sys.platform == "win32"
-if win32:
-  PYBIN = "python "
-else:
-  PYBIN = "python3.3 "
 
+PYBIN = sys.executable
+if PYBIN == "":
+  sys.stderr.write("Warning: could not find python binary, reverting to default\n")
+  PYBIN = "python3.2"
+  
 JCC = "../js_parser/js_cc.py".replace("/", os.path.sep)
 TCC = "../tinygpu/tinygpu.py".replace("/", os.path.sep)
 

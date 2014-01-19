@@ -35,7 +35,7 @@ log_file = open("log.txt", "w")
 py_bin = sys.executable
 if py_bin == "":
   sys.stderr.write("Warning: could not find python binary, reverting to default\n")
-  py_bin = "python"
+  py_bin = "python3.2"
 
 def debug_file(path):
   for d in debug_files:

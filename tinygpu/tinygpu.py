@@ -1241,12 +1241,12 @@ def main(argv):
   dir = strip_rslash(os.path.abspath(os.getcwd()))
   
   if not dir.endswith(os.path.sep+"tinygpu"):
-    while not dir.endswith(os.path.sep+"WebGL") and len(dir) > 0 \
+    while not dir.endswith(os.path.sep+"allshape") and len(dir) > 0 \
           and dir != os.path.sep and dir != "c:\\":
       if dir.rfind(os.path.sep) == -1: break
       dir = dir[:dir.rfind(os.path.sep)]
     
-    if not dir.endswith(os.path.sep+"WebGL"):
+    if not dir.endswith(os.path.sep+"allshape"):
       print("Could not find base directory")
       return -1
     

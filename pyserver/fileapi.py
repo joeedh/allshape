@@ -359,6 +359,7 @@ class FileAPI_UploadStart:
     userid = do_auth(tok)
     
     if userid == None:
+      print("Need user id")
       serv.send_error(401)
       return
     
@@ -394,6 +395,7 @@ class FileAPI_UploadStart:
       return
       
     if is_folder(meta):
+      print("target 'file' is a folder")
       serv.send_error(401)
       return
     
