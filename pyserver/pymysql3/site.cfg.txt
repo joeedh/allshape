@@ -1,0 +1,17 @@
+[options]
+# embedded: link against the embedded server library
+# threadsafe: use the threadsafe client
+# static: link against a static library (probably required for embedded)
+
+embedded = False
+threadsafe = True
+static = False
+
+# For Linux, the path to mysql_config.
+# Only use this if mysql_config is not on your PATH, or you have some weird
+# setup that requires it.
+#mysql_config = /usr/local/bin/mysql_config
+
+# For Windows, the path to MySQL server directory.
+# This has to be set for Windows builds to work.
+mysql_location = C:\Program Files\MySQL\MySQL Server 5.5

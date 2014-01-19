@@ -1,0 +1,1665 @@
+<!DOCTYPE html>
+<script id="ss_vshader" type="x-shader/x-vertex">
+  precision highp float;
+  uniform mat4 u_modelViewProjMatrix;
+  uniform mat4 u_cameraMatrix;
+  uniform mat4 u_normalMatrix;
+  uniform float steps;
+  uniform float patch1;
+  uniform float data_size;
+  uniform vec3 lightDir1;
+  uniform vec4 face_color;
+  uniform sampler2D sampler2d;
+  
+  attribute vec2 vPosition;
+
+  varying vec4 g_Color;
+  varying vec3 v_Normal;
+  
+  varying float v_Dot;
+  varying vec2 v_texCoord;
+
+  vec3 get_patch1_point(float f, float fx, float fy)
+  {
+    float c; float ds;
+    
+    ds = 0.0; //(0.5 / data_size);
+    
+    c = floor(4.0*4.0*3.0*f + fy*4.0*3.0 + fx*3.0);
+    
+    float cy1 = floor(c/data_size)+0.0001;
+    float cx1 = mod(c, data_size)+0.0001;
+    
+    float cy2 = floor((c+1.0)/data_size)+0.0001;
+    float cx2 = mod(c+1.0, data_size)+0.0001;
+
+    float cy3 = floor((c+2.0)/data_size)+0.0001;
+    float cx3 = mod(c+2.0, data_size)+0.0001;
+    
+    cx1 += ds; cy1 += ds; cx2 += ds; cy2 += ds; 
+    cx3 += ds; cy3 += ds;
+    
+    cx1 /= data_size; cx2 /= data_size; cx3 /= data_size; 
+    cy1 /= data_size; cy2 /= data_size; cy3 /= data_size; 
+    
+    return vec3(texture2D(sampler2d, vec2(cx1, cy1))[3], 
+      texture2D(sampler2d, vec2(cx2, cy2))[3], 
+      texture2D(sampler2d, vec2(cx3, cy3))[3]);
+  }
+
+  float ptab(float i)
+  {
+    if (abs(i) < 0.01) return 1.0;
+    else if (abs(i-1.0) < 0.01) return 3.0;
+    else if (abs(i-2.0) < 0.01) return 3.0;
+    else return 1.0;
+  }
+  
+  vec4 eval(float f, float u, float v)
+  {
+    vec3 p = vec3(0.0, 0.0, 0.0);
+    float bi; float bj; 
+    vec3 c;
+    float di=0.0; float dj=0.0;
+    
+    for (int i=0; i<4; i++) {
+      dj = 0.0;
+      for (int j=0; j<4; j++) {
+        bi = ptab(di)*pow(u, di)*pow(1.0-u, 3.0-di);
+        bj = ptab(dj)*pow(v, dj)*pow(1.0-v, 3.0-dj);
+        
+        c = get_patch1_point(f, di, dj);
+        p[0] += c[0]*bi*bj;
+        p[1] += c[1]*bi*bj;
+        p[2] += c[2]*bi*bj;
+        
+        dj += 1.0;
+      }
+      di += 1.0;
+    }
+    
+    return vec4(p[0], p[1], p[2], 1.0); //f32_to_f(p[0]), f32_to_f(p[1]), f32_to_f(p[2]), 1.0);
+  }
+
+  vec2 nor_off_uv(float u, float v)
+  {
+    float ul; float vl;
+    
+    /*convert u,v, coordinates to 0..1 range; they
+      actually go to 0..1+(1/(step-1))*/
+    ul = u*(steps/(steps-1.0)) - 0.5/(steps);
+    vl = v*(steps/(steps-1.0)) - 0.5/(steps);
+    
+    ul = min(max(ul, 0.0), 1.0);
+    vl = min(max(vl, 0.0), 1.0);
+    
+    if (ul > 0.5) {
+      ul = abs(1.0 - ul);
+    }
+    
+    if (vl > 0.5) {
+      vl = abs(1.0 - vl);
+    } 
+    
+    float ul2; float vl2;
+    ul2 = 1.0-ul; vl2 = 1.0-vl;
+
+    ul = pow(ul2, 20.0)*vl2*0.004;//*vl2;
+    vl = pow(vl2, 20.0)*ul2*0.004;//*ul2;
+    
+    ul = max(ul, 0.001);
+    vl = max(vl, 0.001);
+    
+    //ul = max(ul*0.05, 0.0);
+    //vl = max(vl*0.05, 0.0);
+    //u = min(max(u, ul), 1.0-ul);
+    //v = min(max(v, vl), 1.0-vl);
+    u = ul + u*(1.0-ul*14.0);
+    v = vl + v*(1.0-vl*14.0);
+    
+    return vec2(u, v);
+  }
+  
+  //factorial(3-i)
+  float ntab1(float i)
+  {
+    if (abs(i) < 0.01) return 36.0;
+    else if (abs(i-1.0) < 0.01) return 12.0;
+    else if (abs(i-2.0) < 0.01) return 6.0;
+    else return 6.0;
+  }
+  
+  //factorial(i)
+  float ntab2(float i)
+  {
+    if (abs(i) < 0.01) return 1.0;
+    else if (abs(i-1.0) < 0.01) return 1.0;
+    else if (abs(i-2.0) < 0.01) return 2.0;
+    else return 6.0;
+  }
+  
+  vec4 normal(float f, float u, float v)
+  {
+    float du = 0.005;
+    float dv = 0.005;
+    
+    if (u > 0.5) du = -du;
+    if (v > 0.5) dv = -dv;
+    
+    vec3 p = eval(f, u, v).xyz;
+    vec3 p1 = eval(f, u+du, v).xyz - p;
+    vec3 p2 = eval(f, u, v+dv).xyz - p;
+    
+    if (u > 0.5)
+      p1 = -p1;
+    if (v > 0.5)
+      p2 = -p2;
+      
+    vec3 n = cross(p1, p2);
+    
+    return vec4(n[0], n[1], n[2], 1.0);
+  }
+  
+  void main()
+  {
+      float eps1 = 0.9999;
+      float eps2 = 0.00005;
+      vec4 pos = eval(patch1, abs(vPosition[0]*eps1+eps2), abs(vPosition[1]*eps1+eps2));
+      
+      vec2 noroff = nor_off_uv(vPosition[0], vPosition[1]);
+      
+      gl_Position = u_modelViewProjMatrix * pos;
+      gl_PointSize = 9.0;
+      
+      vec4 transNormal = u_normalMatrix * normal(patch1, vPosition[0], vPosition[1]);
+      float f = abs(texture2D(sampler2d, vPosition)[3]);
+      vec3 norm = vec3(transNormal[0], transNormal[1], transNormal[2]);
+      norm = normalize(norm);
+      
+      g_Color = face_color; //vec4(noroff[0]*noroff[1], noroff[1]*noroff[0], 0, 1.0); //face_color;
+      v_texCoord = vec2(0.0, 0.0);
+      v_Dot = max(dot(norm, lightDir1), 0.0);
+      v_Normal = norm;
+  }
+</script>
+
+<script id="compute_fshader" type="x-shader/x-fragment">
+    #version 100
+    precision highp float;
+    precision highp int;
+
+    uniform sampler2D sampler2d;
+    uniform sampler2D sampler2d_util_tab;
+    uniform highp float width;
+    uniform highp float height;
+    uniform highp float util_w;
+
+    varying vec4 clr;
+    varying vec3 v_Normal;
+
+    int float_prec=0, float_min=0, float_max=0;
+
+    //the glsl spec doesn't seem to guarantee support for bit shifting operations
+    highp float lshift(highp float i, highp float count)
+    {
+      //count += 0.01;
+      count = floor(count);
+      highp float c1 = texture2D(sampler2d_util_tab, vec2((count*2.0)/util_w+0.0001, 0.0))[3]*255.0;
+      highp float c2 = texture2D(sampler2d_util_tab, vec2((count*2.0+1.0)/util_w+0.0001, 0.0))[3]*255.0;
+      return floor(i*c1*c2);
+    }
+
+    highp float rshift(highp float i, highp float count)
+    {
+      //count += 0.01;
+      count = floor(count);
+      highp float c1 =  float(texture2D(sampler2d_util_tab, vec2((count*2.0)/util_w+0.0001, 0.0))[3]*255.0);
+      highp float c2 =  float(texture2D(sampler2d_util_tab, vec2((count*2.0+1.0)/util_w+0.0001, 0.0))[3]*255.0);
+      return floor(i/c1/c2);
+    }
+
+    highp float single_and(highp float a, highp float b)
+    {
+      a += 0.000001;
+      b += 0.000001;
+      highp float p = pow(2.0, b);
+      highp float n = floor(a/p);
+      
+      return p*mod(n, 2.0);
+    }
+    
+    /*packs highp floats into RGBA color vectors, suitable for transferrence
+      through the stupid glReadPixels function*/
+    vec4 pack_float(highp float f)
+    {
+      highp float sign = (float(int(f < 0.0)));
+      highp float tst = abs(f);
+      highp float norm = floor(tst);
+      
+      /*exponent is simply the 2-log of tst, floored*/
+      highp float expo = floor(log2(tst));
+      highp float pw = pow(2.0, expo);
+      
+      highp float n = fract(tst/pw); // - 1.0;
+      highp float n2 = 1.0;
+      highp float fi;
+      
+      /*generate mantissa*/
+      for (int i=0; i<23; i++) {
+        n *= 2.0;
+        
+        fi = floor(n);
+        n2 += lshift(1.0, float(22-i))*fi;
+        n = fract(n);
+      }
+      highp float mant = n2; //*4.2;
+      mant = lshift(1.0, 15.0);
+      
+      /*bias expo, to avoid negative value*/
+      expo += 127.0;
+      
+      /*build bytes*/
+      vec4 bs = vec4(0.0, 0.0, 0.0, 0.0);
+      highp float mant_shifted = rshift(mant, 8.0);
+      
+      for (int i=0; i<8; i++) {
+        bs[0] += single_and(mant, float(i));
+        bs[1] += single_and(mant_shifted, float(i));
+      }
+      
+      mant_shifted = rshift(mant, 16.0);
+      for (int i=0; i<8; i++) {
+        bs[2] += single_and(mant_shifted, float(i));
+      }
+      
+      bs[2] += lshift(single_and(expo, 0.0), 7.0);
+      bs[3] = rshift(expo, 1.0);
+      bs[3] += sign*128.0;
+      
+      //bs[3] = rshift(256.0, 1.0);
+      bs[0] /= 255.0; bs[1] /= 255.0; bs[2] /= 255.0; bs[3] /= 255.0;
+      return bs;
+    }
+
+    void main()
+    {
+      float_prec = int(texture2D(sampler2d_util_tab, vec2(64, 0))*255.0);
+      float_min = int(texture2D(sampler2d_util_tab, vec2(65, 0))*255.0);
+      float_max = int(texture2D(sampler2d_util_tab, vec2(66, 0))*255.0);
+
+      vec4 pos = gl_FragCoord;
+      
+      vec4 clr = texture2D(sampler2d, vec2(pos[0]/width, pos[1]/height));
+      highp float tst = 25.112;
+      gl_FragColor = pack_float(tst);
+    }
+</script>
+
+<!--
+/*
+ * Copyright (C) 2009 Apple Inc. All Rights Reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY APPLE INC. ``AS IS'' AND ANY
+ * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL APPLE INC. OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ * OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+ -->
+<html><head>
+<meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1.0" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>AllShape</title>
+<style>
+body, html {
+  margin: 0px;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+#framerate {
+  position: absolute;
+  top: 10px;
+  left: 300px;
+  background-color: rgba(0,0,0,0.3);
+  padding: 1em;
+  color: white;
+}
+#tottri {
+  position: absolute;
+  top: 10px;
+  left: 560px;
+  background-color: rgba(0,0,0,0.3);
+  padding: 1em;
+  color: white;
+}
+#example {
+  width: 100%;
+  height: 100%;
+}
+</style>
+
+
+<script>
+window.mobilecheck = function()
+{
+  var str = navigator.userAgent + navigator.vendor;
+  function test(s) {
+    var ret = str.match(s)
+    if (ret == null || ret == undefined) return false;
+    if (ret.length == 0 || ret.length == undefined)
+      return false;
+    
+    return true;
+  }
+  
+  str = str.toLowerCase();
+  var ret = test("android") || test("mobile") || test("blackberry") || test("iphone")
+  
+  return ret;
+}
+
+IsMobile = window.mobilecheck();
+
+/*
+window.mobilecheck = function() {
+var check = false;
+(function(a){if(/(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows (ce|phone)|xda|xiino/i.test(a)||/1207|6310|6590|3gso|4thp|50[1-6]i|770s|802s|a wa|abac|ac(er|oo|s\-)|ai(ko|rn)|al(av|ca|co)|amoi|an(ex|ny|yw)|aptu|ar(ch|go)|as(te|us)|attw|au(di|\-m|r |s )|avan|be(ck|ll|nq)|bi(lb|rd)|bl(ac|az)|br(e|v)w|bumb|bw\-(n|u)|c55\/|capi|ccwa|cdm\-|cell|chtm|cldc|cmd\-|co(mp|nd)|craw|da(it|ll|ng)|dbte|dc\-s|devi|dica|dmob|do(c|p)o|ds(12|\-d)|el(49|ai)|em(l2|ul)|er(ic|k0)|esl8|ez([4-7]0|os|wa|ze)|fetc|fly(\-|_)|g1 u|g560|gene|gf\-5|g\-mo|go(\.w|od)|gr(ad|un)|haie|hcit|hd\-(m|p|t)|hei\-|hi(pt|ta)|hp( i|ip)|hs\-c|ht(c(\-| |_|a|g|p|s|t)|tp)|hu(aw|tc)|i\-(20|go|ma)|i230|iac( |\-|\/)|ibro|idea|ig01|ikom|im1k|inno|ipaq|iris|ja(t|v)a|jbro|jemu|jigs|kddi|keji|kgt( |\/)|klon|kpt |kwc\-|kyo(c|k)|le(no|xi)|lg( g|\/(k|l|u)|50|54|\-[a-w])|libw|lynx|m1\-w|m3ga|m50\/|ma(te|ui|xo)|mc(01|21|ca)|m\-cr|me(rc|ri)|mi(o8|oa|ts)|mmef|mo(01|02|bi|de|do|t(\-| |o|v)|zz)|mt(50|p1|v )|mwbp|mywa|n10[0-2]|n20[2-3]|n30(0|2)|n50(0|2|5)|n7(0(0|1)|10)|ne((c|m)\-|on|tf|wf|wg|wt)|nok(6|i)|nzph|o2im|op(ti|wv)|oran|owg1|p800|pan(a|d|t)|pdxg|pg(13|\-([1-8]|c))|phil|pire|pl(ay|uc)|pn\-2|po(ck|rt|se)|prox|psio|pt\-g|qa\-a|qc(07|12|21|32|60|\-[2-7]|i\-)|qtek|r380|r600|raks|rim9|ro(ve|zo)|s55\/|sa(ge|ma|mm|ms|ny|va)|sc(01|h\-|oo|p\-)|sdk\/|se(c(\-|0|1)|47|mc|nd|ri)|sgh\-|shar|sie(\-|m)|sk\-0|sl(45|id)|sm(al|ar|b3|it|t5)|so(ft|ny)|sp(01|h\-|v\-|v )|sy(01|mb)|t2(18|50)|t6(00|10|18)|ta(gt|lk)|tcl\-|tdg\-|tel(i|m)|tim\-|t\-mo|to(pl|sh)|ts(70|m\-|m3|m5)|tx\-9|up(\.b|g1|si)|utst|v400|v750|veri|vi(rg|te)|vk(40|5[0-3]|\-v)|vm40|voda|vulc|vx(52|53|60|61|70|80|81|83|85|98)|w3c(\-| )|webc|whit|wi(g |nc|nw)|wmlb|wonu|x700|yas\-|your|zeto|zte\-/i.test(a.substr(0,4)))check = true})(navigator.userAgent||navigator.vendor||window.opera);
+return check; }
+*/
+
+if (String.startsWith == undefined) {
+  String.prototype.startsWith = function(str) {
+    if (str.length > this.length)
+      return false;
+      
+    for (var i=0; i<str.length; i++) {
+      if (this[i] != str[i])
+        return false;
+    }
+    
+    return true;
+  }
+}
+
+if (String.endsWith == undefined) {
+  String.prototype.endsWith = function(str) {
+    if (str.length > this.length)
+      return false;
+      
+    for (var i=0; i<str.length; i++) {
+      if (this[this.length-str.length+i] != str[i])
+        return false;
+    }
+    
+    return true;
+  }
+}
+
+if (String.contains == undefined) {
+  String.prototype.contains = function(str) {
+    if (str.length > this.length)
+      return false;
+      
+    for (var i=0; i<this.length - str.length + 1; i++) {
+      var found = true;
+      for (var j=0; j<str.length; j++) {
+        if (this[i+j] != str[j]) {
+          found = false;
+          break;
+        }
+      }
+      
+      if (found)
+        return true;
+    }
+    
+    return false;
+  }
+}
+
+String.prototype.find = function(str) {
+  if (str.length > this.length)
+    return false;
+    
+  for (var i=0; i<this.length - str.length + 1; i++) {
+    var found = true;
+    for (var j=0; j<str.length; j++) {
+      if (this[i+j] != str[j]) {
+        found = false;
+        break;
+      }
+    }
+    
+    if (found)
+      return i;
+  }
+  
+  return -1;
+}
+
+function is_str(str) {
+  return typeof str == "string" || typeof str == "String";
+}
+
+function get_type_name(obj)
+{
+  if (obj == undefined) return "undefined"
+  
+  var c;
+  
+  try {
+    var c = obj.toSource()
+  } catch (Error) {
+    c = ""
+  }
+  
+  if (obj.toString().startsWith("[object ")) {
+    var c2 = obj.toString().replace("[object ", "").replace("]", "")
+    if (c2 != "Object" && c2 != "Array") {
+      return c2;
+    }
+  }
+  
+  if (c.contains(">") && c.contains("<") && !c.contains(" ") && !c.contains(",") && !c.contains(".")) {
+    c = c.replace(">", "").replace("<", "")
+    
+    if (c != "Object" && c != "Array") {
+      return c
+    }
+  }
+  
+  if (obj.constructor.name != undefined && obj.constructor.name != "") return obj.constructor.name
+  
+  if (obj.constructor == MouseEvent)
+    return "MouseEvent"
+    
+  if (obj.constructor == KeyEvent)
+    return "KeyEvent"
+    
+  if (obj.constructor == KeyboardEvent)
+    return "KeyboardEvent"
+  
+  return "(unknown)";
+}
+
+log_cache = {}
+slog_queue = []
+flush_queue = false;
+last_queue_time = window.performance.now();
+
+function server_log(msg)
+{
+  if (msg != undefined) {
+    if (log_cache.hasOwnProperty(msg))
+      return;
+    
+    log_cache[msg] = msg;
+    slog_queue.push(msg)
+  }
+  
+  console.log(window.performance.now() - last_queue_time);
+  if ((slog_queue.length > 0 && window.performance.now() - last_queue_time > 1500) || flush_queue) {
+    flush_queue = false;
+    console.log("flushing...")
+    
+    var req = new XMLHttpRequest();
+    req.open("POST", "/logger", true);
+    req.setRequestHeader("Content-type","text/text");
+    req.onreadystatechange=function() {
+      if (req.readyState==4 && req.status==200) {
+        var resp = req.responseText;
+        console.log("read response", resp)
+      }
+    }
+    
+    buf = ""
+    for (var i=0; i<slog_queue.length; i++) {
+      buf += slog_queue[i] + "\n";
+    }
+    
+    req.send(buf);
+    slog_queue = [];
+    last_queue_time = window.performance.now();
+  }
+}
+
+function flush_server_log()
+{
+  flush_queue = true;
+  server_log();
+}
+
+
+function arr_iter(keys)
+{
+  this.keys = keys;
+  this.cur = 0;
+  
+  this.__iterator__ = function() {
+    return this;
+  }
+  
+  this.next = function() {
+    if (this.cur >= this.keys.length) {
+      throw StopIteration;
+    }
+    
+    return this.keys[this.cur++];
+  }
+}
+
+try {
+  var i = StopIteration;
+} catch (error) {
+  StopIteration = function(msg) {
+    Error.call(this, msg);
+  }
+  
+  StopIteration.prototype = Object.create(Error.prototype);
+}
+
+function obj_get_keys(obj) {
+  var ret = [];
+  
+  for (var k in obj) {
+    if (obj.hasOwnProperty(k))
+      ret.push(k);
+  }
+  
+  return ret;
+}
+__use_Iterator = false;
+_do_frame_debug = false;
+_do_iter_err_stacktrace = true;
+
+FrameContinue = {"FC": 1}
+FrameBreak = {"FB": 1}
+
+function getattr(obj, attr) {
+  return obj[attr];
+}
+
+function setattr(obj, attr, val) {
+  obj[attr] = val;
+}
+
+function delattr(obj, attr) {
+  delete obj[attr];
+}
+
+function __get_iter(obj)
+{
+  if (obj == undefined) {
+    console.trace();
+    print_stack();
+    throw new Error("Invalid iteration over undefined value")
+  }
+  
+  if (obj.__proto__.hasOwnProperty("__iterator__") || obj.hasOwnProperty("__iterator__")) {
+    return obj.__iterator__();
+  } else {
+    if (__use_Iterator) {
+      return Iterator(obj);
+    } else {
+      keys = []
+      for (var k in obj) {
+        keys.push(k)
+      }
+      return new arr_iter(keys);
+    }
+  }
+}
+
+function __get_iter2(obj)
+{
+  if (obj.__proto__.hasOwnProperty("__iterator__") || obj.hasOwnProperty("__iterator__")) {
+    return obj.__iterator__();
+  } else {
+    var keys = []
+    for (var k in obj) {
+      keys.push([k, obj[k]])
+    }
+    return new arr_iter(keys);
+  }
+}
+
+try {
+  _tst = Iterator({});
+} catch (Error) {
+  __use_Iterator = false;
+  Iterator = __get_iter2;
+}
+
+/*
+with any luck, all browsers have JSON.stringify and JSON.parse
+
+function tab_indent(tlevel, tstr) {
+  if (tlevel == undefined) return ""
+  if (tstr == undefined)
+    tstr = " ";
+    
+  var s = ""
+  for (var i=0; i<tlevel; i++) {
+    s += tstr;
+  }
+  
+  return s;
+}
+
+function toJSON_intern (ob, tlevel) {
+  if (tlevel == undefined) tlevel = 0;
+  var tab = tab_indent(tlevel+1);
+  
+  var s = tab
+  
+  if (obj instanceof Array) {
+  } else if (obj instanceof String) {
+  } else if (obj instanceof Number) {
+  } else if (obj instanceof Boolean) {
+  } else {
+    s = tab_indent(tlevel) + "{\n"
+    var i =0;
+    for (var k in this) {
+      if (this[k] == this) continue;
+      if (this[k] == "prototype") continue;
+      if (!this.hasOwnProperty(k)) continue;
+      if (i > 0) s += ",\n";
+      
+      if (this[k] != undefined) {
+        var val = this[k];
+        if (typeof val == "function") continue;
+        
+        if (!(val instanceof Array) &&
+            !(val instanceof String) &&
+            !(val instanceof Number) &&
+            !(val instanceof Boolean)) 
+        {
+          console.trace();
+          throw new Error("Can only json simple objects")
+          break;          
+        }
+      }
+      
+      s += tab + "\"" + k + "\"" + " : " + toJSON(this[k], tlevel+1)
+      
+      i += 1;
+    }
+      s += "}"
+  }
+  
+  return s
+}
+*/
+
+</script>
+
+<script type="text/javascript" src="webgl-utils.js"></script>
+<script type="text/javascript" src="webgl-debug.js"></script>
+<script src="J3DI.js"> </script>
+
+<script src="J3DIMath.js" type="text/javascript"> </script>
+<script type="text/javascript" src="font_out.js"></script>
+<script type="text/javascript" src="utils.js"></script>
+<script type="text/javascript" src="spatialhash.js"></script>
+<script type="text/javascript" src="jobs.js"></script>
+<script type="text/javascript" src="mathlib.js"></script>
+<script type="text/javascript" src="events.js"></script>
+<script type="text/javascript" src="ui.js"></script>
+<script type="text/javascript" src="UIElements.js"></script>
+<script type="text/javascript" src="geodata.js"></script>
+<script type="text/javascript" src="mesh.js"></script>
+<script type="text/javascript" src="UIMenu.js"></script>
+<script type="text/javascript" src="RadialMenu.js"></script>
+<script type="text/javascript" src="gpu_compute.js"></script>
+<script type="text/javascript" src="geodata.js"></script>
+<script type="text/javascript" src="triangulate.js"></script>
+<script type="text/javascript" src="triangulate_job.js"></script>
+<script type="text/javascript" src="subsurf.js"></script>
+<script type="text/javascript" src="opsapi.js"></script>
+<script type="text/javascript" src="draw.js"></script>
+<script type="text/javascript" src="AppState.js"></script>
+<script type="text/javascript" src="ajax.js"></script>
+<script type="text/javascript" src="network_api.js"></script>
+<script type="text/javascript" src="fileapi.js"></script>
+<script type="text/javascript" src="fontutils.js"></script>
+<script type="text/javascript" src="toolops_api.js"></script>
+<script type="text/javascript" src="meshtools_cad.js"></script>
+<script type="text/javascript" src="meshtools_loop.js"></script>
+<script type="text/javascript" src="meshtools_create.js"></script>
+<script type="text/javascript" src="data_api_define.js"></script>
+<script type="text/javascript" src="data_api.js"></script>
+<script type="text/javascript" src="googledrive_api.js"></script>
+<script type="text/javascript" src="dialog.js"></script>
+<script type="text/javascript" src="dialogs.js"></script>
+<script type="text/javascript" src="FrameManager.js"></script>
+<script type="text/javascript" src="3dview.js"></script>
+<script type="text/javascript" src="esubdivide.js"></script>
+<script type="text/javascript" src="trans_ops.js"></script>
+<script type="text/javascript" src="trans_ops_special.js"></script>
+<script type="text/javascript" src="view3d_ops.js"></script>
+<script type="text/javascript" src="select_ops.js"></script>
+
+
+<script id="2d_basic_vshader" type="x-shader/x-vertex">
+    uniform mat4 mat;
+    
+    attribute vec4 vPosition;
+    attribute vec4 vColor;
+    attribute vec4 vTexCoord;
+  
+    varying vec4 g_Color;
+    varying vec2 v_texCoord;
+
+    void main()
+    {
+        gl_Position = vPosition;
+        v_texCoord = vTexCoord.st;
+        g_Color = vColor;
+        
+    }
+</script>
+
+<script id="2d_basic_fshader" type="x-shader/x-fragment">
+    precision mediump float;
+
+    uniform sampler2D sampler2d;
+    
+    varying vec4 g_Color;
+    varying vec2 v_texCoord;
+    
+    vec4 interp4(vec4 c1, vec4 c2, float t)
+    {
+      return c1 + (c2 - c1) * t;
+    }
+    
+    void main()
+    {
+      vec4 clr = vec4(g_Color[0], g_Color[1], g_Color[2], g_Color[3]);
+      
+      gl_FragColor = clr;
+    }
+</script>
+
+<script id="compute_vshader" type="x-shader/x-vertex">
+    uniform sampler2D sampler2d;
+    uniform sampler2D sampler2d_util_tab;
+    
+    attribute vec3 vPosition;
+    varying vec3 v_Normal;
+    
+    varying vec4 clr;
+    void main()
+    {
+        clr = vec4(0.7, 0.7, 0.0, 1.0);
+        gl_Position = vec4(vPosition[0], vPosition[1], vPosition[2], 1.0);
+        v_Normal = vec3(0.0, 0.0, -1.0);
+    }
+</script>
+
+<script id="vshader" type="x-shader/x-vertex">
+    precision highp float;
+    
+    uniform mat4 u_modelViewProjMatrix;
+    uniform mat4 u_cameraMatrix;
+    uniform mat4 u_normalMatrix;
+    uniform vec3 lightDir1;
+    uniform vec4 sel_eid;
+    uniform vec4 highsel_eid;
+    uniform vec4 high_color;
+    uniform vec4 highsel_color;
+
+    attribute vec4 vPosition;
+    attribute vec4 vColor;
+    attribute vec3 vNormal;
+    attribute vec4 vTexCoord;
+    attribute vec4 eid;
+    
+    varying vec4 g_Color;
+    varying vec3 v_Normal;
+    varying float v_Dot;
+    varying vec2 v_texCoord;
+    
+    void main()
+    {
+        gl_Position = u_modelViewProjMatrix * vPosition;
+        gl_PointSize = 9.0;
+        v_texCoord = vTexCoord.st;
+        vec4 transNormal = u_normalMatrix * vec4(vNormal, 1);
+        
+        vec3 plightDir = vec3(u_cameraMatrix * vec4(lightDir1, 1));
+        
+        v_Dot = max(dot(transNormal.xyz, lightDir1), 0.0);
+        
+        if (eid == sel_eid)
+          g_Color = high_color;
+        else if (eid == highsel_eid)
+          g_Color = highsel_color;
+        else
+          g_Color = vColor;
+        
+        v_Normal = transNormal.xyz;
+    }
+</script>
+
+
+<script id="editvshader" type="x-shader/x-vertex">
+    precision highp float;
+    
+    uniform mat4 u_modelViewProjMatrix;
+    uniform mat4 u_normalMatrix;
+    uniform vec3 lightDir;
+    uniform float alpha_mul;
+    uniform vec4 face_unsel_color;
+    uniform vec4 sel_eid;
+    uniform vec4 highsel_eid;
+    uniform vec4 high_color;
+    uniform vec4 highsel_color;
+    
+    attribute vec4 vPosition;
+    attribute vec4 vColor;
+    attribute vec3 vNormal;
+    attribute vec4 vTexCoord;
+    attribute vec4 eid;
+    
+    varying float v_Dot;
+    varying vec4 g_Color;
+    varying vec2 v_texCoord;
+    varying vec3 v_Normal;
+
+    void main()
+    {
+        gl_Position = u_modelViewProjMatrix * vPosition;
+        gl_PointSize = 9.0;
+        v_texCoord = vTexCoord.st;
+        vec4 transNormal = u_normalMatrix * vec4(vNormal, 1);
+        v_Dot = 1.0;
+        
+        if (eid == sel_eid)
+          g_Color = high_color;
+        else if (eid == highsel_eid)
+          g_Color = highsel_color;
+        else
+          g_Color = vColor;
+        
+        g_Color[3] *= alpha_mul;
+        v_Normal = transNormal.xyz;
+    }
+</script>
+
+<script id="editv_fshader" type="x-shader/x-fragment">
+    precision highp float;
+    
+    uniform sampler2D sampler2d;
+    uniform float alpha_mul;
+    
+    varying vec4 g_Color;
+    varying vec3 v_Normal;
+
+    void main()
+    {
+      gl_FragColor = g_Color;
+    }
+</script>
+
+
+<script id="selbuf_vshader" type="x-shader/x-vertex">
+    precision highp float;
+    
+    uniform mat4 u_modelViewProjMatrix;
+    
+    attribute vec3 vPosition;
+    attribute vec4 vColor;
+  
+    varying vec4 g_Color;
+
+    void main()
+    {
+      vec4 pos = vec4(vPosition[0], vPosition[1], vPosition[2], 1.0);
+      gl_Position = u_modelViewProjMatrix * pos;
+      g_Color = vColor;
+      
+      gl_PointSize = 9.0;
+    }
+</script>
+
+<script id="selbuf_fshader" type="x-shader/x-fragment">
+    precision highp float;
+
+    uniform sampler2D sampler2d;
+    uniform float alpha_mul;
+    
+    varying vec4 g_Color;
+    varying vec3 v_Normal;
+
+    void main()
+    {
+      gl_FragColor = g_Color;
+    }
+</script>
+
+<script id="fshader" type="x-shader/x-fragment">
+    precision highp float;
+    uniform mat4 u_modelViewProjMatrix;
+    uniform mat4 u_cameraMatrix;
+    uniform mat4 u_normalMatrix;
+    uniform vec3 lightDir1;
+    uniform float alpha_mul;
+
+    uniform sampler2D sampler2d;
+
+    varying vec4 g_Color;
+    varying vec3 v_Normal;
+    varying float v_Dot;
+    varying vec2 v_texCoord;
+    
+    vec4 interp4(vec4 c1, vec4 c2, float t)
+    {
+      return c1 + (c2 - c1) * t;
+    }
+    
+    void main()
+    {
+        vec2 texCoord = vec2(v_texCoord.s, 1.0 - v_texCoord.t);
+        vec4 viewvec4 = u_modelViewProjMatrix * gl_FragCoord;
+        vec3 viewvec = normalize(viewvec4.xyz);
+        
+        vec4 color = g_Color; //vec4(0.6, 0.6, 0.6, 1.0); //texture2D(sampler2d, texCoord);
+        
+        vec4 c1 = vec4(color.xyz*v_Dot, color.a);
+        vec4 c2 = color*(1.0-v_Dot);
+        c1 = interp4(c1, c2, 0.1);
+        
+        vec3 refl = v_Normal*dot(v_Normal, lightDir1) - lightDir1*0.5;
+        refl = refl*-1.0;
+        float p = max(dot(refl, viewvec), 0.0);
+        p = pow(p, 4.0)*7.80;
+        
+        c2 = vec4(p, p, p, 1.0);
+        if (alpha_mul != 0.0)
+          c1[3] *= alpha_mul;
+          
+        gl_FragColor = c1;//+c2;
+    }
+</script>
+
+
+<script id="fshader_simple" type="x-shader/x-fragment">
+    precision highp float;
+    uniform mat4 u_modelViewProjMatrix;
+    uniform mat4 u_cameraMatrix;
+    uniform mat4 u_normalMatrix;
+    uniform vec3 lightDir1;
+    uniform float alpha_mul;
+
+    uniform sampler2D sampler2d;
+
+    varying vec4 g_Color;
+    varying vec3 v_Normal;
+    varying float v_Dot;
+    varying vec2 v_texCoord;
+    
+    vec4 interp4(vec4 c1, vec4 c2, float t)
+    {
+      return c1 + (c2 - c1) * t;
+    }
+    
+    void main()
+    {
+        vec4 color = g_Color;
+        
+        if (alpha_mul != 0.0)
+          color[3] *= alpha_mul;
+        
+        gl_FragColor = color;
+    }
+</script>
+
+<script id="2d_line_vshader" type="x-shader/x-vertex">
+    precision mediump float;
+    uniform vec4 uColor;
+
+    attribute vec4 vPosition;
+    attribute vec3 vNormal;
+    attribute vec4 vColor;
+    
+    varying vec4 g_Color;
+    varying vec3 v_Dir;
+    void main()
+    {
+       gl_Position = vPosition;
+       g_Color = vColor;
+       v_Dir = vNormal;
+    }
+</script>
+
+<script id="2d_line_fshader" type="x-shader/x-fragment">
+    precision mediump float;
+    
+    varying vec4 g_Color;
+    varying vec3 v_Dir;
+    
+    float line_mod(float size, float space, float off)
+    {
+      float x = gl_FragCoord[0]/size;
+      float y = gl_FragCoord[1]/size;
+      vec3 vdir = normalize(v_Dir);
+      vec3 cn = normalize(vec3(x, y, 0.0));
+      float an = (dot(vdir, cn));
+      
+      x *= an;
+      y *= an;
+      float d = mod(x+off, 5.0)/5.0;
+      if (d > space) d = 0.0;
+      else d = 1.0;
+      
+      return d;
+    }
+    
+
+    void main()
+    {
+      vec4 clr = g_Color;
+      
+      clr[3] *= line_mod(2.0, 0.5, 0.0);
+      gl_FragColor = clr;
+    }
+</script>
+
+<script id="2d_text_vshader" type="x-shader/x-vertex">
+    precision mediump float;
+    uniform vec4 uColor;
+
+    attribute vec2 vPosition;
+    attribute vec2 vTexCoord;
+    
+    varying vec4 g_Color;
+    varying vec2 g_TexCoord;
+    void main()
+    {
+       gl_Position = vec4(vPosition[0], vPosition[1], 0.0, 1.0);
+
+       g_TexCoord = vTexCoord;
+       g_Color = uColor;
+    }
+</script>
+
+<script id="2d_text_fshader" type="x-shader/x-fragment">
+    precision mediump float;
+    
+    uniform sampler2D sampler2d;
+    
+    varying vec4 g_Color;
+    varying vec2 g_TexCoord;
+    
+    void main()
+    {
+      vec4 clr = g_Color;
+      clr[3] = texture2D(sampler2d, g_TexCoord)[0];
+      
+      gl_FragColor = clr;
+    }
+</script>
+
+<script>
+    var g = {};
+    
+    function gl_blend_func(gl) 
+    {
+      gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA,
+                           gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);    
+    }
+    
+    function init()
+    {
+        // Initialize
+        var gl = initWebGL(
+            // The id of the Canvas Element
+            "example");
+  
+        if (!gl) {
+          return;
+        }
+        
+        gl.getExtension("OES_TEXTURE_FLOAT");
+        
+        gl.selbuf = new ShaderProgram(
+          gl,
+          "selbuf_vshader", "selbuf_fshader",
+          ["vPosition", "vColor"]
+        );
+        
+        gl.selbuf_ss = new ShaderProgram(
+          gl,
+          "ss_vshader", "selbuf_fshader",
+          ["vPosition", "vColor"]
+        );
+        
+        gl.basic2d = new ShaderProgram (
+          gl,"2d_basic_vshader", "2d_basic_fshader",
+          ["vPosition", "vColor", "vTexCoord"]
+        );
+        
+        var program = new ShaderProgram(
+            gl,
+            // The ids of the vertex and fragment shaders
+            "vshader", "fshader",
+            // The vertex attribute names used by the shaders.
+            // The order they appear here corresponds to their index
+            // used later.
+            [ "vPosition", "vColor", "vNormal", "vTex", "eid"]
+            );
+        
+        var program2 = new ShaderProgram(
+            gl,
+            // The ids of the vertex and fragment shaders
+            "editvshader", "editv_fshader",
+            // The vertex attribute names used by the shaders.
+            // The order they appear here corresponds to their index
+            // used later.
+            [ "vPosition", "vColor", "vNormal", "vTex", "eid"]
+            );
+        
+        var ss_program = new ShaderProgram(
+          gl,
+          // The ids of the vertex and fragment shaders
+          "ss_vshader", "fshader",
+          // The vertex attribute names used by the shaders.
+          // The order they appear here corresponds to their index
+          // used later.
+          [ "vPosition" ]
+          );
+        
+        var ss_noshade = new ShaderProgram(
+          gl,
+          // The ids of the vertex and fragment shaders
+          "ss_vshader", "fshader_simple",
+          // The vertex attribute names used by the shaders.
+          // The order they appear here corresponds to their index
+          // used later.
+          [ "vPosition" ]
+        );
+        
+        gl.ss_noshade = ss_noshade
+        gl.program = program
+        gl.program2 = program2
+        gl.ss_program = ss_program
+        
+        gl.useProgram(program.program);
+        
+        gl.clearColor(0.0, 0.0, 0.5, 1.0);
+        gl.clearDepth(10000);
+        
+        gl.disable(gl.SAMPLE_COVERAGE);
+        gl.enable(gl.DEPTH_TEST);
+        gl.enable(gl.BLEND);
+        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    
+        console.log(gl.getSupportedExtensions().toString()) ;//gl.getExtension("GL_OES_element_index_uint"), "yay");
+        
+        // Set some uniform variables for the shaders
+        var l1 = new Vector3([0, 0.5, 1])
+        var l2 = new Vector3([0.5, 0, 1])
+        
+        l1.normalize();
+        l2.normalize();
+        
+        gl.uniform3f(gl.getUniformLocation(program.program, "lightDir1"), l1[0], l1[1], l1[2]);
+        gl.uniform3f(gl.getUniformLocation(program.program, "lightDir2"), l2[0], l2[1], l2[2]);
+        gl.uniform1i(gl.getUniformLocation(program.program, "sampler2d"), 0);
+
+        // Create some matrices to use later and save their locations in the shaders
+        g.mvMatrix = new Matrix4();
+        g.mvMatrix.rotate(Math.PI/2.0, new Vector3([1, 0, 0]));
+        
+        g.u_normalMatrixLoc = gl.getUniformLocation(program.program, "u_normalMatrix");
+        g.normalMatrix = new Matrix4();
+        g.u_modelViewProjMatrixLoc =
+                gl.getUniformLocation(program.program, "u_modelViewProjMatrix");
+        
+        var drawmats = new DrawMats(g.normalMatrix, g.mvMatrix, new Matrix4());
+        var canvas = document.getElementById('example');
+        
+        g.canvas = document.getElementById('example');
+        
+        canvas.width = canvas.clientWidth;
+        canvas.height = canvas.clientHeight;
+        
+        api_define_context();
+        api_define_ops();
+        
+        g_app_state = new AppState(undefined, undefined);
+        
+        g.view3d = new View3DHandler(gl, g_app_state.mesh, program, program2, 
+                                    drawmats, 0, 0, canvas.clientWidth, 
+                                    canvas.clientHeight, 1, 10000);
+        
+        g.screen = gen_screen(gl, g.view3d, canvas.clientWidth, canvas.clientHeight);
+        g_app_state.screen = g.screen;
+        
+        g.view3d.gen_persmat()
+        g.view3d.gen_rendermats();
+        //g.view3d.set_canvasbox();
+        
+        g_app_state.session.validate_session();
+        
+        return gl;
+    }
+
+    var requestId;
+
+    function reshape(gl)
+    {
+        // change the size of the canvas's backing store to match the size it is displayed.
+        var canvas = document.getElementById('example');
+        if (canvas.clientWidth == canvas.width && canvas.clientHeight == canvas.height)
+            return;
+        
+        var oldsize = [canvas.width, canvas.height]
+        var newsize = [canvas.clientWidth, canvas.clientHeight]
+        
+        canvas.width = canvas.clientWidth;
+        canvas.height = canvas.clientHeight;
+
+        if (g.view3d != undefined) {
+          g.view3d.set_canvasbox(0, 0, canvas.width, canvas.height);
+          g.view3d.gen_persmat()
+          g.view3d.gen_rendermats()
+        }
+        
+        if (g.screen != undefined) {
+          g.screen.on_resize(newsize, oldsize);
+        }
+    }
+
+    function drawPicture(gl)
+    {
+        // Make sure the canvas is sized correctly.
+        reshape(gl);
+        
+        g.canvas = canvas = document.getElementById('example');
+        
+        if (g.screen != undefined) {
+          g.screen.on_draw(gl);
+          
+          gl.colorMask(false, false, false, true);
+          gl.clear(gl.COLOR_BUFFER_BIT);
+          gl.finish();
+          
+        // Show the framerate
+          framerate.snapshot();
+          //document.getElementById("tottri").innerHTML = "Tris: " + g.view3d.mesh.faces.length + " Edges: " + g.   view3d.mesh.edges.length + " Verts: " + g.view3d.mesh.verts.length
+        }
+    }
+
+    function start()
+    {
+        var c = document.getElementById("example");
+        
+        document.onselectstart=new Function ("return false")  
+        document.oncontextmenu=new Function ("return false")
+        //c = WebGLDebugUtils.makeLostContextSimulatingCanvas(c);
+        // tell the simulator when to lose context.
+        //c.loseContextInNCalls(1);
+        //c.contentEditable = true;
+        //document.designMode = true;
+        
+        c.addEventListener('webglcontextlost', handleContextLost, false);
+        c.addEventListener('webglcontextrestored', handleContextRestored, false);
+        c.addEventListener("mousemove", handleMouseMove, false);
+        c.addEventListener("mousedown", handleMouseDown, false);
+        c.addEventListener("touchstart", handleTouchDown, false);
+        c.addEventListener("touchmove", handleTouchMove, false);
+        c.addEventListener("mouseup", handleMouseUp, false);
+        c.addEventListener("touchend", handleTouchUp, false);
+        c.addEventListener("touchcancel", handleTouchCancel, false);
+        
+        window.addEventListener("DOMMouseScroll", handleMouseWheel, false);
+        window.addEventListener("mousewheel", handleMouseWheel, false);
+        
+        document.addEventListener("keydown", handleKeyDown, false);
+        document.addEventListener("keyup", handleKeyUp, false);
+        
+        document.addEventListener("keypress", handleKeyPress, false);
+        document.addEventListener("textinput", handleKeyInput, false);
+        
+        var gl = init();
+        if (!gl) {
+           return;
+        }
+
+        currentAngle = 0;
+        incAngle = 0.5;
+        framerate = new Framerate("framerate");
+        var f = function() {
+          try {          
+            drawPicture(gl);
+          } catch (_error) {
+            print_stack(_error);
+            console.log(_error);
+          }
+          
+          requestId = window.requestAnimFrame(f, c);
+        };
+        
+        g_app_state.anim_start_func = f;
+        
+        f();
+        
+        function stop_event_propegation(e) {
+          //e.stopImmediatePropagation();
+          e.stopPropagation();
+          e.preventDefault();
+        }
+        
+        
+        function handleTouchMove(e) {
+          stop_event_propegation(e);
+            
+          if (g.screen != undefined) {
+            var x, y;
+            
+            var t = e.targetTouches[0];
+            if (t == undefined) {
+              x = e.pageX;
+              y = e.pageY;
+            } else {         
+              x = t.pageX;
+              y = t.pageY;
+            }
+            
+            g.screen._on_mousemove(new MyMouseEvent(x, g.screen.size[1] - y, 0, MyMouseEvent.MOUSEMOVE));
+          }
+        }
+        
+        function handleMouseMove(e) {
+          if (g.screen != undefined) {
+            g.screen._on_mousemove(new MyMouseEvent(e.pageX, g.screen.size[1] - e.pageY, 0, MyMouseEvent.MOUSEMOVE));
+          }
+        }
+
+        function handleMouseWheel(event) {
+          //code kindly taken from http://www.adomas.org/javascript-mouse-wheel/
+          
+          var delta = 0;
+          if (!event) /* For IE. */
+                  event = window.event;
+          if (event.wheelDelta) { /* IE/Opera. */
+                  delta = event.wheelDelta/120;
+          } else if (event.detail) { /** Mozilla case. */
+                  /** In Mozilla, sign of delta is different than in IE.
+                   * Also, delta is multiple of 3.
+                   */
+                  delta = -event.detail/3;
+          }
+          
+          /** If delta is nonzero, handle it.
+           * Basically, delta is now positive if wheel was scrolled up,
+           * and negative, if wheel was scrolled down.
+           */
+
+           /** Prevent default actions caused by mouse wheel.
+           * That might be ugly, but we handle scrolls somehow
+           * anyway, so don't bother here..
+           */
+          if (event.preventDefault)
+                  event.preventDefault();
+          event.returnValue = false;
+
+          if (delta && g.screen != undefined) {
+            event.x = event.pageX;
+            event.y = g.screen.size[1] - event.pageY;
+            
+            g.screen._on_mousewheel(event, delta);
+          }
+        }
+        
+        function handleTouchCancel(e) {
+          stop_event_propegation(e);
+          
+          var x, y;
+          
+          console.log(e);
+          var t = e.changedTouches[0];
+          if (t == undefined) {
+            x = e.pageX;
+            y = e.pageY;
+          } else {         
+            x = t.pageX;
+            y = t.pageY;
+          }
+          
+          console.log("touch cancel", x, y);
+          if (g.screen != undefined) {
+            var e2 = new MyMouseEvent(x, g.screen.size[1] - y, 0, MyMouseEvent.MOUSEUP);
+            
+            e2.shiftKey = e.shiftKey;
+            e2.altKey = e.altKey;
+            e2.ctrlKey = e.ctrlKey;
+            
+            g.screen._on_mouseup(e2);
+          }
+         }
+         
+          function handleTouchDown(e) {
+            stop_event_propegation(e);
+            
+            var x, y;
+            
+            console.log(e);
+            var t = e.targetTouches[0];
+            if (t == undefined) {
+              x = e.pageX;
+              y = e.pageY;
+            } else {         
+              x = t.pageX;
+              y = t.pageY;
+            }
+            
+            if (g.screen != undefined) {
+              var e2 = new MyMouseEvent(x, g.screen.size[1] - y, 0, MyMouseEvent.MOUSEDOWN);
+              
+              e2.shiftKey = e.shiftKey;
+              e2.altKey = e.altKey;
+              e2.ctrlKey = e.ctrlKey;
+              
+              g.screen._on_mousedown(e2);
+           }
+         }
+          
+         function handleTouchUp(e) {
+          stop_event_propegation(e);
+          
+          var x, y;
+            
+          console.log(e);
+          var t = e.targetTouches[0];
+          if (t == undefined) {
+            x = e.pageX;
+            y = e.pageY;
+          } else {         
+            x = t.pageX;
+            y = t.pageY;
+          }
+          
+          if (g.screen != undefined) {
+            var e2 = new MyMouseEvent(x, g.screen.size[1] - y, 0, MyMouseEvent.MOUSEDOWN);
+            
+            e2.shiftKey = e.shiftKey;
+            e2.altKey = e.altKey;
+            e2.ctrlKey = e.ctrlKey;
+
+            g.screen._on_mouseup(e2);
+          }
+        }
+        
+        function handleMouseDown(e) {
+          if (g.screen != undefined) {
+            var e2 = new MyMouseEvent(e.pageX, g.screen.size[1] - e.pageY, e.button, MyMouseEvent.MOUSEDOWN);
+            
+            e2.shiftKey = e.shiftKey;
+            e2.altKey = e.altKey;
+            e2.ctrlKey = e.ctrlKey;
+            
+            g.screen._on_mousedown(e2);
+          }
+          
+          if (e.button == 2) {
+            stop_event_propegation(e);
+            return false;
+          }
+        }
+        
+        function handleMouseUp(e) {
+          if (g.screen != undefined) {
+            var e2 = new MyMouseEvent(e.pageX, g.screen.size[1] - e.pageY, e.button, MyMouseEvent.MOUSEDOWN);
+            
+            e2.shiftKey = e.shiftKey;
+            e2.altKey = e.altKey;
+            e2.ctrlKey = e.ctrlKey;
+
+            g.screen._on_mouseup(e2);
+          }
+          
+          if (e.button == 2) {
+            stop_event_propegation(e);
+            return false;
+          }
+        }
+        
+        function gen_keystr(key, keystate)
+        {
+          if (typeof key == "number") {
+            key = String.fromCharCode(key)
+          }
+
+          var s = key.toUpperCase()
+          if (keystate.shift)
+            s = "SHIFT-" + s
+          if (keystate.alt)
+            s = "ALT-" + s
+          if (keystate.ctrl)
+            s = "CTRL-" + s
+          return s
+        }
+
+        var key_exclude_list = ke = {};
+        
+        ke[gen_keystr("O", {shift: false, alt: false, ctrl: true})] = 0;
+        ke[gen_keystr("R", {shift: false, alt: false, ctrl: true})] = 0;
+        ke[gen_keystr("N", {shift: false, alt: false, ctrl: true})] = 0;
+        ke[gen_keystr("S", {shift: false, alt: false, ctrl: true})] = 0;
+        ke[gen_keystr("S", {shift: false, alt: true, ctrl: true})] = 0;
+        ke[gen_keystr("P", {shift: false, alt: false, ctrl: true})] = 0;
+        ke[gen_keystr("A", {shift: false, alt: false, ctrl: true})] = 0;
+        ke[gen_keystr("Backspace", {shift: false, alt: false, ctrl: false})] = 0;
+        ke[gen_keystr("Tab", {shift: false, alt: false, ctrl: false})] = 0;
+        ke[gen_keystr("V", {shift: false, alt: false, ctrl: true})] = 0;
+        ke[gen_keystr("E", {shift: false, alt: false, ctrl: true})] = 0;
+        ke[gen_keystr("F", {shift: false, alt: false, ctrl: true})] = 0;
+        
+        function handle_key_exclude(e) {
+          var kc = charmap[e.keyCode];
+          if (kc == undefined)
+            kc = "";
+          
+          var keystr = gen_keystr(kc, {shift: e.shiftKey, 
+                                   alt: e.altKey, ctrl: 
+                                   e.ctrlKey})
+          
+          
+          if (keystr in key_exclude_list) {
+              stop_event_propegation(e);
+          }
+        }
+        
+        function handleKeyDown(e) {
+          handle_key_exclude(e);
+          
+          
+          if (g.screen != undefined)
+            g.screen._on_keydown(e)
+        }
+        
+        function handleKeyUp(e) {
+          handle_key_exclude(e);
+          
+          if (g.screen != undefined)
+            g.screen._on_keyup(e);
+        }
+        
+        function handleKeyPress(e) {
+          handle_key_exclude(e);
+          
+          if (g.screen != undefined) {
+            if (e.charCode == 0 || e.charCode == 13 || e.charCode == undefined)
+              return;
+              
+            e.char = String.fromCharCode(e.charCode);
+            g.screen._on_charcode(e);
+          }
+        }
+        
+        function handleKeyInput(e, e2) {
+          console.log("ya0", e, e2);
+          
+          uevt = e;
+          if (g.screen != undefined)
+            g.screen._on_keyinput(e);
+        }
+        
+        function handleContextLost(e) {
+            e.preventDefault();
+            clearLoadingImages();
+            if (requestId !== undefined) {
+                window.cancelAnimFrame(requestId);
+                requestId = undefined;
+            }
+        }
+
+        function handleContextRestored() {
+            init();
+            f();
+        }
+    }
+</script>
+<style type="text/css">
+    canvas {
+        border: 2px solid black;
+        background: black;
+    }
+    
+    body {
+      overflow:hidden;
+      width:100%;
+    }
+</style>
+</head>
+
+<body onload="start()">
+
+<canvas height="404" width="1171" id="example">
+    If you're seeing this your web browser doesn't support the &lt;canvas&gt;&gt; element. Ouch!
+</canvas>
+<!-- <div id="framerate">Framerate:51fps</div> -->
+<!-- <div id="tottri">Number of tris: </div> -->
+
+
+
+</body></html>

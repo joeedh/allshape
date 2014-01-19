@@ -1,0 +1,31 @@
+/*
+float16 e3; float16 e4; float16 e5;
+  float16 m3;
+  
+  e5 = 0.0;
+  e3 = mul*f2.mant;
+  e4 = e3; e3 = e3 - mul*m1; 
+  f16_print2("  ee:", arith_err_add(e4, -mul*m1));
+  e4 = e3; e3 = e3 - mul*e1; e5 += arith_err_add(e4, -mul*m1);
+  f16_print2("  ee:", arith_err_add(e4, -mul*e1));
+  e4 = e3; e3 = e3 + mul; e5 += arith_err_add(e4, -mul*e1);
+  f16_print2("  ee:", arith_err_add(e4, e3 + mul));
+  e5 += arith_err_add(e4, e3 + mul);
+
+  f16_print2("  ee:", arith_err_add(m1, 1.0));
+  e4 = arith_err_add(m1, 1.0);
+  m1 = m1-1.0;
+  e4 += arith_err_add(m1*mul, -1.0);
+  f16_print2("  ee:", arith_err_add(m1*mul, -1.0));
+  m1 = m1*mul-1.0;
+
+  e4 += arith_err_add(m1, m2);
+  f16_print2("  ee:", arith_err_add(m1, m2));
+  m3 = m1 + m2;
+  e4 += arith_err_add(m3, 1.0);
+  f16_print2("  ee:", arith_err_add(m3, 1.0));
+  m3 = m3 + e3;
+  m3 = m3 - e5;
+  m3 = m3 - e4;
+  f16_print2("  ee:", arith_err_add(m3, e3));
+*/

@@ -1,0 +1,519 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Python: module pymysql.connections</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+</head><body bgcolor="#f0f0f8">
+
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="heading">
+<tr bgcolor="#7799ee">
+<td valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong><a href="pymysql.html"><font color="#ffffff">pymysql</font></a>.connections</strong></big></big></font></td
+><td align=right valign=bottom
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:///C:/python33/lib/site-packages/pymysql/connections.py">c:\python33\lib\site-packages\pymysql\connections.py</a></font></td></tr></table>
+    <p><tt>#&nbsp;Python&nbsp;implementation&nbsp;of&nbsp;the&nbsp;MySQL&nbsp;client-server&nbsp;protocol<br>
+#&nbsp;&nbsp;&nbsp;<a href="http://forge.mysql.com/wiki/MySQL_Internals_ClientServer_Protocol">http://forge.mysql.com/wiki/MySQL_Internals_ClientServer_Protocol</a></tt></p>
+<p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#aa55cc">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Modules</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#aa55cc"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="pymysql.constants.FIELD_TYPE.html">pymysql.constants.FIELD_TYPE</a><br>
+<a href="pymysql.constants.FLAG.html">pymysql.constants.FLAG</a><br>
+<a href="pymysql.constants.SERVER_STATUS.html">pymysql.constants.SERVER_STATUS</a><br>
+</td><td width="25%" valign=top><a href="io.html">io</a><br>
+<a href="configparser.html">configparser</a><br>
+<a href="getpass.html">getpass</a><br>
+</td><td width="25%" valign=top><a href="hashlib.html">hashlib</a><br>
+<a href="os.html">os</a><br>
+<a href="socket.html">socket</a><br>
+</td><td width="25%" valign=top><a href="ssl.html">ssl</a><br>
+<a href="struct.html">struct</a><br>
+<a href="sys.html">sys</a><br>
+</td></tr></table></td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ee77aa">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Classes</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#ee77aa"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl>
+<dt><font face="helvetica, arial"><a href="builtins.html#object">builtins.object</a>
+</font></dt><dd>
+<dl>
+<dt><font face="helvetica, arial"><a href="pymysql.connections.html#Connection">Connection</a>
+</font></dt><dt><font face="helvetica, arial"><a href="pymysql.connections.html#EOFPacketWrapper">EOFPacketWrapper</a>
+</font></dt><dt><font face="helvetica, arial"><a href="pymysql.connections.html#MySQLResult">MySQLResult</a>
+</font></dt><dt><font face="helvetica, arial"><a href="pymysql.connections.html#MysqlPacket">MysqlPacket</a>
+</font></dt><dd>
+<dl>
+<dt><font face="helvetica, arial"><a href="pymysql.connections.html#FieldDescriptorPacket">FieldDescriptorPacket</a>
+</font></dt></dl>
+</dd>
+<dt><font face="helvetica, arial"><a href="pymysql.connections.html#OKPacketWrapper">OKPacketWrapper</a>
+</font></dt><dt><font face="helvetica, arial"><a href="pymysql.connections.html#RandStruct_323">RandStruct_323</a>
+</font></dt></dl>
+</dd>
+</dl>
+ <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="Connection">class <strong>Connection</strong></a>(<a href="builtins.html#object">builtins.object</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt>Representation&nbsp;of&nbsp;a&nbsp;socket&nbsp;with&nbsp;a&nbsp;mysql&nbsp;server.<br>
+&nbsp;<br>
+The&nbsp;proper&nbsp;way&nbsp;to&nbsp;get&nbsp;an&nbsp;instance&nbsp;of&nbsp;this&nbsp;class&nbsp;is&nbsp;to&nbsp;call<br>
+connect().<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="Connection-__enter__"><strong>__enter__</strong></a>(self)</dt><dd><tt>Context&nbsp;manager&nbsp;that&nbsp;returns&nbsp;a&nbsp;Cursor</tt></dd></dl>
+
+<dl><dt><a name="Connection-__exit__"><strong>__exit__</strong></a>(self, exc, value, traceback)</dt><dd><tt>On&nbsp;successful&nbsp;exit,&nbsp;commit.&nbsp;On&nbsp;exception,&nbsp;rollback.</tt></dd></dl>
+
+<dl><dt><a name="Connection-__init__"><strong>__init__</strong></a>(self, host<font color="#909090">='localhost'</font>, user<font color="#909090">=None</font>, passwd<font color="#909090">=''</font>, db<font color="#909090">=None</font>, port<font color="#909090">=3306</font>, unix_socket<font color="#909090">=None</font>, charset<font color="#909090">=''</font>, sql_mode<font color="#909090">=None</font>, read_default_file<font color="#909090">=None</font>, conv<font color="#909090">={0: &lt;function convert_decimal&gt;, 1: &lt;function convert_int&gt;, 2: &lt;function convert_int&gt;, 3: &lt;function convert_long&gt;, 4: &lt;function convert_float&gt;, 5: &lt;function convert_float&gt;, 7: &lt;function convert_mysql_timestamp&gt;, 8: &lt;function convert_long&gt;, 9: &lt;function convert_int&gt;, 10: &lt;function convert_date&gt;, ...}</font>, use_unicode<font color="#909090">=None</font>, client_flag<font color="#909090">=0</font>, cursorclass<font color="#909090">=&lt;class 'pymysql.cursors.Cursor'&gt;</font>, init_command<font color="#909090">=None</font>, connect_timeout<font color="#909090">=None</font>, ssl<font color="#909090">=None</font>, read_default_group<font color="#909090">=None</font>, compress<font color="#909090">=None</font>, named_pipe<font color="#909090">=None</font>, no_delay<font color="#909090">=False</font>)</dt><dd><tt>Establish&nbsp;a&nbsp;connection&nbsp;to&nbsp;the&nbsp;MySQL&nbsp;database.&nbsp;Accepts&nbsp;several<br>
+arguments:<br>
+&nbsp;<br>
+host:&nbsp;Host&nbsp;where&nbsp;the&nbsp;database&nbsp;server&nbsp;is&nbsp;located<br>
+user:&nbsp;Username&nbsp;to&nbsp;log&nbsp;in&nbsp;as<br>
+passwd:&nbsp;Password&nbsp;to&nbsp;use.<br>
+db:&nbsp;Database&nbsp;to&nbsp;use,&nbsp;None&nbsp;to&nbsp;not&nbsp;use&nbsp;a&nbsp;particular&nbsp;one.<br>
+port:&nbsp;MySQL&nbsp;port&nbsp;to&nbsp;use,&nbsp;default&nbsp;is&nbsp;usually&nbsp;OK.<br>
+unix_socket:&nbsp;Optionally,&nbsp;you&nbsp;can&nbsp;use&nbsp;a&nbsp;unix&nbsp;socket&nbsp;rather&nbsp;than&nbsp;TCP/IP.<br>
+charset:&nbsp;Charset&nbsp;you&nbsp;want&nbsp;to&nbsp;use.<br>
+sql_mode:&nbsp;Default&nbsp;SQL_MODE&nbsp;to&nbsp;use.<br>
+read_default_file:&nbsp;Specifies&nbsp;&nbsp;my.cnf&nbsp;file&nbsp;to&nbsp;read&nbsp;these&nbsp;parameters&nbsp;from&nbsp;under&nbsp;the&nbsp;[client]&nbsp;section.<br>
+conv:&nbsp;Decoders&nbsp;dictionary&nbsp;to&nbsp;use&nbsp;instead&nbsp;of&nbsp;the&nbsp;default&nbsp;one.&nbsp;This&nbsp;is&nbsp;used&nbsp;to&nbsp;provide&nbsp;custom&nbsp;marshalling&nbsp;of&nbsp;types.&nbsp;See&nbsp;converters.<br>
+use_unicode:&nbsp;Whether&nbsp;or&nbsp;not&nbsp;to&nbsp;default&nbsp;to&nbsp;unicode&nbsp;strings.&nbsp;This&nbsp;option&nbsp;defaults&nbsp;to&nbsp;true&nbsp;for&nbsp;Py3k.<br>
+client_flag:&nbsp;Custom&nbsp;flags&nbsp;to&nbsp;send&nbsp;to&nbsp;MySQL.&nbsp;Find&nbsp;potential&nbsp;values&nbsp;in&nbsp;constants.CLIENT.<br>
+cursorclass:&nbsp;Custom&nbsp;cursor&nbsp;class&nbsp;to&nbsp;use.<br>
+init_command:&nbsp;Initial&nbsp;SQL&nbsp;statement&nbsp;to&nbsp;run&nbsp;when&nbsp;connection&nbsp;is&nbsp;established.<br>
+connect_timeout:&nbsp;Timeout&nbsp;before&nbsp;throwing&nbsp;an&nbsp;exception&nbsp;when&nbsp;connecting.<br>
+ssl:&nbsp;A&nbsp;dict&nbsp;of&nbsp;arguments&nbsp;similar&nbsp;to&nbsp;mysql_ssl_set()'s&nbsp;parameters.&nbsp;For&nbsp;now&nbsp;the&nbsp;capath&nbsp;and&nbsp;cipher&nbsp;arguments&nbsp;are&nbsp;not&nbsp;supported.<br>
+read_default_group:&nbsp;Group&nbsp;to&nbsp;read&nbsp;from&nbsp;in&nbsp;the&nbsp;configuration&nbsp;file.<br>
+compress;&nbsp;Not&nbsp;supported<br>
+named_pipe:&nbsp;Not&nbsp;supported<br>
+no_delay:&nbsp;Disable&nbsp;Nagle's&nbsp;algorithm&nbsp;on&nbsp;the&nbsp;socket</tt></dd></dl>
+
+<dl><dt><a name="Connection-affected_rows"><strong>affected_rows</strong></a>(self)</dt></dl>
+
+<dl><dt><a name="Connection-autocommit"><strong>autocommit</strong></a>(self, value)</dt></dl>
+
+<dl><dt><a name="Connection-character_set_name"><strong>character_set_name</strong></a>(self)</dt></dl>
+
+<dl><dt><a name="Connection-close"><strong>close</strong></a>(self)</dt><dd><tt>Send&nbsp;the&nbsp;quit&nbsp;message&nbsp;and&nbsp;close&nbsp;the&nbsp;socket</tt></dd></dl>
+
+<dl><dt><a name="Connection-commit"><strong>commit</strong></a>(self)</dt><dd><tt>Commit&nbsp;changes&nbsp;to&nbsp;stable&nbsp;storage</tt></dd></dl>
+
+<dl><dt><a name="Connection-cursor"><strong>cursor</strong></a>(self, cursor<font color="#909090">=None</font>)</dt><dd><tt>Create&nbsp;a&nbsp;new&nbsp;cursor&nbsp;to&nbsp;execute&nbsp;queries&nbsp;with</tt></dd></dl>
+
+<dl><dt><a name="Connection-errorhandler"><strong>errorhandler</strong></a> = defaulterrorhandler(connection, cursor, errorclass, errorvalue)</dt></dl>
+
+<dl><dt><a name="Connection-escape"><strong>escape</strong></a>(self, obj)</dt><dd><tt>Escape&nbsp;whatever&nbsp;value&nbsp;you&nbsp;pass&nbsp;to&nbsp;it</tt></dd></dl>
+
+<dl><dt><a name="Connection-get_host_info"><strong>get_host_info</strong></a>(self)</dt></dl>
+
+<dl><dt><a name="Connection-get_proto_info"><strong>get_proto_info</strong></a>(self)</dt></dl>
+
+<dl><dt><a name="Connection-get_server_info"><strong>get_server_info</strong></a>(self)</dt></dl>
+
+<dl><dt><a name="Connection-insert_id"><strong>insert_id</strong></a>(self)</dt></dl>
+
+<dl><dt><a name="Connection-kill"><strong>kill</strong></a>(self, thread_id)</dt></dl>
+
+<dl><dt><a name="Connection-literal"><strong>literal</strong></a>(self, obj)</dt><dd><tt>Alias&nbsp;for&nbsp;<a href="#Connection-escape">escape</a>()</tt></dd></dl>
+
+<dl><dt><a name="Connection-next_result"><strong>next_result</strong></a>(self)</dt></dl>
+
+<dl><dt><a name="Connection-ping"><strong>ping</strong></a>(self, reconnect<font color="#909090">=True</font>)</dt><dd><tt>Check&nbsp;if&nbsp;the&nbsp;server&nbsp;is&nbsp;alive</tt></dd></dl>
+
+<dl><dt><a name="Connection-query"><strong>query</strong></a>(self, sql, unbuffered<font color="#909090">=False</font>)</dt><dd><tt>#&nbsp;The&nbsp;following&nbsp;methods&nbsp;are&nbsp;INTERNAL&nbsp;USE&nbsp;ONLY&nbsp;(called&nbsp;from&nbsp;Cursor)</tt></dd></dl>
+
+<dl><dt><a name="Connection-read_packet"><strong>read_packet</strong></a>(self, packet_type<font color="#909090">=&lt;class 'pymysql.connections.MysqlPacket'&gt;</font>)</dt><dd><tt>Read&nbsp;an&nbsp;entire&nbsp;"mysql&nbsp;packet"&nbsp;in&nbsp;its&nbsp;entirety&nbsp;from&nbsp;the&nbsp;network<br>
+and&nbsp;return&nbsp;a&nbsp;<a href="#MysqlPacket">MysqlPacket</a>&nbsp;type&nbsp;that&nbsp;represents&nbsp;the&nbsp;results.</tt></dd></dl>
+
+<dl><dt><a name="Connection-rollback"><strong>rollback</strong></a>(self)</dt><dd><tt>Roll&nbsp;back&nbsp;the&nbsp;current&nbsp;transaction</tt></dd></dl>
+
+<dl><dt><a name="Connection-set_charset"><strong>set_charset</strong></a>(self, charset)</dt></dl>
+
+<dl><dt><a name="Connection-thread_id"><strong>thread_id</strong></a>(self)</dt><dd><tt>#&nbsp;_mysql&nbsp;support</tt></dd></dl>
+
+<hr>
+Data descriptors defined here:<br>
+<dl><dt><strong>__dict__</strong></dt>
+<dd><tt>dictionary&nbsp;for&nbsp;instance&nbsp;variables&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
+<dl><dt><strong>__weakref__</strong></dt>
+<dd><tt>list&nbsp;of&nbsp;weak&nbsp;references&nbsp;to&nbsp;the&nbsp;object&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
+<hr>
+Data and other attributes defined here:<br>
+<dl><dt><strong>DataError</strong> = &lt;class 'pymysql.err.DataError'&gt;<dd><tt>Exception&nbsp;raised&nbsp;for&nbsp;errors&nbsp;that&nbsp;are&nbsp;due&nbsp;to&nbsp;problems&nbsp;with&nbsp;the<br>
+processed&nbsp;data&nbsp;like&nbsp;division&nbsp;by&nbsp;zero,&nbsp;numeric&nbsp;value&nbsp;out&nbsp;of&nbsp;range,<br>
+etc.</tt></dl>
+
+<dl><dt><strong>DatabaseError</strong> = &lt;class 'pymysql.err.DatabaseError'&gt;<dd><tt>Exception&nbsp;raised&nbsp;for&nbsp;errors&nbsp;that&nbsp;are&nbsp;related&nbsp;to&nbsp;the<br>
+database.</tt></dl>
+
+<dl><dt><strong>Error</strong> = &lt;class 'pymysql.err.Error'&gt;<dd><tt>Exception&nbsp;that&nbsp;is&nbsp;the&nbsp;base&nbsp;class&nbsp;of&nbsp;all&nbsp;other&nbsp;error&nbsp;exceptions<br>
+(not&nbsp;Warning).</tt></dl>
+
+<dl><dt><strong>IntegrityError</strong> = &lt;class 'pymysql.err.IntegrityError'&gt;<dd><tt>Exception&nbsp;raised&nbsp;when&nbsp;the&nbsp;relational&nbsp;integrity&nbsp;of&nbsp;the&nbsp;database<br>
+is&nbsp;affected,&nbsp;e.g.&nbsp;a&nbsp;foreign&nbsp;key&nbsp;check&nbsp;fails,&nbsp;duplicate&nbsp;key,<br>
+etc.</tt></dl>
+
+<dl><dt><strong>InterfaceError</strong> = &lt;class 'pymysql.err.InterfaceError'&gt;<dd><tt>Exception&nbsp;raised&nbsp;for&nbsp;errors&nbsp;that&nbsp;are&nbsp;related&nbsp;to&nbsp;the&nbsp;database<br>
+interface&nbsp;rather&nbsp;than&nbsp;the&nbsp;database&nbsp;itself.</tt></dl>
+
+<dl><dt><strong>InternalError</strong> = &lt;class 'pymysql.err.InternalError'&gt;<dd><tt>Exception&nbsp;raised&nbsp;when&nbsp;the&nbsp;database&nbsp;encounters&nbsp;an&nbsp;internal<br>
+error,&nbsp;e.g.&nbsp;the&nbsp;cursor&nbsp;is&nbsp;not&nbsp;valid&nbsp;anymore,&nbsp;the&nbsp;transaction&nbsp;is<br>
+out&nbsp;of&nbsp;sync,&nbsp;etc.</tt></dl>
+
+<dl><dt><strong>NotSupportedError</strong> = &lt;class 'pymysql.err.NotSupportedError'&gt;<dd><tt>Exception&nbsp;raised&nbsp;in&nbsp;case&nbsp;a&nbsp;method&nbsp;or&nbsp;database&nbsp;API&nbsp;was&nbsp;used<br>
+which&nbsp;is&nbsp;not&nbsp;supported&nbsp;by&nbsp;the&nbsp;database,&nbsp;e.g.&nbsp;requesting&nbsp;a<br>
+.<a href="#Connection-rollback">rollback</a>()&nbsp;on&nbsp;a&nbsp;connection&nbsp;that&nbsp;does&nbsp;not&nbsp;support&nbsp;transaction&nbsp;or<br>
+has&nbsp;transactions&nbsp;turned&nbsp;off.</tt></dl>
+
+<dl><dt><strong>OperationalError</strong> = &lt;class 'pymysql.err.OperationalError'&gt;<dd><tt>Exception&nbsp;raised&nbsp;for&nbsp;errors&nbsp;that&nbsp;are&nbsp;related&nbsp;to&nbsp;the&nbsp;database's<br>
+operation&nbsp;and&nbsp;not&nbsp;necessarily&nbsp;under&nbsp;the&nbsp;control&nbsp;of&nbsp;the&nbsp;programmer,<br>
+e.g.&nbsp;an&nbsp;unexpected&nbsp;disconnect&nbsp;occurs,&nbsp;the&nbsp;data&nbsp;source&nbsp;name&nbsp;is&nbsp;not<br>
+found,&nbsp;a&nbsp;transaction&nbsp;could&nbsp;not&nbsp;be&nbsp;processed,&nbsp;a&nbsp;memory&nbsp;allocation<br>
+error&nbsp;occurred&nbsp;during&nbsp;processing,&nbsp;etc.</tt></dl>
+
+<dl><dt><strong>ProgrammingError</strong> = &lt;class 'pymysql.err.ProgrammingError'&gt;<dd><tt>Exception&nbsp;raised&nbsp;for&nbsp;programming&nbsp;errors,&nbsp;e.g.&nbsp;table&nbsp;not&nbsp;found<br>
+or&nbsp;already&nbsp;exists,&nbsp;syntax&nbsp;error&nbsp;in&nbsp;the&nbsp;SQL&nbsp;statement,&nbsp;wrong&nbsp;number<br>
+of&nbsp;parameters&nbsp;specified,&nbsp;etc.</tt></dl>
+
+<dl><dt><strong>Warning</strong> = &lt;class 'pymysql.err.Warning'&gt;<dd><tt>Exception&nbsp;raised&nbsp;for&nbsp;important&nbsp;warnings&nbsp;like&nbsp;data&nbsp;truncations<br>
+while&nbsp;inserting,&nbsp;etc.</tt></dl>
+
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="EOFPacketWrapper">class <strong>EOFPacketWrapper</strong></a>(<a href="builtins.html#object">builtins.object</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt>EOF&nbsp;Packet&nbsp;Wrapper.&nbsp;It&nbsp;uses&nbsp;an&nbsp;existing&nbsp;packet&nbsp;<a href="builtins.html#object">object</a>,&nbsp;and&nbsp;wraps<br>
+around&nbsp;it,&nbsp;exposing&nbsp;useful&nbsp;variables&nbsp;while&nbsp;still&nbsp;providing&nbsp;access<br>
+to&nbsp;the&nbsp;original&nbsp;packet&nbsp;objects&nbsp;variables&nbsp;and&nbsp;methods.<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="EOFPacketWrapper-__getattr__"><strong>__getattr__</strong></a>(self, key)</dt></dl>
+
+<dl><dt><a name="EOFPacketWrapper-__init__"><strong>__init__</strong></a>(self, from_packet)</dt></dl>
+
+<hr>
+Data descriptors defined here:<br>
+<dl><dt><strong>__dict__</strong></dt>
+<dd><tt>dictionary&nbsp;for&nbsp;instance&nbsp;variables&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
+<dl><dt><strong>__weakref__</strong></dt>
+<dd><tt>list&nbsp;of&nbsp;weak&nbsp;references&nbsp;to&nbsp;the&nbsp;object&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="FieldDescriptorPacket">class <strong>FieldDescriptorPacket</strong></a>(<a href="pymysql.connections.html#MysqlPacket">MysqlPacket</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt>A&nbsp;<a href="#MysqlPacket">MysqlPacket</a>&nbsp;that&nbsp;represents&nbsp;a&nbsp;specific&nbsp;column's&nbsp;metadata&nbsp;in&nbsp;the&nbsp;result.<br>
+&nbsp;<br>
+Parsing&nbsp;is&nbsp;automatically&nbsp;done&nbsp;and&nbsp;the&nbsp;results&nbsp;are&nbsp;exported&nbsp;via&nbsp;public<br>
+attributes&nbsp;on&nbsp;the&nbsp;class&nbsp;such&nbsp;as:&nbsp;db,&nbsp;table_name,&nbsp;name,&nbsp;length,&nbsp;type_code.<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%"><dl><dt>Method resolution order:</dt>
+<dd><a href="pymysql.connections.html#FieldDescriptorPacket">FieldDescriptorPacket</a></dd>
+<dd><a href="pymysql.connections.html#MysqlPacket">MysqlPacket</a></dd>
+<dd><a href="builtins.html#object">builtins.object</a></dd>
+</dl>
+<hr>
+Methods defined here:<br>
+<dl><dt><a name="FieldDescriptorPacket-__init__"><strong>__init__</strong></a>(self, *args)</dt></dl>
+
+<dl><dt><a name="FieldDescriptorPacket-__str__"><strong>__str__</strong></a>(self)</dt></dl>
+
+<dl><dt><a name="FieldDescriptorPacket-description"><strong>description</strong></a>(self)</dt><dd><tt>Provides&nbsp;a&nbsp;7-item&nbsp;tuple&nbsp;compatible&nbsp;with&nbsp;the&nbsp;Python&nbsp;<a href="http://www.python.org/dev/peps/pep-0249/">PEP249</a>&nbsp;DB&nbsp;Spec.</tt></dd></dl>
+
+<dl><dt><a name="FieldDescriptorPacket-get_column_length"><strong>get_column_length</strong></a>(self)</dt></dl>
+
+<hr>
+Methods inherited from <a href="pymysql.connections.html#MysqlPacket">MysqlPacket</a>:<br>
+<dl><dt><a name="FieldDescriptorPacket-advance"><strong>advance</strong></a>(self, length)</dt><dd><tt>Advance&nbsp;the&nbsp;cursor&nbsp;in&nbsp;data&nbsp;buffer&nbsp;'length'&nbsp;bytes.</tt></dd></dl>
+
+<dl><dt><a name="FieldDescriptorPacket-check_error"><strong>check_error</strong></a>(self)</dt></dl>
+
+<dl><dt><a name="FieldDescriptorPacket-dump"><strong>dump</strong></a>(self)</dt></dl>
+
+<dl><dt><a name="FieldDescriptorPacket-get_all_data"><strong>get_all_data</strong></a>(self)</dt></dl>
+
+<dl><dt><a name="FieldDescriptorPacket-get_bytes"><strong>get_bytes</strong></a>(self, position, length<font color="#909090">=1</font>)</dt><dd><tt>Get&nbsp;'length'&nbsp;bytes&nbsp;starting&nbsp;at&nbsp;'position'.<br>
+&nbsp;<br>
+Position&nbsp;is&nbsp;start&nbsp;of&nbsp;payload&nbsp;(first&nbsp;four&nbsp;packet&nbsp;header&nbsp;bytes&nbsp;are&nbsp;not<br>
+included)&nbsp;starting&nbsp;at&nbsp;index&nbsp;'0'.<br>
+&nbsp;<br>
+No&nbsp;error&nbsp;checking&nbsp;is&nbsp;done.&nbsp;&nbsp;If&nbsp;requesting&nbsp;outside&nbsp;end&nbsp;of&nbsp;buffer<br>
+an&nbsp;empty&nbsp;string&nbsp;(or&nbsp;string&nbsp;shorter&nbsp;than&nbsp;'length')&nbsp;may&nbsp;be&nbsp;returned!</tt></dd></dl>
+
+<dl><dt><a name="FieldDescriptorPacket-is_eof_packet"><strong>is_eof_packet</strong></a>(self)</dt></dl>
+
+<dl><dt><a name="FieldDescriptorPacket-is_error_packet"><strong>is_error_packet</strong></a>(self)</dt></dl>
+
+<dl><dt><a name="FieldDescriptorPacket-is_ok_packet"><strong>is_ok_packet</strong></a>(self)</dt></dl>
+
+<dl><dt><a name="FieldDescriptorPacket-is_resultset_packet"><strong>is_resultset_packet</strong></a>(self)</dt></dl>
+
+<dl><dt><a name="FieldDescriptorPacket-packet_number"><strong>packet_number</strong></a>(self)</dt></dl>
+
+<dl><dt><a name="FieldDescriptorPacket-peek"><strong>peek</strong></a>(self, size)</dt><dd><tt>Look&nbsp;at&nbsp;the&nbsp;first&nbsp;'size'&nbsp;bytes&nbsp;in&nbsp;packet&nbsp;without&nbsp;moving&nbsp;cursor.</tt></dd></dl>
+
+<dl><dt><a name="FieldDescriptorPacket-read"><strong>read</strong></a>(self, size)</dt><dd><tt>Read&nbsp;the&nbsp;first&nbsp;'size'&nbsp;bytes&nbsp;in&nbsp;packet&nbsp;and&nbsp;advance&nbsp;cursor&nbsp;past&nbsp;them.</tt></dd></dl>
+
+<dl><dt><a name="FieldDescriptorPacket-read_all"><strong>read_all</strong></a>(self)</dt><dd><tt>Read&nbsp;all&nbsp;remaining&nbsp;data&nbsp;in&nbsp;the&nbsp;packet.<br>
+&nbsp;<br>
+(Subsequent&nbsp;<a href="#FieldDescriptorPacket-read">read</a>()&nbsp;or&nbsp;<a href="#FieldDescriptorPacket-peek">peek</a>()&nbsp;will&nbsp;return&nbsp;errors.)</tt></dd></dl>
+
+<dl><dt><a name="FieldDescriptorPacket-read_length_coded_binary"><strong>read_length_coded_binary</strong></a>(self)</dt><dd><tt>Read&nbsp;a&nbsp;'Length&nbsp;Coded&nbsp;Binary'&nbsp;number&nbsp;from&nbsp;the&nbsp;data&nbsp;buffer.<br>
+&nbsp;<br>
+Length&nbsp;coded&nbsp;numbers&nbsp;can&nbsp;be&nbsp;anywhere&nbsp;from&nbsp;1&nbsp;to&nbsp;9&nbsp;bytes&nbsp;depending<br>
+on&nbsp;the&nbsp;value&nbsp;of&nbsp;the&nbsp;first&nbsp;byte.</tt></dd></dl>
+
+<dl><dt><a name="FieldDescriptorPacket-read_length_coded_string"><strong>read_length_coded_string</strong></a>(self)</dt><dd><tt>Read&nbsp;a&nbsp;'Length&nbsp;Coded&nbsp;String'&nbsp;from&nbsp;the&nbsp;data&nbsp;buffer.<br>
+&nbsp;<br>
+A&nbsp;'Length&nbsp;Coded&nbsp;String'&nbsp;consists&nbsp;first&nbsp;of&nbsp;a&nbsp;length&nbsp;coded<br>
+(unsigned,&nbsp;positive)&nbsp;integer&nbsp;represented&nbsp;in&nbsp;1-9&nbsp;bytes&nbsp;followed&nbsp;by<br>
+that&nbsp;many&nbsp;bytes&nbsp;of&nbsp;binary&nbsp;data.&nbsp;&nbsp;(For&nbsp;example&nbsp;"cat"&nbsp;would&nbsp;be&nbsp;"3cat".)</tt></dd></dl>
+
+<dl><dt><a name="FieldDescriptorPacket-rewind"><strong>rewind</strong></a>(self, position<font color="#909090">=0</font>)</dt><dd><tt>Set&nbsp;the&nbsp;position&nbsp;of&nbsp;the&nbsp;data&nbsp;buffer&nbsp;cursor&nbsp;to&nbsp;'position'.</tt></dd></dl>
+
+<hr>
+Data descriptors inherited from <a href="pymysql.connections.html#MysqlPacket">MysqlPacket</a>:<br>
+<dl><dt><strong>__dict__</strong></dt>
+<dd><tt>dictionary&nbsp;for&nbsp;instance&nbsp;variables&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
+<dl><dt><strong>__weakref__</strong></dt>
+<dd><tt>list&nbsp;of&nbsp;weak&nbsp;references&nbsp;to&nbsp;the&nbsp;object&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="MySQLResult">class <strong>MySQLResult</strong></a>(<a href="builtins.html#object">builtins.object</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt>#&nbsp;TODO:&nbsp;move&nbsp;OK&nbsp;and&nbsp;EOF&nbsp;packet&nbsp;parsing/logic&nbsp;into&nbsp;a&nbsp;proper&nbsp;subclass<br>
+#&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;of&nbsp;<a href="#MysqlPacket">MysqlPacket</a>&nbsp;like&nbsp;has&nbsp;been&nbsp;done&nbsp;with&nbsp;<a href="#FieldDescriptorPacket">FieldDescriptorPacket</a>.<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="MySQLResult-__del__"><strong>__del__</strong></a>(self)</dt></dl>
+
+<dl><dt><a name="MySQLResult-__init__"><strong>__init__</strong></a>(self, connection)</dt></dl>
+
+<dl><dt><a name="MySQLResult-init_unbuffered_query"><strong>init_unbuffered_query</strong></a>(self)</dt></dl>
+
+<dl><dt><a name="MySQLResult-read"><strong>read</strong></a>(self)</dt></dl>
+
+<hr>
+Data descriptors defined here:<br>
+<dl><dt><strong>__dict__</strong></dt>
+<dd><tt>dictionary&nbsp;for&nbsp;instance&nbsp;variables&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
+<dl><dt><strong>__weakref__</strong></dt>
+<dd><tt>list&nbsp;of&nbsp;weak&nbsp;references&nbsp;to&nbsp;the&nbsp;object&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="MysqlPacket">class <strong>MysqlPacket</strong></a>(<a href="builtins.html#object">builtins.object</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt>Representation&nbsp;of&nbsp;a&nbsp;MySQL&nbsp;response&nbsp;packet.&nbsp;&nbsp;Reads&nbsp;in&nbsp;the&nbsp;packet<br>
+from&nbsp;the&nbsp;network&nbsp;socket,&nbsp;removes&nbsp;packet&nbsp;header&nbsp;and&nbsp;provides&nbsp;an&nbsp;interface<br>
+for&nbsp;reading/parsing&nbsp;the&nbsp;packet&nbsp;results.<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="MysqlPacket-__init__"><strong>__init__</strong></a>(self, connection)</dt></dl>
+
+<dl><dt><a name="MysqlPacket-advance"><strong>advance</strong></a>(self, length)</dt><dd><tt>Advance&nbsp;the&nbsp;cursor&nbsp;in&nbsp;data&nbsp;buffer&nbsp;'length'&nbsp;bytes.</tt></dd></dl>
+
+<dl><dt><a name="MysqlPacket-check_error"><strong>check_error</strong></a>(self)</dt></dl>
+
+<dl><dt><a name="MysqlPacket-dump"><strong>dump</strong></a>(self)</dt></dl>
+
+<dl><dt><a name="MysqlPacket-get_all_data"><strong>get_all_data</strong></a>(self)</dt></dl>
+
+<dl><dt><a name="MysqlPacket-get_bytes"><strong>get_bytes</strong></a>(self, position, length<font color="#909090">=1</font>)</dt><dd><tt>Get&nbsp;'length'&nbsp;bytes&nbsp;starting&nbsp;at&nbsp;'position'.<br>
+&nbsp;<br>
+Position&nbsp;is&nbsp;start&nbsp;of&nbsp;payload&nbsp;(first&nbsp;four&nbsp;packet&nbsp;header&nbsp;bytes&nbsp;are&nbsp;not<br>
+included)&nbsp;starting&nbsp;at&nbsp;index&nbsp;'0'.<br>
+&nbsp;<br>
+No&nbsp;error&nbsp;checking&nbsp;is&nbsp;done.&nbsp;&nbsp;If&nbsp;requesting&nbsp;outside&nbsp;end&nbsp;of&nbsp;buffer<br>
+an&nbsp;empty&nbsp;string&nbsp;(or&nbsp;string&nbsp;shorter&nbsp;than&nbsp;'length')&nbsp;may&nbsp;be&nbsp;returned!</tt></dd></dl>
+
+<dl><dt><a name="MysqlPacket-is_eof_packet"><strong>is_eof_packet</strong></a>(self)</dt></dl>
+
+<dl><dt><a name="MysqlPacket-is_error_packet"><strong>is_error_packet</strong></a>(self)</dt></dl>
+
+<dl><dt><a name="MysqlPacket-is_ok_packet"><strong>is_ok_packet</strong></a>(self)</dt></dl>
+
+<dl><dt><a name="MysqlPacket-is_resultset_packet"><strong>is_resultset_packet</strong></a>(self)</dt></dl>
+
+<dl><dt><a name="MysqlPacket-packet_number"><strong>packet_number</strong></a>(self)</dt></dl>
+
+<dl><dt><a name="MysqlPacket-peek"><strong>peek</strong></a>(self, size)</dt><dd><tt>Look&nbsp;at&nbsp;the&nbsp;first&nbsp;'size'&nbsp;bytes&nbsp;in&nbsp;packet&nbsp;without&nbsp;moving&nbsp;cursor.</tt></dd></dl>
+
+<dl><dt><a name="MysqlPacket-read"><strong>read</strong></a>(self, size)</dt><dd><tt>Read&nbsp;the&nbsp;first&nbsp;'size'&nbsp;bytes&nbsp;in&nbsp;packet&nbsp;and&nbsp;advance&nbsp;cursor&nbsp;past&nbsp;them.</tt></dd></dl>
+
+<dl><dt><a name="MysqlPacket-read_all"><strong>read_all</strong></a>(self)</dt><dd><tt>Read&nbsp;all&nbsp;remaining&nbsp;data&nbsp;in&nbsp;the&nbsp;packet.<br>
+&nbsp;<br>
+(Subsequent&nbsp;<a href="#MysqlPacket-read">read</a>()&nbsp;or&nbsp;<a href="#MysqlPacket-peek">peek</a>()&nbsp;will&nbsp;return&nbsp;errors.)</tt></dd></dl>
+
+<dl><dt><a name="MysqlPacket-read_length_coded_binary"><strong>read_length_coded_binary</strong></a>(self)</dt><dd><tt>Read&nbsp;a&nbsp;'Length&nbsp;Coded&nbsp;Binary'&nbsp;number&nbsp;from&nbsp;the&nbsp;data&nbsp;buffer.<br>
+&nbsp;<br>
+Length&nbsp;coded&nbsp;numbers&nbsp;can&nbsp;be&nbsp;anywhere&nbsp;from&nbsp;1&nbsp;to&nbsp;9&nbsp;bytes&nbsp;depending<br>
+on&nbsp;the&nbsp;value&nbsp;of&nbsp;the&nbsp;first&nbsp;byte.</tt></dd></dl>
+
+<dl><dt><a name="MysqlPacket-read_length_coded_string"><strong>read_length_coded_string</strong></a>(self)</dt><dd><tt>Read&nbsp;a&nbsp;'Length&nbsp;Coded&nbsp;String'&nbsp;from&nbsp;the&nbsp;data&nbsp;buffer.<br>
+&nbsp;<br>
+A&nbsp;'Length&nbsp;Coded&nbsp;String'&nbsp;consists&nbsp;first&nbsp;of&nbsp;a&nbsp;length&nbsp;coded<br>
+(unsigned,&nbsp;positive)&nbsp;integer&nbsp;represented&nbsp;in&nbsp;1-9&nbsp;bytes&nbsp;followed&nbsp;by<br>
+that&nbsp;many&nbsp;bytes&nbsp;of&nbsp;binary&nbsp;data.&nbsp;&nbsp;(For&nbsp;example&nbsp;"cat"&nbsp;would&nbsp;be&nbsp;"3cat".)</tt></dd></dl>
+
+<dl><dt><a name="MysqlPacket-rewind"><strong>rewind</strong></a>(self, position<font color="#909090">=0</font>)</dt><dd><tt>Set&nbsp;the&nbsp;position&nbsp;of&nbsp;the&nbsp;data&nbsp;buffer&nbsp;cursor&nbsp;to&nbsp;'position'.</tt></dd></dl>
+
+<hr>
+Data descriptors defined here:<br>
+<dl><dt><strong>__dict__</strong></dt>
+<dd><tt>dictionary&nbsp;for&nbsp;instance&nbsp;variables&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
+<dl><dt><strong>__weakref__</strong></dt>
+<dd><tt>list&nbsp;of&nbsp;weak&nbsp;references&nbsp;to&nbsp;the&nbsp;object&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="OKPacketWrapper">class <strong>OKPacketWrapper</strong></a>(<a href="builtins.html#object">builtins.object</a>)</font></td></tr>
+    
+<tr bgcolor="#ffc8d8"><td rowspan=2><tt>&nbsp;&nbsp;&nbsp;</tt></td>
+<td colspan=2><tt>OK&nbsp;Packet&nbsp;Wrapper.&nbsp;It&nbsp;uses&nbsp;an&nbsp;existing&nbsp;packet&nbsp;<a href="builtins.html#object">object</a>,&nbsp;and&nbsp;wraps<br>
+around&nbsp;it,&nbsp;exposing&nbsp;useful&nbsp;variables&nbsp;while&nbsp;still&nbsp;providing&nbsp;access<br>
+to&nbsp;the&nbsp;original&nbsp;packet&nbsp;objects&nbsp;variables&nbsp;and&nbsp;methods.<br>&nbsp;</tt></td></tr>
+<tr><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="OKPacketWrapper-__getattr__"><strong>__getattr__</strong></a>(self, key)</dt></dl>
+
+<dl><dt><a name="OKPacketWrapper-__init__"><strong>__init__</strong></a>(self, from_packet)</dt></dl>
+
+<hr>
+Data descriptors defined here:<br>
+<dl><dt><strong>__dict__</strong></dt>
+<dd><tt>dictionary&nbsp;for&nbsp;instance&nbsp;variables&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
+<dl><dt><strong>__weakref__</strong></dt>
+<dd><tt>list&nbsp;of&nbsp;weak&nbsp;references&nbsp;to&nbsp;the&nbsp;object&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
+</td></tr></table> <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="RandStruct_323">class <strong>RandStruct_323</strong></a>(<a href="builtins.html#object">builtins.object</a>)</font></td></tr>
+    
+<tr><td bgcolor="#ffc8d8"><tt>&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="RandStruct_323-__init__"><strong>__init__</strong></a>(self, seed1, seed2)</dt></dl>
+
+<dl><dt><a name="RandStruct_323-my_rnd"><strong>my_rnd</strong></a>(self)</dt></dl>
+
+<hr>
+Data descriptors defined here:<br>
+<dl><dt><strong>__dict__</strong></dt>
+<dd><tt>dictionary&nbsp;for&nbsp;instance&nbsp;variables&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
+<dl><dt><strong>__weakref__</strong></dt>
+<dd><tt>list&nbsp;of&nbsp;weak&nbsp;references&nbsp;to&nbsp;the&nbsp;object&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
+</td></tr></table></td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#eeaa77">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Functions</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#eeaa77"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl><dt><a name="-defaulterrorhandler"><strong>defaulterrorhandler</strong></a>(connection, cursor, errorclass, errorvalue)</dt></dl>
+ <dl><dt><a name="-dump_packet"><strong>dump_packet</strong></a>(data)</dt></dl>
+ <dl><dt><a name="-pack_int24"><strong>pack_int24</strong></a>(n)</dt></dl>
+ <dl><dt><strong>sha_new</strong> <em>lambda</em> *args, **kwargs</dt></dl>
+ <dl><dt><a name="-unpack_int24"><strong>unpack_int24</strong></a>(n)</dt><dd><tt>#&nbsp;TODO:&nbsp;stop&nbsp;using&nbsp;bit-shifting&nbsp;in&nbsp;these&nbsp;functions...<br>
+#&nbsp;TODO:&nbsp;rename&nbsp;to&nbsp;"uint"&nbsp;to&nbsp;make&nbsp;it&nbsp;clear&nbsp;they're&nbsp;unsigned...</tt></dd></dl>
+ <dl><dt><a name="-unpack_int32"><strong>unpack_int32</strong></a>(n)</dt></dl>
+ <dl><dt><a name="-unpack_int64"><strong>unpack_int64</strong></a>(n)</dt></dl>
+ <dl><dt><a name="-unpack_uint16"><strong>unpack_uint16</strong></a>(n)</dt></dl>
+</td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#55aa55">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Data</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#55aa55"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><strong>CAPABILITIES</strong> = 41477<br>
+<strong>COMPRESS</strong> = 32<br>
+<strong>COM_BINLOG_DUMP</strong> = 18<br>
+<strong>COM_CHANGE_USER</strong> = 17<br>
+<strong>COM_CONNECT</strong> = 11<br>
+<strong>COM_CONNECT_OUT</strong> = 20<br>
+<strong>COM_CREATE_DB</strong> = 5<br>
+<strong>COM_DEBUG</strong> = 13<br>
+<strong>COM_DELAYED_INSERT</strong> = 16<br>
+<strong>COM_DROP_DB</strong> = 6<br>
+<strong>COM_FIELD_LIST</strong> = 4<br>
+<strong>COM_INIT_DB</strong> = 2<br>
+<strong>COM_PING</strong> = 14<br>
+<strong>COM_PROCESS_INFO</strong> = 10<br>
+<strong>COM_PROCESS_KILL</strong> = 12<br>
+<strong>COM_QUERY</strong> = 3<br>
+<strong>COM_QUIT</strong> = 1<br>
+<strong>COM_REFRESH</strong> = 7<br>
+<strong>COM_REGISTER_SLAVE</strong> = 21<br>
+<strong>COM_SHUTDOWN</strong> = 8<br>
+<strong>COM_SLEEP</strong> = 0<br>
+<strong>COM_STATISTICS</strong> = 9<br>
+<strong>COM_TABLE_DUMP</strong> = 19<br>
+<strong>COM_TIME</strong> = 15<br>
+<strong>CONNECT_WITH_DB</strong> = 8<br>
+<strong>DEBUG</strong> = False<br>
+<strong>DEFAULT_CHARSET</strong> = 'latin1'<br>
+<strong>DEFAULT_USER</strong> = 'JoeEagar'<br>
+<strong>FOUND_ROWS</strong> = 2<br>
+<strong>IGNORE_SIGPIPE</strong> = 4096<br>
+<strong>IGNORE_SPACE</strong> = 256<br>
+<strong>INTERACTIVE</strong> = 1024<br>
+<strong>LOCAL_FILES</strong> = 128<br>
+<strong>LONG_FLAG</strong> = 4<br>
+<strong>LONG_PASSWORD</strong> = 1<br>
+<strong>MBLENGTH</strong> = {8: 1, 33: 3, 88: 2, 91: 2}<br>
+<strong>MULTI_RESULTS</strong> = 131072<br>
+<strong>MULTI_STATEMENTS</strong> = 65536<br>
+<strong>NO_SCHEMA</strong> = 16<br>
+<strong>NULL_COLUMN</strong> = 251<br>
+<strong>ODBC</strong> = 64<br>
+<strong>PROTOCOL_41</strong> = 512<br>
+<strong>SCRAMBLE_LENGTH_323</strong> = 8<br>
+<strong>SECURE_CONNECTION</strong> = 32768<br>
+<strong>SSL</strong> = 2048<br>
+<strong>SSL_ENABLED</strong> = True<br>
+<strong>TRANSACTIONS</strong> = 8192<br>
+<strong>UNSIGNED_CHAR_COLUMN</strong> = 251<br>
+<strong>UNSIGNED_CHAR_LENGTH</strong> = 1<br>
+<strong>UNSIGNED_INT24_COLUMN</strong> = 253<br>
+<strong>UNSIGNED_INT24_LENGTH</strong> = 3<br>
+<strong>UNSIGNED_INT64_COLUMN</strong> = 254<br>
+<strong>UNSIGNED_INT64_LENGTH</strong> = 8<br>
+<strong>UNSIGNED_SHORT_COLUMN</strong> = 252<br>
+<strong>UNSIGNED_SHORT_LENGTH</strong> = 2<br>
+<strong>decoders</strong> = {0: &lt;function convert_decimal&gt;, 1: &lt;function convert_int&gt;, 2: &lt;function convert_int&gt;, 3: &lt;function convert_long&gt;, 4: &lt;function convert_float&gt;, 5: &lt;function convert_float&gt;, 7: &lt;function convert_mysql_timestamp&gt;, 8: &lt;function convert_long&gt;, 9: &lt;function convert_int&gt;, 10: &lt;function convert_date&gt;, ...}<br>
+<strong>encoders</strong> = {&lt;class 'list'&gt;: &lt;function escape_sequence&gt;, &lt;class 'datetime.time'&gt;: &lt;function escape_time&gt;, &lt;class 'bool'&gt;: &lt;function escape_bool&gt;, &lt;class 'NoneType'&gt;: &lt;function escape_None&gt;, &lt;class 'datetime.date'&gt;: &lt;function escape_date&gt;, &lt;class 'decimal.Decimal'&gt;: &lt;function escape_decimal&gt;, &lt;class 'float'&gt;: &lt;function escape_float&gt;, &lt;class 'datetime.datetime'&gt;: &lt;function escape_datetime&gt;, &lt;class 'time.struct_time'&gt;: &lt;function escape_struct_time&gt;, &lt;class 'dict'&gt;: &lt;function escape_dict&gt;, ...}</td></tr></table>
+</body></html>

@@ -1,0 +1,43 @@
+#!C:/Python33/python.exe
+import os, sys, urllib
+import urllib.parse
+
+def save_mesh(opts):
+  buf1 = sys.stdin.buffer.read()
+  buf = b""
+  
+  while buf1 and len(buf1) > 0:
+    buf += buf1
+    buf1 = sys.stdin.buffer.read()
+  
+  return str(len(buf))
+
+def print_env():
+  req = ""
+  keys = list(os.environ.keys())
+  keys.sort()
+  for k in keys:
+    req += "%s: %s<br />"%(k, os.environ[k])
+
+  print("<html><body>%s</body></html>"%req);
+
+env = os.environ
+query = env["QUERY_STRING"]
+method = env["REQUEST_METHOD"]
+docroot = env["DOCUMENT_ROOT"]
+
+body = ""
+
+opts = urllib.parse.parse_qs(query)
+log = open(docroot + os.path.sep + "webgl_helper.log", "a")
+
+body += save_mesh(opts)
+
+print("Content-Type: application/javascript")
+print("Content-Length: %d" % len(body))
+print("")
+print(body)
+
+log.close()
+
+

@@ -1,0 +1,6 @@
+== useful regulat expressions ==
+
+--replace len(array) python construct with array.length --
+find: len\(([a-zA-Z\_0-9.\[\]\+\*/\-\%]*)\)
+replace: \1\.length
+

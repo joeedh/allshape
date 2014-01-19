@@ -1,0 +1,688 @@
+struct f32 {
+  float16 exp;
+  float16 mant;
+  float16 sign;
+};
+
+builtin void printf = printf(string s, float16 a);
+builtin void printf0 = printf(string s);
+builtin void f32_print = f32_print(f32 a);
+builtin void f32_print2	= f32_print2(string s, f32 a);
+builtin void f16_print = f16_print(float16 a);
+builtin void f16_print2 = f16_print(string s, float16 a);
+
+builtin vec3 cross3 = cross(vec3 v1, vec3 v2);
+builtin vec3 normalize2 = normalize(vec2 vec);
+builtin vec3 normalize3 = normalize(vec3 vec);
+builtin vec3 normalize4 = normalize(vec4 vec);
+builtin float f32_to_c32 = f32_to_c32(float f);
+builtin float16 f16_to_cf32 = f16_to_cf32(float16 f);
+builtin float16 pow16 = pow(float16 a, float16 b);
+builtin float16 log16 = log(float16 a);
+builtin float16 max16 = max(float16 a, float16 b);
+builtin float16 min16 = min(float16 a, float16 b);
+builtin float16 dot16 = dot(vec3 v1, vec3 v2);
+builtin float16 sqrt16 = sqrt(float16 a);
+builtin float16 floor16 = floor(float16 a);
+builtin float16 log216 = log2(float16 a);
+builtin float16 mod16 = mod(float16 a, float16 b);
+builtin float16 abs16 = abs(float16 a);
+builtin float16 sin16 = sin(float16 a);
+builtin float16 round16 = round(float16 a);
+builtin vec4 texture2D = texture2D(sampler2D sampler, vec2 vec);
+builtin vec4 vec4 = vec4(float16 a, float16 b, float16 c, float16 b);
+builtin vec3 vec3 = vec3(float16 a, float16 b, float16 c);
+builtin vec2 vec2 = vec2(float16 a, float16 b);
+builtin float16 i16_to_f16 = float(int i);
+builtin int f16_to_i16 = int(float16 i);
+builtin vec4 gl_FragColor;
+builtin vec4 gl_FragCoord;
+builtin vec4 gl_Position;
+builtin vec4 gl_Color;
+builtin int gl_PointSize;
+
+uniform sampler2D sampler2d;
+uniform sampler2D sampler2d_util_tab;
+uniform highp float16 width;
+uniform highp float16 height;
+uniform highp float16 util_w;
+
+f32 f32_expr_tmp; //used for increment/decrement operators
+
+float16 m_off = 1.0; /*mantissa offset*/
+
+f32 one_const = f32(0, 0.0, 1);
+f32 zero_const = f32(0, -1.0, 1);
+
+f32 f32_e = f32(1.00000000, 0.35914091, 1.0);
+f32 f32_1_e = f32(1.00000000, 0.35914091, 1.0);
+float16 f16_e = 2.71828183;
+float16 f16_1_e = 0.36787944;
+f32 f32_log_of_10 = f32(1.00000000, 0.15129255, 1.0);
+f32 f32_1_log_of_10 = f32(1.00000000, 0.15129255, 1.0);
+float16 f16_log_of_10 = 2.30258509;
+float16 f16_1_log_of_10 = 0.43429448;
+f32 f32_log_of_2 = f32(-1.00000000, 0.38629436, 1.0);
+f32 f32_1_log_of_2 = f32(-1.00000000, 0.38629436, 1.0);
+float16 f16_log_of_2 = 0.69314718;
+float16 f16_1_log_of_2 = 1.44269504;
+f32 f32_pi = f32(1.00000000, 0.57079633, 1.0);
+f32 f32_1_pi = f32(1.00000000, 0.57079633, 1.0);
+float16 f16_pi = 3.14159265;
+float16 f16_1_pi = 0.31830989;
+f32 f32_sqrt_of_2 = f32(0.00000000, 0.41421356, 1.0);
+f32 f32_1_sqrt_of_2 = f32(0.00000000, 0.41421356, 1.0);
+float16 f16_sqrt_of_2 = 1.41421356;
+float16 f16_1_sqrt_of_2 = 0.70710678;
+
+float16 zero = 0.0;
+
+int cur_stream_pos;
+
+float16 lshift16(float16 i,  float16 count)
+{
+  count = floor16(count);
+  float16 c1 = texture2D(sampler2d_util_tab, vec2((count*2+0.001)/util_w, 0))[3]*255.0; 
+  float16 c2 = texture2D(sampler2d_util_tab, vec2((count*2+1+0.001)/util_w, 0))[3]*255.0;
+  
+  return (i*c1*c2);
+}
+
+float16 rshift16( float16 i,  float16 count)
+{
+  count = floor16(count);
+  float16 c1 = texture2D(sampler2d_util_tab, vec2((count*2+0.001)/util_w, 0))[3]*255.0; 
+  float16 c2 = texture2D(sampler2d_util_tab, vec2((count*2+1+0.001)/util_w, 0))[3]*255.0;
+  return (i/(c1*c2));
+}
+
+float16 single_and16( float16 a,  float16 b)
+{
+  a += 0.000001;
+  b += 0.000001;
+  float16 p = pow16(2.0, b);
+  float16 n = floor16(a/p);
+  
+  return p*mod16(n, 2.0);
+}
+
+f32 f32_negate(f32 f)
+{
+  f.sign *= -1.0;
+  return f;
+}
+
+bool f32_gt(f32 a, f32 b)
+{
+  if (a.sign != b.sign)
+    return a.sign > 0;
+    
+  if (a.exp != b.exp) {
+    return a.exp > b.exp;
+  } else {
+    return a.mant-b.mant > 0.00001;
+  }
+}
+
+bool f32_lt(f32 a, f32 b)
+{
+  if (a.sign != b.sign)
+    return a.sign < 0;
+    
+  if (a.exp != b.exp) {
+    return a.exp < b.exp;
+  } else {
+    return a.mant-b.mant < -0.00001;
+  }
+}
+
+bool f32_equals(f32 a, f32 b)
+{
+  if (a.sign != b.sign)
+    return false;
+  
+  if (a.exp != b.exp)
+    return false;
+  
+	/*calcuate a threshold, based on the mantissa needed to generate
+		an offset of 1 within this exponent*/
+    
+	float16 fac;
+	if (a.exp > 0.0)
+		fac = pow16(2, a.exp)*pow16(2, -14);
+	else
+		fac = pow16(2, -14);
+
+	return abs16(a.mant-b.mant) < fac;
+}
+
+f32 f32_copy(f32 fn) 
+{
+  return f32(fn.exp, fn.mant, fn.sign);
+}
+
+f32 f32_norm(f32 fn)
+{
+  if (fn.mant >= m_off) {
+    fn.mant += m_off;
+    
+    float16 n = floor16(log16(fn.mant) * f16_1_log_of_2);
+    fn.mant *= pow16(2, -n);
+    fn.exp += n;
+    
+    fn.mant -= m_off;
+  } else if (fn.mant < 0.0 && fn.mant != -1.0) {
+
+	float16 expfac = abs16(floor16(log16(abs16(fn.mant+m_off)) / f16_log_of_2));
+
+    fn.mant = abs16(fn.mant+m_off)*pow16(2.0, expfac) - m_off;
+    fn.exp -= expfac;
+  } else if (fn.mant == -1.0) {
+     fn.exp = 0.0; /*handle zero*/
+  }
+  
+  return fn;
+}
+
+bool f32_is_zero(f32 fn) {
+  return fn.mant == -1.0 || fn.exp < -22;
+}
+
+f32 abs(f32 a)  : f32_abs {
+  a.sign = 1.0;
+  return a;
+}
+
+f32 f32_mul(f32 fn, f32 b) {
+  f32 f;
+  
+  if (f32_is_zero(fn)) 
+	  return zero_const;
+  if (f32_is_zero(b)) 
+	  return zero_const; 
+
+  f.sign = fn.sign*b.sign;
+  f.exp = b.exp+fn.exp;
+  
+  f.mant = (fn.mant+m_off)*(b.mant+m_off) - m_off;
+  
+  f = f32_norm(f);
+  
+  return f;
+}
+
+f32 f32_div(f32 fn, f32 b) {
+  f32 f;
+  
+  if (f32_is_zero(fn)) 
+	  return zero_const;
+  if (f32_is_zero(b)) 
+	  return zero_const; 
+
+  f.sign = fn.sign*b.sign;
+  f.exp = fn.exp-b.exp;
+  
+  if (m_off+b.mant != 0.0) {
+    f.mant = (m_off+fn.mant)/(m_off+b.mant) - m_off;
+  }
+  
+  f = f32_norm(f);
+  return f;
+}
+
+
+f32 f32_new(float16 n)
+{
+  f32 f;
+
+  if (n < 0.0) f.sign = -1.0;
+  else f.sign = 1.0;
+  
+  n = abs16(n);
+  if (n != 0.0) {
+    f.exp = floor16(log16(n) * f16_1_log_of_2);
+	float16 pw = pow16(2.0, -f.exp);
+	f.mant = n*pw - m_off;
+  } else {
+    f.exp = 0.0;
+	f.mant = -1.0;
+  }
+  
+  return f;
+}
+
+float16 f16_new(f32 n)
+{
+  if (f32_is_zero(n))
+    return zero;
+  
+  return n.sign*(n.mant+m_off)*pow16(2.0, n.exp);
+}
+
+float f16_to_f32(float16 f) {
+  return f32_new(f);
+}
+
+float16 f32_to_f16(float f) {
+  return f16_new(f);
+}
+
+float lshift(float i,  float count1)
+{
+  float16 count = floor16(f32_to_f16(count1));
+
+  float c1 = f16_to_f32(texture2D(sampler2d_util_tab, vec2((count*2+0.001)/util_w, 0))[3]*255.0);
+  float c2 = f16_to_f32(texture2D(sampler2d_util_tab, vec2((count*2+1+0.001)/util_w, 0))[3]*255.0);
+  
+  return i*c1*c2;
+}
+
+float rshift(float i,  float count1)
+{
+  float16 count = floor16(f32_to_f16(count1));
+
+  float c1 = f16_to_f32(texture2D(sampler2d_util_tab, vec2((count*2+0.001)/util_w, 0))[3]*255.0);
+  float c2 = f16_to_f32(texture2D(sampler2d_util_tab, vec2((count*2+1+0.001)/util_w, 0))[3]*255.0);
+  
+  return i/(c1*c2);
+}
+
+float pow2(float f) : f32_pow2
+{
+	if (f > 1.0) {
+		return lshift(1, f);
+	} else {
+		return 1.0 / lshift(1, f);
+	}
+}
+
+float16 arith_err_add2(float16 a, float16 b)
+{
+	float16 c = a + b;
+	c -= b;
+
+	return a - c;
+}
+
+float16 arith_err_add(float16 a, float16 b)
+{
+	return arith_err_add2(a, b) + arith_err_add2(b, a);
+}
+
+f32 simple_add(f32 fn, f32 b) 
+{
+  f32 f;
+  f32 f1;
+  f32 f2;
+
+  if (fn.exp > b.exp) {
+    f1 = fn; f2 = b;
+  } else {
+    f2 = fn; f1 = b;
+  }
+  
+  float16 mul = 1 / floor16(pow16(2.0, (f1.exp-f2.exp)));
+
+  float16 m1 = (f2.mant+1.0)*f2.sign; float16 e1 = arith_err_add(f2.mant, 1.0);
+  float16 m2 = (f1.mant+1.0)*f1.sign; float16 e2 = arith_err_add(f1.mant, 1.0);
+
+  f.mant = (f1.mant+1)*f1.sign+(f2.mant+1)*mul*f2.sign-1.0;
+
+  f.sign = 1;
+
+  f.exp = f1.exp;
+  f.sign =  1;
+
+  if (f.mant < -1.0) {
+    f.sign = -1;
+  } else {
+    if (f1.sign == -1 && f2.sign == -1)
+      f.sign = -1;
+    else
+      f.sign = 1;
+  }
+  
+  f = f32_norm(f);
+  return f;
+}
+
+f32 f32_add(f32 fn, f32 b)
+{
+  if (f32_is_zero(fn) || fn.exp > 26) {
+    return b;
+  } else if (f32_is_zero(b) || b.exp > 26) {
+    return fn;
+  }
+
+  return simple_add(fn, b);
+}
+
+f32 f32_sub(f32 fn, f32 b)
+{
+  b.sign *= -1.0;
+  
+  return f32_add(fn, b);
+}
+
+f32 floor(float f)  : f32_floor
+{
+	float f2 = f;
+	f32 f2_f32 = f;
+
+	if (f2_f32.exp < 0 || f32_is_zero(f2)) {
+		return f32(0, -1.0, 1);
+	}
+
+	f32 off = f32(f2_f32.exp, 0.0, 1.0);
+		
+	f2 = f - off;
+	f2 = f16_to_f32(floor16(f32_to_f16(f2))) + off;
+	return f2;
+}
+
+f32 floor2(f32 f)  : f32_floor2
+{
+  f32 f3 = f;
+
+  if (f3.exp > 0) { 
+    return f32(0.0, -1.0, 1.0);
+  }
+  
+  f3 = f32_div(1.0, f3);
+  f32 f4 = f32(f3.exp, 0.0, 1.0);
+  f32 f5 = f32(-(f3.exp+1), 0.0, 1.0);
+  f4 = f4*f5;
+
+  float ff = f3*f4;
+  f3 = f32_div(1.0, f3);
+
+  //f3 = f32_div(1.0, f3);
+  /*
+  float16 e1 = abs16(pow16(2.0, f3.exp));
+
+  f16_print(e1);
+  float16 m2 = (m_off+f3.mant)*e1;
+  f16_print(m2);
+  m2 = 1.0/m2; // (e1/floor16(1.0/m2)) - m_off;
+  f16_print(m2);
+
+  float16 f3exp = f3.exp;
+  f3.mant = m2; //- m_off;
+  f16_print(f3.mant);
+  
+  f32 f4;
+  f4 = f3;
+  //f3 = f32_div(f32_new(1.0), f3);
+  f32_print(f3);*/
+
+  /*
+   f32 f3 = f32_div(f32_new(1.0), f);
+
+  if (f3.exp < 0) { 
+    return f32(0.0, -1.0, 1.0);
+  }
+  
+  float16 e1 = abs16(pow16(2.0, -f3.exp));
+  float16 m2 = (m_off+f3.mant)/e1;
+  m2 = floor16(m2)*e1;
+  
+  float16 f3exp = f3.exp;
+  f3.mant = m2 - m_off;
+  
+  f32 f4;
+  f4 = f3;
+  f3 = f32_div(f32_new(1.0), f3);
+  */
+
+  /*
+  if (f32_gt(f3, f)) {
+    f3 = f4;
+    m2 = (m_off+f3.mant)/e1;
+    m2 = (floor16(m2)-1)*e1;
+    
+    f3exp = f3.exp;
+    f3.mant = m2 - m_off;
+    
+    f3 = f32_div(f32_new(1.0), f3);
+  }*/
+  
+  return f3;
+}
+
+float sqrt(float a4)  : f32_sqrt {
+  float r;
+  
+  if (a4 > 2.0 || a4 < -2.0) {
+    r = a4 / 4.0;
+  } else {
+    r = a4 * 4.0;
+  }
+  
+  for (int i=0; i<4; i++) {
+    r = (a4/r + r)*0.5;
+  }
+  
+  return r;
+}
+
+bool sign(f32 a)  : f32_sign {
+  return a.sign < 0.0;
+}
+
+float _exp1(float a) : _f32_exp1 {
+  float sum = a;
+  float a2 = a*a;
+  float fact = 2.0; float c = 0.0;
+  float di = 1; float y; float t;
+  
+  if (abs(a2) < f32_new(0.000001)) {
+	return f32(0.0, 0.0, 1.0);
+  }
+
+  for (int i=3; i<3; i++) {
+    y = a2/fact + c;
+    t = sum + y;
+    c = (t - sum) - y;
+    sum = t;
+    
+    fact *= di;
+    a2 *= a;
+    di += 1.0;
+  }
+  
+  return sum+1;
+}
+
+float exp(float a1) : f32_exp {
+  f32 r = f32(-1.0, 0.0, 1.0);
+  float ex2 = a1/f32_log_of_2;
+	
+  r.exp = floor16(f32_to_f16(floor(ex2)));
+  ex2 = ex2 - floor(ex2);
+  r.mant = f32_to_f16(_exp1(ex2*f32_log_of_2) - 1.0);
+  float mant = _exp1(ex2*f32_log_of_2);
+
+  r = f32_norm(r);
+  
+  return r;
+}
+
+float log(float fn) : f32_log {
+  f32 f = fn;
+  
+  if (f32_is_zero(fn)) return fn;
+
+  float x = f16_to_f32(1.0*(f.exp+1)*f16_log_of_2);
+  float xexp = exp(x);
+  float y;
+
+  if (xexp < 0.0001) {
+    x = 0;
+	y = fn;
+  } else {
+    y = fn / xexp;
+  }
+
+  float sum = zero_const;
+  fn = (y-1)/(y+1);
+  float f2 = fn;
+  float y2 = 0.5/2.5;
+  f = fn;
+  
+  float d = zero_const;
+  float c = zero_const;
+  float t;
+  for (int i=0; i<2; i++) {
+    y = f2/(d*2+1.0) - c;
+	float y2 = (d*2+1.0);
+
+    t = sum + y;
+    c = (t - sum) - y;
+    
+    sum = t;
+    d += 1;
+    f2 = f2*fn*fn;
+  }
+  
+  return sum*2.0+x;
+}
+
+float fract(float f)  : f32_fract
+{
+  return f - floor(f);
+}
+
+float pow(float a, float b)  : f32_pow
+{
+  return exp(log(a)*b);
+}
+
+float mod(float a, float b)  : f32_mod
+{
+  return a - (floor(a/b)*b);
+}
+
+float single_and(float a,  float b)
+{
+  a += 0.000001;
+  b += 0.000001;
+  float p = lshift(1.0, b); //pow(2.0, b);
+  float n = floor(a/p);
+  
+  return p*mod(n, 2.0);
+}
+
+vec4 pack_float_exact(float tst)
+{
+  vec4 bs;
+  f32 f = tst;
+  
+  if (f.mant == -1.0) {
+    return vec4(0.0, 0.0, 0.0, 0.0);
+  }
+  
+  float sgn;
+
+  if (f.sign > 0.0) 
+    sgn = 128.0;
+  else
+	sgn = 0.0;
+
+  tst = abs(tst);
+  f = tst;
+  
+  float expo = f16_to_f32(f.exp);
+  float manto = f16_to_f32(f.mant);
+
+  expo = expo+127.0;
+  
+  float a; float b; float c;
+  float bs32[4];
+  
+  manto = manto*256.0;
+
+  a = floor(manto*0.5);
+  b = floor(manto*128) - a*256;
+  c = 256*(manto*128 - b - a*256);
+  
+  manto = manto*128;
+  manto = floor(manto);
+
+  bs32[2] = a;
+  bs32[1] = b;
+  bs32[0] = c;
+  
+  bs32[2] += mod(expo, 2)*128;
+  bs32[3] = expo*0.5;
+  bs32[3] = floor(bs32[3]) + sgn;
+  bs32[0] /= 255.0; bs32[1] /= 255.0; bs32[2] /= 255.0; bs32[3] /= 255.0;
+
+  bs[0] = f32_to_f16(bs32[0]);
+  bs[1] = f32_to_f16(bs32[1]);
+  bs[2] = f32_to_f16(bs32[2]);
+  bs[3] = f32_to_f16(bs32[3]);
+  
+  return bs;
+}
+
+vec4 pack_float(float tst)
+{
+  vec4 bs;
+  f32 f = tst;
+  
+  if (f.mant == -1.0) {
+    return vec4(0.0, 0.0, 0.0, 0.0);
+  }
+  
+  float16 sign = f.sign;
+  
+  if (sign > 0.0) 
+    sign = 0.0;
+  
+  tst = abs(tst);
+  f = tst;
+  
+  float16 expo = f.exp;
+  float16 manto = f.mant;
+
+  expo += 127;
+  
+  float16 a; float16 b; float16 c;
+  manto = manto*256.0;
+  
+  a = floor16(manto*0.5);
+  b = floor16(manto*128) - a*256;
+  c = floor16(256*(manto*128 - b - a*256));
+  b = floor16(b);
+
+  bs[2] = a;
+  bs[1] = b;
+  bs[0] = c;
+  
+  bs[2] += mod16(expo, 2)*128;
+  bs[3] = expo*0.5;
+  bs[3] = floor16(bs[3]) + sign*128;
+  
+  bs[0] /= 255.0; bs[1] /= 255.0; bs[2] /= 255.0; bs[3] /= 255.0;
+  return bs;
+}
+/*
+void set_current_stream_position()
+{
+  float16 x = floor16(gl_FragCoord[0]);
+  float16 y = floor16(gl_FragCoord[1]);
+  
+  cur_stream_pos = f16_to_i16(mod16(1+y*width+x, g_total_out));
+}
+
+void set_output(int idx, float outfloat)
+{
+  if (idx == cur_stream_pos)
+    gl_FragColor = pack_float(outfloat);
+}
+*/
+
+float i16_to_f32(int i)
+{
+  return f16_to_f32(i16_to_f16(i));
+}

@@ -1,0 +1,26 @@
+﻿Build started 8/5/2013 1:25:08 PM.
+     1>Project "C:\Users\JoeEagar\Google Drive\WebGL\js_object_model\js_objectmodel\js_objectmodel\js_objectmodel.vcxproj" on node 2 (build target(s)).
+     1>InitializeBuildStatus:
+         Creating "Debug\js_objectmodel.unsuccessfulbuild" because "AlwaysCreate" was specified.
+       ClCompile:
+         C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin\CL.exe /c /ZI /nologo /W1 /WX- /Od /Oy- /D _MBCS /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc100.pdb" /Gd /TC /analyze- /errorReport:prompt ..\..\js_poolalloc.c
+         js_poolalloc.c
+       Link:
+         C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"C:\Users\JoeEagar\Google Drive\WebGL\js_object_model\js_objectmodel\Debug\js_objectmodel.exe" /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /ManifestFile:"Debug\js_objectmodel.exe.intermediate.manifest" /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /DEBUG /PDB:"C:\Users\JoeEagar\Google Drive\WebGL\js_object_model\js_objectmodel\Debug\js_objectmodel.pdb" /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:\Users\JoeEagar\Google Drive\WebGL\js_object_model\js_objectmodel\Debug\js_objectmodel.lib" /MACHINE:X86 Debug\jc_utils.obj
+         Debug\js_hashtable.obj
+         Debug\js_memalloc.obj
+         Debug\js_obj_model.obj
+         Debug\js_poolalloc.obj
+         Debug\main.obj
+         LINK : C:\Users\JoeEagar\Google Drive\WebGL\js_object_model\js_objectmodel\Debug\js_objectmodel.exe not found or not built by the last incremental link; performing full link
+         js_objectmodel.vcxproj -> C:\Users\JoeEagar\Google Drive\WebGL\js_object_model\js_objectmodel\Debug\js_objectmodel.exe
+       Manifest:
+         C:\Program Files (x86)\Microsoft SDKs\Windows\v7.0A\bin\mt.exe /nologo /verbose /outputresource:"C:\Users\JoeEagar\Google Drive\WebGL\js_object_model\js_objectmodel\Debug\js_objectmodel.exe;#1" /manifest Debug\js_objectmodel.exe.intermediate.manifest
+       FinalizeBuildStatus:
+         Deleting file "Debug\js_objectmodel.unsuccessfulbuild".
+         Touching "Debug\js_objectmodel.lastbuildstate".
+     1>Done Building Project "C:\Users\JoeEagar\Google Drive\WebGL\js_object_model\js_objectmodel\js_objectmodel\js_objectmodel.vcxproj" (build target(s)).
+
+Build succeeded.
+
+Time Elapsed 00:00:00.57

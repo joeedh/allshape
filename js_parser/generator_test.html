@@ -1,0 +1,90 @@
+
+      <html><head><title>Generator Test</title></head>
+      <script>
+      function arr_iter(keys)
+      {
+        this.keys = keys;
+        this.cur = 0;
+        
+        this.next = function() {
+          if (this.cur >= this.keys.length) {
+            throw StopIteration;
+          }
+          
+          return this.keys[this.cur++];
+        }
+      }
+
+      __use_Iterator = true;
+
+      function __get_iter(obj)
+      {
+        if (obj.__proto__.hasOwnProperty("__iterator__") || obj.hasOwnProperty("__iterator__")) {
+          return obj.__iterator__();
+        } else {
+          if (__use_Iterator) {
+            return Iterator(obj);
+          } else {
+            keys = []
+            for (var k in obj) {
+              keys.push(k)
+            }
+            return new arr_iter(keys);
+          }
+        }
+      }
+
+      function __get_iter2(obj)
+      {
+        if (obj.__proto__.hasOwnProperty("__iterator__") || obj.hasOwnProperty("__iterator__")) {
+          return obj.__iterator__();
+        } else {
+          keys = []
+          for (var k in obj) {
+            keys.push([k, obj[k]])
+          }
+          return new arr_iter(keys);
+        }
+      }
+
+      try {
+        _tst = Iterator({});
+      } catch (Error) {
+        __use_Iterator = false;
+        Iterator = __get_iter2;
+      }
+      FrameContinue = {1:1};
+      FrameBreak = {2:2};
+      var i, local, local, local, local, local, local, local, local, local, local;
+var __iter_e = __get_iter(mesh.edges);
+while (1) {
+ try {
+  var e = __iter_e.next();
+  for (var i=0; i<3; i++) {
+    edgebuf.push(e.v1.co[i]);
+  }
+  for (var i=0; i<3; i++) {
+    edgebuf.push(e.v2.co[i]);
+  }
+ }
+ catch (_for_err) {
+   if (_for_err!==StopIteration) {
+     if (_do_iter_err_stacktrace)
+      print_stack(_for_err);
+     throw _for_err;
+     break;
+   }
+   break;
+ }
+}
+
+  j = 0;
+  for (var tst in new range2(2, 8)) {
+    if (_do_frame_debug) console.log(tst);
+    if (j > 10)
+      break;
+    j++;
+  }
+  </script>
+  </html>
+  
