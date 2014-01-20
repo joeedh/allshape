@@ -39,7 +39,9 @@ PYBIN = sys.executable
 if PYBIN == "":
   sys.stderr.write("Warning: could not find python binary, reverting to default\n")
   PYBIN = "python3.2"
-  
+
+PYBIN += " "
+
 JCC = "../js_parser/js_cc.py".replace("/", os.path.sep)
 TCC = "../tinygpu/tinygpu.py".replace("/", os.path.sep)
 
