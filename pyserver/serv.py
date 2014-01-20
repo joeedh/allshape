@@ -22,7 +22,7 @@ api_handlers = {
   "/api/files/upload" : FileAPI_UploadChunk
 }
 
-from config import doc_root, serverhost, ipaddr
+from config import doc_root, serverhost, ipaddr, serverport
 
 def bstr(s):
   if type(s) == bytes: return s
@@ -136,6 +136,11 @@ class ReqHandler (BaseHTTPRequestHandler):
       self.send_error(404)
       return
     
+    if not self.path.startswith("/js_build/"):
+      print(self.path)
+      self.send_error(401)
+      return
+
     if debug_file(path):
       always = True
       errbuf = run_build(path, always_build_file=always)
@@ -312,7 +317,7 @@ restart_server = True
 while restart_server:
   restart_server = False
   
-  server = HTTPServer((ipaddr, 8081), ReqHandler);
+  server = HTTPServer((ipaddr, serverport), ReqHandler);
   #server.socket = ssl.wrap_socket(server.socket, certfile=certpath, keyfile="privateKey.key")
 
   server.serve_forever()

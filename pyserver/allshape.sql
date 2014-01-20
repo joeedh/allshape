@@ -52,6 +52,9 @@ CREATE TABLE IF NOT EXISTS `filedata` (
   KEY `parentid` (`parentid`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=4 ;
 
+-- make dummy file record for root directory ID
+INSERT INTO filedata (userid) VALUES(0) ;
+
 -- --------------------------------------------------------
 
 --
