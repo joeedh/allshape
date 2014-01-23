@@ -4,7 +4,7 @@ from http.server import *
 import os, sys, os.path, math, random, time, io, gc
 import shelve, imp, struct, ctypes, ply
 import mimetypes
-from auth import AuthAPI_GetUserInfo, AuthAPI_RefreshToken, AuthAPI_SessionToken
+from auth import AuthAPI_OAuthStart, AuthAPI_GetUserInfo, AuthAPI_RefreshToken, AuthAPI_SessionToken
 from fileapi import FileAPI_DirList, FileAPI_GetMeta, FileAPI_UploadStart, FileAPI_UploadChunk, FileAPI_GetFile
 import config
 
@@ -19,7 +19,8 @@ api_handlers = {
   "/api/auth/session" : AuthAPI_SessionToken,
   "/api/auth/userinfo" : AuthAPI_GetUserInfo,
   "/api/files/upload/start" : FileAPI_UploadStart,
-  "/api/files/upload" : FileAPI_UploadChunk
+  "/api/files/upload" : FileAPI_UploadChunk,
+  "/api/auth/oauth" : AuthAPI_OAuthStart
 }
 
 from config import doc_root, serverhost, ipaddr, serverport

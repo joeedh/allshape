@@ -43,7 +43,63 @@ def gen_token(toktype, userid):
   s = toktype+"."+s
     
   return key_rot(s)
+
+OAUTH_SCOPES = set(["username", "email", "name_last", "name_first", "drive"])
+class AuthAPI_OAuthStart:
+  basepath = "/api/auth/oauth"
+  redirect_uri = 0
+  valid_clients = {"allshape-wordpress": "werghow34"}
   
+  def do_GET(self, serv):
+    global OAUTH_SCOPES
+    
+    qs = get_qs(serv.path)
+    qs2 = {}
+    for k in qs:
+      if type(qs[k]) in [list, tuple] and len(qs[k]) == 1:
+        qs2[k] = qs[k][0]
+      else:
+        qs2[k] = qs[k]
+    qs = qs2
+    
+    print(qs)
+    
+    if "response_type" not in qs or "client_id" not in qs:
+      alog("Invaild oauth request 1")
+      serv.send_error(400)
+      return
+    
+    if qs["response_type"] != "code":
+      alog("Invaild oauth request 2")
+      serv.send_error(400)
+      return
+      
+    if "redirect_uri" in qs:
+      self.redirect_uri = qs["redirect_uri"]
+    
+    scope = ""
+    if "scope" in qs:
+      scope = qs["scope"]
+    
+    state = None
+    if "state" in qs:
+      state = qs["state"]
+      
+    restype = qs["response_type"]
+    clientid = qs["client_id"]
+    
+    if clientid not in self.valid_clients:
+      alog("Invaild client id in oauth request")
+      serv.send_error(401)
+      return
+    
+    body = "<html><body>login</body></html>"
+    
+    serv.gen_headers("GET", len(body), "text/html")
+    serv.wfile.write(bytes(body, "ascii"))
+    
+    
+    
 class AuthAPI_RefreshToken:
   basepath = "/api/auth"
   
