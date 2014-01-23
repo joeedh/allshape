@@ -6,7 +6,7 @@ import shelve, imp, struct, ctypes, ply
 import mimetypes
 from auth import AuthAPI_OAuthStart, AuthAPI_GetUserInfo, AuthAPI_RefreshToken, AuthAPI_SessionToken
 from fileapi import FileAPI_DirList, FileAPI_GetMeta, FileAPI_UploadStart, FileAPI_UploadChunk, FileAPI_GetFile
-import config
+import config, json
 
 import pymysql.err
 
@@ -308,7 +308,17 @@ class ReqHandler (BaseHTTPRequestHandler):
     
     
     wf.write(body);
-
+  
+  def send_error(self, code, obj=None):
+    if obj == None: obj = {}
+    obj["result"] = 0
+    obj["error"] = code
+    
+    body = json.dumps(obj)
+    
+    self.gen_headers("GET", len(body), "application/x-javascript")    
+    self.wfile.write(bstr(body))
+    
 import ssl
 
 certpath = "certificate.crt"
