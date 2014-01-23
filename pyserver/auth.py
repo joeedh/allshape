@@ -97,9 +97,7 @@ class AuthAPI_OAuthStart:
     
     serv.gen_headers("GET", len(body), "text/html")
     serv.wfile.write(bytes(body, "ascii"))
-    
-    
-    
+       
 class AuthAPI_RefreshToken:
   basepath = "/api/auth"
   
@@ -141,7 +139,7 @@ class AuthAPI_RefreshToken:
     cur.execute(qstr)
     con.commit()
     
-    body = json.dumps({"refresh_token": str(tok)})
+    body = json.dumps({"refresh_token": str(tok), "result": 1})
     
     serv.gen_headers("GET", len(body), json_mimetype)
     serv.wfile.write(bytes(body, "ascii"))
