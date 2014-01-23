@@ -97,6 +97,53 @@ class AuthAPI_OAuthStart:
     
     serv.gen_headers("GET", len(body), "text/html")
     serv.wfile.write(bytes(body, "ascii"))
+
+class AuthAPI_RefreshToken_WPHack:
+  basepath = "/api/wpauthhack"
+  
+  def do_GET(self, serv):
+    qs = get_qs(serv.path)
+    if not ("user" in qs and "password" in qs):
+      serv.send_error(400)
+      return
+    
+    user = qs["user"][0]
+    password = qs["password"][0]
+    
+    cur, con = mysql_connect()
+    cur.execute("SELECT * FROM users WHERE username="+estr(user))
+    
+    ret = cur.fetchone()
+    if ret == None:
+      serv.send_error(401)
+      return
+    
+    alog("Fetching refresh token for user %s" % user)
+		
+    if ret["password"] != password:
+      alog("Invalid password for %s" % user)
+      serv.send_error(401)
+
+      return
+    
+    userid = ret["userid"]
+    tok = gen_token("R", userid)
+    exprtime = datetime.datetime.now() + datetime.timedelta(days=12)
+    
+    alog("Refresh token for %s: %s" % (user, tok))
+		
+    qstr = "INSERT INTO authtokens (tokenid,userid,type,permissions,expiration) VALUES("
+    
+    qstr += estr(tok)+","+estr(userid)+","
+    qstr += estr(toktypes["R"])+","+estr(default_permission)+","
+    qstr += estr(exprtime)+")"
+    cur.execute(qstr)
+    con.commit()
+    
+    body = json.dumps({"refresh_token": str(tok), "result": 1})
+    
+    #serv.gen_headers("GET", len(body), json_mimetype)
+    serv.wfile.write(bytes(body, "ascii"))
        
 class AuthAPI_RefreshToken:
   basepath = "/api/auth"
