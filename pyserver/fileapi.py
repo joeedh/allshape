@@ -307,7 +307,57 @@ class FileAPI_GetMeta:
     serv.wfile.write(body)
 
 class UploadStatus:
-  def __init__(self, token, path, userid, fileid):
+  def __init__(self, uploadToken=None):
+    self.invalid = False
+    
+    if uploadToken != None:
+      self.from_sql(uploadToken)
+  
+  def from_sql(self, utoken):
+    cur, con = mysql_connect()
+    qstr = "SELECT * FROM uploadtokens WHERE tokenid="+estr(utoken)
+    cur.execute(qstr)
+    ret = cur.fetchone()
+    
+    if ret == None:
+      self.invalid = True
+      return
+    
+    self.token = ret["tokenid"]
+    self.path = ret["path"]
+    self.time = ret["time"]
+    self.name = ret["name"]
+    self.fileid = ret["fileid"]
+    self.realpath = ret["realpath"]
+    self.userid = ret["userid"]
+    self.permissions = ret["permissions"]
+    self.expiration = ret["expiration"]
+    self.size = ret["size"]
+    self.cur = ret["cur"]
+    
+  def commit(self):
+    cur, con = mysql_connect()
+    
+    qstr = "INSERT INTO uploadtokens (tokenid,path,time,fileid,"
+    qstr += "name,realpath,userid,permissions,expiration,size,cur) VALUES"
+    qstr += "(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)" % (
+      estr(self.token),
+      estr(self.path),
+      estr(datetime.datetime.now()),
+      estr(self.fileid),
+      estr(self.name),
+      estr(self.realpath),
+      estr(self.userid),
+      estr(0),
+      estr(datetime.datetime.now()+datetime.timedelta(days=1)),
+      estr(self.size),
+      estr(self.cur),
+    )
+    
+    cur.execute(qstr)
+    con.commit()
+    
+  def create(self, token, path, userid, fileid):
     self.token = token
     self.path = path
     
@@ -343,7 +393,6 @@ class UploadStatus:
     path = os.path.abspath(os.path.normpath(path))
     self.realpath = path;
   
-cur_uploads = {}  
 class FileAPI_UploadStart:
   basepath = "/api/files/upload/start"  
   
@@ -351,8 +400,7 @@ class FileAPI_UploadStart:
     pass
   
   def do_GET(self, serv):
-    print(get_qs(serv.path))
-    print("fileapi access" + serv.path)
+    elog("fileapi access" + serv.path)
     
     qs = get_qs(serv.path)
     if "accessToken" not in qs or ("path" not in qs and "id" not in qs):
@@ -363,7 +411,7 @@ class FileAPI_UploadStart:
     userid = do_auth(tok)
     
     if userid == None:
-      print("Need user id")
+      elog("Need user id")
       serv.send_error(401)
       return
     
@@ -374,12 +422,12 @@ class FileAPI_UploadStart:
       fileid = resolve_path(path)
     
     if fileid == None:
-      print("creating new file")
+      elog("creating new file")
       cs = os.path.split(path)
       
       folderid = resolve_path(cs[0])
       if folderid == None:
-        print("invalid folder " + cs[0])
+        elog("invalid folder " + cs[0])
         serv.send_error(401);
         return
       
@@ -395,20 +443,22 @@ class FileAPI_UploadStart:
       meta = fetch_file(fileid);
     
     if meta == None:
+      elog("Invalid file id")
       serv.send_error(400)
       return
       
     if is_folder(meta):
-      print("target 'file' is a folder")
+      elog("target 'file' is a folder")
       serv.send_error(401)
       return
     
     utoken = gen_token("U", userid);
     
-    global cur_uploads;
-    cur_uploads[utoken] = UploadStatus(utoken, path, userid, fileid)
+    ustatus = UploadStatus() 
+    ustatus.create(utoken, path, userid, fileid)
+    ustatus.commit()
     
-    realpath = cur_uploads[utoken].realpath
+    realpath = ustatus.realpath
     cur, con = mysql_connect()
     
     qstr = "UPDATE filedata SET "
@@ -423,7 +473,7 @@ class FileAPI_UploadStart:
     serv.gen_headers("GET", len(body), json_mimetype)
     serv.wfile.write(body)
 
-cur_uploads = {}  
+cur_uploads = {}
 class FileAPI_UploadChunk:
   basepath = "/api/files/upload"  
   
@@ -431,11 +481,11 @@ class FileAPI_UploadChunk:
     pass
   
   def do_PUT(self, serv):
-    print(get_qs(serv.path))
-    print("fileapi access" + serv.path)
+    alog("fileapi access" + serv.path)
     
     qs = get_qs(serv.path)
     if "accessToken" not in qs or "uploadToken" not in qs:
+      elog("fileapi: invalid tokens")
       serv.send_error(400)
       return
     
@@ -445,40 +495,40 @@ class FileAPI_UploadChunk:
     userid = do_auth(tok)
     
     if userid == None:
-      print("invalid authorization")
+      elog("invalid authorization")
       serv.send_error(401)
       return
     
-    if utoken not in cur_uploads:
-      print("invalid upload token ", utoken)
+    status = UploadStatus(utoken)
+    if status.invalid:
+      elog("invalid upload token ", utoken)
       serv.send_error(401)
       return
       
     if "Content-Range" not in serv.headers:
-      print("missing header")
+      elog("missing header " + json.dumps(serv.headers))
       serv.send_error(400)
       return
       
     r = serv.headers["Content-Range"].strip()
     
     if not r.startswith("bytes"):
-      print("malformed request 1")
+      elog("malformed request 1")
       serv.send_error(400)
       return
     
     r = r[len("bytes"):].strip()
     r = r.split("/")
-    print(r)
     
     if r == None or len(r) != 2:
-      print("malformed request 2")
+      elog("malformed request 2")
       serv.send_error(400)
       return
     
     try:
       max_size = int(r[1])
     except ValueError:
-      print("malformed request 3")
+      elog("malformed request 3")
       serv.send_error(400)
       return
     
@@ -486,41 +536,35 @@ class FileAPI_UploadChunk:
     r = r[0].split("-")
     
     if r == None or len(r) != 2:
-      print("malformed request 4")
+      elog("malformed request 4")
       serv.send_error(400)
       return
     
     try:
       r = [int(r[0]), int(r[1])]
     except ValueError:
-      print("malformed request 4")
+      elog("malformed request 4")
       serv.send_error(400)
       return
     
     if r[0] < 0 or r[1] < 0 or r[0] >= max_size or r[1] >= max_size \
       or r[0] > r[1]:
-      print("malformed request 5")
+      elog("malformed request 5")
       serv.send_error(400)
       return
     
-    print(r)
-    status = cur_uploads[utoken]
     if status.size == -1:
       status.size = max_size
-    
-    print(status.realpath)
-    print(r[1]-r[0]+1)
     
     buflen = r[1]-r[0]+1
     buf = serv.rfile.read(buflen)
     
-    print("chunk len:", len(buf))
-    
     if len(buf) != buflen:
-      print("malformed request 6")
+      elog("malformed request 6")
       serv.send_error(400)
       return
     
+    """
     if not status.file_init:
       status.file = open(status.realpath, "wb")
       csize = 1024*1024*1024
@@ -534,9 +578,10 @@ class FileAPI_UploadChunk:
         else:
           c = zerobuf;
         
-        status.file.write(c)
+      status.file.write(c)
       status.file.flush()
       status.file.close()
+    #"""
     
     status.file = open(status.realpath, "wb");
     status.file.seek(r[0]);
@@ -544,14 +589,13 @@ class FileAPI_UploadChunk:
     status.file.flush()
     status.file.close()
     
-    print("chunk len:", len(buf))
+    status.commit()
     
     body = json.dumps({"success" : True});
     body = bstr(body)
     
     serv.gen_headers("PUT", len(body), json_mimetype)
     serv.wfile.write(body)
-
 
 class FileAPI_GetFile:
   basepath = "/api/files/get"

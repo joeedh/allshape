@@ -25,16 +25,30 @@ else:
   from StringIO import StringIO
   bstr = bstr_py2
 
+def Header_WSGI2HTTP(h):
+  h = h.replace("-", "_")
+  h = h.lower().split("_")
+  h2 = ""
+  ilen = len(h)
+  
+  for i, s in enumerate(h):
+    if i != 0: h2 += "-"
+    
+    h2 += s[0].upper() + s[1:]
+    
+  return h2
+    
 class WSGIServerBridge:
   def __init__(self, environ):
-    self.client_headers = {}
     self.headers = {}
+    self.res_headers = {}
     self.code = 200
     self.codemsg = "OK"
     
     for k in environ:
       if k.startswith("HTTP_"):
-        self.client_headers[k[5:]] = environ[k]
+        k2 = Header_WSGI2HTTP(k[5:])
+        self.headers[k2] = environ[k]
     
     self.method = environ["REQUEST_METHOD"]
     self.path = environ["REQUEST_URI"]
@@ -62,15 +76,15 @@ class WSGIServerBridge:
     body = bstr("{error : %d, result : 0, message : \"%s\"}" % (code, msg))
     
     self.wfile.write(body)
-    self.headers = {"Content-Length" : len(body), "Content-Type" : "application/x-javascript"}
+    self.res_headers = {"Content-Length" : len(body), "Content-Type" : "application/x-javascript"}
     
     self.code = code
     self.codemsg = "ERR"
     
   def _finish(self):
     headers = []
-    for k in self.headers:
-      headers.append((k, bstr(self.headers[k])))
+    for k in self.res_headers:
+      headers.append((k, bstr(self.res_headers[k])))
     
     self.wfile.seek(0)
     body = self.wfile.read() 
@@ -78,13 +92,13 @@ class WSGIServerBridge:
     return [bstr(str(self.code) + " " + self.codemsg), body, headers]
  
   def send_header(self, header, value):
-    self.headers[header] = value
+    self.res_headers[header] = value
   
   def gen_headers(self, method, length, type, extra_headers={}):
     self.send_header("Content-Type", type)
     self.send_header("Content-Length", length)
 
-    if "Via" in self.headers:
+    if "Via" in self.res_headers:
       uri = "http://"+serverhost+self.path
       print(uri)
       self.send_header("Content-Location", uri)
@@ -92,9 +106,9 @@ class WSGIServerBridge:
     for k in extra_headers:
       self.send_header(k, extra_headers[k])
     
-    if "Via" in self.headers:
+    if "Via" in self.res_headers:
       pass
-      #self.send_header("Via", self.headers["Via"])
+      #self.send_header("Via", self.res_headers["Via"])
     
     self.send_header("Server-Host", serverhost)
   

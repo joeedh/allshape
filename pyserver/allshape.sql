@@ -34,6 +34,18 @@ CREATE TABLE IF NOT EXISTS `authtokens` (
   `expiration` datetime NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
+CREATE TABLE IF NOT EXISTS `uploadtokens` (
+  `tokenid` varchar(255) NOT NULL,  
+  `path` varchar(255) NOT NULL,
+  `time` datetime NOT NULL,
+  `fileid` int(11) NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `realpath` varchar(255) NOT NULL,  
+  `userid` int(11) NOT NULL,
+  `permissions` int(11) NOT NULL,  
+  `expiration` datetime NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
 -- --------------------------------------------------------
 
 --
