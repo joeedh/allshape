@@ -1,12 +1,17 @@
-from http import *
-from http.server import *
 import os, sys, os.path, math, random, time, io
-import shelve, imp, struct, ctypes, ply
+import shelve, imp, struct, ply
 import mimetypes
 
-#example file parameters
-#serverhost = "127.0.0.1:8081"
+WITH_PY2 = True if sys.version_info.major <= 2 else False
+def bytes_py2(s, encoding):
+  return str(s)
 
+#example config_local.py file parameters
+#serverhost = "127.0.0.1:8081"
+#serverport = 8081
+#base_path = "/"
+
+#server_root = "/home/joeedh/dev/allshape/pyserver"
 #doc_root = "/home/joeedh/dev/allshape"
 #files_root = os.path.abspath(doc_root+".."+os.path.sep+"formacad_user_files"+os.path.sep)
 

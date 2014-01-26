@@ -1,6 +1,7 @@
 from datetime import *
 from time import time
 import config
+import os.path
 
 _c = time()
 def log(file, msg):
@@ -11,9 +12,11 @@ def log(file, msg):
     file.flush()
     _c = time()
     
-messages = open("messages.log", "a")
-errors = open("errors.log", "a")
-access = open("access.log", "a")
+prefix = config.doc_root+os.path.sep+"pyserver"+os.path.sep
+
+messages = open(prefix+"messages.log", "a")
+errors = open(prefix+"errors.log", "a")
+access = open(prefix+"access.log", "a")
 
 def mlog(msg):
   log(messages, msg)

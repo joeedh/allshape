@@ -2,6 +2,21 @@ from math import *
 import sys, datetime
 from logger import elog, mlog, alog
 
+def bstr_py3(s):
+  if type(s) == bytes: return s
+  else: return bytes(str(s), "ascii")
+  
+def bstr_py2(s):
+  return str(s)
+  
+import sys
+if sys.version_info.major > 2:
+  from io import StringIO
+  bstr = bstr_py3
+else:
+  from StringIO import StringIO
+  bstr = bstr_py2
+  
 def errlog(msg):
 	elog(msg)
 
@@ -68,8 +83,8 @@ class StupidRandom: #seed is optional
     
     i = max(i, 1)
     
-    i1 = max(i, 0) + self._seed
-    i2 = ceil(i/4 + self._seed)
+    i1 = int(max(i, 0) + self._seed)
+    i2 = int(ceil(i/4 + self._seed))
     r1 = sqrt(tab[i1%len(tab)]*tab[i2%len(tab)])
     
     self.i += 1

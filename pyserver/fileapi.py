@@ -222,8 +222,10 @@ class FileAPI_DirList:
         files.append(f)
     
     body = json.dumps({"items": files})
+    body = bstr(body)
+    
     serv.gen_headers("GET", len(body), json_mimetype)
-    serv.wfile.write(bytes(body, "ascii"))
+    serv.wfile.write(body)
 
 class FileAPI_GetMeta:
   basepath = "/api/files/get/meta"
@@ -299,8 +301,10 @@ class FileAPI_GetMeta:
     f2["is_dir"] = f2["mimeType"] == FOLDER_MIME
     
     body = json.dumps(f2)
+    body = bstr(body)
+    
     serv.gen_headers("GET", len(body), json_mimetype)
-    serv.wfile.write(bytes(body, "ascii"))
+    serv.wfile.write(body)
 
 class UploadStatus:
   def __init__(self, token, path, userid, fileid):
@@ -414,8 +418,10 @@ class FileAPI_UploadStart:
     con.commit()
     
     body = json.dumps({"uploadToken" : utoken});
+    body = bstr(body)
+    
     serv.gen_headers("GET", len(body), json_mimetype)
-    serv.wfile.write(bytes(body, "ascii"))
+    serv.wfile.write(body)
 
 cur_uploads = {}  
 class FileAPI_UploadChunk:
@@ -541,8 +547,10 @@ class FileAPI_UploadChunk:
     print("chunk len:", len(buf))
     
     body = json.dumps({"success" : True});
+    body = bstr(body)
+    
     serv.gen_headers("PUT", len(body), json_mimetype)
-    serv.wfile.write(bytes(body, "ascii"))
+    serv.wfile.write(body)
 
 
 class FileAPI_GetFile:

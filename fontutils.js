@@ -1,4 +1,4 @@
-font_file = "font_out.png"
+font_file = "/content/font_out.png"
 
 default_font_color = new Float32Array([0.9, 0.8, 0.3, 1.0]);
 

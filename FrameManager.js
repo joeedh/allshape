@@ -137,8 +137,6 @@ ScreenArea.fromJSON = function(scrarea)
   for (var i=0; i<scrarea.areas.length; i++) {
     var a = scrarea.areas[i];
     
-    console.log("yay")
-    
     if (0) { //!(a.type in Area_Types)) {
       console.log("Error: bad area type " + a.type + " in ScreenArea.fromJSON()")
       console.trace();
@@ -252,7 +250,7 @@ SplitAreasTool.prototype.on_mousemove = function(event)
     p = p.parent;
   }
   
-  console.log(this.parent, p, this.mpos);
+  //console.log(this.parent, p, this.mpos);
   
   var mpos = this.mpos;
   var active = undefined;
@@ -332,7 +330,7 @@ SplitAreasTool.prototype.finish = function(event)
   var oldsize = [area.size[0], area.size[1]];
   
   var area2 = area.area_duplicate();
-  console.log(i)
+  //console.log(i)
   if (i == 0 || i == 2) {
     //horizontal
     area2.size[0] = area.size[0];
@@ -661,7 +659,7 @@ ScreenBorder.prototype.at_screen_border = function(event) {
     ret = ret2 & ret;
   }
   
-  console.log("ret: ", ret);
+  //console.log("ret: ", ret);
   return ret;
 }
 
@@ -949,7 +947,7 @@ Screen.prototype._on_mousemove = function(MouseEvent e)
 
 Screen.prototype._on_mousedown = function(MouseEvent e)
 {
-  //console.log("mdown", [e.x, e.y], e.button)
+  console.log("mdown", [e.x, e.y], e.button)
   this.mpos = [e.x, e.y];  
   for (var c in this.children) {
     c.mpos = new Vector2([e.x-c.pos[0], e.y-c.pos[1]])
@@ -984,18 +982,28 @@ Screen.prototype._on_mousewheel = function(MouseEvent e, float delta)
 }
 
 Screen.prototype.handle_event_modifiers = function(KeyboardEvent event) {
+  var copy = false;
+  var event2;
+  
   try {
-    event = JSON.parse(JSON.stringify(event));
+    event2 = JSON.parse(JSON.stringify(event));
   } catch (_error) {
-    event = {
-      x : event.x,
-      y : event.y,
-      keyCode : event.keyCode,
-      shiftKey : event.shiftKey,
-      ctrlKey : event.ctrlKey,
-      altKey : event.altKey
-    };
+    copy = true;
   }
+  
+  //if (copy || !("keyCode" in event2)) {
+    event2 = {
+        x : event.x,
+        y : event.y,
+        button : event.button,
+        keyCode : event.keyCode,
+        shiftKey : event.shiftKey,
+        ctrlKey : event.ctrlKey,
+        altKey : event.altKey
+     };
+  //}
+  
+  event = event2;
   
   for (var item in this.modup_time_ms) {
     if (item[2] == charmap["Shift"])

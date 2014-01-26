@@ -1,6 +1,13 @@
+import sys
+if sys.version_info.major > 2:
+  from http import *
+  from http.server import *
+else:
+  from httplib import *
+  from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
+  #from SimpleHTTPServer import SimpleHTTPRequestHandler as BaseHTTPRequestHandler
+  
 from logger import elog, mlog, alog
-from http import *
-from http.server import *
 import os, sys, os.path, math, random, time, io, gc
 import shelve, imp, struct, ctypes, ply
 import mimetypes
@@ -9,20 +16,10 @@ from fileapi import FileAPI_DirList, FileAPI_GetMeta, FileAPI_UploadStart, FileA
 import config, json
 
 import pymysql.err
+from api import api_handlers
 
 debug_files = [] #"triangulate.js"]
-api_handlers = {
-  "/api/files/dir/list" : FileAPI_DirList,
-  "/api/files/get/meta" : FileAPI_GetMeta,
-  "/api/files/get" : FileAPI_GetFile,
-  "/api/auth"  : AuthAPI_RefreshToken,
-  "/api/auth/session" : AuthAPI_SessionToken,
-  "/api/auth/userinfo" : AuthAPI_GetUserInfo,
-  "/api/files/upload/start" : FileAPI_UploadStart,
-  "/api/files/upload" : FileAPI_UploadChunk,
-  "/api/auth/oauth" : AuthAPI_OAuthStart,
-  "/api/auth/wpauthhack": AuthAPI_RefreshToken_WPHack
-}
+
 
 from config import doc_root, serverhost, ipaddr, serverport
 

@@ -4,7 +4,13 @@ import time, datetime, random, json
 import os, sys, os.path, struct, traceback, gc, io, imp
 from config import *
 from utils import *
-from urllib.parse import urlparse, parse_qs
+
+import sys
+if sys.version_info.major > 2:
+  from urllib.parse import urlparse, parse_qs
+else:
+  from urlparse import urlparse, parse_qs
+
 import pymysql.err
 
 def get_qs(url):

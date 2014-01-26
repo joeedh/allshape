@@ -710,51 +710,51 @@ function toJSON_intern (ob, tlevel) {
 
 </script>
 
-<script type="text/javascript" src="webgl-utils.js"></script>
-<script type="text/javascript" src="webgl-debug.js"></script>
-<script src="J3DI.js"> </script>
+<script type="text/javascript" src="content/webgl-utils.js"></script>
+<script type="text/javascript" src="content/webgl-debug.js"></script>
+<script src="content/J3DI.js"> </script>
 
-<script src="J3DIMath.js" type="text/javascript"> </script>
-<script type="text/javascript" src="font_out.js"></script>
-<script type="text/javascript" src="utils.js"></script>
-<script type="text/javascript" src="spatialhash.js"></script>
-<script type="text/javascript" src="jobs.js"></script>
-<script type="text/javascript" src="mathlib.js"></script>
-<script type="text/javascript" src="events.js"></script>
-<script type="text/javascript" src="ui.js"></script>
-<script type="text/javascript" src="UIElements.js"></script>
-<script type="text/javascript" src="geodata.js"></script>
-<script type="text/javascript" src="mesh.js"></script>
-<script type="text/javascript" src="UIMenu.js"></script>
-<script type="text/javascript" src="RadialMenu.js"></script>
-<script type="text/javascript" src="gpu_compute.js"></script>
-<script type="text/javascript" src="geodata.js"></script>
-<script type="text/javascript" src="triangulate.js"></script>
-<script type="text/javascript" src="triangulate_job.js"></script>
-<script type="text/javascript" src="subsurf.js"></script>
-<script type="text/javascript" src="opsapi.js"></script>
-<script type="text/javascript" src="draw.js"></script>
-<script type="text/javascript" src="AppState.js"></script>
-<script type="text/javascript" src="ajax.js"></script>
-<script type="text/javascript" src="network_api.js"></script>
-<script type="text/javascript" src="fileapi.js"></script>
-<script type="text/javascript" src="fontutils.js"></script>
-<script type="text/javascript" src="toolops_api.js"></script>
-<script type="text/javascript" src="meshtools_cad.js"></script>
-<script type="text/javascript" src="meshtools_loop.js"></script>
-<script type="text/javascript" src="meshtools_create.js"></script>
-<script type="text/javascript" src="data_api_define.js"></script>
-<script type="text/javascript" src="data_api.js"></script>
-<script type="text/javascript" src="googledrive_api.js"></script>
-<script type="text/javascript" src="dialog.js"></script>
-<script type="text/javascript" src="dialogs.js"></script>
-<script type="text/javascript" src="FrameManager.js"></script>
-<script type="text/javascript" src="3dview.js"></script>
-<script type="text/javascript" src="esubdivide.js"></script>
-<script type="text/javascript" src="trans_ops.js"></script>
-<script type="text/javascript" src="trans_ops_special.js"></script>
-<script type="text/javascript" src="view3d_ops.js"></script>
-<script type="text/javascript" src="select_ops.js"></script>
+<script src="content/J3DIMath.js" type="text/javascript"> </script>
+<script type="text/javascript" src="content/font_out.js"></script>
+<script type="text/javascript" src="content/utils.js"></script>
+<script type="text/javascript" src="content/spatialhash.js"></script>
+<script type="text/javascript" src="content/jobs.js"></script>
+<script type="text/javascript" src="content/mathlib.js"></script>
+<script type="text/javascript" src="content/events.js"></script>
+<script type="text/javascript" src="content/ui.js"></script>
+<script type="text/javascript" src="content/UIElements.js"></script>
+<script type="text/javascript" src="content/geodata.js"></script>
+<script type="text/javascript" src="content/mesh.js"></script>
+<script type="text/javascript" src="content/UIMenu.js"></script>
+<script type="text/javascript" src="content/RadialMenu.js"></script>
+<script type="text/javascript" src="content/gpu_compute.js"></script>
+<script type="text/javascript" src="content/geodata.js"></script>
+<script type="text/javascript" src="content/triangulate.js"></script>
+<script type="text/javascript" src="content/triangulate_job.js"></script>
+<script type="text/javascript" src="content/subsurf.js"></script>
+<script type="text/javascript" src="content/opsapi.js"></script>
+<script type="text/javascript" src="content/draw.js"></script>
+<script type="text/javascript" src="content/AppState.js"></script>
+<script type="text/javascript" src="content/ajax.js"></script>
+<script type="text/javascript" src="content/network_api.js"></script>
+<script type="text/javascript" src="content/fileapi.js"></script>
+<script type="text/javascript" src="content/fontutils.js"></script>
+<script type="text/javascript" src="content/toolops_api.js"></script>
+<script type="text/javascript" src="content/meshtools_cad.js"></script>
+<script type="text/javascript" src="content/meshtools_loop.js"></script>
+<script type="text/javascript" src="content/meshtools_create.js"></script>
+<script type="text/javascript" src="content/data_api_define.js"></script>
+<script type="text/javascript" src="content/data_api.js"></script>
+<script type="text/javascript" src="content/googledrive_api.js"></script>
+<script type="text/javascript" src="content/dialog.js"></script>
+<script type="text/javascript" src="content/dialogs.js"></script>
+<script type="text/javascript" src="content/FrameManager.js"></script>
+<script type="text/javascript" src="content/3dview.js"></script>
+<script type="text/javascript" src="content/esubdivide.js"></script>
+<script type="text/javascript" src="content/trans_ops.js"></script>
+<script type="text/javascript" src="content/trans_ops_special.js"></script>
+<script type="text/javascript" src="content/view3d_ops.js"></script>
+<script type="text/javascript" src="content/select_ops.js"></script>
 
 
 <script id="2d_basic_vshader" type="x-shader/x-vertex">
@@ -1568,8 +1568,8 @@ function toJSON_intern (ob, tlevel) {
         ke[gen_keystr("S", {shift: false, alt: true, ctrl: true})] = 0;
         ke[gen_keystr("P", {shift: false, alt: false, ctrl: true})] = 0;
         ke[gen_keystr("A", {shift: false, alt: false, ctrl: true})] = 0;
-        ke[gen_keystr("Backspace", {shift: false, alt: false, ctrl: false})] = 0;
-        ke[gen_keystr("Tab", {shift: false, alt: false, ctrl: false})] = 0;
+        ke[gen_keystr("BACKSPACE", {shift: false, alt: false, ctrl: false})] = 0;
+        ke[gen_keystr("TAB", {shift: false, alt: false, ctrl: false})] = 0;
         ke[gen_keystr("V", {shift: false, alt: false, ctrl: true})] = 0;
         ke[gen_keystr("E", {shift: false, alt: false, ctrl: true})] = 0;
         ke[gen_keystr("F", {shift: false, alt: false, ctrl: true})] = 0;
@@ -1583,7 +1583,7 @@ function toJSON_intern (ob, tlevel) {
                                    alt: e.altKey, ctrl: 
                                    e.ctrlKey})
           
-          
+          keystr = keystr.toUpperCase()
           if (keystr in key_exclude_list) {
               stop_event_propegation(e);
           }

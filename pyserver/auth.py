@@ -4,7 +4,7 @@ import random, time, json
 from utils import *
 from math import *
 import datetime
-from config import json_mimetype
+from config import json_mimetype, WITH_PY2
 import pymysql
 
 permissions = {"MODELER" : 1, "DRIVE_READ": 2, "DRIVE_WRITE": 4}
@@ -94,9 +94,10 @@ class AuthAPI_OAuthStart:
       return
     
     body = "<html><body>login</body></html>"
+    body = bstr(body)
     
     serv.gen_headers("GET", len(body), "text/html")
-    serv.wfile.write(bytes(body, "ascii"))
+    serv.wfile.write(body)
 
 class AuthAPI_RefreshToken_WPHack:
   basepath = "/api/wpauthhack"
@@ -141,9 +142,10 @@ class AuthAPI_RefreshToken_WPHack:
     con.commit()
     
     body = json.dumps({"refresh_token": str(tok), "result": 1})
+    body = bstr(body)
     
     #serv.gen_headers("GET", len(body), json_mimetype)
-    serv.wfile.write(bytes(body, "ascii"))
+    serv.wfile.write(body)
        
 class AuthAPI_RefreshToken:
   basepath = "/api/auth"
@@ -168,7 +170,7 @@ class AuthAPI_RefreshToken:
     alog("Fetching refresh token for user %s" % user)
 		
     if ret["password"] != password:
-      alog("Invalid password for %s" % user)
+      alog("Invalid password for %s, '%s', '%s'" % (user, ret["password"], password))
       serv.send_error(401)
       return
     
@@ -187,9 +189,10 @@ class AuthAPI_RefreshToken:
     con.commit()
     
     body = json.dumps({"refresh_token": str(tok), "result": 1})
+    body = bstr(body)
     
-    serv.gen_headers("GET", len(body), json_mimetype)
-    serv.wfile.write(bytes(body, "ascii"))
+    serv.gen_headers("GET", len(body), json_mimetype)    
+    serv.wfile.write(body)
 
 class AuthAPI_SessionToken:
   basepath = "/api/auth/session"
@@ -231,9 +234,10 @@ class AuthAPI_SessionToken:
     con.commit()
     
     body = json.dumps({"access_token": str(tok)})
+    body = bstr(body)
     
     serv.gen_headers("GET", len(body), json_mimetype)
-    serv.wfile.write(bytes(body, "ascii"))    
+    serv.wfile.write(body)
 
 class AuthAPI_GetUserInfo:
   basepath = "/api/auth/userinfo"
@@ -267,8 +271,10 @@ class AuthAPI_GetUserInfo:
                        "permissions": ret["permissions"],
                        "last_login": str(ret["last_login"])})
     
-    serv.gen_headers("GET", len(body), json_mimetype)
-    serv.wfile.write(bytes(body, "ascii")) 
+    body = bstr(body)
+    
+    serv.gen_headers("GET", len(body), json_mimetype)    
+    serv.wfile.write(body) 
     
 def do_auth(tok):
   cur, con = mysql_connect()
