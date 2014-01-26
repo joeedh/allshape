@@ -2,7 +2,11 @@ import os, sys, os.path, math, random, time, io
 import shelve, imp, struct, ply
 import mimetypes
 
-WITH_PY2 = True if sys.version_info.major <= 2 else False
+try:
+	WITH_PY2 = True if sys.version_info.major <= 2 else False
+except:
+	WITH_PY2 = True
+
 def bytes_py2(s, encoding):
   return str(s)
 

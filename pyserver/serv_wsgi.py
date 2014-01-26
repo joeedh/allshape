@@ -18,7 +18,7 @@ def bstr_py2(s):
   return str(s)
   
 import sys
-if sys.version_info.major > 2:
+if not WITH_PY2:
   from io import StringIO
   bstr = bstr_py3
 else:

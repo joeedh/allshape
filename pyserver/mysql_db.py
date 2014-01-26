@@ -6,7 +6,7 @@ from config import *
 from utils import *
 
 import sys
-if sys.version_info.major > 2:
+if not WITH_PY2:
   from urllib.parse import urlparse, parse_qs
 else:
   from urlparse import urlparse, parse_qs
