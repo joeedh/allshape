@@ -159,6 +159,7 @@ class AuthAPI_RefreshToken:
     
     user = qs["user"][0]
     password = qs["password"][0]
+    
     if not password.startswith("{SHA}"):
       password = "{SHA}" + password
     
