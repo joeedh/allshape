@@ -30,7 +30,9 @@ for f in os.listdir("../"):
 for f in os.listdir("../server/"):
   if f.endswith(".js"):
     files.append(["../server/%s"%f, "../server/js_build/%s"%f])
-    
+
+#sha1 library
+files.append(["../crypto/sha1.js", "sha1.js"])
 files.append(["../tinygpu/tinygpu_test.html.in".replace("/", os.path.sep), ""])
 
 win32 = sys.platform == "win32"

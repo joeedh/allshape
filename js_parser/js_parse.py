@@ -21,7 +21,7 @@ precedence = (
                "LTHANEQ", "NOTEQUAL"),
   ("left", "INSTANCEOF"),
   ("left", "IN"),
-  ("left", "LSHIFT", "RSHIFT"),
+  ("left", "LSHIFT", "RSHIFT", "LLSHIFT", "RRSHIFT"),
   ("left", "PLUS", "MINUS"),
   ("left", "TIMES", "DIVIDE"),
   ("right", "UMINUS"), #negation prefix operation, note this is a "fictitious" token
@@ -1231,6 +1231,8 @@ def p_expr(p):
             | expr cmplx_assign expr COLON var_type SEMI
             | expr RSHIFT expr
             | expr LSHIFT expr
+            | expr LLSHIFT expr
+            | expr RRSHIFT expr
             | expr DOT expr
             | expr LAND expr
             | expr LOR expr
