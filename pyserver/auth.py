@@ -168,6 +168,7 @@ class AuthAPI_RefreshToken:
     
     ret = cur.fetchone()
     if ret == None:
+      alog("invalid user %s" % user)
       serv.send_error(401)
       return
     
