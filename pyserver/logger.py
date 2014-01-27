@@ -8,7 +8,7 @@ def log(file, msg):
   global _c
   
   file.write("%s: %s\n" % (str(datetime.now()), str(msg)))
-  if time() - _c > 0.3:
+  if 1: #time() - _c > 0.3:
     file.flush()
     _c = time()
     

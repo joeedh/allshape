@@ -172,7 +172,7 @@ class AuthAPI_RefreshToken:
       serv.send_error(401)
       return
     
-    alog("Fetching refresh token for user %s" % user)
+    alog("Fetching refresh token for user %s. . ." % user)
 		
     if ret["password"] != password:
       alog("Invalid password for %s, got: '%s', pass: '%s'" % (user, password, ret["password"]))
