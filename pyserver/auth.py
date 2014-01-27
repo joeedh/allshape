@@ -248,6 +248,7 @@ class AuthAPI_GetUserInfo:
     print(qs);
     
     if "accessToken" not in qs:
+      elog("access token wasn't provided")
       serv.send_error(400)
       return
     
@@ -256,7 +257,7 @@ class AuthAPI_GetUserInfo:
     userid = do_auth(token)
     
     if (userid == None):
-      print("invalid access")
+      elog("invalid access")
       serv.send_error(401)
       return
       
@@ -287,15 +288,15 @@ def do_auth(tok):
   ret = cur.fetchone()
   
   if ret == None: 
-    print("nonexistent access token");
+    elog("nonexistent access token");
     return None
     
   if ret["type"] != toktypes["A"]:
-    print("invalid access token")
+    elog("invalid access token")
     return None
     
   if ret["expiration"] < datetime.datetime.now():
-    print("expired access token")
+    elog("expired access token")
     return None
       
   return ret["userid"]
