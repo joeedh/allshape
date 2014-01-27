@@ -110,6 +110,9 @@ class AuthAPI_RefreshToken_WPHack:
     
     user = qs["user"][0]
     password = qs["password"][0]
+    #HACK: wsgi is turning +'s into spaces? how odd
+    password = password.replace(" ", "+")
+    
     if not password.startswith("{SHA}"):
       password = "{SHA}" + password
     
@@ -159,6 +162,8 @@ class AuthAPI_RefreshToken:
     
     user = qs["user"][0]
     password = qs["password"][0]
+    #HACK: wsgi is turning +'s into spaces? how odd
+    password = password.replace(" ", "+")
     
     if not password.startswith("{SHA}"):
       password = "{SHA}" + password
