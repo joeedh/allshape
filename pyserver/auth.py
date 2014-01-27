@@ -110,6 +110,8 @@ class AuthAPI_RefreshToken_WPHack:
     
     user = qs["user"][0]
     password = qs["password"][0]
+    if not password.startswith("{SHA}"):
+      password = "{SHA}" + password
     
     cur, con = mysql_connect()
     cur.execute("SELECT * FROM users WHERE username="+estr(user))
@@ -119,12 +121,11 @@ class AuthAPI_RefreshToken_WPHack:
       serv.send_error(401)
       return
     
-    alog("Fetching refresh token for user %s" % user)
+    alog("Fetching refresh token for user %s. . ." % user)
 		
     if ret["password"] != password:
-      alog("Invalid password for %s" % user)
+      alog("Invalid password for |%s|, %s" % (user, password))
       serv.send_error(401)
-
       return
     
     userid = ret["userid"]
@@ -158,6 +159,8 @@ class AuthAPI_RefreshToken:
     
     user = qs["user"][0]
     password = qs["password"][0]
+    if not password.startswith("{SHA}"):
+      password = "{SHA}" + password
     
     cur, con = mysql_connect()
     cur.execute("SELECT * FROM users WHERE username="+estr(user))
@@ -170,7 +173,7 @@ class AuthAPI_RefreshToken:
     alog("Fetching refresh token for user %s" % user)
 		
     if ret["password"] != password:
-      alog("Invalid password for %s, '%s', '%s'" % (user, ret["password"], password))
+      alog("Invalid password for %s, got: '%s', pass: '%s'" % (user, password, ret["password"]))
       serv.send_error(401)
       return
     

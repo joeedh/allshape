@@ -277,7 +277,8 @@ function api_exec(path, netjob, mode,
 
 function AuthSessionGen(job, user, password, refresh_token) {
   if (refresh_token == undefined) {
-    api_exec("/api/auth?user="+user+"&password="+password, job);
+    var sha1pwd = CryptoJS.enc.Base64.stringify(CryptoJS.SHA1(password))
+    api_exec("/api/auth?user="+user+"&password="+sha1pwd, job);
     yield 1;
     
     console.log("job.value: ", job.value);

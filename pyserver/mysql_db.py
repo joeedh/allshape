@@ -61,25 +61,27 @@ def mysql_reconnect():
   return mysql_con.cursor(), mysql_con
 
 def mysql_connect():
-  global mysql_con
+  #global mysql_con
+  mysql_con_local = None
   
-  #don't try to use only one connection
-  if 1: #mysql_con == None: 
+  #try to use only one connection
+  if mysql_con_local == None: 
     try:
-      mysql_con = mysql.connect(cursorclass=\
+      mysql_con_local = mysql.connect(cursorclass=\
         mysql.cursors.DictCursor, host=db_host,\
         user=db_user, passwd=db_passwd, db=db_db)
     except pymysql.err.OperationalError:
       return None, None
       
   try:
-    ret = mysql_con.cursor(), mysql_con
+    ret = mysql_con_local.cursor(), mysql_con_local
   except:
-    print("MySQL connection lost; attempting to re-connect. . .")
-    mysql_con = mysql.connect(cursorclass=\
+    elog("MySQL connection lost; attempting to re-connect. . .")
+    mysql_con_local = mysql.connect(cursorclass=\
       mysql.cursors.DictCursor, host=db_host,\
       user=db_user, passwd=db_passwd, db=db_db)
-  
+    ret = mysql_con_local.cursor(), mysql_con_local
+    
   return ret
   """
   global mysql_con_slot_cur

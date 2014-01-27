@@ -331,8 +331,6 @@ LoginDialog.prototype.end = function(do_cancel) {
   var user = this.userbox.text;
   var password = this.passbox.text;
   
-  password = CryptoJS.enc.Base64.stringify(CryptoJS.SHA1(password))
-  
   console.log(user, password);
   
   var session = g_app_state.session;
