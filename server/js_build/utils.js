@@ -265,7 +265,7 @@ GArray.prototype.replace = function(olditem, newitem) {
     throw "Yeek! Item "+olditem+" not in array";
    return;
  }
- this[olditem] = newitem;
+ this[idx] = newitem;
 }
 GArray.prototype.toSource = function() {
  var s="new GArray"+this.length+"([";

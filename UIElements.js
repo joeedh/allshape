@@ -1,3 +1,5 @@
+"use strict";
+
 //buttons only take executable (function) paths as arguments
 function UIButton(ctx, text, pos, size, path, callback) {
   UIElement.call(this, ctx, path);
@@ -50,7 +52,7 @@ UIButton.prototype.build_draw = function(UICanvas canvas) {
   
   var tsize = canvas.textsize(this.text);
   
-  canvas.text([(this.size[0]-tsize[0])*0.5, (this.size[1]-tsize[1])*0.25], this.text, uicolors["BoxText"]);
+  canvas.text([(this.size[0]-tsize[0])*0.5, (this.size[1]-tsize[1])*0.45], this.text, uicolors["BoxText"]);
   
   canvas.end(this);
 }
@@ -312,6 +314,7 @@ UICheckBox.prototype.get_min_size = function(UICanvas canvas, Boolean isvertical
 function UINumBox(ctx, text, range, val, pos, size, path) { //path is optional
   UIElement.call(this, ctx, path);
   
+  this.unit = undefined;
   this.clicked = false;
   this.range = range
   this.val = val
@@ -336,7 +339,21 @@ function UINumBox(ctx, text, range, val, pos, size, path) { //path is optional
 inherit(UINumBox, UIElement);
 
 UINumBox.prototype.on_mousedown = function(MouseEvent event) {
-  if (event.button == 0 && !this.clicked) {
+  var numbox = this;
+  
+  //callback for ending text edit swap;
+  function on_end_edit(tbox) {
+    numbox.val = Unit.parse(tbox.text, numbox.val);
+    
+    if (numbox.state & UIFlags.USE_PATH) {
+      numbox.set_prop_data(numbox.val);
+    }
+    tbox.parent.replace(tbox, numbox);
+  }
+    
+  console.log("shift: " + event.shiftKey.toString());
+  
+  if (event.button == 0 && !this.clicked && !event.shiftKey) {
     console.log(event.x, event.y)
     this.push_modal()
     
@@ -344,7 +361,23 @@ UINumBox.prototype.on_mousedown = function(MouseEvent event) {
     this.start_val = this.val
     this.clicked = true;
     this.do_recalc();
-  }  
+  } else if (event.shiftKey) {
+    console.log(event.x, event.y)
+    
+    //swap out with text button
+    var unit = this.unit;
+    
+    var valstr = Unit.gen_string(this.val, unit);
+    var textbox = new UITextBox(this.ctx, valstr, this.pos, this.size);
+    
+    textbox.packflag |= PackFlags.NO_REPACK;
+    this.parent.replace(this, textbox);
+
+    textbox.begin_edit(event);
+    textbox.set_cursor();
+    
+    textbox.on_end_edit = on_end_edit;
+  }
 }
 
 UINumBox.prototype.on_mouseup = function(MouseEvent event) {
@@ -421,6 +454,7 @@ UINumBox.prototype.on_mousemove = function(MouseEvent event) {
       }
   }
 }
+
 UINumBox.prototype.build_draw = function(UICanvas canvas) {
   canvas.begin(this);
 
@@ -431,7 +465,10 @@ UINumBox.prototype.build_draw = function(UICanvas canvas) {
   else 
     canvas.box([0, 0], this.size);
   
-  var str = this.text + " " + this.val
+  var unit = this.unit;    
+  var valstr = Unit.gen_string(this.val, unit);
+  
+  var str = this.text + " " + valstr
   var pad = 15
   while (str.length > 1 && canvas.textsize(str)[0] > this.size[0]-pad*2) {
     str = str.slice(0, str.length-1);
@@ -440,7 +477,7 @@ UINumBox.prototype.build_draw = function(UICanvas canvas) {
   var tsize = canvas.textsize(str)
   
   pad = (this.size[0] - tsize[0])*0.5
-  canvas.text([pad, 0.25*(this.size[1]-tsize[1])+1], str, uicolors["BoxText"]);
+  canvas.text([pad, 0.45*(this.size[1]-tsize[1])+1], str, uicolors["BoxText"]);
   
   var siz = this.size[1]/2.0
   var x = 4, y= (this.size[1]-siz)/2;
@@ -587,7 +624,7 @@ _HiddenMenuElement.prototype.build_draw = function(UICanvas canvas, Boolean isve
   e.g. that a user is hovering over a label, and the menu should switch
   to that one.*/
 UIMenuLabel.prototype.add_hidden_elements = function(menu) {
-  es = new GArray();
+  var es = new GArray();
   for (var c in this.parent.children) {
     if (c == this || c.constructor.name != UIMenuLabel.name) continue;
     
@@ -706,6 +743,8 @@ UIMenuLabel.prototype.get_min_size = function(UICanvas canvas, Boolean isvertica
 function UITextBox(ctx, text, pos, size, path) {
   UIElement.call(this, ctx, path);
   
+  this.on_end_edit = undefined;
+  
   if (pos != undefined)
     this.pos = pos
   if (size != undefined)
@@ -729,8 +768,6 @@ function UITextBox(ctx, text, pos, size, path) {
   this.cursor = 0;
   this.last_cursor = 0;
   this.clicked = false;
-  this.pos = pos
-  this.size = size
   this.callback = undefined;
   this.text_offx = 13;
   this.text_min_offx = 13;
@@ -834,6 +871,7 @@ UITextBox.prototype.on_mousemove = function(MouseEvent event) {
 
 UITextBox.prototype.begin_edit = function(event) {
   this.do_recalc();
+  
   this.push_modal();
   this.start_text = new String(this.text);
   this.gen_glyphmap();
@@ -848,7 +886,7 @@ UITextBox.prototype.begin_edit = function(event) {
   this.sel = [0, this.text.length];
   this.clicked = true;
   
-  open_android_keyboard()
+  open_android_keyboard();
 }
 
 UITextBox.prototype.end_edit = function(cancel) { //cancel is optional, defaults to false
@@ -874,6 +912,9 @@ UITextBox.prototype.end_edit = function(cancel) { //cancel is optional, defaults
   }
   
   close_android_keyboard()
+  
+  if (this.on_end_edit)
+    this.on_end_edit(this);
 }
 
 UITextBox.prototype.set_cursor = function() {
@@ -926,6 +967,8 @@ UITextBox.prototype.delcmd = function(dir) {
       this.replace_text(text2);
     }
   }
+  
+  this.set_cursor();
 }
 
 UITextBox.prototype.find_next_textbox = function() {
@@ -1119,8 +1162,9 @@ UITextBox.prototype.gen_glyphmap = function() {
   this.ctx.font.calc_string(this.text, calc_callback);
   gmap.push(this.ctx.font.calcsize(this.text)[0]);
   
+  this.text_offx = Math.min(this.text_offx, gmap[gmap.length-1]);
   for (var i=0; i<gmap.length; i++) {
-    gmap[i] += this.text_offx;
+    gmap[i] = gmap[i]*default_ui_font_size + this.text_offx;
   }
 }
 
@@ -1153,7 +1197,7 @@ UITextBox.prototype.build_draw = function(UICanvas canvas) {
   if (this.clicked) {
     if (inrect_2d(this.mpos, [-10,-10], [this.size[0]+20, this.size[1]+20])) {
       if (!this.has_sel() || (this.selcursor < this.sel[0] || this.selcursor > this.sel[1])) {
-        x = this.gmap[this.selcursor];
+        var x = this.gmap[this.selcursor];
         if (x == undefined)
           x = 0;
         

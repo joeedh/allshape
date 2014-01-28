@@ -1,13 +1,33 @@
 "use strict";
 
 var formacad_file_ext = ".fc3";
-var g_app_version = 0.01;
+var g_app_version = 0.02;
+
+function AppSettings() {
+  this.unit_scheme = "imperial";
+  this.unit = "in";
+}
+create_prototype(AppSettings);
+
+AppSettings.prototype.toJSON = function() {
+  return this;
+};
+
+AppSettings.fromJSON = function(obj) {
+  var as = new AppSettings();
+  as.unit_scheme = obj.unit_scheme;
+  as.unit = obj.unit;
+  
+  return as;
+};
 
 function UserSession() {
   this.tokens = {} : ObjectMap;
   this.username = "";
   this.password = "";
   this.is_logged_in = false;
+  
+  this.settings = new AppSettings();
   
   this.store = function() {
     localStorage.session = JSON.stringify(this);
@@ -51,6 +71,12 @@ UserSession.fromJSON = function(obj) {
   us.username = obj.username;
   us.password = obj.password;
   us.is_logged_in = obj.is_logged_in;
+  
+  if (obj.settings != undefined) {
+    us.settings = AppSettings.fromJSON(obj.settings);
+  } else {
+    us.settings = new AppSettings();
+  }
   
   return us;
 }

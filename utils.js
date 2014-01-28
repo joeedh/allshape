@@ -102,7 +102,7 @@ GArray.prototype.replace = function(T olditem, T newitem) { //ignore_existence d
     return;
   }
   
-  this[olditem] = newitem;
+  this[idx] = newitem;
 }
 /*
 this.pop = function() {

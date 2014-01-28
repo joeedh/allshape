@@ -18,10 +18,10 @@ function Font(WebGLRenderingContext gl, View3DHandler view3d) {
   }
   
   this.tex.image = new Image();
-  this.space_width = 6;
+  this.space_width = 4;
   this.tab_width = this.space_width*2;
   this.kern_off = 0;
-  this.linehgt = 16;
+  this.linehgt = 11;
   
   var thetex = this.tex;
   this.tex.image.onload = function() {

@@ -44,6 +44,7 @@ function ToolProperty(type, apiname, uiname, description, flag) {
   this.path = undefined;
   
   this.hotkey_ref = undefined;
+  this.unit = undefined;
   
 }
 create_prototype(ToolProperty);
@@ -236,6 +237,7 @@ EnumProperty.prototype.set_value = function(val) {
 function Vec3Property(vec3, apiname, uiname, description, flag) {
   ToolProperty.call(this, PropTypes.VEC3, apiname, uiname, description, flag);
   
+  this.unit = "default";
   this.range = [undefined, undefined]
   this.real_range = [undefined, undefined]
   this.data = new Vector3(vec3);  

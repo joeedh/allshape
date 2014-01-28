@@ -1,11 +1,21 @@
-UIFlags = {ENABLED : 1, HIGHLIGHT: 2, FOCUS: 4, GREYED: 8, REDERROR: 16, WARNING: 32, USE_PATH : 64, NO_RECALC: 128}
+"use strict";
 
-PackFlags = {INHERIT_HEIGHT : 1, INHERIT_WIDTH: 2, ALIGN_RIGHT : 4, ALIGN_LEFT: 8, ALIGN_CENTER: 16, ALIGN_BOTTOM : 32, IGNORE_LIMIT : 64}
+var UIFlags = {
+  ENABLED : 1, HIGHLIGHT: 2, 
+  FOCUS: 4, GREYED: 8, 
+  REDERROR: 16, WARNING: 32, 
+  USE_PATH : 64, NO_RECALC: 128
+};
+var PackFlags = {
+  INHERIT_HEIGHT : 1, INHERIT_WIDTH: 2, 
+  ALIGN_RIGHT : 4, ALIGN_LEFT: 8, 
+  ALIGN_CENTER: 16, ALIGN_BOTTOM : 32, 
+  IGNORE_LIMIT : 64, NO_REPACK : 128
+}
+var CanvasFlags = {NOT_ROOT : 1, NO_PROPEGATE : 2}
 
-CanvasFlags = {NOT_ROOT : 1, NO_PROPEGATE : 2}
-
-_ui_element_id_gen = 1;
-
+var _ui_element_id_gen = 1;
+var default_ui_font_size = 0.75;
 function open_android_keyboard() {
    var canvas = document.getElementById("example")
    canvas.contentEditable = true
@@ -45,7 +55,6 @@ function UIElement(ctx, path, pos, size) { //path, pos, size are optional
     this.state |= UIFlags.USE_PATH;
   }  
 }
-
 inherit(UIElement, EventHandler);
 
 UIElement.prototype.__hash__ = function() : String {
@@ -180,14 +189,14 @@ UIElement.prototype.gen_tooltip = function() : String {}
 UIElement.prototype.on_add = function(parent) {}
 UIElement.prototype.on_remove = function(parent) {}
 
-_trilist_n0 = new Vector3(); _trilist_n1 = new Vector3()
-_trilist_n2 = new Vector3(); _trilist_n3 = new Vector3()
-_trilist_v1 = new Vector3(); _trilist_v2 = new Vector3()
-_trilist_v3 = new Vector3(); _trilist_v4 = new Vector3()
-_trilist_c1 = new Vector4(); _trilist_c2 = new Vector4()
-_trilist_c3 = new Vector4(); _trilist_c4 = new Vector4()
-_trilist_v5 = new Vector3(); _trilist_v6 = new Vector3();
-_trilist_v7 = new Vector3(); _trilist_v8 = new Vector3();
+var _trilist_n0 = new Vector3(); var _trilist_n1 = new Vector3()
+var _trilist_n2 = new Vector3(); var _trilist_n3 = new Vector3()
+var _trilist_v1 = new Vector3(); var _trilist_v2 = new Vector3()
+var _trilist_v3 = new Vector3(); var _trilist_v4 = new Vector3()
+var _trilist_c1 = new Vector4(); var _trilist_c2 = new Vector4()
+var _trilist_c3 = new Vector4(); var _trilist_c4 = new Vector4()
+var _trilist_v5 = new Vector3(); var _trilist_v6 = new Vector3();
+var _trilist_v7 = new Vector3(); var _trilist_v8 = new Vector3();
 
 function TriList(View3DHandler view3d, UICanvas canvas) {
   this.verts = [];
@@ -356,8 +365,8 @@ function TriList(View3DHandler view3d, UICanvas canvas) {
       v3.load(lines[i][0]);
       v3.add(n2);
       
-      c1 = _trilist_c1.load(colors[i][0]); c2 = _trilist_c2.load(colors[i][1]);
-      c3 = _trilist_c3.load(colors[i][1]); c4 = _trilist_c4.load(colors[i][0]);
+      var c1 = _trilist_c1.load(colors[i][0]); var c2 = _trilist_c2.load(colors[i][1]);
+      var c3 = _trilist_c3.load(colors[i][1]); var c4 = _trilist_c4.load(colors[i][0]);
       
       c3[3] = 0.0; c4[3] = 0.0;
       n1.mulScalar(2.0);
@@ -406,20 +415,20 @@ function TriList(View3DHandler view3d, UICanvas canvas) {
     else
       gl.disableVertexAttribArray(2);
           
-    vbuf = gl.createBuffer();    
+    var vbuf = gl.createBuffer();    
     gl.bindBuffer(gl.ARRAY_BUFFER, vbuf);
     gl.bufferData(gl.ARRAY_BUFFER, this.verts, gl.STATIC_DRAW);
     gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
     gl.bindBuffer(gl.ARRAY_BUFFER, vbuf);
 
-    cbuf = gl.createBuffer();    
+    var cbuf = gl.createBuffer();    
     gl.bindBuffer(gl.ARRAY_BUFFER, cbuf);
     gl.bufferData(gl.ARRAY_BUFFER, this.colors, gl.STATIC_DRAW);
     gl.vertexAttribPointer(1, 4, gl.FLOAT, false, 0, 0);
     gl.bindBuffer(gl.ARRAY_BUFFER, cbuf);
 
     if (this.use_tex) {
-      tbuf = gl.createBuffer();    
+      var tbuf = gl.createBuffer();    
       gl.bindBuffer(gl.ARRAY_BUFFER, tbuf);
       gl.bufferData(gl.ARRAY_BUFFER, this.texcos, gl.STATIC_DRAW);
       gl.vertexAttribPointer(2, 2, gl.FLOAT, false, 0, 0);
@@ -492,16 +501,18 @@ function TriList(View3DHandler view3d, UICanvas canvas) {
   }
 }
 
-function TextDraw(pos, text, color, view3d, mat, spos, ssize, viewport) {
+function TextDraw(pos, text, color, view3d, mat, spos, ssize, viewport, size) {
   this.text = text;
   this.pos = pos;
   this.color = color;
   this.view3d = view3d
-  this.transmat = mat
+  this.transmat = new Matrix4(mat)
   this.tdrawbuf = undefined : TextDrawBuffer;
   this.spos = spos;
   this.ssize = ssize;
   this.viewport = viewport;
+  this.size = size;
+  this.transmat.scale(size, size, size);
   
   this.destroy = function() {
     if (this.tdrawbuf != undefined)
@@ -531,8 +542,7 @@ function TextDraw(pos, text, color, view3d, mat, spos, ssize, viewport) {
   }
 }
 
-__uicanvas_id = 1;
-
+var __uicanvas_id = 1;
 //viewport is optional, defaults to view3d.size
 function UICanvas(view3d, viewport) { 
   if (viewport == undefined)
@@ -559,7 +569,6 @@ function UICanvas(view3d, viewport) {
   this.flag = 0;
   this._id = __uicanvas_id++;
 }
-
 create_prototype(UICanvas);
 
 UICanvas.prototype.push_scissor = function(pos, size) {
@@ -650,8 +659,12 @@ UICanvas.prototype.has_cache = function(Object item) {
   return this.oldcache.has(item);
 }
 
-UICanvas.prototype.textsize = function(text) {
-  return this.view3d.font.calcsize(text);
+UICanvas.prototype.textsize = function(text, size) {
+  if (size == undefined)
+    size = default_ui_font_size;
+  
+  var box = this.view3d.font.calcsize(text);
+  return [box[0]*size, box[1]*size];
 }
 
 UICanvas.prototype.line = function(v1, v2, c1, c2, width) {
@@ -662,8 +675,7 @@ UICanvas.prototype.line = function(v1, v2, c1, c2, width) {
   this.line_strip([[v1, v2]], [[c1, c2]], undefined, width);
 }
 
-_ls_static_colors = {reallength: 0, length: 0};
-
+var _ls_static_colors = {reallength: 0, length: 0};
 UICanvas.prototype.line_strip = function(lines, colors, texcos, width, half) {//colors,texcos,width are optional
   if (colors == undefined) {
     colors = uicolors["DefaultLine"];
@@ -859,9 +871,8 @@ function darken(c, m) {
   return c;
 }
 
-lighten = darken
-
-uicolors = {
+var lighten = darken
+var uicolors = {
   "Box": [
     darken([1.0, 0.7, 0.5, 0.9], 0.7),
     darken([1.0, 0.7, 0.5, 0.9], 0.8),
@@ -1120,9 +1131,12 @@ UICanvas.prototype.box1 = function(pos, size, clr, rfac, outline_only) {//clr,rf
   return this.trilist
 }
 
-UICanvas.prototype.text = function(Array<float> pos, String text, Array<float> color, 
-                                  Array<float> scissor_pos, Array<float> scissor_size)
+UICanvas.prototype.text = function(Array<float> pos, String text, Array<float> color, Number size, Array<float> scissor_pos, Array<float> scissor_size)
 { 
+  if (size == undefined) {
+    size = default_ui_font_size;
+  }
+  
   if (color == undefined) {
     color = uicolors["DefaultText"]
   }
@@ -1139,7 +1153,7 @@ UICanvas.prototype.text = function(Array<float> pos, String text, Array<float> c
     scissor_pos.multVecMatrix(this.transmat);
   }
   
-  var textdraw = new TextDraw(pos, text, color, this.view3d, this.transmat, scissor_pos, scissor_size, this.viewport);
+  var textdraw = new TextDraw(pos, text, color, this.view3d, this.transmat, scissor_pos, scissor_size, this.viewport, size);
   if (this.drawlists[this.drawlists.length-1] == this.trilist) {
     this.drawlists.push(textdraw);
     
@@ -1398,7 +1412,29 @@ UIFrame.prototype.add = function(UIElement e, int packflag) { //packflag is opti
   this.do_recalc();
 }
 
+UIFrame.prototype.replace = function(UIElement a, UIElement b) {
+  if (a == this.modalhandler) {
+    a.pop_modal();
+  }
+  a.on_remove(this);
+  this.children.replace(a, b);
+  
+  b.parent = this;
+  if (b.canvas == undefined)
+    b.canvas = this.canvas;
+  if (b.ctx == undefined)
+    b.ctx = this.ctx;
+  
+  b.on_add(this);
+  
+  this.do_recalc();
+}
+
 UIFrame.prototype.remove = function(UIElement e) {
+  if (e == this.modalhandler) {
+    e.pop_modal();
+  }
+  
   this.children.remove(e);
   e.on_remove(this);
 }
@@ -1462,7 +1498,8 @@ UIFrame.prototype.build_draw = function(canvas, skip_box) { //skip_box is option
         //console.log("recalculating element", c.__hash__());
       }
       
-      c.pack(this.get_canvas(), false);
+      if (!(c.packflag & PackFlags.NO_REPACK))
+        c.pack(this.get_canvas(), false);
       
       canvas.push_transform(mat);
       c.build_draw(canvas);
@@ -1482,7 +1519,8 @@ UIFrame.prototype.on_tick = function() {
 
 UIFrame.prototype.pack = function(UICanvas canvas, Boolean isvertical) {
   for (var c in this.children) {
-    c.pack(canvas, isvertical);
+    if (!(c.packflag & PackFlags.NO_REPACK))
+      c.pack(canvas, isvertical);
   }  
 }
 
@@ -1527,7 +1565,10 @@ UIPackFrame.prototype.pack = function(canvas, isVertical) {
   this.do_full_recalc();
 }
 
-UIPackFrame.prototype.prop = function(path) {
+UIPackFrame.prototype.prop = function(path, packflag) {
+  if (packflag == undefined)
+    packflag = 0;
+  
   if (this.path_prefix.length > 0)
     path = this.path_prefix + "." + path
 
@@ -1547,21 +1588,35 @@ UIPackFrame.prototype.prop = function(path) {
     }
     
     var c = new UINumBox(ctx, prop.uiname, range, prop.data, [0,0], [0,0], path);
+    c.packflag = packflag;
+    c.unit = prop.unit;
+    
     this.add(c);
   } else if (prop.type == PropTypes.ENUM) {
     var c = new UIMenuButton(ctx, undefined, [0,0], [0,0], path);
+    
+    c.packflag |= packflag;
     this.add(c)
-  }  else if (prop.type == PropTypes.VEC3) {
+  } else if (prop.type == PropTypes.VEC3) {
       range = [-2000, 2000];
       
       var row = this.row();
+      row.packflag = packflag;
       
       row.label(prop.uiname);
       var c = new UINumBox(ctx, "X", range, prop.data, [0,0], [0,0], path + "[0]");
+      c.unit = prop.unit;
+      c.packflag |= packflag;
       row.add(c);
+      
       var c = new UINumBox(ctx, "Y", range, prop.data, [0,0], [0,0], path + "[1]");
+      c.unit = prop.unit;
+      c.packflag |= packflag;
       row.add(c);
+      
       var c = new UINumBox(ctx, "Z", range, prop.data, [0,0], [0,0], path + "[2]");
+      c.unit = prop.unit;
+      c.packflag |= packflag;
       row.add(c);
   } else if (prop.type == PropTypes.VEC4) {
       range = [-2000, 2000];
@@ -1570,20 +1625,33 @@ UIPackFrame.prototype.prop = function(path) {
       
       row.label(prop.uiname);
       var c = new UINumBox(ctx, "X", range, prop.data, [0,0], [0,0], path + "[0]");
+      c.packflag |= packflag;
+      c.unit = prop.unit;
       row.add(c);
+
       var c = new UINumBox(ctx, "Y", range, prop.data, [0,0], [0,0], path + "[1]");
+      c.packflag |= packflag;
+      c.unit = prop.unit;
       row.add(c);
+
       var c = new UINumBox(ctx, "Z", range, prop.data, [0,0], [0,0], path + "[2]");
+      c.packflag |= packflag;
+      c.unit = prop.unit;
       row.add(c);
+
       var c = new UINumBox(ctx, "W", range, prop.data, [0,0], [0,0], path + "[3]");
+      c.packflag |= packflag;
+      c.unit = prop.unit;
       row.add(c);
   } else if (prop.type == PropTypes.STRING && (prop.flag & TPropFlags.LABEL)) {
-    this.label(path, true);
+    this.label(path, true, packflag);
   } else if (prop.type == PropTypes.BOOL) {
     var check = new UICheckBox(ctx, prop.uiname, undefined, undefined, path);
+    check.packflag |= packflag;
     this.add(check);
   } else if (prop.type == PropTypes.FLAG) {
     var row = this.row();
+    row.packflag |= packflag;
     
     row.label(prop.uiname + ":");
     for (var k in prop.ui_value_names) {
@@ -1655,7 +1723,12 @@ RowFrame.prototype.get_min_size = function(UICanvas canvas, Boolean isvertical) 
   var tothgt = 0;
   
   for (var c in this.children) {
-    var size = c.get_min_size(canvas, isvertical);
+    var size;
+    
+    if (!(c.packflag & PackFlags.NO_REPACK))
+      size = c.get_min_size(canvas, isvertical);
+    else
+      size = [c.size[0], c.size[1]];
     
     tothgt += size[1]+2;
     maxwidth = Math.max(maxwidth, size[0]+2);
@@ -1692,7 +1765,12 @@ RowFrame.prototype.pack = function(UICanvas canvas, Boolean is_vertical) {
   
   for (var i=0; i<this.children.length; i++) { //i=this.children.length-1; i>=0; i--) {
     var c = this.children[i];
-    var size = c.get_min_size(canvas, is_vertical);
+    var size;
+    
+    if (!(c.packflag & PackFlags.NO_REPACK))
+      size = c.get_min_size(canvas, is_vertical);
+    else
+      size = [c.size[0], c.size[1]]
     
     size[0] = Math.min(size[0], this.size[0]);
     if (c.packflag & PackFlags.INHERIT_WIDTH)
@@ -1716,7 +1794,8 @@ RowFrame.prototype.pack = function(UICanvas canvas, Boolean is_vertical) {
     else
       y -= c.size[1]+spacing;
     
-    c.pack(canvas, is_vertical);
+    if (!(c.packflag & PackFlags.NO_REPACK))
+      c.pack(canvas, is_vertical);
   }
   
   this.size[1] = Math.max(this.size[1], minsize[1]);
@@ -1734,8 +1813,12 @@ ColumnFrame.prototype.get_min_size = function(UICanvas canvas, Boolean isvertica
   var totwid = 0;
   
   for (var c in this.children) {
-    var size = c.get_min_size(canvas, isvertical);
-    
+    var size;
+    if (!(c.packflag & PackFlags.NO_REPACK))
+      size = c.get_min_size(canvas, isvertical);
+    else
+      size = [c.size[0], c.size[1]];
+      
     totwid += size[0]+2;
     maxheight = Math.max(maxheight, size[1]+2);
   }
@@ -1764,7 +1847,12 @@ ColumnFrame.prototype.pack = function(UICanvas canvas, Boolean is_vertical) {
   var sum=0;
   var max_wid = 0;
   for (var c in this.children) {
-    var s = c.get_min_size(canvas, is_vertical);
+    var s;
+    
+    if (!(c.packflag & PackFlags.NO_REPACK))
+      s = c.get_min_size(canvas, is_vertical);
+    else
+      s = [c.size[0], c.size[1]];
     
     max_wid = Math.max(s[0], max_wid);
     sum += s[0];
@@ -1787,8 +1875,13 @@ ColumnFrame.prototype.pack = function(UICanvas canvas, Boolean is_vertical) {
   }
     
   for (var c in this.children) {
-    var size = c.get_min_size(canvas, is_vertical);
+    var size;
     
+    if (!(c.packflag & PackFlags.NO_REPACK))
+      size = c.get_min_size(canvas, is_vertical);
+    else
+      size = [c.size[0], c.size[1]];
+      
     if (!(this.packflag & PackFlags.IGNORE_LIMIT)) {
       if (c.packflag & PackFlags.INHERIT_WIDTH)
         size[0] = max_wid-pad;
@@ -1808,7 +1901,8 @@ ColumnFrame.prototype.pack = function(UICanvas canvas, Boolean is_vertical) {
       x += Math.floor(size[0]+pad+spacing);
     }
     
-    c.pack(canvas, is_vertical);
+    if (!(c.packflag & PackFlags.NO_REPACK))
+      c.pack(canvas, is_vertical);
   }
   
   if ((this.packflag & PackFlags.ALIGN_CENTER) && x < this.size[0]) {
@@ -1826,6 +1920,7 @@ function ToolOpFrame(ctx, path) {
 }
 
 inherit(ToolOpFrame, RowFrame);
+
 ToolOpFrame.prototype.do_rebuild = function(ctx) {
   var strct = this.ctx.api.get_struct(ctx, this.path_prefix);
   
@@ -1836,7 +1931,7 @@ ToolOpFrame.prototype.do_rebuild = function(ctx) {
   this.strct = strct;
   for (var p in strct) {
     //console.log(p.name, "=-");
-    this.prop(p.name);
+    this.prop(p.name, PackFlags.INHERIT_WIDTH);
   }
 }
 
@@ -1851,7 +1946,7 @@ ToolOpFrame.prototype.on_tick = function() {
   RowFrame.prototype.on_tick.call(this);
 }
 
-_te = 0
+var _te = 0
 ToolOpFrame.prototype.build_draw = function(UICanvas canvas, Boolean isVertical) {
   //canvas.begin(this);
   
