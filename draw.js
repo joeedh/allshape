@@ -1170,13 +1170,25 @@ function render_mesh(WebGLRenderingContext gl, View3DHandler view3d, Mesh mesh1,
   //mesh2.render.destroy(gl);
 }
 
+//dummy variable to flag root scissor
+var cur_scissor = undefined;
+
 var __scissor_stack = []
 function push_scissor(gl, pos, size)
 {
-  var rect = gl.getParameter(gl.SCISSOR_BOX);
+  global cur_scissor;
+  var rect;
+  
+  if (cur_scissor == undefined) {
+    rect = gl.getParameter(gl.SCISSOR_BOX);
+  } else {
+    rect = cur_scissor;
+  }
+  
   __scissor_stack.push(rect);
   
   gl.scissor(pos[0], pos[1], size[0], size[1]);
+  cur_scissor = [pos[0], pos[1], size[0], size[1]];
 }
 
 function pop_scissor(gl)
@@ -1186,7 +1198,12 @@ function pop_scissor(gl)
   gl.scissor(rect[0], rect[1], rect[2], rect[3]);
 }
 
-function reset_scissor_stack(gl)
+function reset_scissor_stack(gl, rootscissor)
 {
+  global cur_scissor;
+  
+  //rootscissor is optional
+  
   __scissor_stack = [];
+  cur_scissor = rootscissor;
 }

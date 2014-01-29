@@ -60,7 +60,18 @@ def mysql_reconnect():
   
   return mysql_con.cursor(), mysql_con
 
+def mysql_close_connections():
+  global mysql_connections
+  for con in mysql_connections:
+    try:
+      con.close()
+    except:
+      pass
+    
+mysql_connections = []
 def mysql_connect():
+  global mysql_connections
+  
   #global mysql_con
   mysql_con_local = None
   
@@ -72,7 +83,9 @@ def mysql_connect():
         user=db_user, passwd=db_passwd, db=db_db)
     except pymysql.err.OperationalError:
       return None, None
-      
+    
+    mysql_connections.append(mysql_con_local);
+    
   try:
     ret = mysql_con_local.cursor(), mysql_con_local
   except:

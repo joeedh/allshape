@@ -4,8 +4,10 @@ var UIFlags = {
   ENABLED : 1, HIGHLIGHT: 2, 
   FOCUS: 4, GREYED: 8, 
   REDERROR: 16, WARNING: 32, 
-  USE_PATH : 64, NO_RECALC: 128
+  USE_PATH : 64, NO_RECALC: 128,
+  FLASH : (16|32)
 };
+
 var PackFlags = {
   INHERIT_HEIGHT : 1, INHERIT_WIDTH: 2, 
   ALIGN_RIGHT : 4, ALIGN_LEFT: 8, 
@@ -40,6 +42,10 @@ function UIElement(ctx, path, pos, size) { //path, pos, size are optional
   this.ctx = ctx
   this.parent = undefined
   
+  //timer for error/warning flashes
+  this.flash_timer_len = 0.2; //seconds
+  this.flash_timer = undefined;
+  
   if (pos == undefined)
     pos = [0, 0];
   
@@ -58,7 +64,84 @@ function UIElement(ctx, path, pos, size) { //path, pos, size are optional
 inherit(UIElement, EventHandler);
 
 UIElement.prototype.__hash__ = function() : String {
-  return this.constructor.name[2] + this._id;
+  return this.constructor.name[2] + this.constructor.name[3] + this.constructor.name[4] + this._id;
+}
+
+
+UIElement.prototype.inc_flash_timer = function(color) {
+  if (this.status_timer == undefined) return false;
+    
+  if (this.status_timer.ready()) {
+    this.status_timer = undefined;
+    this.state &= ~UIFlags.FLASH;
+    return false;
+  }
+  
+  return true;
+}
+
+UIElement.prototype.do_flash_color = function(color) {
+  if (!this.inc_flash_timer()) return undefined;
+  
+  var color2;
+  
+  if (this.state & UIFlags.REDERROR)
+    color2 = uicolors["ErrorBox"];
+  else if (this.state & UIFlags.WARNING)
+    color2 = uicolors["WarningBox"];
+  
+  if (color == undefined)
+    color = color2;
+  if (color2 == undefined)
+    return undefined;
+  
+  var f = this.status_timer.normval;
+  
+  if (f < 0.5) f *= 2.0;
+  else (f = 1.0 - f) *2.0;
+  
+  //console.log("f: " + f.toString());
+  
+  var l1 = [], l2 = [];
+  if (typeof(color[0]) == "number") {
+    l1.push(color);
+  } else {
+    for (var i=0; i<color.length; i++) {
+      l1.push(color[i]);
+    }
+  }
+  
+  if (typeof(color2[0]) == "number") {
+    l2.push(color2);
+  } else {
+    for (var i=0; i<color2.length; i++) {
+      l2.push(color2[i]);
+    }
+  }
+  
+  while (l1.length < l2.length) {
+    l1.push(l1[l1.length-1]);
+  }
+  while (l2.length < l1.length) {
+    l2.push(l2[l2.length-1]);
+  }
+  
+  var l3 = [];
+  for (var i=0; i<l1.length; i++) {
+    var clr = new Vector4(l1[i]);
+    clr.interp(l2[i], f);
+    l3.push(clr);
+  }
+  
+  if (l3.length == 1) 
+    return l3[0];
+  else
+    return l3;
+}
+
+UIElement.prototype.flash = function(status) {
+  this.status_timer = new Timer(this.flash_timer_len*1000.0);
+  this.state |= status;
 }
 
 UIElement.prototype.get_abs_pos = function() {
@@ -512,6 +595,7 @@ function TextDraw(pos, text, color, view3d, mat, spos, ssize, viewport, size) {
   this.ssize = ssize;
   this.viewport = viewport;
   this.size = size;
+  this.transmat.translate(pos[0], pos[1], 0.0);
   this.transmat.scale(size, size, size);
   
   this.destroy = function() {
@@ -523,7 +607,7 @@ function TextDraw(pos, text, color, view3d, mat, spos, ssize, viewport, size) {
   this.on_draw = function(gl) {
     gl.disableVertexAttribArray(4);
     if (this.tdrawbuf == undefined)
-      this.tdrawbuf = this.view3d.font.gen_text_buffers(gl, this.pos[0], this.pos[1], this.text, this.color, this.transmat, this.viewport);
+      this.tdrawbuf = this.view3d.font.gen_text_buffers(gl, 0, 0, this.text, this.color, this.transmat, this.viewport);
     
     var spos, ssize;
     
@@ -657,6 +741,11 @@ UICanvas.prototype.use_cache = function(Object item) {
 
 UICanvas.prototype.has_cache = function(Object item) {
   return this.oldcache.has(item);
+}
+
+UICanvas.prototype.remove_cache = function(Object item) {
+  if (this.oldcache.has(item))
+    this.oldcache.remove(item);
 }
 
 UICanvas.prototype.textsize = function(text, size) {
@@ -878,6 +967,18 @@ var uicolors = {
     darken([1.0, 0.7, 0.5, 0.9], 0.8),
     lighten([1.0, 0.7, 0.5, 0.9], 1.05),
     lighten([1.0, 0.7, 0.5, 0.9], 1.05)
+  ],
+  "ErrorBox": [
+    darken([1.0, 0.3, 0.2, 0.9], 0.7),
+    darken([1.0, 0.3, 0.2, 0.9], 0.8),
+    lighten([1.0, 0.3, 0.2, 0.9], 1.05),
+    lighten([1.0, 0.3, 0.2, 0.9], 1.05)
+  ],
+  "WarningBox": [
+    darken([1.0, 0.8, 0.1, 0.9], 0.7),
+    darken([1.0, 0.8, 0.1, 0.9], 0.8),
+    lighten([1.0, 0.8, 0.1, 0.9], 1.05),
+    lighten([1.0, 0.8, 0.1, 0.9], 1.05)
   ],
   "ListBoxBG": [0.9, 0.9, 0.9, 0.9],  
   "ListBoxText": [0.2, 0.2, 0.2, 1.0],  
@@ -1418,10 +1519,14 @@ UIFrame.prototype.replace = function(UIElement a, UIElement b) {
   }
   a.on_remove(this);
   this.children.replace(a, b);
+  if (this.canvas != undefined)
+    this.canvas.remove_cache(a);
+  if (a == this.active)
+    this.active = b;
   
   b.parent = this;
   if (b.canvas == undefined)
-    b.canvas = this.canvas;
+    b.canvas = this.get_canvas();
   if (b.ctx == undefined)
     b.ctx = this.ctx;
   
@@ -1437,6 +1542,12 @@ UIFrame.prototype.remove = function(UIElement e) {
   
   this.children.remove(e);
   e.on_remove(this);
+  
+  if (this.canvas != undefined)
+    this.canvas.remove_cache(e);
+  
+  if (e == this.active)
+    this.active = undefined;
 }
 
 UIFrame.prototype.on_draw = function(gl) {
@@ -1514,6 +1625,11 @@ UIFrame.prototype.build_draw = function(canvas, skip_box) { //skip_box is option
 UIFrame.prototype.on_tick = function() {
   for (var c in this.children) {
     c.on_tick();
+    
+    if (c.status_timer != undefined) {
+      c.inc_flash_timer();
+      c.do_recalc();
+    }
   }
 }
 

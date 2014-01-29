@@ -35,7 +35,7 @@ create_prototype(Unit);
 Unit.units = [
   new Unit(["cm"], 1.0),
   new Unit(["in", "''", "``"], 2.54),
-  new Unit(["ft", "'", "`"], 0.0328083989501),
+  new Unit(["ft", "'", "`"], 30.48),
   new Unit(["m"], 100),
   new Unit(["mm"], 0.1),
   new Unit(["km"], 0.00001),
@@ -61,13 +61,18 @@ Unit.get_unit = function(string) {
   var units = Unit.units;
   var unit = undefined;
   
+  if (string == "default") {
+    string = lower = g_app_state.session.settings.unit;
+  }
+  
   for (var i=0; i<units.length; i++) {
     var u = units[i];
     
     for (var j=0; j<u.suffix_list.length; j++) {
       if (lower.trim().endsWith(u.suffix_list[j])) {
-        string = string.slice(0, string.length-u.suffix_list.length);
         unit = u;
+        
+        string = string.slice(0, string.length-u.suffix_list[j].length);
         break;
       }
     }
@@ -76,21 +81,28 @@ Unit.get_unit = function(string) {
       break;
   }
   
-  return unit;
+  return [unit, string];
 }
 
-Unit.parse = function(string, oldval, errfunc, funcparam) { 
+Unit.parse = function(string, oldval, errfunc, funcparam, defaultunit) { 
   //oldval, errfunc, funcparam are optional
   var units = Unit.units;
   var lower = string.toLowerCase();
   var unit = undefined;
   
+  if (defaultunit == undefined)
+    defaultunit = "cm";
+    
   if (oldval == undefined)
-    oldval = -1.0;
+    oldval = 0.0;
   
-  unit = Unit.get_unit(string);  
+  var ret = Unit.get_unit(string);    
+  unit = ret[0];
+  string = ret[1];
+  
+  //do no unit processing if there is no unit
   if (unit == undefined) {
-    unit = Unit.get_unit(g_app_state.session.settings.unit);
+    unit = Unit.get_unit(defaultunit)[0];
   }
   
   var val = -1;
@@ -101,6 +113,12 @@ Unit.parse = function(string, oldval, errfunc, funcparam) {
       errfunc(funcparam);
     }
     
+    return oldval;
+  }
+  
+  if (val == undefined || typeof(val) != "number" || isNaN(val)) {
+    console.log(["haha ", val, string]);
+    errfunc(funcparam);
     return oldval;
   }
   

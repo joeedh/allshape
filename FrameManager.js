@@ -1104,7 +1104,7 @@ Screen.prototype.on_draw = function(WebGLRenderingContext gl)
   /*recalculate root scissor box*/
   gl.enable(gl.SCISSOR_TEST);
   
-  reset_scissor_stack(this.gl);
+  reset_scissor_stack(this.gl, [0, 0, this.size[0], this.size[1]]);
   push_scissor(this.gl, [0, 0], this.size);
   
   if ((this.active instanceof ScreenArea) && this.active.area instanceof

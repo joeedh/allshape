@@ -6,6 +6,7 @@ from auth import AuthAPI_RefreshToken_WPHack, AuthAPI_OAuthStart, AuthAPI_GetUse
 from fileapi import FileAPI_DirList, FileAPI_GetMeta, FileAPI_UploadStart, FileAPI_UploadChunk, FileAPI_GetFile
 import config, json
 from config import *
+from mysql_db import mysql_close_connections
 
 import pymysql.err
 from api import api_handlers
@@ -159,5 +160,7 @@ def application(environ, start_response):
     """
     
     start_response(status, headers)
-
+    
+    mysql_close_connections()
+    
     return [output]

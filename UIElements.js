@@ -338,20 +338,31 @@ function UINumBox(ctx, text, range, val, pos, size, path) { //path is optional
 }
 inherit(UINumBox, UIElement);
 
+UINumBox.prototype.set_val = function(Number val) {
+  this.val = val;
+  this.val = Math.min(Math.max(this.val, this.range[0]), this.range[1]);
+  
+  if (this.state & UIFlags.USE_PATH) {
+      this.set_prop_data(this.val);
+  }
+  
+  this.do_recalc();
+}
+
 UINumBox.prototype.on_mousedown = function(MouseEvent event) {
   var numbox = this;
   
-  //callback for ending text edit swap;
-  function on_end_edit(tbox) {
-    numbox.val = Unit.parse(tbox.text, numbox.val);
-    
-    if (numbox.state & UIFlags.USE_PATH) {
-      numbox.set_prop_data(numbox.val);
-    }
-    tbox.parent.replace(tbox, numbox);
+  function unit_error(numbox) {
+    console.log(["numbox error", numbox]);
+    numbox.flash(UIFlags.REDERROR);
+    numbox.do_recalc();
   }
-    
-  console.log("shift: " + event.shiftKey.toString());
+  
+  //callback for ending text edit swap;
+  function on_end_edit(tbox, cancelled) {
+    this.parent.replace(textbox, numbox);
+    numbox.set_val(Unit.parse(tbox.text, numbox.val, unit_error, numbox, numbox.unit));
+  }
   
   if (event.button == 0 && !this.clicked && !event.shiftKey) {
     console.log(event.x, event.y)
@@ -367,7 +378,7 @@ UINumBox.prototype.on_mousedown = function(MouseEvent event) {
     //swap out with text button
     var unit = this.unit;
     
-    var valstr = Unit.gen_string(this.val, unit);
+    var valstr = Unit.gen_string(this.val, unit);      
     var textbox = new UITextBox(this.ctx, valstr, this.pos, this.size);
     
     textbox.packflag |= PackFlags.NO_REPACK;
@@ -457,13 +468,15 @@ UINumBox.prototype.on_mousemove = function(MouseEvent event) {
 
 UINumBox.prototype.build_draw = function(UICanvas canvas) {
   canvas.begin(this);
-
- if (this.clicked) 
+ 
+  var clr = uicolors["Box"];
+  
+  if (this.clicked) 
     canvas.invbox([0, 0], this.size);
-  else if (this.state & UIFlags.HIGHLIGHT)
-    canvas.hlightbox([0, 0], this.size)
+  else if (!(this.state & UIFlags.FLASH) && (this.state & UIFlags.HIGHLIGHT))
+    canvas.hlightbox([0, 0], this.size, this.do_flash_color())
   else 
-    canvas.box([0, 0], this.size);
+    canvas.box([0, 0], this.size, this.do_flash_color(clr));
   
   var unit = this.unit;    
   var valstr = Unit.gen_string(this.val, unit);
@@ -875,6 +888,7 @@ UITextBox.prototype.begin_edit = function(event) {
   this.push_modal();
   this.start_text = new String(this.text);
   this.gen_glyphmap();
+  this.do_recalc();
   
   if (event != undefined) {
     this.find_selcursor(event);
@@ -914,7 +928,7 @@ UITextBox.prototype.end_edit = function(cancel) { //cancel is optional, defaults
   close_android_keyboard()
   
   if (this.on_end_edit)
-    this.on_end_edit(this);
+    this.on_end_edit(this, cancel);
 }
 
 UITextBox.prototype.set_cursor = function() {
@@ -924,8 +938,9 @@ UITextBox.prototype.set_cursor = function() {
     this.do_recalc();
     this.last_cursor = this.cursor;
     
-    var pad1 = this.has_sel() ? Math.max(20, this.text_min_offx) : this.text_min_offx;
-    var pad2 = 20;
+    var pad1 = this.text_min_offx;
+    var pad2 = 28;
+    
     if (this.gmap[this.cursor] > this.size[0]-pad2) {
       this.text_offx += this.size[0]-pad2-this.gmap[this.cursor];
       this.gen_glyphmap();
@@ -1156,15 +1171,16 @@ UITextBox.prototype.gen_glyphmap = function() {
   var gmap = this.gmap;
   
   function calc_callback(Array<float> vrect, Array<float> trect) {
-    gmap.push(vrect[0]);
+    gmap.push(Math.min(vrect[0], trect[0]));
   }
   
   this.ctx.font.calc_string(this.text, calc_callback);
   gmap.push(this.ctx.font.calcsize(this.text)[0]);
   
-  this.text_offx = Math.min(this.text_offx, gmap[gmap.length-1]);
+  this.text_offx = Math.min(this.text_offx, gmap[gmap.length-1]*default_ui_font_size);
+  
   for (var i=0; i<gmap.length; i++) {
-    gmap[i] = gmap[i]*default_ui_font_size + this.text_offx;
+    gmap[i] = Math.floor(gmap[i]*default_ui_font_size) + this.text_offx;
   }
 }
 
@@ -1190,9 +1206,9 @@ UITextBox.prototype.build_draw = function(UICanvas canvas) {
     canvas.simple_box([x1, 0], [x2-x1, this.size[1]], uicolors["TextSelect"], 100);
   }
   
-  canvas.push_scissor([this.text_min_offx, 0], [this.size[0]-this.text_min_offx, this.size[1]]);
+  //canvas.push_scissor([this.text_min_offx-4, 0], [this.size[0]-4, this.size[1]]);
   canvas.text([this.text_offx, (this.size[1]-tsize[1])*0.25], this.text, uicolors["BoxText"]);
-  canvas.pop_scissor();
+  //canvas.pop_scissor();
   
   if (this.clicked) {
     if (inrect_2d(this.mpos, [-10,-10], [this.size[0]+20, this.size[1]+20])) {

@@ -1026,10 +1026,12 @@ function test_nested_with() {
 }
 function Timer(interval_ms) {
  this.ival = interval_ms;
+ this.normval = 0.0;
  this.last_ms = time_ms();
 }
 create_prototype(Timer);
 Timer.prototype.ready = function() {
+ this.normval = (time_ms()-this.last_ms)/this.ival;
  if (time_ms()-this.last_ms>this.ival) {
    this.last_ms = time_ms();
    return true;

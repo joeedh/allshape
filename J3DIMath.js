@@ -1476,6 +1476,12 @@ Vector3.prototype.multVecMatrix = function(Matrix4 matrix)
     }
 }
 
+Vector3.prototype.interp = function(Vector3 b, Number t) {
+  this[0] += (b[0]-this[0])*t;
+  this[1] += (b[1]-this[1])*t;
+  this[2] += (b[2]-this[2])*t;
+}
+
 Vector3.prototype.toString = function() : String
 {
     return "["+this[0]+","+this[1]+","+this[2]+"]";
@@ -1657,6 +1663,11 @@ Vector2.prototype.toString = function() {
   return "[" + this[0] + ", " + this[1] + "]";
 }
 
+Vector2.prototype.interp = function(Vector2 b, Number t) {
+  this[0] += (b[0]-this[0])*t;
+  this[1] += (b[1]-this[1])*t;
+}
+
 //XX Kill this function!
 function Color(Array<float> color) {
   var c = new Array<float>();
@@ -1832,6 +1843,13 @@ Vector4.prototype.multVecMatrix = function(Matrix4 matrix)
     this[1] = matrix.$matrix.m42 + x * matrix.$matrix.m12 + y * matrix.$matrix.m22 + z * matrix.$matrix.m32 + w*matrix.$matrix.m42;
     this[2] = matrix.$matrix.m43 + x * matrix.$matrix.m13 + y * matrix.$matrix.m23 + z * matrix.$matrix.m33 + w*matrix.$matrix.m43;
     this[3] = w*matrix.$matrix.m44 + x * matrix.$matrix.m14 + y * matrix.$matrix.m24 + z * matrix.$matrix.m34;
+}
+
+Vector4.prototype.interp = function(Vector4 b, Number t) {
+  this[0] += (b[0]-this[0])*t;
+  this[1] += (b[1]-this[1])*t;
+  this[2] += (b[2]-this[2])*t;
+  this[3] += (b[3]-this[3])*t;  
 }
 
 Vector4.prototype.toString = function() : String
