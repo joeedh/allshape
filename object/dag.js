@@ -32,7 +32,7 @@ DAGNode.prototype.get_ins = function() {
     var n2 = nodehash.get(n.nodedata[n.field_ins[i]]);
     ns.push(n2);
   }
-  
+  cd .
   return ns;
 }
 
