@@ -46,11 +46,52 @@ function pack_float(Array<byte> data, float f)
   }
 }
 
+function pack_vec2(Array<byte> data, Vector2 vec)
+{
+  pack_float(data, vec[0]);
+  pack_float(data, vec[1]);
+  pack_float(data, vec[2]);
+}
+
 function pack_vec3(Array<byte> data, Vector3 vec)
 {
   pack_float(data, vec[0]);
   pack_float(data, vec[1]);
   pack_float(data, vec[2]);
+}
+
+function pack_vec4(Array<byte> data, Vector4 vec)
+{
+  pack_float(data, vec[0]);
+  pack_float(data, vec[1]);
+  pack_float(data, vec[2]);
+  pack_float(data, vec[3]);
+}
+
+
+function pack_quat(Array<byte> data, Quat vec)
+{
+  pack_float(data, vec[0]);
+  pack_float(data, vec[1]);
+  pack_float(data, vec[2]);
+  pack_float(data, vec[3]);
+}
+
+function pack_mat4(Array<byte> data, Matrix4 mat)
+{
+  var m = mat.getAsArray();
+  
+  for (var i=0; i<16; i++) {
+    pack_float(data, m);
+  }
+}
+
+function pack_dataref(Array<byte> data, DataBlock b)
+{
+  if (b != undefined)
+    pack_int(data, b.lib_id);
+  else
+    pack_int(data, -1);
 }
 
 /*strings are packed as 32-bit unicode codepoints*/
@@ -61,6 +102,12 @@ function pack_string(Array<byte> data, String str)
   for (var i=0; i<str.length; i++) {
     pack_int(data, str.charCodeAt(i));
   }
+}
+
+function unpack_dataref(DataView data, unpack_ctx uctx) : int
+{
+  var r = unpack_int(data, uctx);
+  return r;
 }
 
 function unpack_byte(DataView data, unpack_ctx uctx) : byte
@@ -86,6 +133,13 @@ function unpack_float(DataView data, unpack_ctx uctx) : float
   uctx.i += 4;
   return ret;
 }
+function unpack_vec2(Array<byte> data, unpack_ctx uctx)
+{
+  var x = unpack_float(data, uctx);
+  var y = unpack_float(data, uctx);
+  
+  return new Vector2([x, y]);
+}
 
 function unpack_vec3(DataView data, unpack_ctx uctx) : Vector3
 {
@@ -98,6 +152,39 @@ function unpack_vec3(DataView data, unpack_ctx uctx) : Vector3
   vec[0] = x; vec[1] = y; vec[2] = z;
   
   return vec;
+}
+
+
+function unpack_vec4(Array<byte> data, unpack_ctx uctx)
+{
+  var x = unpack_float(data, uctx);
+  var y = unpack_float(data, uctx);
+  var z = unpack_float(data, uctx);
+  var w = unpack_float(data, uctx);
+  
+  return new Vector4([x, y, z, w]);
+}
+
+
+function unpack_quat(Array<byte> data, unpack_ctx uctx)
+{
+  var x = unpack_float(data, uctx);
+  var y = unpack_float(data, uctx);
+  var z = unpack_float(data, uctx);
+  var w = unpack_float(data, uctx);
+  
+  return new Quat([x, y, z, w]);
+}
+
+function unpack_mat4(Array<byte> data, unpack_ctx uctx)
+{
+  var m = new Array(16);
+  
+  for (var i=0; i<16; i++) {
+    m[i] = unpack_float(data, uctx);
+  }
+  
+  return new Matrix4(m);
 }
 
 function unpack_string(DataView data, unpack_ctx uctx) : String

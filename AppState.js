@@ -89,6 +89,8 @@ function AppState(screen, mesh) {
   this.filepath = ""
   this.version = g_app_version;
   
+  this.datalib = new DataLib();
+  
   this.jobs = new JobManager();
   
   if (localStorage.session != undefined) {

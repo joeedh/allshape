@@ -26,6 +26,10 @@ files = []
 for f in os.listdir("../"):
   if f.endswith(".js"):
     files.append([".."+os.path.sep+f, f])
+
+for f in os.listdir("../object"):
+  if f.endswith(".js"):
+    files.append(["../object"+os.path.sep+f, f])
     
 for f in os.listdir("../server/"):
   if f.endswith(".js"):
