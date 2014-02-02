@@ -19,6 +19,19 @@ function ASObject(data, name) {
   
   DataBlock.call(this, DataTypes.OB, name);
   
+  this.scene = undefined : Scene;
+  
+  this.dag_node = new DagNodeData()
+  this.dag_node.add_sockets("i", [
+    new DepSocket("parent", this),
+    new Matrix4Socket("multipliers", this, 0) //allow multiple inputs
+  ]);
+
+  this.dag_node.add_sockets("o", [
+    new Matrix4Socket("matrix", this, "matrix"),
+    new DepSocket("dep", this)
+  ]);
+  
   this.flag = 0;
   this.loc = new Vector3();
   this.euler = new Vector3();
@@ -43,7 +56,21 @@ function ASObject(data, name) {
 }
 inherit(ASObject, DataBlock);
 
-ASObject.prototype.gen_matrix = function() {
+ASObject.prototype.dag_exec = function() {
+  var mat = this.matrix = this.basic_matrix();
+  
+  if (this.parent != undefined) {
+    mat.multiply(this.parentinv);
+    mat.multiply(this.parent.matrix);
+  }
+  
+  for (var ms in this.dag_node.inmap["mutipliers"].edges) {
+    var mat2 = ms.src.get_data();
+    mat.multiply(mat2);
+  }
+}
+
+ASObject.prototype.basic_matrix = function() {
   var mat = new Matrix4();
   
   mat.rotate(this.rot_euler[0], this.rot_euler[1], this.rot_euler[2]);
@@ -55,11 +82,7 @@ ASObject.prototype.gen_matrix = function() {
     mat.multiply(this.parent.matrix);
   }
   
-  var imat = new Matrix4(mat);
-  imat.invert();
-  
-  this.matrix = mat;
-  this.imatrix = imat;
+  return mat;
 }
 
 ASObject.prototype.gen_rot_matrix = function() {
@@ -112,4 +135,41 @@ ASObject.prototype.unpack = function(data, uctx) {
 
 ASObject.prototype.data_link = function(data, getblock) {
   this.parent = getblock(this, "parent", data, uctx);
+}
+
+ASObject.prototype.unparent = function(scene) {
+  scene.graph.socket_clear(this, "parent", "i");
+  this.parent = undefined;
+  this.parentinv = new Matrix4();
+}
+
+ASObject.prototype.set_parent = function(scene, newpar, preserve_child_space) {
+  //preserve_child_space defaults to False
+  //if true, it calculates a special pre-multiplication
+  //matrix (this.parentinv) such that the object's post-parent
+  //position/location/size is the same as pre-parent.
+  
+  if (preserve_child_space == undefined)
+    preserve_child_space = false;
+    
+  if (this.parent == newpar) {
+    console.log("parent already set.");
+    return;
+  }
+  
+  if (this.parent != undefined) {
+    this.unparent(scene);
+  }
+  
+  if (preserve_child_space) {
+    this.parentinv = new Matrix4(newpar.matrix);
+    this.parentinv.invert();
+  }
+  
+  scene.graph.connect(newpar, "dep", this, "parent");
+}
+
+ASObject.recalc = function() {
+  if (this.scene != undefined)
+    this.dag_update(this.scene.graph);
 }

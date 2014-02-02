@@ -1,9 +1,34 @@
 "use strict";
 
+var DataTypes = {
+  OBJECT : 0,
+  CSG : 1,
+  MESH : 2,
+  GROUP : 3,
+  SCRIPT : 4,
+  SCENE : 5
+};
+
+var DataNames = {
+  OBJECT : "Object",
+  CSG    : "CSG",
+  MESH   : "Mesh",
+  GROUP  : "Group",
+  SCRIPT : "Script",
+  SCENE  : "Scene"
+};
+
+function DataList() {
+  this.list = new GArray();
+  this.namemap = {};
+}
+create_prototype(DataList);
+
 function DataLib() {
   this.datalists = new HashTable();
   this.idmap = {};
 };
+create_prototype(DataLib);
 
 DataLib.prototype.search = function(type, prefix) {
   //this is what red-black trees are for.
@@ -14,27 +39,75 @@ DataLib.prototype.search = function(type, prefix) {
   prefix = prefix.toLowerCase();
   
   var ret = new GArray();
-  for (var i=0; i<list.length; i++) {
-    if (list[i].strip().toLowerCase().startsWith(prefix)) {
-      ret.push(list[i]);
+  for (var i=0; i<list.list.length; i++) {
+    if (list.list[i].strip().toLowerCase().startsWith(prefix)) {
+      ret.push(list.list[i]);
     }
   }
   
   return ret;
 }
 
-DataLib.prototype.new_block = function(block) {
+//clearly I need to write a simple string
+//processing language with regexpr's
+DataLib.prototype.gen_name = function(block, name) {
+  if (name == undefined || name.trim() == "") {
+    name = DataNames[block.lib_type];
+  }
+  
+  var list = this.datalists(bock.lib_type);
+  if (!(name in list.namemap)) {
+    block.name = name;
+    list.namemap[name] = block;
+    return;
+  }
+  
+  var i = 0;
+  while (1) {
+    i++;
+    
+    if (name in list.namemap) {
+      var j = name.length-1;
+      for (j; j>=0; j--) {
+        if (name[j] == ".")
+          break;
+      }
+      
+      if (name == 0) {
+        name = name + "." + i.toString();
+        continue;
+      }
+      
+      var s = name.slice(j, name.length);
+      if (!Number.isNaN(Number.parseInt(s))) {
+        name = name.slice(0, j) + "." + i.toString();
+      } else {
+        name = name + "." + i.toString();
+      }
+    } else {
+      break;
+    }
+  }
+}
+
+//name may be modified to ensure uniqueness
+DataLib.prototype.new_block = function(block, name) {
+  name = this.gen_name(name);
+ 
   block.new_datablock();
+  block.name = name;
   this.add(block);
 }
 
 DataLib.prototype.add = function(block) {
   this.idmap[block.lib_id] = block;
+  
   if (!this.datalists.has(block.lib_type)) {
-    this.datalists.add(block.lib_type, new GArray());
+    this.datalists.add(block.lib_type, {});
   }
   
-  this.datalists.get(block.lib_type).push(block);
+  this.datalists.get(block.lib_type).list.push(block);
+  this.datalists.get(block.lib_type).namemap[block.name] = block;  
 }
 
 DataLib.prototype.get = function(id) {
@@ -52,15 +125,6 @@ function DataRef() {
   this.rem_func = 0;
 }
 create_prototype(DataRef);
-
-var DataTypes = {
-  OBJECT : 0,
-  CSG : 1,
-  MESH : 2,
-  GROUP : 3,
-  SCRIPT : 4,
-  SCENE : 5
-};
 
 var _data_api_idgen = 0;
 function DataBlock(type, name) {

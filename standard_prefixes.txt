@@ -1,0 +1,14 @@
+iteration prefixes: i, j, k, u, v
+
+#note: reusing prefixes is okay
+e    : edge
+f    : face
+l    : loop
+loc  : location
+ms   : matrix socket
+n    : node
+ob   : object
+par  : parent
+rot  : rotate/rotation
+sc   : scene
+v    : vert
