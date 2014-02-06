@@ -25,7 +25,8 @@ function DataList() {
 create_prototype(DataList);
 
 function DataLib() {
-  this.datalists = new HashTable();
+  this.id = 0;
+  this.datalists = new hashtable();
   this.idmap = {};
 };
 create_prototype(DataLib);
@@ -123,6 +124,7 @@ DataLib.unpack = function(block, uctx) {
 function DataRef() {
   this.user = 0;
   this.rem_func = 0;
+  this.srcname = "";
 }
 create_prototype(DataRef);
 
@@ -133,6 +135,7 @@ function DataBlock(type, name) {
       name = "unnnamed";
     this.lib_name = name;
     this.lib_id = 0;
+    this.lib_lib = 0; //this will be used for library linking
     
     this.lib_type = type;
     this.lib_users = new GArray();
@@ -142,6 +145,10 @@ create_prototype(DataBlock);
 
 DataBlock.prototype.pack = function(data) {
   pack_int(data, this.lib_id);
+  if (this.lib_lib != undefined)
+    this.pack_int(this.lib_lib.id);
+  else
+    this.pack_int(0);
   pack_int(data, this.lib_type);
   pack_int(data, this.lib_refs);
   pack_string(data, this.lib_name);
@@ -149,35 +156,45 @@ DataBlock.prototype.pack = function(data) {
 
 DataBlock.unpack = function(data, uctx) {
   this.lib_id = unpack_int(data, uctx);
+  this.lib_lib = unpack_int(data, uctx); //XXX finish linking implementation
   this.lib_type = unpack_int(data, uctx);
   this.lib_refs = unpack_int(data, uctx);
   this.lib_name = unpack_string(data, uctx);
 };
 
+DataBlock.prototype.data_link = function(block, getblock) {
+};
+
 DataBlock.prototype.__hash__ = function() {
   return "DL" + this.lib_id;
-}
+};
 
 DataBlock.new_datablock = function(ob) {
   ob.lib_id = _data_api_idgen++;
-}
+};
 
 DataBlock.set_idgen = function(idgen) {
   _data_api_idgen = idgen;
-}
+};
 
-DataBlock.prototype.lib_adduser = function(user_ref) {
+DataBlock.prototype.lib_adduser = function(user, name, remfunc) {
   //remove_lib should be optional?
   
-  this.lib_users.push(user_ref);
+  var ref = new DataRef()
+  ref.user = user;
+  ref.name = name;
+  if (remfunc)
+    ref.rem_func = remfunc;
+  
+  this.lib_users.push(ref);
   this.lib_refs++;
 }
 
-DataBlock.prototype.lib_remuser = function(user_ref) {
+DataBlock.prototype.lib_remuser = function(user, refname) {
   var newusers = new GArray();
   
   for (var i=0; i<this.lib_users.length; i++) {
-    if (this.lib_users[i] != user_ref) {
+    if (this.lib_users[i].user != user && this.lib_users[i].srcname != refname) {
       newusers.push(this.lib_users[i]);
     }
   }
@@ -197,4 +214,4 @@ DataBlock.prototype.unlink = function() {
     
     this.user_rem(users[i]);
   }
-}
+};

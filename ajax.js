@@ -1,5 +1,27 @@
 "use strict";
 
+var DEFL_NAMELEN = 64
+
+Number.prototype.pack = function(data) {
+  if (Number(Math.ceil(this)) == Number(this)) {
+    pack_int(data, this);
+  } else {
+    pack_float(data, this);
+  }
+}
+
+String.prototype.pack = function(data) {
+  pack_string(data, this);
+}
+
+Array.prototype.pack = function(data) {
+  pack_int(data, this.length);
+  
+  for (var i=0; i<this.length; i++) {
+    this[i].pack(data);
+  }
+}
+
 function get_endian() {
   var d = [1, 0, 0, 0]
   d = new Int32Array((new Uint8Array(d)).buffer)[0]
@@ -22,11 +44,44 @@ function str_to_uint8(String str) : Uint8Array
 
 //data is always stored in big-endian network byte order
 
+//used for recording pack commands
+var _pack_stack = [];
+var _rec_pack = false;
+
+//used when generating schemas
+function rec_pack_struct(name) {
+  _pack_rec(SchmTypes.OBJECT, name);
+}
+
+function push_pack_stack() {
+  _pack_stack.push([]);  
+}
+function pop_pack_stack() {
+  return _pack_stack.pop(_pack_stack.length-1);
+}
+
+function pack_record_start() {
+  _rec_pack = true;
+  _pack_stack = [[]];
+}
+
+function pack_record_end() {
+  _rec_pack = false;
+}
+
+function _pack_rec(type, data) { //data is optional
+  _pack_stack[_pack_stack.length-1].push([type, data]);
+}
+
 /*interface definition*/
 var _static_byte = new Uint8Array([0, 0, 0, 0]);
 var _static_view = new DataView(_static_byte.buffer);
 function pack_int(Array<byte> data, int i)
 {
+  if (_rec_pack) {
+    _pack_rec(SchmTypes.INT);
+  }
+  
   _static_view.setInt32(0, i);
   for (var j=0; j<4; j++) {
     data.push(_static_byte[j]);
@@ -35,11 +90,19 @@ function pack_int(Array<byte> data, int i)
 
 function pack_byte(Array<byte> data, byte i)
 {
+  if (_rec_pack) {
+    _pack_rec(SchmTypes.BYTE);
+  }
+  
   data.push(i);
 }
 
 function pack_float(Array<byte> data, float f)
 {
+  if (_rec_pack) {
+    _pack_rec(SchmTypes.FLOAT);
+  }
+  
   _static_view.setFloat32(0, f);
   for (var j=0; j<4; j++) {
     data.push(_static_byte[j]);
@@ -48,66 +111,193 @@ function pack_float(Array<byte> data, float f)
 
 function pack_vec2(Array<byte> data, Vector2 vec)
 {
+  if (_rec_pack) {
+    _pack_rec(SchmTypes.VEC2);
+    push_pack_stack();
+  }
+  
   pack_float(data, vec[0]);
   pack_float(data, vec[1]);
   pack_float(data, vec[2]);
+  
+  //discard pack records from composite pack
+  if (_rec_pack) {
+    pop_pack_stack();
+  }
 }
 
 function pack_vec3(Array<byte> data, Vector3 vec)
 {
+  if (_rec_pack) {
+    _pack_rec(SchmTypes.VEC3);
+    push_pack_stack();
+  }
+  
   pack_float(data, vec[0]);
   pack_float(data, vec[1]);
   pack_float(data, vec[2]);
+  
+  //discard pack records from composite pack
+  if (_rec_pack) {
+    pop_pack_stack();
+  }
 }
 
 function pack_vec4(Array<byte> data, Vector4 vec)
 {
+  if (_rec_pack) {
+    _pack_rec(SchmTypes.VEC4);
+    push_pack_stack();
+  }
+  
   pack_float(data, vec[0]);
   pack_float(data, vec[1]);
   pack_float(data, vec[2]);
   pack_float(data, vec[3]);
+  
+  //discard pack records from composite pack
+  if (_rec_pack) {
+    pop_pack_stack();
+  }
 }
 
 
 function pack_quat(Array<byte> data, Quat vec)
 {
+  if (_rec_pack) {
+    _pack_rec(SchmTypes.VEC4);
+    push_pack_stack();
+  }
+  
   pack_float(data, vec[0]);
   pack_float(data, vec[1]);
   pack_float(data, vec[2]);
   pack_float(data, vec[3]);
+  
+  //discard pack records from composite pack
+  if (_rec_pack) {
+    pop_pack_stack();
+  }
 }
 
 function pack_mat4(Array<byte> data, Matrix4 mat)
 {
   var m = mat.getAsArray();
+  if (_rec_pack) {
+    _pack_rec(SchmTypes.MAT4);
+    push_pack_stack();
+  }
+  
   
   for (var i=0; i<16; i++) {
     pack_float(data, m);
+  }
+  
+  //discard pack records from composite pack
+  if (_rec_pack) {
+    pop_pack_stack();
   }
 }
 
 function pack_dataref(Array<byte> data, DataBlock b)
 {
-  if (b != undefined)
+  if (_rec_pack) {
+    _pack_rec(SchmTypes.DATAREF);
+    push_pack_stack();
+  }
+  
+  if (b != undefined) {
     pack_int(data, b.lib_id);
-  else
+    
+    if (b.lib_lib != undefined)
+      pack_int(data, b.lib_lib.id);
+    else
+      pack_int(data, 0);
+  } else {
     pack_int(data, -1);
+    pack_int(data, -1);
+  }
+  
+  //discard pack records from composite pack
+  if (_rec_pack) {
+    pop_pack_stack();
+  }
+}
+
+function pack_static_string(Array<byte> data, String str, int length)
+{
+  if (_rec_pack) {
+    _pack_rec(SchmTypes.STATICSTRING, length);
+    push_pack_stack();
+  }
+  
+  if (length == undefined)
+    length = str.length;
+  
+  for (var i=0; i<length; i++) {
+    if (i >= str.length) {
+      pack_int(0);
+    } else {
+      pack_int(data, str.charCodeAt(i));
+    }
+  }
+  
+  //discard pack records from composite pack
+  if (_rec_pack) {
+    pop_pack_stack();
+  }
 }
 
 /*strings are packed as 32-bit unicode codepoints*/
 function pack_string(Array<byte> data, String str)
 {
+  if (_rec_pack) {
+    _pack_rec(SchmTypes.STRING);
+    push_pack_stack();
+  }
+  
   pack_int(data, str.length);
   
   for (var i=0; i<str.length; i++) {
     pack_int(data, str.charCodeAt(i));
   }
+  
+  //discard pack records from composite pack
+  if (_rec_pack) {
+    pop_pack_stack();
+  }
+}
+
+function unpack_array(DataView data, unpack_ctx uctx, Function unpacker)
+{
+  var len = unpack_int(data, uctx);
+  var list = new Array(len);
+  
+  for (var i=0; i<len; i++) {
+    list[i] = unpacker(data, uctx);
+  }
+  
+  return list;
+}
+
+function unpack_garray(DataView data, unpack_ctx uctx, Function unpacker)
+{
+  var len = unpack_int(data, uctx);
+  var list = new GArray();
+  
+  for (var i=0; i<len; i++) {
+    list.push(unpacker(data, uctx));
+  }
+  
+  return list;
 }
 
 function unpack_dataref(DataView data, unpack_ctx uctx) : int
 {
-  var r = unpack_int(data, uctx);
-  return r;
+  var block_id = unpack_int(data, uctx);
+  var lib_id = unpack_int(data, uctx);
+  
+  return [block_id, lib_id];
 }
 
 function unpack_byte(DataView data, unpack_ctx uctx) : byte
@@ -185,6 +375,22 @@ function unpack_mat4(Array<byte> data, unpack_ctx uctx)
   }
   
   return new Matrix4(m);
+}
+
+function unpack_static_string(DataView data, unpack_ctx uctx, int length) : String
+{
+  var str = "";
+  var at_end = false;
+  
+  for (var i=0; i<length; i++) {
+    var c = unpack_int(data, uctx);
+    
+    at_end = true;
+    if (!at_end)
+      str += String.fromCharcode(c);
+  }
+  
+  return str;
 }
 
 function unpack_string(DataView data, unpack_ctx uctx) : String

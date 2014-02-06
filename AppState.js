@@ -39,6 +39,10 @@ function UserSession() {
   }
   
   this.validate_session = function() {
+    //XXX
+    this.is_logged_in = true;
+    return;
+    
     var session = this;
     
     var finish = function(job, owner) {
@@ -142,29 +146,46 @@ AppState.prototype.set_mesh = function(Mesh m2) {
   }
 }
 
-//different_mesh is optional
-AppState.prototype.create_user_file = function(different_mesh) : ArrayBuffer {
-  //we save a json part and a binary part
-  var obj = {}
-  
-  var mesh = different_mesh != undefined ? different_mesh : this.mesh;
-  
-  obj["screen"] = this.screen.toJSON();
-  
-  var str = JSON.stringify(obj);
-  
-  var data = []
-  pack_string(data, str);
-  
-  mesh.pack(data);
-  pack_float(data, this.version);
-  
-  data = new Uint8Array(data).buffer;
-  
-  return new DataView(data);
+AppState.prototype.create_user_file = function(DataLib lib) {
+    var data = new Array();
+    
+    pack_static_str(data, "ALSH");
+    var i=0;
+    for (var k in lib.datalists) {
+      i++;
+    }
+    
+    pack_static_str("DLIB");
+    pack_int(i); //number of data lists to pack
+    for (var k in lib.datalists) {
+      var list = lib.datalists[k].list;
+      
+      
+      pack_int(data, list.type);
+      pack_int(data, list.list.length);
+      for (var i=0; i < list.list.length; i++) {
+          list.list[i].pack(data);
+      }
+    }
+    
+    var obj = {}
+    obj["screen"] = this.screen.toJSON();
+    obj["version"] = this.version;
+    
+    pack_static_string(data, "JSON");
+    var str = JSON.stringify(obj);
+    
+    pack_string(data, str);
+    
+    data = new Uint8Array(data).buffer;
+    return new DataView(data);    
 }
 
 AppState.prototype.load_user_file = function(data) : ArrayBuffer {
+  
+}
+
+AppState.prototype.load_user_file_old = function(data) : ArrayBuffer {
   //we save a json part and a binary part
   
   var uctx = new unpack_ctx();

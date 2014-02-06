@@ -49,6 +49,13 @@ function GArray<T>(Array<T> input) {
 EXPORT_FUNC(GArray)
 inherit(GArray, Array);
 
+GArray.prototype.pack = function(data) {
+  pack_int(data, this.length);
+  for (var i=0; i<this.length; i++) {
+    this[i].pack(data);
+  }
+}
+
 GArray.prototype.__iterator__ = function() {
   return new GArrayIter<T>(this);
 }
@@ -327,6 +334,14 @@ function set<T>(T input) {
 EXPORT_FUNC(set)
 
 create_prototype(set)
+
+set.prototype.pack = function(data) {
+  pack_int(data, this.length);
+  
+  for (var item in this) {
+    item.pack(data);
+  }
+}
 
 set.prototype.toJSON = function() {
   var arr = new Array(this.length);

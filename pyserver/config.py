@@ -1,4 +1,4 @@
-import os, sys, os.path, math, random, time, io
+import os, sys, os.path, math, random, time
 import shelve, imp, struct, ply
 import mimetypes
 

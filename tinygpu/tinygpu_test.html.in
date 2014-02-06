@@ -737,8 +737,21 @@ function toJSON_intern (ob, tlevel) {
 <script type="text/javascript" src="content/subsurf.js"></script>
 <script type="text/javascript" src="content/opsapi.js"></script>
 <script type="text/javascript" src="content/draw.js"></script>
+
+<script type="text/javascript" src="content/dag.js"></script>
+<script type="text/javascript" src="content/dag_utils.js"></script>
+<script type="text/javascript" src="content/lib_api.js"></script>
+<script type="text/javascript" src="content/lib_utils.js"></script>
+<script type="text/javascript" src="content/mesh_ops.js"></script>
+<script type="text/javascript" src="content/object.js"></script>
+<script type="text/javascript" src="content/object_ops.js"></script>
+<script type="text/javascript" src="content/scenegraph.js"></script>
+<script type="text/javascript" src="content/scene.js"></script>
+
+
 <script type="text/javascript" src="content/AppState.js"></script>
 <script type="text/javascript" src="content/ajax.js"></script>
+<script type="text/javascript" src="content/schema.js"></script>
 <script type="text/javascript" src="content/network_api.js"></script>
 <script type="text/javascript" src="content/fileapi.js"></script>
 <script type="text/javascript" src="content/fontutils.js"></script>

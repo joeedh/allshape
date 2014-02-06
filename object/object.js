@@ -133,12 +133,17 @@ ASObject.prototype.unpack = function(data, uctx) {
   //hrm, need to unpack 'this.data' still
 }
 
-ASObject.prototype.data_link = function(data, getblock) {
-  this.parent = getblock(this, "parent", data, uctx);
+ASObject.prototype.data_link = function(block, getblock) {
+  this.parent = getblock(this, this.parent, "parent");
 }
 
 ASObject.prototype.unparent = function(scene) {
   scene.graph.socket_clear(this, "parent", "i");
+  
+  if (this.parent != undefined) {
+    this.parent.lib_remuser(this, "parent");
+  }
+  
   this.parent = undefined;
   this.parentinv = new Matrix4();
 }
@@ -157,6 +162,12 @@ ASObject.prototype.set_parent = function(scene, newpar, preserve_child_space) {
     return;
   }
   
+  if (newpar == undefined || newpar == null) {
+    console.log("Warning: unparent with obj.unparent(scene), not obj.set_parent(scene, undefiend)!");
+    this.unparent(scene);
+    return;
+  }
+  
   if (this.parent != undefined) {
     this.unparent(scene);
   }
@@ -167,6 +178,7 @@ ASObject.prototype.set_parent = function(scene, newpar, preserve_child_space) {
   }
   
   scene.graph.connect(newpar, "dep", this, "parent");
+  this.lib_adduser(this, "parent", DataRem(this, "parent"));
 }
 
 ASObject.recalc = function() {
