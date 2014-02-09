@@ -13,7 +13,7 @@ if len(sys.argv) > 1:
     filter = sys.argv[2]
   else:
     build_cmd = sys.argv[1].lower()
-    if build_cmd not in ["build", "cleanbuild", "clean"]:
+    if build_cmd not in ["build", "cleanbuild", "clean", "loop"]:
       filter = build_cmd
       build_cmd = "single"
 else:
@@ -38,6 +38,7 @@ for f in os.listdir("../server/"):
 #sha1 library
 files.append(["../crypto/sha1.js", "sha1.js"])
 files.append(["../tinygpu/tinygpu_test.html.in".replace("/", os.path.sep), ""])
+files.append(["../unit_test.html".replace("/", os.path.sep), "unit_test.html"])
 
 win32 = sys.platform == "win32"
 
@@ -54,6 +55,12 @@ TCC = "../tinygpu/tinygpu.py".replace("/", os.path.sep)
 JFLAGS = ""
 TFLAGS = ""
 
+def cp_handler(file, target):
+  if win32:
+    return "copy %s %s" % (file, target)
+  else:
+    return "cp %s %s" % (file, target)
+
 def jcc_handler(file, target):
   return PYBIN + "%s %s %s %s -np" % (JCC, file, target, JFLAGS)
 
@@ -62,7 +69,8 @@ def tcc_handler(file, target):
 
 handlers = {
   r'.*\.js\b' : jcc_handler,
-  r'.*\.html\.in\b' : tcc_handler
+  r'.*\.html\.in\b' : tcc_handler,
+  r'.*\.html\b' : cp_handler
 }
 
 def iter_files(files):
@@ -181,38 +189,48 @@ def main():
     if not do_rebuild(abspath): continue
     
     build_depend(abspath);
-    built_files.append(abspath)
+    built_files.append([abspath, os.stat(abspath).st_mtime])
     
+    re_size = 0
     for k in handlers:
-      if re.match(k, f):
+      if re.match(k, f) and len(k) > re_size:
         cmd = handlers[k](f, target)
-        break
+        re_size = len(k)
     
     print(cmd)
     ret = os.system(cmd)
     
     if ret in [-1, 65280]:
       print("build failure\n\n")
-      built_files.remove(abspath)
-      for abspath in built_files:
-        db[abspath] = os.stat(abspath).st_mtime
+      built_files.pop(-1)
+      for pathtime in built_files:
+        db[pathtime[0]] = pathtime[1]
       
       db.close()
       db_depend.close()
       
-      sys.exit(-1)
+      if build_cmd != "loop":
+        sys.exit(-1)
+      else:
+        return
+        
     print(ret)
   
-  for abspath in built_files:
+  for pathtime in built_files:
     try:
-      print("saving", db[abspath], os.stat(abspath).st_mtime)
+      print("saving", db[pathtime[0]], pathtime[1])
     except KeyError:
       pass
     
-    db[abspath] = os.stat(abspath).st_mtime
+    db[pathtime[0]] = pathtime[1]
 
   db.close()
   db_depend.close()
 
-if __name__ == "__main__":  
-  main()
+if __name__ == "__main__":
+  if build_cmd == "loop":
+    while 1:
+      main()
+      time.sleep(0.5);
+  else:
+    main()

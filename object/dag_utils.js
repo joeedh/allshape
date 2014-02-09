@@ -8,9 +8,9 @@ function Matrix4Socket(field, owner, name, flag) {
   this.matrix = new Matrix4();
   this.field = field;
 }
+inherit(Matrix4Socket, DagSocket);
 
-inherit(MatrixSocket, DagSocket);
-MatrixSocket.prototype.get_data = function(edge) {
+Matrix4Socket.prototype.get_data = function(edge) {
   if (this.field != undefined)
     return this.owner["field"];
   else return this.matrix;
@@ -20,4 +20,4 @@ function DepSocket(owner, name, flag) {
   DagSocket.call(this, owner, name, flag);
   
 };
-inherit(MatrixSocket, DagSocket);
+inherit(DepSocket, DagSocket);

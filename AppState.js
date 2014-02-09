@@ -146,46 +146,41 @@ AppState.prototype.set_mesh = function(Mesh m2) {
   }
 }
 
-AppState.prototype.create_user_file = function(DataLib lib) {
-    var data = new Array();
-    
-    pack_static_str(data, "ALSH");
-    var i=0;
-    for (var k in lib.datalists) {
-      i++;
-    }
-    
-    pack_static_str("DLIB");
-    pack_int(i); //number of data lists to pack
-    for (var k in lib.datalists) {
-      var list = lib.datalists[k].list;
-      
-      
-      pack_int(data, list.type);
-      pack_int(data, list.list.length);
-      for (var i=0; i < list.list.length; i++) {
-          list.list[i].pack(data);
-      }
-    }
-    
-    var obj = {}
-    obj["screen"] = this.screen.toJSON();
-    obj["version"] = this.version;
-    
-    pack_static_string(data, "JSON");
-    var str = JSON.stringify(obj);
-    
-    pack_string(data, str);
-    
-    data = new Uint8Array(data).buffer;
-    return new DataView(data);    
+var _filemagic = ["A".charCodeAt(0), "L".charCodeAt(0), "S".charCodeAt(0), "A".charCodeAt(0)]
+AppState.prototype.create_user_file_new = function() {
+  var obj = {};
+  
+  var bjson = new BJSON();
+  
+  var data = [];
+
+  obj.lib = this.lib;
+  obj.screen = this.screen;
+  obj.owner = this.session.username;
+  
+  data = bjson.binify(obj);
+  
+  var data2 = new Array(8+schemas.length);
+  
+  pack_int(data2, _filemagic);
+  pack_int(data2, schemas.length);
+  
+  for (var i=0; i<schemas.length; i++) {
+    data2[i+8] = schemas[i].charCodeAt(i);
+  }
+  
+  data = data2.concat(data);
+  
+  return data;
 }
 
-AppState.prototype.load_user_file = function(data) : ArrayBuffer {
+AppState.prototype.load_user_file_new = function(data) : ArrayBuffer {
   
 }
 
-AppState.prototype.load_user_file_old = function(data) : ArrayBuffer {
+
+
+AppState.prototype.load_user_file = function(data) : ArrayBuffer {
   //we save a json part and a binary part
   
   var uctx = new unpack_ctx();

@@ -123,7 +123,7 @@ function Dag() {
 }
 create_prototype(Dag);
 
-Dag.prototype.sort() = function() {
+Dag.prototype.sort = function() {
   var nodes = this.nodes;
   
   for (var i=0; i<nodes.length; i++) {

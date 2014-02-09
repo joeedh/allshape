@@ -7,25 +7,25 @@ var int _prototype_id_gen = 1
 
 function inherit(obj, parent) {
   obj.prototype = Object.create(parent.prototype);
-  obj.constructor = obj.prototype
   obj.prototype.prior = parent.prototype;
-  obj.prototype.constructor = obj.prototype;
-  obj.prototype.constructor.name = obj.name
+  obj.prototype.constructor = obj;
   obj.prototype.__prototypeid__ = _prototype_id_gen++;
+  obj.prototype.__class__ = obj.name;
+  obj.prototype.prototype = obj.prototype;
 }
 EXPORT_FUNC(inherit)
 
 function create_prototype(obj) {
-  obj.constructor = obj.prototype
-  obj.prototype.constructor = obj.prototype;
-  obj.prototype.constructor.name = obj.name
+  obj.prototype.constructor = obj;
+  obj.prototype.prototype = obj.prototype;
   obj.prototype.__prototypeid__ = _prototype_id_gen++;
+  obj.prototype.__class__ = obj.name;
 }
 EXPORT_FUNC(create_prototype)
 
 function prior(thisproto, obj) {
-  proto = obj.constructor;
-  thisproto = thisproto.constructor;
+  proto = obj.prototype;
+  thisproto = thisproto.prototype;
   
   while (proto.__prototypeid__ != thisproto.__prototypeid__) {
     proto = proto.prior;
@@ -695,7 +695,7 @@ function get_callstack(err) {
       
       //Remove call to printStackTrace()
       if (err_was_undefined) {
-        callstack.shift();
+        //callstack.shift();
       }
       isCallstackPopulated = true;
     }
@@ -742,8 +742,14 @@ function get_callstack(err) {
 EXPORT_FUNC(get_callstack)
 
 function print_stack(err) {
-  var cs = get_callstack(err);
+  try {
+    var cs = get_callstack(err);
+  } catch (err2) {
+    console.log("Could not fetch call stack.");
+    return;
+  }
   
+  console.log("Callstack:");
   for (var i=0; i<cs.length; i++) {
     console.log(cs[i]);
   }
@@ -926,4 +932,17 @@ function get_nor_zmatrix(Vector3 no)
   var mat = q.toMatrix();
   
   return mat;
+}
+
+var _o_basic_types = {"String" : 0, "Number" : 0, "Array" : 0, "Function" : 0};
+function is_obj_lit(obj) {
+  if (obj.constructor.name in _o_basic_types)
+    return false;
+    
+  if (obj.constructor.name == "Object")
+    return true;
+  if (obj.prototype == undefined)
+    return true;
+  
+  return false;
 }

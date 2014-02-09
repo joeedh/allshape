@@ -193,23 +193,23 @@ catch (Error) {
 var _prototype_id_gen=1;
 function inherit(obj, parent) {
  obj.prototype = Object.create(parent.prototype);
- obj.constructor = obj.prototype;
  obj.prototype.prior = parent.prototype;
- obj.prototype.constructor = obj.prototype;
- obj.prototype.constructor.name = obj.name;
+ obj.prototype.constructor = obj;
  obj.prototype.__prototypeid__ = _prototype_id_gen++;
+ obj.prototype.__class__ = obj.name;
+ obj.prototype.prototype = obj.prototype;
 }
 exports.inherit = inherit;
 function create_prototype(obj) {
- obj.constructor = obj.prototype;
- obj.prototype.constructor = obj.prototype;
- obj.prototype.constructor.name = obj.name;
+ obj.prototype.constructor = obj;
+ obj.prototype.prototype = obj.prototype;
  obj.prototype.__prototypeid__ = _prototype_id_gen++;
+ obj.prototype.__class__ = obj.name;
 }
 exports.create_prototype = create_prototype;
 function prior(thisproto, obj) {
- proto = obj.constructor;
- thisproto = thisproto.constructor;
+ proto = obj.prototype;
+ thisproto = thisproto.prototype;
  while (proto.__prototypeid__!=thisproto.__prototypeid__) {
   proto = proto.prior;
  }
@@ -227,6 +227,12 @@ function GArray(input) {
 }
 exports.GArray = GArray;
 inherit(GArray, Array);
+GArray.prototype.pack = function(data) {
+ pack_int(data, this.length);
+ for (var i=0; i<this.length; i++) {
+   this[i].pack(data);
+ }
+}
 GArray.prototype.__iterator__ = function() {
  return new GArrayIter(this);
 }
@@ -435,6 +441,25 @@ function set(input) {
 }
 exports.set = set;
 create_prototype(set);
+set.prototype.pack = function(data) {
+ pack_int(data, this.length);
+ var __iter_item = __get_iter(this);
+ while (1) {
+  try {
+   var item = __iter_item.next();
+   item.pack(data);
+  }
+  catch (_for_err) {
+    if (_for_err!==StopIteration) {
+      if (_do_iter_err_stacktrace)
+       print_stack(_for_err);
+      throw _for_err;
+      break;
+    }
+    break;
+  }
+ }
+}
 set.prototype.toJSON = function() {
  var arr=new Array(this.length);
  var i=0;
@@ -934,7 +959,6 @@ function get_callstack(err) {
        }
      }
      if (err_was_undefined) {
-       callstack.shift();
      }
      isCallstackPopulated = true;
    }
@@ -955,7 +979,14 @@ function get_callstack(err) {
 }
 exports.get_callstack = get_callstack;
 function print_stack(err) {
- var cs=get_callstack(err);
+ try {
+  var cs=get_callstack(err);
+ }
+ catch (err2) {
+   console.log("Could not fetch call stack.");
+   return;
+ }
+ console.log("Callstack:");
  for (var i=0; i<cs.length; i++) {
    console.log(cs[i]);
  }
@@ -1097,4 +1128,14 @@ function get_nor_zmatrix(no) {
  q.axisAngleToQuat(cross, sign*a);
  var mat=q.toMatrix();
  return mat;
+}
+var _o_basic_types={"String": 0, "Number": 0, "Array": 0, "Function": 0}
+function is_obj_lit(obj) {
+ if (obj.constructor.name in _o_basic_types)
+  return false;
+ if (obj.constructor.name=="Object")
+  return true;
+ if (obj.prototype==undefined)
+  return true;
+ return false;
 }
