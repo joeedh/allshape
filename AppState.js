@@ -146,6 +146,27 @@ AppState.prototype.set_mesh = function(Mesh m2) {
   }
 }
 
+AppState.prototype.create_user_file = function(different_mesh) : ArrayBuffer {
+  //we save a json part and a binary part
+  var obj = {}
+  
+  var mesh = different_mesh != undefined ? different_mesh : this.mesh;
+  
+  obj["screen"] = this.screen.toJSON();
+  
+  var str = JSON.stringify(obj);
+  
+  var data = []
+  pack_string(data, str);
+  
+  mesh.pack(data);
+  pack_float(data, this.version);
+  
+  data = new Uint8Array(data).buffer;
+  
+  return new DataView(data);
+}
+
 var _filemagic = ["A".charCodeAt(0), "L".charCodeAt(0), "S".charCodeAt(0), "A".charCodeAt(0)]
 AppState.prototype.create_user_file_new = function() {
   var obj = {};
