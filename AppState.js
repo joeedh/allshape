@@ -40,8 +40,8 @@ function UserSession() {
   
   this.validate_session = function() {
     //XXX
-    this.is_logged_in = true;
-    return;
+    //this.is_logged_in = true;
+    //return;
     
     var session = this;
     

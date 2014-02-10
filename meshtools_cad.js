@@ -243,8 +243,8 @@ function InsetRegionsOp(faceiter) {
   this.prototype = Object.create(MeshOp.prototype);
   MeshOp.call(this);
   
-  this.uiname = "Extrude Faces"
-  this.name = "ExtrudeFaces";
+  this.uiname = "Inset Regions"
+  this.name = "inset_regions";
   this.inputs = {
     faces: new ElementBufferProperty("faces", MeshTypes.FACE),
     make_holes: new MeshBoolProperty("use_hole", true, 0)
@@ -260,6 +260,58 @@ function InsetRegionsOp(faceiter) {
       inset_extrude(op, mesh);
     } else {
       inset_make_holes(op, mesh);
+    }
+  }
+}
+
+function bridge_two_loops(mesh, vloop1, vloop2) {
+  
+}
+
+function BridgeOp(edgeiter) {
+  this.prototype = Object.create(MeshOp.prototype);
+  MeshOp.call(this);
+  
+  this.uiname = "Bridge Edges"
+  this.name = "bridge_edges";
+  this.inputs = {
+    edges: new ElementBufferProperty("edges", MeshTypes.EDGE),
+  }
+  
+  this.outputs = {
+  }
+  
+  this.inputs.edges.load_iterator(edgeiter);
+  
+  this.exec = function(op, mesh) {
+    var eset = new set(this.edgeiter);
+    
+    var visit = new set();
+    var loops = new GArray();
+    
+    for (var e in eset) {
+      if (visit.has(e))
+        continue;
+      
+      var v1 = e.v1;
+      
+      visit.add(e);
+      var stack = [e];
+      var loop = new GArray([v1]);
+      
+      while (stack.length > 0) {
+        var e2 = stack.pop(stack.length-1);
+        v1 = e2.other_vert(v1);
+        
+        loop.push(v1);
+        for (var e3 in v1.edges) {
+          if (eset.has(e3) && !visit.has(e3)) {
+            stack.push(e3);
+          }
+        }
+      }
+      
+      console.log("llen :", loop.length);
     }
   }
 }

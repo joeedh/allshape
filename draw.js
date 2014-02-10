@@ -1179,11 +1179,11 @@ function push_scissor(gl, pos, size)
   global cur_scissor;
   var rect;
   
-  if (cur_scissor == undefined) {
+  //XXX if (cur_scissor == undefined) {
     rect = gl.getParameter(gl.SCISSOR_BOX);
-  } else {
-    rect = cur_scissor;
-  }
+  //} else {
+  //  rect = cur_scissor;
+  //}
   
   __scissor_stack.push(rect);
   
@@ -1196,6 +1196,9 @@ function pop_scissor(gl)
   var rect = __scissor_stack.pop();
   
   gl.scissor(rect[0], rect[1], rect[2], rect[3]);
+  
+  if (__scissor_stack.length == 0)
+    cur_scissor = undefined;
 }
 
 function reset_scissor_stack(gl, rootscissor)

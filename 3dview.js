@@ -1634,6 +1634,7 @@ View3DHandler.prototype.build_sidebar1 = function()
   row.toolop("mesh.triangulate(faces=mesh_selected(f))", PackFlags.INHERIT_WIDTH);
   row.toolop("mesh.tri2quad(faces=mesh_selected(f))", PackFlags.INHERIT_WIDTH);
   row.toolop("mesh.duplicate_transform()", PackFlags.INHERIT_WIDTH);
+  row.toolop("mesh.bridge_edges(edges=mesh_selected(e))", PackFlags.INHERIT_WIDTH);
   
   row.label("Last Tool:", false)
   row.add(new ToolOpFrame(this.ctx, "last_tool"), PackFlags.INHERIT_WIDTH);

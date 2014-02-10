@@ -1129,7 +1129,7 @@ Screen.prototype.on_draw = function(WebGLRenderingContext gl)
     pop_scissor(gl);
   }
   
-  if (time_ms() - this.last_tick > IsMobile ? 500 : 200) {
+  if (time_ms() - this.last_tick > (IsMobile ? 500 : 450)) {
     this.on_tick();
     this.last_tick = time_ms();
   }
@@ -1150,7 +1150,7 @@ Screen.prototype.on_draw = function(WebGLRenderingContext gl)
 
 Screen.prototype.on_tick = function()
 {
-  if (time_ms() - this.last_sync > 200) {
+  if (time_ms() - this.last_sync > 700) {
     localStorage.screen = JSON.stringify(this);
     this.last_sync = time_ms();
   }

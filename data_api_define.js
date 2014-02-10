@@ -340,6 +340,12 @@ function api_define_ops() {
     "mesh.toggle_subsurf" : function(ctx, args) {
       return new ToggleSubSurfOp();
     },
+    "mesh.bridge_edges" : function(ctx, args) {
+      if (!("edges" in args))
+        throw TinyParserError;
+      
+      return new MeshToolOp(new BridgeOp(args["edges"]));
+    },
     "view3d.circle_select" : function(ctx, args) {
       return new CircleSelectOp();
     },
