@@ -89,7 +89,7 @@ function View3DUserState()
 {
   this.drawmats = undefined
   this.selectmode = 0;
-  this.use_radial_menus = true;
+  this.use_radial_menus = false;
   this.zoomfac = 0.0
   this.zoomwheel = 0.0
 }
@@ -870,7 +870,7 @@ View3DHandler.prototype.rightclick_common_ops = function() {
 }
 
 View3DHandler.prototype.toolop_menu = function(ctx, name, ops) {
-  if (ops.length > 1 && this.user_pref.use_radial_menus) {
+  if (0) { //XXX ops.length > 1 && this.user_pref.use_radial_menus) {
     return toolop_radial_menu(ctx, name, ops);
   } else {
     return toolop_menu(ctx, name, ops);
