@@ -742,7 +742,6 @@ function toJSON_intern (ob, tlevel) {
 <script type="text/javascript" src="content/lib_utils.js"></script>
 <script type="text/javascript" src="content/dag.js"></script>
 <script type="text/javascript" src="content/dag_utils.js"></script>
-<script type="text/javascript" src="content/mesh_ops.js"></script>
 <script type="text/javascript" src="content/object.js"></script>
 <script type="text/javascript" src="content/object_ops.js"></script>
 <script type="text/javascript" src="content/scenegraph.js"></script>
