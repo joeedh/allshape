@@ -1,30 +1,183 @@
 "use strict";
 
+/*
 
+Okay.  The serialization system needs to do three things:
 
-var a = """
-Loop {
-  eid : int
-  flag : int
-  index : int
-  type : int
+1. Handle data model changes.
+2. Be lightning fast (which means no excessive creation of objects).
+3. Be light-weight.
+
+Thus, all the existing serialization schemes (that I know of) for JS
+are ineligible.  Here is my final solution: a serialization language
+thingy.
+*/
+
+function SchemaParser() {
+  var basic_types = new set([
+    "int", 
+    "float", 
+    "double",
+    "vec2",
+    "vec3",
+    "vec4",
+    "mat4",
+    "string"]);
   
-  co : vec3
-  no : vec3
-  loop : int | eid(loop)
-  edges : array(e, int) | e.eid
+  var reserved_tokens = new set([
+    "int", 
+    "float", 
+    "double", 
+    "vec2", 
+    "vec3", 
+    "vec4", 
+    "mat4", 
+    "string", 
+    "static_string",
+    "array"]);
+
+  function tk(name, re, func) {
+    return new PUTL.tokdef(name, re, func);
+  }
   
-  loops : array(Loop)
+  var tokens = [
+    tk("ID", /[a-zA-Z]+[a-zA-Z0-9_]*/, function(t) {
+      if (reserved_tokens.has(t.value)) {
+        t.type = t.value.toUpperCase();
+      }
+      
+      return t;
+    }),
+    tk("OPEN", /\{/),
+    tk("CLOSE", /}/),
+    tk("COLON", /:/),
+    tk("JSCRIPT", /\|/, function(t) {
+      var js = ""
+      var lexer = t.lexer;
+      while (lexer.lexpos < lexer.lexdata.length) {
+        var c = lexer.lexdata[lexer.lexpos];
+        if (c == "\n") 
+          break;
+        
+        js += c;
+        lexer.lexpos++;
+      }
+      
+      if (js.endsWith(";")) {
+        js = js.slice(0, js.length-1);
+        lexer.lexpos--;
+      }
+      
+      t.value = js;
+      return t;
+    }),
+    tk("LPARAM", /\(/),
+    tk("RPARAM", /\)/),
+    tk("COMMA", /,/),
+    tk("NUM", /[0-9]/),
+    tk("SEMI", /;/),
+    tk("NEWLINE", /\n/, function(t) {
+      t.lexer.lineno += 1;
+    }),
+    tk("SPACE", / |\t/, function(t) {
+      //throw out non-newline whitespace tokens
+    })
+  ];
+
+  for (var rt in reserved_tokens) {
+    tokens.push(tk(rt.toUpperCase()));
+  }
+  
+  function errfunc(lexer) {
+    return true; //throw error
+  }
+  
+  var lex = new PUTL.lexer(tokens, errfunc)
+  var parser = new PUTL.parser(lex);
+  
+  function p_Array(p) {
+    p.expect("ARRAY");
+    p.expect("LPARAM");
+    
+    var arraytype = p_Type(p);
+    var itername = "";
+    
+    if (p.optional("COMMA")) {
+      itername = arraytype.data.replace(/"/g, "");
+      arraytype = p_Type(p);
+    }    
+    
+    p.expect("RPARAM");
+    
+    return {type : "array", data : {type : arraytype, iname : itername}};
+  }
+  
+  function p_Type(p) {
+    var tok = p.peek()
+    
+    if (tok.type == "ID") {
+      p.next();
+      return {type : "struct", data : "\"" + tok.value + "\""};
+    } else if (basic_types.has(tok.type.toLowerCase())) {
+      p.next();
+      return {type : tok.type.toLowerCase()};
+    } else if (tok.type == "ARRAY") {
+      return p_Array(p);
+    } else {
+      p.error(tok, "invalid type " + tok.type); //(tok.value == "" ? tok.type : tok.value));
+    }
+  }
+  
+  function p_Field(p) {
+    var field = {}
+    
+    field.name = p.expect("ID", "struct field name");
+    p.expect("COLON");
+    
+    field.type = p_Type(p);    
+    field.set = undefined;
+    field.get = undefined;
+    
+    var tok = p.peek();
+    if (tok.type == "JSCRIPT") {
+      field.get =  tok.value;
+      p.next()
+    }
+    
+    tok = p.peek();
+    if (tok.type == "JSCRIPT") {
+      field.set = tok.value;
+      p.next();
+    }
+    
+    p.expect("SEMI");
+    
+    return field;
+  }
+  
+  function p_Struct(p) {
+    var st = {}
+    st.name = p.expect("ID", "struct name")
+    st.fields = [];
+    
+    p.expect("OPEN");
+    
+    while (1) {
+      if (p.at_end()) {
+        p.error(undefined);
+      } else if (p.optional("CLOSE")) {
+        break;
+      } else {
+        st.fields.push(p_Field(p));
+      }
+    } 
+    
+    return st;
+  }
+  
+  parser.start = p_Struct;
+  return parser;
 }
-""";
-
-
-function SchemaStruct(fields) {
-  
-}
-
-
-
 
 /*types used to generate file schemas.
   note that the schema generator is
@@ -38,6 +191,170 @@ var SchemaTypes = [
   Face,
   Mesh
 ];
+var schema_parse = SchemaParser();
+
+function STRUCT()
+{
+  this.structs = {};
+}
+create_prototype(STRUCT);
+
+STRUCT.prototype.add_struct = function(cls) {
+  this.structs[cls.name] = schema_parse.parse(cls.STRUCT);
+}
+
+STRUCT._env_call = function(code, obj, env) {
+  code = code.trim();
+  
+  if (env != undefined) {
+    for (var k in env) {
+      code = "var " + k + " = env[k];\n" + code;
+    }
+  }
+  
+  return eval(code);
+}
+
+STRUCT.prototype.write_struct = function(data, obj, stt) {
+  var fields = stt.fields;
+  
+  var packers = {
+    "int" : function(data, field, type, val) {
+      pack_int(data, val);
+    },
+    "float" : function(data, field, type, val) {
+      pack_float(data, val);
+    },
+    "string" : function(data, field, type, val) {
+      pack_string(data, val);
+    },
+    "static_string" : function(data, field, type, val) {
+      pack_static_string(data, val, type["maxlength"]);
+    },
+    "vec2" : function(data, field, type, val) {
+      pack_vec2(data, val);
+    },
+    "vec3" : function(data, field, type, val) {
+      pack_vec3(data, val);
+    },
+    "vec4" : function(data, field, type, val) {
+      pack_vec4(data, val);
+    },
+    "mat4" : function(data, field, type, val) {
+      pack_mat4(data, val);
+    },
+    "array" : function(data, field, type, val) {
+      pack_int(data, val.length);
+      
+      for (var i=0; i<val.length; i++) {
+        var val2 = val[i];
+        var itername = type.data.iname;
+        var type2 = type.data.type;
+        
+        if (f.get) {
+          var env = {}
+          env[itername] = val2;
+          val2 = STRUCT._env_call(f.get, obj, env);
+        }
+        
+        var f2 = {type : type2, get : undefined, set: undefined};
+        
+        pack_type(data, f2, f2.type, val2);
+      }
+    }
+  }
+  
+  function pack_type(data, field, type, val) {
+    packers[field.type.type](data, field, type, val);
+  }
+  
+  for (var i=0; i<fields.length; i++) {
+    var f = fields[i];
+    
+    if (f.type.type != "array" && f.type.type != "struct") {
+      var val;
+      var type = f.type.type;
+      
+      if (f.get != undefined) {
+        val = STRUCT._env_call(f.get, obj, {});
+      } else {
+        val = obj[f.name];
+      }
+      
+      pack_type(data, f, f.type, val);
+    } else if (f.type.type == "array") {
+      var val = obj[f.name];
+      pack_type(data, f, f.type, val);
+    }
+  }
+  
+  console.log(JSON.stringify(data));
+}
+
+STRUCT.prototype.write_object = function(data, obj) {
+  var cls = obj.constructor.name;
+  var stt = this.structs[cls];
+  this.write_struct(data, obj, stt);  
+}
+
+STRUCT.prototype.read_object = function(data, cls) {
+  var stt = this.structs[cls.constructor.name];
+  
+  function unpack_field(field, obj) {
+    
+  }
+  
+  function load(obj) {
+    for (var f in stt.fields) {
+      unpack_field(f, obj);
+    }
+  }
+}
+
+var test_vertex_struct = """
+  Vertex {
+    eid : int;
+    flag : int;
+    index : int;
+    type : int;
+    
+    co : vec3;
+    no : vec3;
+    loop : int | obj.loop == undefined ? -1 : obj.loop.eid;
+    edges : array(e, int) | e.eid;
+  }
+""";
+
+
+function test_struct() {
+  var stt = new STRUCT();
+  
+  Vertex.STRUCT = test_vertex_struct;
+  Vertex.fromSTRUCT = function(do_read) {
+    var v = new Vertex();
+    do_read(v);
+    
+    return v;
+  }
+  
+  stt.add_struct(Vertex);
+  
+  var v = new Vertex();
+  
+  var e1 = new Edge();
+  var e2 = new Edge();
+  
+  e1.eid = 2;
+  e2.eid = 3;
+  
+  v.edges.push(e1);
+  v.edges.push(e2);
+  
+  var data = []
+  stt.write_object(data, v);
+}
+
+test_struct();
 
 //typeof function, that handles object instances of basic types
 var _bt_h = {

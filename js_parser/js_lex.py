@@ -281,7 +281,16 @@ _rd = _Rd()
 _rd.i = 0
 _rd.st = ""
 
-#based on ECMAScript standard for lexical anaylsis of regexpr literals
+#this function generates the regular expression used to parse
+#JavaScript regular expression literals.
+#
+#it works by converting stupid ECMAScript's 
+#"production grammar" to regexpr.  the standard implies
+#that its grammar is DFA-compatible, and it seems to work.
+#
+#man I hate self-righteous engineer-speak "implication"
+
+"""
 def gen_re():
   def expect(s):
     if s in [".", "+", "(", "[", "]", ")", "*", "^", "\\"]:
@@ -345,110 +354,10 @@ def gen_re():
 print(gen_re())
 re1 = gen_re()
 
-print(re.match(re1, "//"))
+print(re.match(re1, "/[*]/"))
 
 sys.exit()
-
-def scan_regexpr(val):
-  global _rd
-  _rd.i = 0
-  _rd.st = val
-  
-  def seti(j):
-    _rd.i = j
-    _rd.st = val[_rd.i:]
-    
-  def inc(j):
-    _rd.i += j
-    _rd.st = val[_rd.i:]
-  
-  def expect(s):
-    if len(_rd.st) == 0: return 0
-    if _rd.st.startswith(s):
-      inc(len(s))
-      return 1
-    else:
-      return 0
-      
-  def consume_ifnot(s):
-    if len(_rd.st) == 0: return 0
-    
-    if type(s) == list:
-      for s2 in s:
-        if _rd.st.startswith(s2):
-          return 0
-    elif type(s) == str:
-      if _rd.st.startswith(s): return 0
-    
-    inc(1)
-    return 1
-  
-  def NonTerm(extra=[]):
-    return consume_ifnot(["\n", "\r"] + extra)
-  
-  def Char():
-    i2 = _rd.i
-    res = NonTerm(["\\", "/", "["])
-
-    if not res:
-      seti(i2)
-      if not BackSeq():
-        seti(i2)
-        return Class()
-    
-  def FirstChar():
-    i2 = _rd.i
-    res = NonTerm(["*", "\\", "/", "["])
-    
-    if not res:
-      seti(i2)
-      if not BackSeq():
-        seti(i2)
-        return Class()
-    return 1
-    
-  def Chars():
-    while Char():
-      continue
-    return 1
-  
-  def BackSeq():
-    return expect("\\") and NonTerm()
-  
-  def ClassChar():
-    i2 = _rd.i
-    res = NonTerm(["]", "\\"])
-    
-    if not res:
-      seti(i2)
-      return BackSeq()
-    
-    return 1
-  
-  def ClassChars():
-    while ClassChar():
-      continue
-    return 1
-    
-  def Class():
-    return expect("[") and ClassChars() and expect("]")
-  
-  def Flags():
-    while len(_rd.st) > 0 and re.match("[a-zA-Z]", _rd.st[0]):
-      inc(1)
-    return 1
-    
-  def Body():
-    return FirstChar() and Chars()
-    
-  def Lit():
-    return expect("/") and Body() and expect("/") and Flags()
-  
-  ret = Lit() and not val.startswith("//")
-  
-  print(ret, _rd.st)
-  
-  return -1 if not ret else _rd.i
+#"""
 
 t_REGEXPR =  r'/(([^\n\r\*\/\[]|\\[^\n\r]|(\[([^\n\r\]\]|\\[^\n\r])*\]))(([^\n\r\/\[]|\\[^\n\r]|(\[([^\n\r\]\]|\\[^\n\r])*\])))*)/[a-zA-Z]*'
 
@@ -462,30 +371,66 @@ def t_MLSTRLIT(t):
   global strlit_val;
   t.lexer.push_state("mlstr");
   strlit_val = StringLit("")
+
+def ml_escape(s):
+  i = 0
+  lastc = 0
   
+  nexts = False
+  excl = ['"', "'"]
+  
+  s2 = ""
+  while i < len(s):
+    c = s[i]
+    
+    if nexts:
+      nexts = False
+      s2 += c
+      i += 1
+      continue
+    
+    if c == "\\":
+      nexts = True
+      s2 += c
+      i += 1
+      continue
+    
+    if c in ["'", '"']:
+      s2 += "\\"
+    if c == "\n": c = "\\n"
+    if c == "\r": c = "\\r"
+    
+    s2 += c
+    i += 1
+  return s2
+      
 def t_mlstr_MLSTRLIT(t):
-  r'"""|\\"""';
+  r'"""' #(""")|(\\""")';
   
   global strlit_val;
+  
   if ("\\" in t.value):
     strlit_val = StringLit(strlit_val + t.value);
     return
+    
+  str = ml_escape(strlit_val)
+  str = StringLit(str)
   
   t.lexer.pop_state();
   t.strval = t.value;
-  t.value = StringLit('"' + strlit_val + '"');
+  t.value = StringLit('"' + str + '"');
   t.type = "STRINGLIT"
   
   return t;
 
 def t_mlstr_ALL(t):
-  r'([^"\']|(\\\'\\"))+';
-
+  r'(.|[\n\r])+(?=""")+(?!\\""")'
+ 
   global strlit_val
   strlit_val = StringLit(strlit_val + t.value)
   
-  t.lineno += '\n' in t.value
-
+  t.lineno += t.value.count('\n')
+  
 def t_STRINGLIT(t):
   r'\"|\''
   global strlit_val, start_q
