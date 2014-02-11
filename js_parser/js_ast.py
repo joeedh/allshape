@@ -153,7 +153,12 @@ class StrLitNode (ValueNode):
     self.val = str
   
   def gen_js(self, tlevel):
-    return '%s'%self.val
+    str = self.val.replace("\n", "\\n")
+    str = str.replace("\r", "\\r")
+    str = str.replace('"', '\\"')
+    str = str.replace("'", "\\'")
+    
+    return '%s'%str
   
   def copy(self):
     n2 = StrLitNode(str(self.val))

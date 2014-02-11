@@ -35,7 +35,7 @@ function ASObject(data, name) {
   this.flag = 0;
   this.loc = new Vector3();
   this.euler = new Vector3();
-  this.size = new Vector3();
+  this.size = new Vector3([1.0, 1.0, 1.0]);
   
   this.rot_method = RotTypes.EULER;
   

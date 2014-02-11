@@ -4,7 +4,7 @@ function Scene(name) {
   //name is optional
   prior(Scene, this).call(DataTypes.SCENE, name);
   
-  this.objects = new GArray();
+  this.objects = new DBList();
   this.graph = new SceneGraph();
   this.active = undefined;
   this.selection = new set();
@@ -21,7 +21,16 @@ Scene.prototype.add = function(ASObject ob)
   this.objects.push(ob);
   this.graph.add(ob);
   
+  ob.scene = this;
   ob.lib_adduser(this, "sceneobj", SceneObjRem(this, ob));
+  
+  if (this.active == undefined) {
+    this.set_active(ob);
+  }
+}
+
+Scene.prototype.set_active = function(ASObject ob) {
+  this.active = ob;
 }
 
 Scene.prototype.remove = function(ASObject ob)

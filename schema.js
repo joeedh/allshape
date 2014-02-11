@@ -1,5 +1,31 @@
 "use strict";
 
+
+
+var a = """
+Loop {
+  eid : int
+  flag : int
+  index : int
+  type : int
+  
+  co : vec3
+  no : vec3
+  loop : int | eid(loop)
+  edges : array(e, int) | e.eid
+  
+  loops : array(Loop)
+}
+""";
+
+
+function SchemaStruct(fields) {
+  
+}
+
+
+
+
 /*types used to generate file schemas.
   note that the schema generator is
   recursive, so theoretically only

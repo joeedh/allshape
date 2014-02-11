@@ -72,3 +72,116 @@ function _Lib_GetBlock(block, dataref, fieldname, add_user, refname, rem_func) {
     return b;
   }  
 }
+
+/*generic container list for datablocks*/
+function DBList(type) {
+  this.type = type;
+  this.idmap = {}
+  this.list = new GArray();
+  this.selected = new GArray();
+  this.active = undefined;
+  this.length = 0;
+  
+  //private variable
+  this.selset = {};
+}
+create_prototype(DBList);
+
+DBList.prototype.toJSON = function() {
+  var list = [];
+  var sellist = [];
+  
+  for (var block in this) {
+    list.push(block.lib_id);
+  }
+  
+  for (var block in this.selected) {
+    sellist.push(block.lib_id);
+  }
+  
+  var obj = {
+    list : list,
+    selected : sellist,
+    active : this.active != undefined ? this.active.lib_id : -1,
+    length : this.length,
+    type : this.type
+  };
+  
+  return obj;
+}
+
+DBList.fromJSON = function(obj) {
+  var list = new DBList(obj.type);
+ 
+  list.list = new GArray(obj.list);
+  list.selected = new GArray(obj.selected);
+  list.active = obj.active;
+  list.length = obj.length;
+}
+
+DBList.prototype.data_link = function(getblock) {
+  
+}
+
+DBList.prototype.add = function(block) {
+  this.list.push(block);
+  this.idmap[block.lib_id] = block;
+  
+  if (this.active == undefined) {
+    this.active = block;
+  }
+  
+  this.length++;
+}
+
+DBList.prototype.remove = function(block) {
+  var i = this.list.indexOf(block);
+  
+  if (i < 0 || i == undefined) {
+    console.log("WARNING: Could not remove block " + block.name + " from a DBList");
+    return;
+  }
+  
+  this.list.pop(i);
+  delete this.idmap[block.lib_id];
+  
+  if (this.active == block) {
+    this.active = this.list.length > 0 ? this.list[0] : undefined;
+  }
+  
+  if (block.lib_id in this.selset) {
+    this.selected.remove(block);
+    delete this.selset[block.lib_id];
+  }
+  
+  this.length--;
+}
+
+DBList.prototype.pop = function(i) {
+  if (i < 0 || i >= this.length)
+    return;
+  
+  var block = this.list[i];
+  this.list.pop(i);
+  
+  delete this.idmap[block.lib_id];
+  
+  if (this.active == block) {
+    this.active = this.list.length > 0 ? this.list[0] : undefined;
+  }
+  
+  if (block.lib_id in this.selset) {
+    this.selected.remove(block);
+    delete this.selset[block.lib_id];
+  }
+  
+  this.length--;
+}
+
+DBList.prototype.__iterator__ = function() {
+  return this.list.__iterator__();
+}
+
+DBList.prototype.get = function(id) {
+  return this.idmap[id];
+}

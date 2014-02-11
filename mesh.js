@@ -662,6 +662,10 @@ EIDGen.prototype.gen_eid = function() : int {
   return this.cur_eid++;
 }
 
+EIDGen.prototype.gen_id = function() : int {
+  return this.gen_eid();
+}
+
 EIDGen.fromJSON = function(obj) {
   var idgen = new EIDGen()
   idgen.cur_eid = obj.cur_eid;

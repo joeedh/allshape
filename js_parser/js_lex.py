@@ -1,4 +1,4 @@
-import sys, traceback
+import sys, traceback, re
 
 from js_global import glob
 
@@ -51,10 +51,12 @@ get lex tokens between two stored positions (exclude comments and like by not re
 
 states = [
   ("incomment", "exclusive"),
-  ("instr", "exclusive")
+  ("instr", "exclusive"),
+  ("mlstr", "exclusive")
 ]
 
 tokens = (
+   "MLSTRLIT",
    'COMMENT',
    'INC',
    'DEC',
@@ -271,14 +273,218 @@ def t_LTHAN(t):
 
   return t
 
-base_re1 = r"(?<=[(=]"
-base_re2 = ")/[^*].*[^*]/[a-zA-Z0-9_$]*"
+class _Rd:
+  i = 0
+  st = 0
 
-t_REGEXPR =  r'' + base_re1+base_re2 + "|" + base_re1+"\s"+base_re2 + "|" + base_re1+"\t"+base_re2
+_rd = _Rd()
+_rd.i = 0
+_rd.st = ""
+
+#based on ECMAScript standard for lexical anaylsis of regexpr literals
+def gen_re():
+  def expect(s):
+    if s in [".", "+", "(", "[", "]", ")", "*", "^", "\\"]:
+        s = "\\" + s
+    return s
+      
+  def consume_ifnot(s):
+    s2 = "[^"
+    if type(s) == list:
+      for s3 in s:
+        if s3 in ["+", "(", "[", "]", ")", "*", "^"]:
+          s3 = "\\" + s3
+        
+        s2 += s3
+    else:
+      if s in ["+", "(", "[", "]", ")", "*", "^"]:
+        s = "\\" + s
+      s2 += s
+      
+    s2 += "]"
+    return "%s" % s2
+    
+  def NonTerm(extra=[]):
+    return consume_ifnot(["\\n", "\\r"] + extra)
   
+  def Char():
+    return "(%s|%s|%s)" % (NonTerm(["\\", "/", "["]), BackSeq(), Class())
+    
+  def FirstChar():
+    return "(%s|%s|%s)" % (NonTerm(["*", "\\", "/", "["]), BackSeq(), Class())
+  
+  def empty():
+    return "(\b|\B)"
+    
+  def Chars():
+    return "(%s)*" % Char()
+  
+  def BackSeq():
+    return expect("\\") + NonTerm()
+  
+  def ClassChar():
+    return "(%s|%s)" % (NonTerm(["]", "\\"]), BackSeq())
+  
+  def ClassChars():
+    return ClassChar() + "*"
+    
+  def Class():
+    return "(" + expect("[") + ClassChars() + expect("]") + ")"
+  
+  def Flags():
+    return "[a-zA-Z]*"
+    
+  def Body():
+    return "(" + FirstChar() + Chars() + ")"
+    
+  def Lit():
+    return expect("/")+ Body() + expect("/") + Flags()
+  
+  return Lit()
+
+print(gen_re())
+re1 = gen_re()
+
+print(re.match(re1, "//"))
+
+sys.exit()
+
+def scan_regexpr(val):
+  global _rd
+  _rd.i = 0
+  _rd.st = val
+  
+  def seti(j):
+    _rd.i = j
+    _rd.st = val[_rd.i:]
+    
+  def inc(j):
+    _rd.i += j
+    _rd.st = val[_rd.i:]
+  
+  def expect(s):
+    if len(_rd.st) == 0: return 0
+    if _rd.st.startswith(s):
+      inc(len(s))
+      return 1
+    else:
+      return 0
+      
+  def consume_ifnot(s):
+    if len(_rd.st) == 0: return 0
+    
+    if type(s) == list:
+      for s2 in s:
+        if _rd.st.startswith(s2):
+          return 0
+    elif type(s) == str:
+      if _rd.st.startswith(s): return 0
+    
+    inc(1)
+    return 1
+  
+  def NonTerm(extra=[]):
+    return consume_ifnot(["\n", "\r"] + extra)
+  
+  def Char():
+    i2 = _rd.i
+    res = NonTerm(["\\", "/", "["])
+
+    if not res:
+      seti(i2)
+      if not BackSeq():
+        seti(i2)
+        return Class()
+    
+  def FirstChar():
+    i2 = _rd.i
+    res = NonTerm(["*", "\\", "/", "["])
+    
+    if not res:
+      seti(i2)
+      if not BackSeq():
+        seti(i2)
+        return Class()
+    return 1
+    
+  def Chars():
+    while Char():
+      continue
+    return 1
+  
+  def BackSeq():
+    return expect("\\") and NonTerm()
+  
+  def ClassChar():
+    i2 = _rd.i
+    res = NonTerm(["]", "\\"])
+    
+    if not res:
+      seti(i2)
+      return BackSeq()
+    
+    return 1
+  
+  def ClassChars():
+    while ClassChar():
+      continue
+    return 1
+    
+  def Class():
+    return expect("[") and ClassChars() and expect("]")
+  
+  def Flags():
+    while len(_rd.st) > 0 and re.match("[a-zA-Z]", _rd.st[0]):
+      inc(1)
+    return 1
+    
+  def Body():
+    return FirstChar() and Chars()
+    
+  def Lit():
+    return expect("/") and Body() and expect("/") and Flags()
+  
+  ret = Lit() and not val.startswith("//")
+  
+  print(ret, _rd.st)
+  
+  return -1 if not ret else _rd.i
+
+t_REGEXPR =  r'/(([^\n\r\*\/\[]|\\[^\n\r]|(\[([^\n\r\]\]|\\[^\n\r])*\]))(([^\n\r\/\[]|\\[^\n\r]|(\[([^\n\r\]\]|\\[^\n\r])*\])))*)/[a-zA-Z]*'
+
 #t_STRINGLIT = r'".*"'
 strlit_val = StringLit("")
 start_q = 0
+
+def t_MLSTRLIT(t):
+  r'"""';
+  
+  global strlit_val;
+  t.lexer.push_state("mlstr");
+  strlit_val = StringLit("")
+  
+def t_mlstr_MLSTRLIT(t):
+  r'"""|\\"""';
+  
+  global strlit_val;
+  if ("\\" in t.value):
+    strlit_val = StringLit(strlit_val + t.value);
+    return
+  
+  t.lexer.pop_state();
+  t.strval = t.value;
+  t.value = StringLit('"' + strlit_val + '"');
+  t.type = "STRINGLIT"
+  
+  return t;
+
+def t_mlstr_ALL(t):
+  r'([^"\']|(\\\'\\"))+';
+
+  global strlit_val
+  strlit_val = StringLit(strlit_val + t.value)
+  
+  t.lineno += '\n' in t.value
 
 def t_STRINGLIT(t):
   r'\"|\''

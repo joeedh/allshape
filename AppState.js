@@ -85,6 +85,24 @@ UserSession.fromJSON = function(obj) {
   return us;
 }
 
+function gen_default_file() {
+  var g = g_app_state;
+  
+  var scene = new Scene();
+  scene.set_fake_user();
+  
+  g.datalib.add(scene);
+  
+  var object = new ASObject();
+  scene.add(object);
+  
+  object.type = ObTypes.MESH;
+  object.data = makeBoxMesh(undefined);
+  
+  g.datalib.add(object);
+  g.datalib.add(object.data);
+}
+
 function AppState(screen, mesh) {
   this.screen = screen;
   this.toolstack = new ToolStack(this);

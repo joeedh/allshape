@@ -18,9 +18,11 @@ var DataNames = {
   SCENE  : "Scene"
 };
 
-function DataList() {
+function DataList(type) {
   this.list = new GArray();
   this.namemap = {};
+  this.type = type;
+  this.active = undefined;
 }
 create_prototype(DataList);
 
@@ -28,6 +30,7 @@ function DataLib() {
   this.id = 0;
   this.datalists = new hashtable();
   this.idmap = {};
+  this.idgen = new EIDGen();
 };
 create_prototype(DataLib);
 
@@ -91,20 +94,19 @@ DataLib.prototype.gen_name = function(block, name) {
   }
 }
 
-//name may be modified to ensure uniqueness
-DataLib.prototype.new_block = function(block, name) {
-  name = this.gen_name(name);
- 
-  block.new_datablock();
-  block.name = name;
-  this.add(block);
-}
-
 DataLib.prototype.add = function(block) {
+  //ensure unique name
+  var name = this.gen_name(block.name);
+  block.name = name;
+  
+  if (block.lib_id == -1) {
+    block.lib_id = this.idgen.gen_id();
+  }
+  
   this.idmap[block.lib_id] = block;
   
   if (!this.datalists.has(block.lib_type)) {
-    this.datalists.add(block.lib_type, {});
+    this.datalists.add(block.lib_type, new DataList(block.lib_type));
   }
   
   this.datalists.get(block.lib_type).list.push(block);
@@ -128,20 +130,53 @@ function DataRef() {
 }
 create_prototype(DataRef);
 
-var _data_api_idgen = 0;
+var DBFlags = {FAKE_USER : 1};
 function DataBlock(type, name) {
     //name is optional
     if (name == undefined)
       name = "unnnamed";
-    this.lib_name = name;
-    this.lib_id = 0;
+      
+    this.name = name;
+    this.lib_id = -1;
     this.lib_lib = 0; //this will be used for library linking
     
     this.lib_type = type;
     this.lib_users = new GArray();
     this.lib_refs = 0;
+    this.lib_flag = 0;
 }
 create_prototype(DataBlock);
+
+DataBlock.prototype.set_fake_user = function(val) {
+  if ((this.lib_flag & DBFlags.FAKE_USER) && !val) {
+    this.lib_flag &= ~DBFlags.FAKE_USER;
+    this.lib_refs -= 1;
+  } else if (!(this.lib_flag & DBFlags.FAKE_USER) && val) {
+    this.lib_flag |= DBFlags.FAKE_USER;
+    this.lib_refs += 1;
+  }
+}
+
+DataBlock.prototype.toJSON = function() {
+  return {
+    lib_id : this.lib_id,
+    lib_lib : this.lib_lib,
+    name : this.name,
+    lib_type : this.lib_type,
+    lib_refs : this.lib_refs,
+    lib_flag : this.lib_flag,
+  };
+}
+
+//abstract-class fromJSON is not static
+DataBlock.prototype.fromJSON = function(obj) {
+  this.lib_id = obj.lib_id;
+  this.lib_lib = obj.lib_lib;
+  this.name = obj.name;
+  this.lib_type = obj.lib_type;
+  this.lib_refs = obj.lib_refs;
+  this.lib_flag = obj.lib_flag;
+}
 
 DataBlock.prototype.pack = function(data) {
   pack_int(data, this.lib_id);
@@ -151,7 +186,8 @@ DataBlock.prototype.pack = function(data) {
     this.pack_int(0);
   pack_int(data, this.lib_type);
   pack_int(data, this.lib_refs);
-  pack_string(data, this.lib_name);
+  pack_int(data, this.lib_flag);
+  pack_string(data, this.name);
 };
 
 DataBlock.unpack = function(data, uctx) {
@@ -159,7 +195,8 @@ DataBlock.unpack = function(data, uctx) {
   this.lib_lib = unpack_int(data, uctx); //XXX finish linking implementation
   this.lib_type = unpack_int(data, uctx);
   this.lib_refs = unpack_int(data, uctx);
-  this.lib_name = unpack_string(data, uctx);
+  this.lib_flag = unpack_int(data, uctx);
+  this.name = unpack_string(data, uctx);
 };
 
 DataBlock.prototype.data_link = function(block, getblock) {
@@ -167,14 +204,6 @@ DataBlock.prototype.data_link = function(block, getblock) {
 
 DataBlock.prototype.__hash__ = function() {
   return "DL" + this.lib_id;
-};
-
-DataBlock.new_datablock = function(ob) {
-  ob.lib_id = _data_api_idgen++;
-};
-
-DataBlock.set_idgen = function(idgen) {
-  _data_api_idgen = idgen;
 };
 
 DataBlock.prototype.lib_adduser = function(user, name, remfunc) {
