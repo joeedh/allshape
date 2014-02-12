@@ -86,7 +86,7 @@ last_queue_time = 0;
 function server_log(msg) {
  if (msg!=undefined) {
    if (log_cache.hasOwnProperty(msg))
-    return;
+    return ;
    log_cache[msg] = msg;
    slog_queue.push(msg);
  }
@@ -214,3 +214,5 @@ item.attrvals["username"] = "joeedh";
 item.attrvals["password"] = "";
 item.attrvals["email"] = "joeedh@gmail.com";
 console.log(db.db.get("users", "username", "joeedh"));
+
+//# sourceMappingURL=/content/../server/js_build/server.js.sm

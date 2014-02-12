@@ -86,7 +86,7 @@ last_queue_time = 0;
 function server_log(msg) {
  if (msg!=undefined) {
    if (log_cache.hasOwnProperty(msg))
-    return;
+    return ;
    log_cache[msg] = msg;
    slog_queue.push(msg);
  }
@@ -207,6 +207,7 @@ function DBError(msg) {
 }
 inherit(DBError, Error);
 exports.DBError = DBError;
+
 DBError.toString = function() {
  return this.constructor.name+": d"+this.msg;
 }
@@ -218,11 +219,13 @@ function DBConditionalCheckFailedException(msg) {
 }
 inherit(DBConditionalCheckFailedException, DBError);
 exports.DBConditionalCheckFailedException = DBConditionalCheckFailedException;
+
 function DBValidationException(msg) {
  DBError.call(msg);
 }
 inherit(DBValidationException, DBError);
 exports.DBValidationException = DBValidationException;
+
 D_INVALID = undefined;
 D_EQ = 1;
 D_LE = 2;
@@ -242,6 +245,7 @@ function DBCmp(type, attrs) {
  }
 }
 exports.DBCmp = DBCmp;
+
 function DBItem(attrs, vals) {
  this.attrs = attrs;
  this.attrvals = {}
@@ -270,6 +274,7 @@ function DBItem(attrs, vals) {
 }
 inherit(DBItem, utils.hashtable);
 exports.DBItem = DBItem;
+
 DBItem.prototype.copy = function() {
  var item2=new DBItem({});
  var __iter_k = __get_iter(this.attrs);
@@ -316,6 +321,7 @@ function AbstractDB(dbtype) {
  this.schema = {}
 }
 exports.AbstractDB = AbstractDB;
+
 create_prototype(AbstractDB);
 AbstractDB.open = function() {
 }
@@ -337,6 +343,7 @@ AbstractDB.prototype.get_item_schema = function(name) {
  }
  return this.schema[name];
 }
+
 AbstractDB.prototype.query = function(callback, table, index, attrs, conditions, limit, scan_forward, start_key) {
 }
 AbstractDB.prototype.load_schema = function(schema) {
@@ -347,6 +354,7 @@ function MySQLDB() {
 }
 inherit(MySQLDB, AbstractDB);
 exports.MySQLDB = MySQLDB;
+
 mysql_ret_obj = new Array();
 function mysql_query(handler, query) {
  var mysql=require('mysql');
@@ -433,3 +441,5 @@ MySQLDB.prototype.get = function(table, key, value, extra_params) {
  }, query);
  return data;
 }
+
+//# sourceMappingURL=/content/../server/js_build/database.js.sm

@@ -86,7 +86,7 @@ last_queue_time = 0;
 function server_log(msg) {
  if (msg!=undefined) {
    if (log_cache.hasOwnProperty(msg))
-    return;
+    return ;
    log_cache[msg] = msg;
    slog_queue.push(msg);
  }
@@ -351,3 +351,5 @@ with (utils) {
    this.trashed_time = "";
   }
 }
+
+//# sourceMappingURL=/content/../server/js_build/fileapi.js.sm

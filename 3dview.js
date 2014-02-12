@@ -432,7 +432,8 @@ View3DHandler.prototype.findnearest_backbuf = function(Vector2 mpos, int type) {
   //theoretically, always drawing edges should improve speed
   this.ensure_selbuf(type|MeshTypes.EDGE); 
   
-  var selbuf = this.read_selbuf([Math.floor(mpos[0]-size/2), Math.floor(mpos[1]-size/2)], size);
+  var selbuf = this.read_selbuf([Math.floor(mpos[0]-size/2), 
+                                Math.floor(mpos[1]-size/2)], size);
   
   var ret = undefined;
   var dis = 0;

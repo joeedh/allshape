@@ -87,7 +87,7 @@ last_queue_time = 0;
 function server_log(msg) {
  if (msg!=undefined) {
    if (log_cache.hasOwnProperty(msg))
-    return;
+    return ;
    log_cache[msg] = msg;
    slog_queue.push(msg);
  }
@@ -237,6 +237,7 @@ function NetState(id) {
  this.errhandlers = {}
 }
 create_prototype(NetState);
+
 NetState.prototype.add_error_handler = function(errcode, func) {
  this.errhandlers[errcode] = func;
 }
@@ -303,3 +304,5 @@ NetState.prototype.on_active = function() {
 function NormalState() {
  NetState.call(this, NetStates.NORMAL);
 }
+
+//# sourceMappingURL=/content/../server/js_build/network_api.js.sm

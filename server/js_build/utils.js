@@ -1146,6 +1146,5 @@ function is_obj_lit(obj) {
   return true;
  return false;
 }
-console.log("yay");
 
 //# sourceMappingURL=/content/../server/js_build/utils.js.sm

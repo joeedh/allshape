@@ -259,11 +259,9 @@ def t_LTHAN(t):
       t.value = "<<<"
       lthan_ignores.add(t.lexpos+1)
       lthan_ignores.add(t.lexpos+2)
-      print("yay")
     elif t.lexpos < len(t.lexer.lexdata)-1 and t.lexer.lexdata[t.lexpos+1] == "<":
       t.type = "LSHIFT"
       t.value = "<<"
-      print("yay")
       lthan_ignores.add(t.lexpos+1)
 
   if glob.g_production_debug:
@@ -291,7 +289,7 @@ _rd.st = ""
 #
 #how I hate self-righteous engineer innuendo such as this. . .
 
-"""
+#"""
 def gen_re():
   def expect(s):
     if s in [".", "+", "(", "[", "]", ")", "*", "^", "\\"]:
@@ -310,7 +308,7 @@ def gen_re():
         
         s2 += s3
     else:
-      if 0: #s in ["+", "\\", "(", "[", "]", ")", "*", "^"]:
+      if s in ["+", "\\", "(", "[", "]", ")", "*", "^"]:
         s = '\\' + s
       s2 += s
       
@@ -351,14 +349,53 @@ def gen_re():
     return "(" + FirstChar() + Chars() + ")"
     
   def Lit():
-    return expect("/")+ Body() + expect("/") + Flags()
-  
+    #what is with this stupid grammar?
+    #it's supposed to hook into the lexical
+    #scanner, but it isn't working without
+    #these idiot hacks, like the unrolling of
+    #this variable-width lookbehind I'm doing here.
+    
+    def g(c, n):
+      s = "(?<=[([\=,]"
+      
+      if n != 0:
+        s += "[%s]{%d}" % (c, n)
+      
+      s += ")"
+      return s
+    
+    pats = (
+      g(" ", 0),
+      g(" ", 1),
+      g(" ", 2),
+      g(" ", 3),
+      g(" ", 4),
+      g(" ", 5),
+      g(" ", 6),
+      g(r"\t", 1),
+      g(r"\t", 2),
+      g(r"\t", 3),
+      g(r"\t", 4),
+      g(r"\t", 5),
+    )
+    
+    pat = ""
+    for i, p in enumerate(pats):
+      if (i != 0):
+        pat += "|"
+      pat += p
+      
+    pat = "((" + pat + ")" + expect("/") + ")"
+    pat += Body() + expect("/") 
+    pat = pat + "(?!/)" + Flags()
+    return pat
+    
   return Lit()
 
 print(gen_re())
 re1 = gen_re()
  
-str1 = r"/[A-Za-z0-9-\_]/"
+str1 = r"/ 3) * 3;              //"
 print("\n" + str(str1))
 
 m = re.match(re1, str1)
@@ -368,10 +405,10 @@ if m != None:
 else:
   print(None)
 
-sys.exit()
+#sys.exit()
 #"""
 
-t_REGEXPR =  r'(((?<!\\)|(?<=\\\\))/)(([^\n\r\*\\/\[]|(((?<!\\)|(?<=\\\\))\\)[^\n\r]|((((?<!\\)|(?<=\\\\))\[)([^\n\r\]\\]|(((?<!\\)|(?<=\\\\))\\)[^\n\r])+(((?<!\\)|(?<=\\\\))\])))(([^\n\r\\/\[]|(((?<!\\)|(?<=\\\\))\\)[^\n\r]|((((?<!\\)|(?<=\\\\))\[)([^\n\r\]\\]|(((?<!\\)|(?<=\\\\))\\)[^\n\r])+(((?<!\\)|(?<=\\\\))\]))))*)(((?<!\\)|(?<=\\\\))/)[a-zA-Z]*'
+t_REGEXPR = gen_re() #r'(((?<!\\)|(?<=\\\\))/)(([^\n\r\*\\/\[]|(((?<!\\)|(?<=\\\\))\\)[^\n\r]|((((?<!\\)|(?<=\\\\))\[)([^\n\r\]\\]|(((?<!\\)|(?<=\\\\))\\)[^\n\r])+(((?<!\\)|(?<=\\\\))\])))(([^\n\r\\/\[]|(((?<!\\)|(?<=\\\\))\\)[^\n\r]|((((?<!\\)|(?<=\\\\))\[)([^\n\r\]\\]|(((?<!\\)|(?<=\\\\))\\)[^\n\r])+(((?<!\\)|(?<=\\\\))\]))))*)(((?<!\\)|(?<=\\\\))/)(?!/)[a-zA-Z]*'
 
 #t_STRINGLIT = r'".*"'
 strlit_val = StringLit("")

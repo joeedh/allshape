@@ -79,7 +79,7 @@ def jcc_handler(file, target):
   return PYBIN + "%s %s %s %s -np" % (JCC, file, target, JFLAGS)
 
 def tcc_handler(file, target):
-  return PYBIN + "%s %s" % (TCC, JFLAGS)
+  return PYBIN + "%s %s" % (TCC, TFLAGS)
 
 handlers = {
   r'.*\.js\b' : jcc_handler,

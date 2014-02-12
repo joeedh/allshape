@@ -86,7 +86,7 @@ last_queue_time = 0;
 function server_log(msg) {
  if (msg!=undefined) {
    if (log_cache.hasOwnProperty(msg))
-    return;
+    return ;
    log_cache[msg] = msg;
    slog_queue.push(msg);
  }
@@ -205,3 +205,5 @@ schema = {"users": new DBItem({"userid": DBT.NUMBER_KEY, "username": DBT.STRING,
 db = new MySQLDB();
 db.load_schema(schema);
 exports.db = db;
+
+//# sourceMappingURL=/content/../server/js_build/db_api.js.sm
