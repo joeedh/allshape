@@ -214,14 +214,24 @@ STRUCT.prototype.get_struct_cls = function(name) {
   return this.struct_cls[name];
 }
 
-STRUCT.prototype.subclass = function(child, parent) {
+STRUCT.prototype.inherit = function(child, parent) {
+  var stt = scema_parse.parse(parent.STRUCT);
+  var code = child.name + "{\n" 
+  code += STRUCT.fmt_struct(stt, true);
   
+  return code;
 }
 
-STRUCT.fmt_struct = function(stt) {
+STRUCT.fmt_struct = function(stt, internal_only) {
   //var stt = schema_parse.parse(cls.STRUCT);
   
-  var s = stt.name + " {\n"
+  if (internal_only == undefined)
+    internal_only = false;
+    
+  var s = ""
+  
+  if (!internal_only)
+    s += stt.name + " {\n"
   var tab = "  ";
   
   function fmt_type(type) {
@@ -249,7 +259,8 @@ STRUCT.fmt_struct = function(stt) {
     s += "\n";
   }
   
-  s += "}";
+  if (!internal_only)
+    s += "}";
   return s;
 }
 
@@ -265,13 +276,10 @@ STRUCT.prototype._env_call = function(code, obj, env) {
   
   var fullcode = envcode + code;
   var func;
-  console.log(this.compiled_code);
   if (!(fullcode in this.compiled_code)) {
       var code2 = "func = function(obj, env) { " + envcode + "return " + code + "}";
       
-      console.log(code2);
       eval(code2);
-      console.log(func);
       this.compiled_code[fullcode] = func;
   } else {
     func = this.compiled_code[fullcode];
@@ -413,7 +421,6 @@ STRUCT.prototype.read_object = function(data, cls) {
   };
   
   function unpack_field(type) {
-    console.log(type.type);
     return unpack_funcs[type.type](type);
   }
   
@@ -452,7 +459,6 @@ function init_struct_packer() {
   
   for (var cls in defined_classes) {
     if (cls.STRUCT != undefined && cls.fromSTRUCT != undefined) {
-      console.log(cls.name);
       istruct.add_struct(cls);
     }
   }
@@ -487,8 +493,6 @@ function test_struct() {
   data = new DataView(new Uint8Array(data).buffer);
   
   var obj = stt.read_object(data, Vertex);
-  
-  console.log(obj);
 }
 
 test_struct();
@@ -623,188 +627,6 @@ function gen_schema(obj, calc_subschema) {
   }
   
   return s;
-}
-
-function BJSON() {
-  this.schemas = {};
-};
-
-BJSON.prototype.pack_array = function(obj, type) {
-  
-}
-
-BJSON.prototype.get_schema_name = function(name) {
-  return this.schemas[name];
-}
-
-BJSON.prototype.get_schema = function(obj) {
-  if (is_obj_lit(obj)) {
-    return gen_schema(obj);
-  }
-  
-  if (!(obj.__class__ in this.schemas)) {
-    this.schemas[obj.__class__] = gen_schema(obj.toJSON());
-  }
-  
-  return this.schemas[obj.__class__];
-}
-
-BJSON.prototype.schema_pack = function(data, obj, schema, depth) {
-  if (depth == undefined)
-    depth = 1;
-  
-  var dstr = ""
-  for (var i=0; i<depth; i++) {
-    dstr += "->"
-  }
-  
-  if (schema["type"] == "array") {
-    var subtype = schema["subtype"];
-      
-    pack_int(data, obj.length);
-    for (var i=0; i<obj.length; i++) {
-      if (subtype["type"] == "schema_object")
-        this.schema_pack(data, obj[i].toJSON(), this.get_schema(obj[i]), depth+1);
-      else
-        this.schema_pack(data, obj[i], subtype, depth+1);
-    }
-  } else if (schema["type"] == "object") {
-    var fields = schema["fields"];
-    
-    for (var i=0; i<fields.length; i++) {
-      var k = fields[i][0], t = fields[i][1];
-      
-      var m = obj[k];
-      if (t["type"] == "schema_object") {
-        this.schema_pack(data, m.toJSON(), this.get_schema(m), depth+1);
-      } else {
-        this.schema_pack(data, m, t, depth+1);
-      }
-    }
-  } else if (schema["type"] == "number" || schema["type"] == "float32") {
-    pack_float(data, Number(obj));
-  } else if (schema["type"] == "string") {
-    pack_string(data, obj);
-  } else if (schema["type"] == "int32") {
-    pack_int(data, Number(obj));
-  } else if (schema["type"] == "static_string") {
-    pack_static_string(data, obj, schema["maxlength"]);
-  }
-}
-
-BJSON.prototype.binify = function(obj) {
-  var schema = this.get_schema(obj);
-  
-  if (is_obj_lit(obj))
-    var json = obj;
-  else
-    var json = obj.toJSON();
-  
-  var data = [];
-  this.schema_pack(data, json, schema);
-  
-  return data;
-}
-
-BJSON.prototype.parse = function(data, schema, ui) {
-  if (schema == undefined) {
-    //print_stack();
-    console.log("null schema");
-    return;
-  }
-  
-  if (ui == undefined)
-     ui = new unpack_ctx();
-  
-  if (schema["type"] == "int32") {
-    return unpack_int(data, ui);
-  } else if (schema["type"] == "number" || schema["type"] == "float32") {
-    return unpack_float(data, ui);
-  } else if (schema["type"] == "string") {
-    return unpack_string(data, ui);
-  } else if (schema["type"] == "static_string") {
-    return unpack_static_string(data, ui, schema["maxlength"]);
-  } else if (schema["type"] == "object") {
-    var obj = {};
-    var fields = schema["fields"];
-    
-    for (var i=0; i<fields.length; i++) {
-      obj[fields[i][0]] = this.parse(data, fields[i][1], ui);
-    }
-    
-    return obj;
-  } else if (schema["type"] == "schema_object") {
-    schema = this.get_schema_name(schema["name"]);
-    
-    return this.parse(data, schema, ui);
-  } else if (schema["type"] == "array") {
-    var len = unpack_int(data, ui);
-    
-    var s = schema["subtype"]
-    
-    var arr = [];
-    for (var i=0; i<len; i++) {
-      arr.push(this.parse(data, s, ui));
-    }
-    
-    return arr;
-  }
-  
-  return -1;
-}
-
-function test_schema() {
-  try {
-    var objtest = {"v1" : new Vertex(), "v2" : new Vertex(), "a" : 1};
-    
-    var bjson = new BJSON();
-    
-    var schema = bjson.get_schema(objtest);
-    var data = bjson.binify(objtest);
-    
-    console.log(data);
-    console.log(JSON.stringify(objtest));
-    
-    data = new DataView(new Uint8Array(data).buffer);
-    
-    var json = bjson.parse(data, schema);
-    
-    console.log(JSON.stringify(json));
-  } catch (err) {
-    print_stack(err);
-  }
-  
-  bjson = new BJSON();
-  var mesh = makeBoxMesh(null);
-  
-  console.log("generating mesh...");
-  for (var i=0; i<4; i++) {
-    _quad_subd(mesh, mesh.faces, 1);
-  }
-  console.log("totvert: ", mesh.verts.length);
-  console.log("saving mesh...");
-  
-  var obj = mesh.toJSON();
-  
-  schema = bjson.get_schema(mesh);
-  var data = bjson.binify(mesh);
-  //console.log(data);
-  //console.log(schema);
-  data = new DataView(new Uint8Array(data).buffer);
-  
-  console.log("parsing data. . .")
-  var obj = bjson.parse(data, schema);
-  //var s1 = JSON.stringify(obj);
-  //var s2 = JSON.stringify(mesh);
-  //console.log(s1);
-  console.log("-----====-----");
-  //console.log(s2)
-  //console.log(s1==s2);
-  console.log("finished; testing load");
-  
-  var m = Mesh.fromJSON(obj);
-  
-  return true;
 }
 
 var SchmTypes = {

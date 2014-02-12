@@ -19,25 +19,14 @@ function Element() {
   this.index = 0;
 }
 
-Element.prototype.toJSON = function() : Object {
-  var obj = {
-    type : this.type,
-    eid : this.eid,
-    flag : this.flag,
-    index : this.index
-  };
-  
-  return obj;
-}
-
-//this is inherited, so don't follow normal format
-Element.prototype.fromJSON = function(obj)
-{
-  this.type = obj.type;
-  this.eid = obj.eid;
-  this.flag = obj.flag;
-  this.index = obj.index;
-}
+Element.STRUCT = """
+  Element {
+    type : int;
+    eid : int;
+    flag : int;
+    index : int;
+  }
+"""
 
 //#$().String
 Element.prototype.toString = function() : String {
@@ -104,13 +93,7 @@ Vertex.fromSTRUCT = function(doload) {
   return v;
 }
 
-Vertex.STRUCT = """
-  Vertex {
-    eid : int;
-    flag : int;
-    index : int;
-    type : int;
-    
+Vertex.STRUCT = STRUCT.inherit(Vertex, Element) + """
     co : vec3;
     no : vec3;
     loop : int | obj.loop == undefined ? -1 : obj.loop.eid;
@@ -218,6 +201,21 @@ function Edge(Vert v1, Vert v2) {
 
 inherit(Edge, Element);
 
+Edge.STRUCT = STRUCT.inherit(Edge, Element) + """
+  v1 : int | obj.v1.eid;
+  v2 : int | obj.v2.eid;
+  loop : int | obj.loop == undefined ? -1 : obj.loop.eid;
+}
+""";
+
+Edge.fromSTRUCT = function(unpacker) {
+  var e = new Edge();
+  
+  unpacker(e);
+  
+  return e;
+}
+
 Edge.prototype.pack = function(Array<byte> data, StructPackFunc dopack) {
   Element.prototype.pack.call(this, data);
   
@@ -271,7 +269,6 @@ function Loop(Vertex v, Edge e, Face f) {
   this.radial_next = null;
   this.radial_prev = null;
 }
-
 inherit(Loop, Element);
 
 Loop.prototype.pack = function(array<byte> data, StructPackFunc dopack) {
