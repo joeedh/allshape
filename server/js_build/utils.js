@@ -86,7 +86,7 @@ last_queue_time = 0;
 function server_log(msg) {
  if (msg!=undefined) {
    if (log_cache.hasOwnProperty(msg))
-    return;
+    return ;
    log_cache[msg] = msg;
    slog_queue.push(msg);
  }
@@ -190,8 +190,11 @@ catch (Error) {
   __use_Iterator = false;
   Iterator = __get_iter2;
 }
+
 var _prototype_id_gen=1;
+var defined_classes=new Array();
 function inherit(obj, parent) {
+ defined_classes.push(obj);
  obj.prototype = Object.create(parent.prototype);
  obj.prototype.prior = parent.prototype;
  obj.prototype.constructor = obj;
@@ -201,6 +204,7 @@ function inherit(obj, parent) {
 }
 exports.inherit = inherit;
 function create_prototype(obj) {
+ defined_classes.push(obj);
  obj.prototype.constructor = obj;
  obj.prototype.prototype = obj.prototype;
  obj.prototype.__prototypeid__ = _prototype_id_gen++;
@@ -255,7 +259,7 @@ GArray.prototype.remove = function(item, ignore_existence) {
      console.trace();
      throw "Yeek! Item "+item+" not in array";
    }
-   return;
+   return ;
  }
  for (var i=idx; i<this.length-1; i++) {
    this[i] = this[i+1];
@@ -269,10 +273,11 @@ GArray.prototype.replace = function(olditem, newitem) {
    console.trace();
    if (!ignore_existence)
     throw "Yeek! Item "+olditem+" not in array";
-   return;
+   return ;
  }
  this[idx] = newitem;
 }
+defined_classes = new GArray(defined_classes);
 GArray.prototype.toSource = function() {
  var s="new GArray"+this.length+"([";
  for (var i=0; i<this.length; i++) {
@@ -817,6 +822,7 @@ function validate_mesh_intern(m) {
     }
     l = l.radial_next;
    } while (l!=e.loop);
+   
   }
   catch (_for_err) {
     if (_for_err!==StopIteration) {
@@ -984,7 +990,7 @@ function print_stack(err) {
  }
  catch (err2) {
    console.log("Could not fetch call stack.");
-   return;
+   return ;
  }
  console.log("Callstack:");
  for (var i=0; i<cs.length; i++) {
@@ -1008,7 +1014,7 @@ exports.movavg = movavg;
 create_prototype(movavg);
 movavg.prototype._recalc = function() {
  if (this.arr.length==0)
-  return;
+  return ;
  var avg=0.0;
  for (var i=0; i<this.arr.length; i++) {
    avg+=this.arr[i];
@@ -1100,6 +1106,7 @@ function StupidRandom(seed) {
   this.i = 1;
  }
  this.random = function() {
+  
   var tab=_sran_tab;
   var i=this.i;
   if (i<0)
@@ -1139,3 +1146,6 @@ function is_obj_lit(obj) {
   return true;
  return false;
 }
+console.log("yay");
+
+//# sourceMappingURL=/content/../server/js_build/utils.js.sm

@@ -10,7 +10,7 @@ Okay.  The serialization system needs to do three things:
 
 Thus, all the existing serialization schemes (that I know of) for JS
 are ineligible.  Here is my final solution: a serialization language
-thingy.
+that can compile itself to JS.
 */
 
 function SchemaParser() {
@@ -196,27 +196,94 @@ var schema_parse = SchemaParser();
 function STRUCT()
 {
   this.structs = {};
+  this.struct_cls = {};
+  this.compiled_code = {};
 }
 create_prototype(STRUCT);
 
 STRUCT.prototype.add_struct = function(cls) {
   this.structs[cls.name] = schema_parse.parse(cls.STRUCT);
+  this.struct_cls[cls.name] = cls;
 }
 
-STRUCT._env_call = function(code, obj, env) {
-  code = code.trim();
+STRUCT.prototype.get_struct = function(name) {
+  return this.structs[name];
+}
+
+STRUCT.prototype.get_struct_cls = function(name) {
+  return this.struct_cls[name];
+}
+
+STRUCT.prototype.subclass = function(child, parent) {
   
-  if (env != undefined) {
-    for (var k in env) {
-      code = "var " + k + " = env[k];\n" + code;
+}
+
+STRUCT.fmt_struct = function(stt) {
+  //var stt = schema_parse.parse(cls.STRUCT);
+  
+  var s = stt.name + " {\n"
+  var tab = "  ";
+  
+  function fmt_type(type) {
+    if (type.type == "array") {
+      if (type.data.iname != "" && type.data.iname != undefined) {
+        return "array(" + type.data.iname + ", " + fmt_type(type.data.type) + ")";
+      } else {
+        return "array(" + fmt_type(type.data.type) + ")";
+      }
+    } else if (type.type == "object") {
+      return type.data;
+    } else {
+      return type.type;
     }
   }
   
-  return eval(code);
+  var fields = stt.fields;
+  for (var i=0; i<fields.length; i++) {
+    var f = fields[i];
+    
+    s += tab + f.name + ":" + fmt_type(f.type);
+    if (f.get != undefined) {
+      s += " | " + f.get.trim();
+    }
+    s += "\n";
+  }
+  
+  s += "}";
+  return s;
+}
+
+STRUCT.prototype._env_call = function(code, obj, env) {
+  code = code.trim();
+  var envcode = ""
+  
+  if (env != undefined) {
+    for (var k in env) {
+      envcode = "var " + k + " = env[k];\n" + envcode;
+    }
+  }
+  
+  var fullcode = envcode + code;
+  var func;
+  console.log(this.compiled_code);
+  if (!(fullcode in this.compiled_code)) {
+      var code2 = "func = function(obj, env) { " + envcode + "return " + code + "}";
+      
+      console.log(code2);
+      eval(code2);
+      console.log(func);
+      this.compiled_code[fullcode] = func;
+  } else {
+    func = this.compiled_code[fullcode];
+  }
+  
+  return func(obj, env);
 }
 
 STRUCT.prototype.write_struct = function(data, obj, stt) {
   var fields = stt.fields;
+  
+  var thestruct = this;
   
   var packers = {
     "int" : function(data, field, type, val) {
@@ -254,13 +321,16 @@ STRUCT.prototype.write_struct = function(data, obj, stt) {
         if (f.get) {
           var env = {}
           env[itername] = val2;
-          val2 = STRUCT._env_call(f.get, obj, env);
+          val2 = thestruct._env_call(f.get, obj, env);
         }
         
         var f2 = {type : type2, get : undefined, set: undefined};
         
         pack_type(data, f2, f2.type, val2);
       }
+    },
+    "struct" : function(data, field, type, val) {
+      this.write_struct(data, val, this.get_struct(type.data));
     }
   }
   
@@ -271,12 +341,12 @@ STRUCT.prototype.write_struct = function(data, obj, stt) {
   for (var i=0; i<fields.length; i++) {
     var f = fields[i];
     
-    if (f.type.type != "array" && f.type.type != "struct") {
+    if (f.type.type != "array") {
       var val;
       var type = f.type.type;
       
       if (f.get != undefined) {
-        val = STRUCT._env_call(f.get, obj, {});
+        val = thestruct._env_call(f.get, obj, {});
       } else {
         val = obj[f.name];
       }
@@ -287,8 +357,6 @@ STRUCT.prototype.write_struct = function(data, obj, stt) {
       pack_type(data, f, f.type, val);
     }
   }
-  
-  console.log(JSON.stringify(data));
 }
 
 STRUCT.prototype.write_object = function(data, obj) {
@@ -298,17 +366,70 @@ STRUCT.prototype.write_object = function(data, obj) {
 }
 
 STRUCT.prototype.read_object = function(data, cls) {
-  var stt = this.structs[cls.constructor.name];
+  var stt = this.structs[cls.name];
+  var uctx = new unpack_ctx();
+  var thestruct = this;
   
-  function unpack_field(field, obj) {
-    
+  var unpack_funcs = {
+    "int" : function(type) {
+      return unpack_int(data, uctx);
+    },
+    "float" : function(type) {
+      return unpack_float(data, uctx);
+    },
+    "string" : function(type) {
+      return unpack_string(data, uctx);
+    },
+    "static_string" : function(type) {
+      return unpack_static_string(data, uctx, type.data.maxlength);
+    },
+    "vec2" : function(type) {
+      return unpack_vec2(data, uctx);
+    },
+    "vec3" : function(type) {
+      return unpack_vec3(data, uctx);
+    },
+    "vec4" : function(type) {
+      return unpack_vec4(data, uctx);
+    },
+    "mat4" : function(type) {
+      return unpack_mat4(data, uctx);
+    },
+    "array" : function(type) {
+      var len = unpack_int(data, uctx);
+      var arr = new Array(len);
+      
+      for (var i=0; i<len; i++) {
+        arr[len] = unpack_field(type.data.type);
+      }
+      
+      return arr;
+    },
+    "struct" : function(type) {
+      var cls2 = this.get_struct_cls(type.data);
+      
+      return this.read_object(data, cls2);
+    }
+  };
+  
+  function unpack_field(type) {
+    console.log(type.type);
+    return unpack_funcs[type.type](type);
   }
   
   function load(obj) {
-    for (var f in stt.fields) {
-      unpack_field(f, obj);
+    var fields = stt.fields;
+    var flen = fields.length;
+    
+    for (var i=0; i<flen; i++) {
+      var f = fields[i];
+      var  val = unpack_field(f.type);
+      
+      obj[f.name] = val;
     }
   }
+  
+  return cls.fromSTRUCT(load);
 }
 
 var test_vertex_struct = """
@@ -325,7 +446,17 @@ var test_vertex_struct = """
   }
 """;
 
-
+var istruct = new STRUCT();
+function init_struct_packer() {
+  global defined_classes;
+  
+  for (var cls in defined_classes) {
+    if (cls.STRUCT != undefined && cls.fromSTRUCT != undefined) {
+      console.log(cls.name);
+      istruct.add_struct(cls);
+    }
+  }
+}
 function test_struct() {
   var stt = new STRUCT();
   
@@ -352,6 +483,12 @@ function test_struct() {
   
   var data = []
   stt.write_object(data, v);
+  
+  data = new DataView(new Uint8Array(data).buffer);
+  
+  var obj = stt.read_object(data, Vertex);
+  
+  console.log(obj);
 }
 
 test_struct();

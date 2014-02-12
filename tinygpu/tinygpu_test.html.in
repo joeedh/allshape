@@ -1143,6 +1143,9 @@ function toJSON_intern (ob, tlevel) {
     
     function init()
     {
+        //initialize struct pack system
+        init_struct_packer();
+        
         // Initialize
         var gl = initWebGL(
             // The id of the Canvas Element

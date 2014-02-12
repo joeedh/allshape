@@ -5,7 +5,12 @@ var int _prototype_id_gen = 1
 #define EXPORT_FUNC(func)
 #endif
 
+//this actually ends up being a GArray
+var defined_classes = new Array();
+
 function inherit(obj, parent) {
+  defined_classes.push(obj);
+  
   obj.prototype = Object.create(parent.prototype);
   obj.prototype.prior = parent.prototype;
   obj.prototype.constructor = obj;
@@ -16,6 +21,8 @@ function inherit(obj, parent) {
 EXPORT_FUNC(inherit)
 
 function create_prototype(obj) {
+  defined_classes.push(obj);
+  
   obj.prototype.constructor = obj;
   obj.prototype.prototype = obj.prototype;
   obj.prototype.__prototypeid__ = _prototype_id_gen++;
@@ -111,6 +118,10 @@ GArray.prototype.replace = function(T olditem, T newitem) { //ignore_existence d
   
   this[idx] = newitem;
 }
+
+//turn defined_classes into a GArray
+defined_classes = new GArray(defined_classes);
+
 /*
 this.pop = function() {
   if (this.length == 0)

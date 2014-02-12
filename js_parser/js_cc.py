@@ -1,7 +1,7 @@
 #!/usr/bin/env python3.3
 import sys, os.path, os, time, stat, struct, ctypes, io, subprocess, math, random, difflib
 import ply, re, traceback
-import argparse
+import argparse, base64
 
 from js_lex import plexer
 from js_global import glob, Glob
@@ -282,6 +282,175 @@ def unpack_for_c_loops(node):
   traverse(node.parent, ContinueNode, handle_continues, exclude=[FunctionNode], copy_children=True)
   
   node.parent[1]
+ 
+b64tab = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+def b64chr(n):
+  global b64tab
+  
+  if n < 0 or n > 63:
+    raise RuntimeError("Base64 number must be between 0 and 63")
+  
+  return b64tab[n]
+  
+def vlq_encode(index):
+  if index < 0:
+    #raise Exception("don't use negative indices")
+    index = -index;
+    sign = 1
+  else:
+    sign = 0
+  
+  index = index << 1;
+  index |= sign;
+  
+  a = index & 31
+  b = (index>>5) & 31
+  c = (index>>10) & 31
+  d = (index>>15) & 31
+  e = (index>>20) & 31
+  f = (index>>25) & 31
+  
+  ar = [a, b, c, d, c, d, e, f]
+  while (len(ar) > 1 and ar[-1] == 0):
+    ar.pop(-1)
+  
+  ar = bytes(ar)
+  
+  out = ""
+  for i, n in enumerate(ar):
+    if (i != len(ar)-1):
+      n |= 32
+    
+    c = b64chr(n)
+    out += c
+    
+  return out
+
+#print(vlq_encode(231234))  
+#sys.exit()
+
+def gen_source_map(src, gensrc, map):
+  #"""
+  gensrc2 = ""
+  for seg in map.segments:
+    gensrc2 += seg[3]
+  
+  """
+  print(gensrc2[0:175])
+  
+  raise JSError("bleh")
+  return
+  #"""
+  
+  #gensrc2 = gensrc
+  
+  basename = os.path.split(os.path.abspath(glob.g_file))[1]
+  
+  if glob.g_gen_smap_orig:
+    orig = "/content/" + basename + ".sm.origsrc"
+  else:
+    orig = ""
+    
+  js = """{
+    "version": 3,
+    "file" : "%s",
+    "sourceRoot": "",
+    "sources": ["%s"],
+    "names": [],
+    "mappings":
+  """ % (basename, orig)
+  
+  segs2 = []
+  for seg in map.segments:
+    segs2.append(seg)
+    
+    #[lexpos, node, length, str]
+    s = gensrc[seg[0]:seg[0]+seg[2]]
+    if s.strip() == "":
+      continue
+      
+    #print("%d: \"%s\" : \"%s\"" % (seg[0], s.replace("\n", "\\n"), seg[3].replace("\n", "\\n")))
+    
+    if (s != seg[3]):
+      print(gensrc2[seg[0]-10:seg[0]] + "^^^" +gensrc2[seg[0]:seg[0]+55])
+      print("")
+      #print(seg[1])
+      raise JSError("Source map corruption at node type " + seg[1].get_ntype_name() + " parent: " + seg[1].parent.get_ntype_name())
+    
+    #segs2.append(seg)
+    
+  line_segs = [[]]
+  for seg in segs2:
+    text = seg[3]
+    
+    splits = []
+    
+    #"""
+    while ("\n") in seg[3]:
+      si = seg[3].rfind("\n")
+      li = seg[0] + si
+      
+      if seg[si:] != "":
+        splits.append([li, seg[1], len(seg[3])-si, seg[si:]])
+      seg[3] = seg[3][:si]
+    #"""
+    
+    splits.append(seg)
+    splits.reverse()
+    
+    for i, s in enumerate(splits):
+      if i == 0:
+        line_segs[-1].append(s)
+      else:
+        line_segs.append([s])
+  
+  def get_col(lexpos, text):
+    i2 = 0
+    while lexpos > 0 and text[lexpos] != "\n":
+      i2 += 1
+      lexpos -= 1
+    return i2
+  
+  mapping = ""
+  
+  lastoline = 0
+  lastocol = 0
+  for i, line in enumerate(line_segs):
+    if i != 0:
+      mapping += ";"
+      
+    lastcol = 0
+    for j, seg in enumerate(line):
+      col = get_col(seg[0], gensrc)
+      
+      sourcefile = 0
+      oline = seg[1].line - lastoline
+      lastoline = seg[1].line
+      
+      ocol = get_col(seg[1].lexpos, src)
+      
+      vals = [col-lastcol, sourcefile, oline, ocol-lastocol]
+
+      lastcol = col
+      lastocol = ocol
+      
+      s = ""
+      for v in vals:
+        s += vlq_encode(v)
+      
+      if j != 0:
+        mapping += ","
+      mapping += s
+  
+  js += '"%s"\n}\n' % mapping
+  
+  if glob.g_outfile == "":
+    print(js)
+  else:
+    file = open(glob.g_outfile + ".sm", "w")
+    file.write(js)
+    file.close()
+  return js
   
 def process_generators(result, typespace):
   def visit_yields(node):
@@ -1339,7 +1508,6 @@ def parse_intern(data, create_logger=False, expand_loops=True, expand_generators
     
     n2 = FuncCallNode(BinOpNode(IdentNode(itername), IdentNode("next"), "."))
     
-    
     if type(slist) != StatementList:
       s = StatementList()
       s.add(slist)
@@ -1478,11 +1646,30 @@ def parse_intern(data, create_logger=False, expand_loops=True, expand_generators
     print("nodes: ", result)
     pass
   
-  buf = result.gen_js(0)
+  if glob.g_gen_source_map:
+    smap = SourceMap()
+    def set_smap(node, smap):
+      node.smap = smap
+      for n in node:
+        set_smap(n, smap)
+    
+    set_smap(result, smap)
+    
+    buf = result.gen_js(0)
+    map = gen_source_map(data, buf, smap);
+    
+    buf += "\n//# sourceMappingURL=/content/%s\n"%(glob.g_outfile+".sm")
+    
+    if glob.g_gen_smap_orig:
+      f = open(glob.g_outfile + ".sm.origsrc", "w")
+      f.write(data)
+      f.close()
+  else:
+    buf = result.gen_js(0)
   
   if glob.g_outfile == "":
     print(buf)
-    if 1:
+    if 0:
       file = open("generator_test.html", "w")
       file.write("""
       <html><head><title>Generator Test</title></head>
@@ -1651,7 +1838,7 @@ def main():
       return -1
     
     return 0
-       
+
 if __name__ == "__main__":
     import io, traceback
     

@@ -285,29 +285,33 @@ _rd.st = ""
 #JavaScript regular expression literals.
 #
 #it works by converting stupid ECMAScript's 
-#"production grammar" to regexpr.  the standard implies
-#that its grammar is DFA-compatible, and it seems to work.
+#"production grammar" for lexical scanners to regexpr.  
+#the standard implies that its grammar is DFA-compatible, 
+#and it seems to work.
 #
-#man I hate self-righteous engineer-speak "implication"
+#how I hate self-righteous engineer innuendo such as this. . .
 
 """
 def gen_re():
   def expect(s):
     if s in [".", "+", "(", "[", "]", ")", "*", "^", "\\"]:
         s = "\\" + s
+    
+    s = r'(((?<!\\)|(?<=\\\\))' + s + ")"
     return s
       
   def consume_ifnot(s):
+    
     s2 = "[^"
     if type(s) == list:
       for s3 in s:
-        if s3 in ["+", "(", "[", "]", ")", "*", "^"]:
-          s3 = "\\" + s3
+        if s3 in ["+", "\\", "(", "[", "]", ")", "*", "^"]:
+          s3 = '\\' + s3
         
         s2 += s3
     else:
-      if s in ["+", "(", "[", "]", ")", "*", "^"]:
-        s = "\\" + s
+      if 0: #s in ["+", "\\", "(", "[", "]", ")", "*", "^"]:
+        s = '\\' + s
       s2 += s
       
     s2 += "]"
@@ -329,13 +333,13 @@ def gen_re():
     return "(%s)*" % Char()
   
   def BackSeq():
-    return expect("\\") + NonTerm()
+    return expect('\\') + NonTerm()
   
   def ClassChar():
     return "(%s|%s)" % (NonTerm(["]", "\\"]), BackSeq())
   
   def ClassChars():
-    return ClassChar() + "*"
+    return ClassChar() + "+"
     
   def Class():
     return "(" + expect("[") + ClassChars() + expect("]") + ")"
@@ -353,13 +357,21 @@ def gen_re():
 
 print(gen_re())
 re1 = gen_re()
+ 
+str1 = r"/[A-Za-z0-9-\_]/"
+print("\n" + str(str1))
 
-print(re.match(re1, "/[*]/"))
+m = re.match(re1, str1)
+if m != None:
+  s = m.span()
+  print(str1[s[0]: s[1]])
+else:
+  print(None)
 
 sys.exit()
 #"""
 
-t_REGEXPR =  r'/(([^\n\r\*\/\[]|\\[^\n\r]|(\[([^\n\r\]\]|\\[^\n\r])*\]))(([^\n\r\/\[]|\\[^\n\r]|(\[([^\n\r\]\]|\\[^\n\r])*\])))*)/[a-zA-Z]*'
+t_REGEXPR =  r'(((?<!\\)|(?<=\\\\))/)(([^\n\r\*\\/\[]|(((?<!\\)|(?<=\\\\))\\)[^\n\r]|((((?<!\\)|(?<=\\\\))\[)([^\n\r\]\\]|(((?<!\\)|(?<=\\\\))\\)[^\n\r])+(((?<!\\)|(?<=\\\\))\])))(([^\n\r\\/\[]|(((?<!\\)|(?<=\\\\))\\)[^\n\r]|((((?<!\\)|(?<=\\\\))\[)([^\n\r\]\\]|(((?<!\\)|(?<=\\\\))\\)[^\n\r])+(((?<!\\)|(?<=\\\\))\]))))*)(((?<!\\)|(?<=\\\\))/)[a-zA-Z]*'
 
 #t_STRINGLIT = r'".*"'
 strlit_val = StringLit("")
@@ -369,6 +381,7 @@ def t_MLSTRLIT(t):
   r'"""';
   
   global strlit_val;
+  
   t.lexer.push_state("mlstr");
   strlit_val = StringLit("")
 
@@ -429,7 +442,7 @@ def t_mlstr_ALL(t):
   global strlit_val
   strlit_val = StringLit(strlit_val + t.value)
   
-  t.lineno += t.value.count('\n')
+  t.lexer.lineno += t.value.count('\n')
   
 def t_STRINGLIT(t):
   r'\"|\''
@@ -458,7 +471,7 @@ def t_instr_ALL(t):
   global strlit_val
   strlit_val = StringLit(strlit_val + t.value)
   
-  t.lineno += '\n' in t.value
+  t.lexer.lineno += '\n' in t.value
   
 def t_SLASHR(t):
   r'\r+'

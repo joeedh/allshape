@@ -95,52 +95,28 @@ function Vertex(Vector3 co, Vector3 no) {
     return new MeshIterate(MeshIter.VERT_LOOPS, this);
   }});
 }
-
 inherit(Vertex, Element);
 
-Vertex.prototype.genSchema = function() {
-  var v = new Vertex().toJSON();
-  
-  v.edges.s_array_type = "int32";
-}
-
-Vertex.prototype.toJSON = function() {
-  var obj = Element.prototype.toJSON.call(this);
-  
-  obj.co = this.co;
-  obj.no = this.no;
-  
-  if (this.loop != null)
-    obj.loop = this.loop.eid;
-  else
-    obj.loop = -1;
-  
-  obj.edges = [];
-  obj.edges.s_array_type = "int32";
-  
-  for (var i=0; i<this.edges.length; i++) {
-    obj.edges.push(this.edges[i].eid);
-  }
-  
-  obj.mapco = this.mapco;
-  
-  return obj;
-}
-
-Vertex.fromJSON = function(obj)
-{
+Vertex.fromSTRUCT = function(doload) {
   var v = new Vertex();
-  
-  Element.prototype.fromJSON.call(v, obj);
-  
-  v.loop = obj.loop;
-  v.edges = new GArray(obj.edges);
-  v.co = new Vector3(obj.co);
-  v.no = new Vector3(obj.no);
-  v.mapco = new Vector3(v.mapco);
+  doload(v);
   
   return v;
 }
+
+Vertex.STRUCT = """
+  Vertex {
+    eid : int;
+    flag : int;
+    index : int;
+    type : int;
+    
+    co : vec3;
+    no : vec3;
+    loop : int | obj.loop == undefined ? -1 : obj.loop.eid;
+    edges : array(e, int) | e.eid;
+  }
+""";
 
 Vertex.prototype.pack = function(Array<byte> data, StructPackFunc dopack) {
   Element.prototype.pack.call(this, data);
@@ -242,28 +218,6 @@ function Edge(Vert v1, Vert v2) {
 
 inherit(Edge, Element);
 
-Edge.prototype.toJSON = function() {
-  var obj = Element.prototype.toJSON.call(this);
-  
-  obj.v1 = this.v1.eid;
-  obj.v2 = this.v2.eid;
-  obj.loop = this.loop != null ? this.loop.eid : -1;
-  
-  return obj;
-}
-
-Edge.fromJSON = function(obj)
-{
-  var e = new Edge();
-  Element.prototype.fromJSON.call(e, obj);
-  
-  e.v1 = obj.v1;
-  e.v2 = obj.v2;
-  e.loop = obj.loop;
-  
-  return e;
-}
-
 Edge.prototype.pack = function(Array<byte> data, StructPackFunc dopack) {
   Element.prototype.pack.call(this, data);
   
@@ -319,29 +273,6 @@ function Loop(Vertex v, Edge e, Face f) {
 }
 
 inherit(Loop, Element);
-
-Loop.prototype.toJSON = function() {
-  var obj = {};
-  obj.eid = this.eid;
-  obj.v = this.v.eid;
-  obj.e = this.e.eid;
-  obj.radial_next = this.radial_next.eid;
-  obj.radial_prev = this.radial_prev.eid;
-  
-  return obj;
-}
-
-Loop.fromJSON = function(obj) {
-  var l = new Loop();
-  
-  l.eid = obj.eid;
-  l.v = obj.v;
-  l.e = obj.e;
-  l.radial_next = obj.radial_next;
-  l.radial_prev = obj.radial_prev;
-  
-  return l;
-}
 
 Loop.prototype.pack = function(array<byte> data, StructPackFunc dopack) {
   pack_int(data, this.eid);
@@ -401,48 +332,6 @@ LoopList.prototype.__iterator__ = function() : LoopIter {
   return new LoopIter(this);
 }
 
-LoopList.prototype.toJSON = function() {
-  var obj = {};
-  obj.length = this.length;
-  
-  var loops = []
-  var loop = this.loop;
-  do {
-    loops.push(loop);
-    loop = loop.next;
-  } while (loop != this.loop);
-  
-  obj.loops = loops;
-  
-  return obj;
-}
-
-LoopList.fromJSON = function(obj) {
-  var list = new LoopList(null);
-  list.length = obj.length;
-  
-  var loops = obj.loops;
-  var last = undefined;
-  for (var i=0; i<loops.length; i++) {
-    var l = Loop.fromJSON(loops[i]);
-    
-    if (last == undefined) {
-      list.loop = l;
-    } else {
-      last.next = l;
-      l.prev = last;
-    }
-    last = l;
-  }
-  
-  if (last != undefined) {
-    last.next = list.loop;
-    list.loop.prev = last;
-  }
-  
-  return list;
-}
-
 var _static_cent = new Vector3()
 
 //#$(GArray).class
@@ -497,42 +386,6 @@ inherit(Face, Element);
 //#$().string
 Face.prototype.toSource = function() : String {
   return "<Face>";
-}
-
-Face.prototype.toJSON = function() {
-  var obj = Element.prototype.toJSON.call(this);
-  
-  obj.totvert = this.totvert;
-  obj.no = this.no;
-  obj.center = this.center;
-  obj.mapcenter = this.mapcenter;
-  
-  var lists = []
-  for (var list in this.looplists) {
-    lists.push(list)
-  }
-  
-  obj.lists = lists;
-  
-  return obj;
-}
-
-Face.fromJSON = function(obj) {
-  var lists = obj.lists;
-  var f = new Face(new GArray());
-  
-  Element.prototype.fromJSON.call(f, obj);
-  
-  f.totvert = obj.totvert;
-  f.no = new Vector3(obj.no);
-  f.center = new Vector3(obj.center);
-  f.mapcenter = new Vector3(obj.mapcenter);
-  
-  for (var i=0; i<lists.length; i++) {
-    f.looplists.push(LoopList.fromJSON(lists[i]));
-  }
-  
-  return f;
 }
 
 Face.prototype.pack = function(Array<byte> data, StructPackFunc dopack) {
@@ -645,9 +498,6 @@ EIDGen.prototype.set_cur = function(cur) {
   this.cur_eid = Math.ceil(cur);
 }
 
-EIDGen.prototype.toJSON = function() {
-  return { cur_eid : this.cur_eid };
-}
 //if cur is >= to this.cur_eid, 
 //set this.cur to cur+1
 EIDGen.prototype.max_cur = function(cur) {
@@ -664,6 +514,10 @@ EIDGen.prototype.gen_eid = function() : int {
 
 EIDGen.prototype.gen_id = function() : int {
   return this.gen_eid();
+}
+
+EIDGen.prototype.toJSON = function() {
+  return { cur_eid : this.cur_eid };
 }
 
 EIDGen.fromJSON = function(obj) {
@@ -1632,43 +1486,6 @@ function Mesh() {
     return m2;
   }
 
-  
-  this.toJSONd = function() {
-    var obj = {};
-    var data = [];
-    
-    obj.data = data;
-    //obj.data.s_array_type = "byte";
-    this.pack(data);
-    
-    return obj;
-  }
-  
-  this.toJSON = function() {
-    var obj = {};
-    
-    obj.idgen = this.idgen;
-    obj._id = this._id;
-    obj.name = new String(this.name);
-    
-    var vs = obj.vs = [];
-    for (var v in this.verts) {
-      vs.push(v);
-    }
-    
-    var es = obj.es = [];
-    for (var e in this.edges) {
-      es.push(e);
-    }
-    
-    var fs = obj.fs = [];
-    for (var f in this.faces) {
-      fs.push(f);
-    }
-    
-    return obj;
-  }
-  
   this.pack = function(Array<byte> data, StructPackFunc dopack) {
     pack_int(data, this.verts.length);
     for (var v in this.verts) {
@@ -2272,74 +2089,6 @@ function Mesh() {
   }
 }
 create_prototype(Mesh);
-
-Mesh.fromJSON = function(obj) {
-  var mesh = new Mesh();
-  mesh.idgen = EIDGen.fromJSON(obj.idgen);
-  
-  mesh.name = obj.name;
-  mesh._id = obj._id;
-  var eidmap = mesh.eidmap;
-  var loops = {};
-  
-  var vs = obj.vs;
-  for (var i=0; i<vs.length; i++) {
-    var v = Vertex.fromJSON(vs[i]);
-    mesh.verts.push(v, false);
-  }
-  
-  var es = obj.es;
-  for (var i=0; i<es.length; i++) {
-    var e = Edge.fromJSON(es[i]);
-    mesh.edges.push(e, false);
-  }
-  
-  var fs = obj.fs;
-  for (var i=0; i<fs.length; i++) {
-    var f = Face.fromJSON(fs[i]);
-    
-    for (var list in f.looplists) {
-      for (var l in list) {
-        loops[l.eid] = l;
-      }
-    }
-    mesh.faces.push(f, false);
-  }
-  
-  //-1 eid for loops is null
-  loops[-1] = null;
-  
-  //relink
-  for (var v in mesh.verts) {
-    for (var i=0; i<v.edges.length; i++) {
-      v.edges[i] = eidmap[v.edges[i]];
-    }
-    
-    v.loop = loops[v.loop];
-  }
-  
-  for (var e in mesh.edges) {
-    e.v1 = eidmap[e.v1];
-    e.v2 = eidmap[e.v2];
-    
-    e.loop = loops[e.loop];
-  }
-  
-  for (var f in mesh.faces) {
-    for (var list in f.looplists) {
-      for (var l in list) {
-        l.radial_next = loops[l.radial_next];
-        l.radial_prev = loops[l.radial_prev];
-        l.v = eidmap[l.v];
-        l.e = eidmap[l.e];
-        l.f = eidmap[l.f];
-        l.list = list;
-      }
-    }
-  }
-  
-  return mesh;
-}
   
 var _cent = new Vector3();
 var _mapi_frn_n1 = new Vector3();

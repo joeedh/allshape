@@ -3,6 +3,12 @@
 import os, sys, os.path, time, random, math
 import shelve, struct, io, imp, ctypes, re
 
+try:
+  import jsbuild_config_local
+  do_smap_roots = jsbuild_config_local.do_smap_roots
+except:
+  do_smap_roots = False
+
 db = None
 db_depend = None
 
@@ -52,7 +58,15 @@ PYBIN += " "
 JCC = "../js_parser/js_cc.py".replace("/", os.path.sep)
 TCC = "../tinygpu/tinygpu.py".replace("/", os.path.sep)
 
-JFLAGS = ""
+JFLAGS = "-gm"
+if do_smap_roots:
+  JFLAGS += " -gsr"
+  
+try:
+  JFLAGS += " " + jsbuild_config_local.JFLAGS
+except:
+  pass
+  
 TFLAGS = ""
 
 def cp_handler(file, target):
