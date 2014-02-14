@@ -417,44 +417,10 @@ start_q = 0
 def t_MLSTRLIT(t):
   r'"""';
   
-  if 0:
-    lexpos = t.lexpos+2
-    lexdata = t.lexer.lexdata
-    in_escape = 0
-    
-    while lexpos < len(lexdata)-3:
-      if not in_escape and lexdata[lexpos] == "\\":
-        in_escape = 1
-      elif lexdata[lexpos] != "\\":
-        in_escape = 0
-        
-      if not in_escape and lexdata[lexpos] == "\n":
-        t.lexer.lineno += 1
-        
-      if lexdata[lexpos:lexpos+3] == '"""' and not in_escape:
-        break;
-      lexpos += 1
-    
-    print(t.lexpos, lexpos)
-    #print(dir(t.lexer))
-    #sys.exit()
-  
-    if lexdata[lexpos:lexpos+3] == '"""':
-      t.value = StringLit(lexdata[t.lexpos+3:lexpos])
-      if type(t.lexer) == LexWithPrev:
-        t.lexer.set_lexpos(lexpos)
-      else:
-        t.lexer.lexpos = lexpos+3
-      
-      return t
-    
-    t.value = "[mangled]";
-    return t
-  
   global strlit_val;
   t.lexer.push_state("mlstr");
   strlit_val = StringLit("")
-
+  
 def ml_escape(s):
   i = 0
   lastc = 0
@@ -507,7 +473,7 @@ def t_mlstr_MLSTRLIT(t):
   return t;
 
 def t_mlstr_ALL(t):
-  r'[.]{1}' 
+  r'.|[\n\r]' 
   
   #(.|[\n\r])+((?=""")+)'
   
@@ -516,7 +482,7 @@ def t_mlstr_ALL(t):
     strlit_val = StringLit(strlit_val + t.value)
     t.lexer.lineno += t.value.count('\n')
     
-    return t;
+    #return t;
   
 def t_STRINGLIT(t):
   r'\"|\''

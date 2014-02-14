@@ -719,6 +719,7 @@ function toJSON_intern (ob, tlevel) {
 <script type="text/javascript" src="/content/font_out.js"></script>
 <script type="text/javascript" src="/content/utils.js"></script>
 <script type="text/javascript" src="/content/parseutil.js"></script>
+<script type="text/javascript" src="/content/schema.js"></script>
 <script type="text/javascript" src="/content/units.js"></script>
 <script type="text/javascript" src="/content/grid.js"></script>
 <script type="text/javascript" src="/content/spatialhash.js"></script>
@@ -752,7 +753,6 @@ function toJSON_intern (ob, tlevel) {
 
 <script type="text/javascript" src="/content/AppState.js"></script>
 <script type="text/javascript" src="/content/ajax.js"></script>
-<script type="text/javascript" src="/content/schema.js"></script>
 <script type="text/javascript" src="/content/network_api.js"></script>
 <script type="text/javascript" src="/content/fileapi.js"></script>
 <script type="text/javascript" src="/content/fontutils.js"></script>
@@ -1137,6 +1137,7 @@ function toJSON_intern (ob, tlevel) {
     var g = {};
     
     init_struct_packer();
+    test_struct();
     
     function init()
     {

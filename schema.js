@@ -34,7 +34,8 @@ function SchemaParser() {
     "mat4", 
     "string", 
     "static_string",
-    "array"]);
+    "array",
+    "iter"]);
 
   function tk(name, re, func) {
     return new PUTL.tokdef(name, re, func);
@@ -112,6 +113,23 @@ function SchemaParser() {
     return {type : "array", data : {type : arraytype, iname : itername}};
   }
   
+  function p_Iter(p) {
+    p.expect("ITER");
+    p.expect("LPARAM");
+    
+    var arraytype = p_Type(p);
+    var itername = "";
+    
+    if (p.optional("COMMA")) {
+      itername = arraytype.data.replace(/"/g, "");
+      arraytype = p_Type(p);
+    }    
+    
+    p.expect("RPARAM");
+    
+    return {type : "iter", data : {type : arraytype, iname : itername}};
+  }
+  
   function p_Type(p) {
     var tok = p.peek()
     
@@ -123,6 +141,8 @@ function SchemaParser() {
       return {type : tok.type.toLowerCase()};
     } else if (tok.type == "ARRAY") {
       return p_Array(p);
+    } else if (tok.type == "ITER") {
+      return p_Iter(p);
     } else {
       p.error(tok, "invalid type " + tok.type); //(tok.value == "" ? tok.type : tok.value));
     }
@@ -179,18 +199,6 @@ function SchemaParser() {
   return parser;
 }
 
-/*types used to generate file schemas.
-  note that the schema generator is
-  recursive, so theoretically only
-  top-level types are needed.*/
-var SchemaTypes = [
-  Element,
-  Vertex,
-  Edge,
-  Loop,
-  Face,
-  Mesh
-];
 var schema_parse = SchemaParser();
 
 function STRUCT()
@@ -214,8 +222,8 @@ STRUCT.prototype.get_struct_cls = function(name) {
   return this.struct_cls[name];
 }
 
-STRUCT.prototype.inherit = function(child, parent) {
-  var stt = scema_parse.parse(parent.STRUCT);
+STRUCT.inherit = function(child, parent) {
+  var stt = schema_parse.parse(parent.STRUCT);
   var code = child.name + "{\n" 
   code += STRUCT.fmt_struct(stt, true);
   
@@ -256,7 +264,7 @@ STRUCT.fmt_struct = function(stt, internal_only) {
     if (f.get != undefined) {
       s += " | " + f.get.trim();
     }
-    s += "\n";
+    s += ";\n";
   }
   
   if (!internal_only)
@@ -337,6 +345,27 @@ STRUCT.prototype.write_struct = function(data, obj, stt) {
         pack_type(data, f2, f2.type, val2);
       }
     },
+    "iter" : function(data, field, type, val) {
+      var len = 0;
+      for (var val2 in val) len++;
+      
+      pack_int(data, len);
+      
+      for (var val2 in val) {
+        var itername = type.data.iname;
+        var type2 = type.data.type;
+        
+        if (f.get) {
+          var env = {}
+          env[itername] = val2;
+          val2 = thestruct._env_call(f.get, obj, env);
+        }
+        
+        var f2 = {type : type2, get : undefined, set: undefined};
+        
+        pack_type(data, f2, f2.type, val2);
+      }
+    },
     "struct" : function(data, field, type, val) {
       this.write_struct(data, val, this.get_struct(type.data));
     }
@@ -349,7 +378,7 @@ STRUCT.prototype.write_struct = function(data, obj, stt) {
   for (var i=0; i<fields.length; i++) {
     var f = fields[i];
     
-    if (f.type.type != "array") {
+    if (f.type.type != "array" && f.type.type != "iter") {
       var val;
       var type = f.type.type;
       
@@ -360,7 +389,7 @@ STRUCT.prototype.write_struct = function(data, obj, stt) {
       }
       
       pack_type(data, f, f.type, val);
-    } else if (f.type.type == "array") {
+    } else if (f.type.type == "array" || f.type.type == "iter") {
       var val = obj[f.name];
       pack_type(data, f, f.type, val);
     }
@@ -408,7 +437,17 @@ STRUCT.prototype.read_object = function(data, cls) {
       var arr = new Array(len);
       
       for (var i=0; i<len; i++) {
-        arr[len] = unpack_field(type.data.type);
+        arr[i] = unpack_field(type.data.type);
+      }
+      
+      return arr;
+    },
+    "iter" : function(type) {
+      var len = unpack_int(data, uctx);
+      var arr = new Array(len);
+      
+      for (var i=0; i<len; i++) {
+        arr[i] = unpack_field(type.data.type);
       }
       
       return arr;
@@ -439,6 +478,8 @@ STRUCT.prototype.read_object = function(data, cls) {
   return cls.fromSTRUCT(load);
 }
 
+var istruct = new STRUCT();
+
 var test_vertex_struct = """
   Vertex {
     eid : int;
@@ -453,49 +494,59 @@ var test_vertex_struct = """
   }
 """;
 
-var istruct = new STRUCT();
+var test_struct_str = """
+  Test {
+    a : array(iter(int));
+    b : string;
+    c : array(int);
+    d : array(string);
+  }
+""";
+
+
+function test_struct() {
+  var stt = schema_parse.parse(test_struct_str);
+  var l1 = new set([1, 3, 7]);
+  var l2 = new set([4, 5, 6]);
+  
+  var obj = {
+    a : [l1, l2], 
+    b : "test",
+    c : [1, 8, 9, 10],
+    d : ["d", "e", "g", "t"]
+  };
+  
+  obj.fromSTRUCT = function(unpacker) {
+    var obj2 = {};
+    unpacker(obj2);
+    
+    return obj2;
+  }
+  obj.STRUCT = test_struct_str;
+  
+  var data = [];
+  istruct.add_struct(obj);
+  istruct.write_struct(data, obj, stt);
+  
+  console.log(data);
+  data = new DataView(new Uint8Array(data).buffer);
+  
+  obj = istruct.read_object(data, obj);
+  console.log(JSON.stringify(obj));  
+}
+
 function init_struct_packer() {
   global defined_classes;
+  
+  console.log("parsing class serialization scripts...");
   
   for (var cls in defined_classes) {
     if (cls.STRUCT != undefined && cls.fromSTRUCT != undefined) {
       istruct.add_struct(cls);
     }
   }
+  console.log("done");
 }
-function test_struct() {
-  var stt = new STRUCT();
-  
-  Vertex.STRUCT = test_vertex_struct;
-  Vertex.fromSTRUCT = function(do_read) {
-    var v = new Vertex();
-    do_read(v);
-    
-    return v;
-  }
-  
-  stt.add_struct(Vertex);
-  
-  var v = new Vertex();
-  
-  var e1 = new Edge();
-  var e2 = new Edge();
-  
-  e1.eid = 2;
-  e2.eid = 3;
-  
-  v.edges.push(e1);
-  v.edges.push(e2);
-  
-  var data = []
-  stt.write_object(data, v);
-  
-  data = new DataView(new Uint8Array(data).buffer);
-  
-  var obj = stt.read_object(data, Vertex);
-}
-
-test_struct();
 
 //typeof function, that handles object instances of basic types
 var _bt_h = {

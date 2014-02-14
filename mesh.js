@@ -225,7 +225,6 @@ Edge.prototype.pack = function(Array<byte> data, StructPackFunc dopack) {
     pack_int(data, this.loop.eid);
   else
     pack_int(data, -1);
-  
 }
 
 Edge.prototype.unpack = function(ArrayBuffer data, unpack_ctx uctx) {
@@ -270,6 +269,27 @@ function Loop(Vertex v, Edge e, Face f) {
   this.radial_prev = null;
 }
 inherit(Loop, Element);
+
+Loop.STRUCT = """
+  Loop {
+    eid : int;
+    type : int;
+    v : int | obj.v.eid;
+    e : int | obj.e.eid;
+    f : int | obj.f.eid;
+    radial_next : int | obj.radial_next.eid;
+    radial_prev : int | obj.radial_prev.eid;
+    next : int | obj.next.eid;
+    prev : int | obj.prev.eid;
+  }
+"""
+ 
+Loop.fromSTRUCT = function(unpack) {
+  var l = new Loop()
+  unpack(l);
+  
+  return l;
+}
 
 Loop.prototype.pack = function(array<byte> data, StructPackFunc dopack) {
   pack_int(data, this.eid);
@@ -320,9 +340,7 @@ function LoopIter(LoopList looplist) {
 function LoopList(Loop loop) {
   this.loop = loop;
   this.length = 0;
-  
 }
-
 create_prototype(LoopList);
 
 LoopList.prototype.__iterator__ = function() : LoopIter {
@@ -384,6 +402,15 @@ inherit(Face, Element);
 Face.prototype.toSource = function() : String {
   return "<Face>";
 }
+
+Face.STRUCT = STRUCT.inherit(Face, Element) + """
+    looplists : array(iter(Loop));
+    no : vec3;
+    center : vec3;
+    mapcenter : vec3;
+    totvert : int;
+  }
+""";
 
 Face.prototype.pack = function(Array<byte> data, StructPackFunc dopack) {
   Element.prototype.pack.call(this, data);
@@ -490,6 +517,18 @@ function EIDGen() {
   this.cur_eid = 1;
 }
 create_prototype(EIDGen);
+
+EIDGen.STRUCT = """
+  EIDGen {
+    cur_eid : int;
+  }""";
+  
+EIDGen.fromSTRUCT = function(unpacker) {
+  var g = new EIDGen();
+  unpacker(g);
+  
+  return g;
+}
 
 EIDGen.prototype.set_cur = function(cur) {
   this.cur_eid = Math.ceil(cur);
@@ -613,14 +652,6 @@ function GeoArray<T>(type, idgen, eidmap) {
   this.eidmap = {};
   this._totsel = 0
   
-  //#$().GeoArrayIter
-  this.__iterator__ = function() : GeoArrayIter<T> {
-    if (this.iter.cur != 0)
-      return new GeoArrayIter<T>(this);
-    else
-      return this.iter;
-  }
-  
   this._selected = {} : ObjectMap<int,T>;
   
   Object.defineProperty(this, "selected", {get: function() : Iterator<T> {
@@ -630,6 +661,13 @@ function GeoArray<T>(type, idgen, eidmap) {
   Object.defineProperty(this, "totsel", {get: function() : Iterator<T> {
     return this._totsel;
   }});
+  
+  this.__iterator__ = function() : GeoArrayIter<T> {
+    if (this.iter.cur != 0)
+      return new GeoArrayIter<T>(this);
+    else
+      return this.iter;
+  }
   
   this.select = function(T e, Boolean state) { //state is optional, defaults to true
     if (e == undefined) {
@@ -986,7 +1024,7 @@ function EdgeLoopIter(Edge data) {
   }
 }
 
-var MeshIter = {}
+var MeshIter = {};
 
 MeshIter.VERT_EDGES = 5;
 MeshIter.VERT_FACES = 6;
@@ -994,8 +1032,8 @@ MeshIter.EDGE_FACES = 7;
 MeshIter.EDGE_LOOPS = 8;
 MeshIter.FACE_VERTS = 9;
 MeshIter.FACE_EDGES = 10;
-MeshIter.FACE_ALL_LOOPS = 11
-MeshIter.EDGE_VERTS = 12
+MeshIter.FACE_ALL_LOOPS = 11;
+MeshIter.EDGE_VERTS = 12;
 
 function MeshIterate(type, data) {
   this.type = type;
@@ -1055,759 +1093,857 @@ function Mesh() {
   
   this.render = 0;
   this.api = new MeshAPI(this);
-  
-  this.__hash__ = function() : String {
-    return "Mesh" + this._id;
+}
+create_prototype(Mesh);
+
+Mesh.STRUCT = """
+  Mesh {
+    idgen : EIDGen;
+    _id : int;
+    name : string;
+    verts : array(Vertex);
+    edges : array(Edges);
+    faces : array(Faces);
   }
+""";
+
+Mesh.toSTRUCT = function(data, structr) {
+  var verts = this.verts;
+  var vlen = verts.length;
+}
+
+Mesh.prototype.__hash__ = function() : String {
+  return "Mesh" + this._id;
+}
+
+Mesh.prototype.remove_callback = function(owner)
+{
+  this.event_users.remove(owner);
+}
+
+//callback is a function with args (owner, mesh, event),
+//where event is one of MeshEvents
+Mesh.prototype.update_callback = function(owner, callback)
+{
+  this.event_users.set(owner, callback);
+}
+
+//expandlvl is how many times we should topologically "grow" the input vert set
+Mesh.prototype.gen_partial = function(geom, expandlvl) { 
+  var vset = new set();
+  var eset = new set();
+  var fset = new set();
   
-  this.remove_callback = function(owner)
-  {
-    this.event_users.remove(owner);
-  }
-  
-  //callback is a function with args (owner, mesh, event),
-  //where event is one of MeshEvents
-  this.update_callback = function(owner, callback)
-  {
-    this.event_users.set(owner, callback);
-  }
-  
-  //expandlvl is how many times we should topologically "grow" the input vert set
-  this.gen_partial = function(geom, expandlvl) { 
-    var vset = new set();
-    var eset = new set();
-    var fset = new set();
-    
-    var test_vset = new set();
-    for (var e in geom) {
-      if (e.type == MeshTypes.VERT) {
-        vset.add(e);
-        
-        for (var e2 in e.edges) {
-          for (var l in e2.loops) {
-            eset.add(l.e);
-            fset.add(l.f);
-          }
-        }
-      } else if (e.type == MeshTypes.EDGE) {
-        eset.add(e);
-        
-        test_vset.add(e.v1);
-        test_vset.add(e.v2);
-        
-        for (var f in e.faces) {
-          if (!fset.has(f)) {
-            for (var v in f.verts) {
-              test_vset.add(v);
-            }  
-          }
-          fset.add(f);
-        }
-      } else if (e.type == MeshTypes.FACE) {
-        fset.add(e);
-        
-        var Face f = e;
-        for (var v in f.verts) {
-          test_vset.add(v);
-        }
-      } else {
-        throw new Error("Invalid element type "+e.type+"!")
-      }
-    }
-    
-    for (var f in fset) {
-      for (var e in f.edges) {
-        var found = false;
-        for (var f2 in e.faces) {
-          if (!fset.has(f2)) {
-            found = true;
-            break;
-          }
-        }
-        
-        if (!found) {
-          if (!eset.has(e)) {
-            eset.add(e);
-            test_vset.add(e.v1);
-            test_vset.add(e.v2);
-          }
-        }
-      }
-    }
-    
-    for (var v in test_vset) {
-      if (vset.has(v)) 
-        continue;
+  var test_vset = new set();
+  for (var e in geom) {
+    if (e.type == MeshTypes.VERT) {
+      vset.add(e);
       
-      var i=0, c=0;
-      for (var e in v.edges) {
-        c += eset.has(e) ? 1 : 0;
-        i++;
-      }
-      
-      if (i == c) {
-        vset.add(v);
-      }
-    }
-        
-    for (var i=0; i<expandlvl; i++) {
-      var vset2 = new set();
-      for (var v in vset) {
-        for (var e in v.edges) {
-          for (var l in e.loops) {
-            vset2.add(l.v);
-            eset.add(l.e);
-            fset.add(l.f);
-            for (var l2 in l.f.loops) {
-              vset2.add(l2.v);
-              eset.add(l2.e);
-            }
-          }
-        }
-      }
-      
-      for (var v in vset2) {
-        vset.add(v);
-      }
-    }
-    
-    //v.loops is the set of loops around v
-    //where loop.v == v; thus, to reliably get all
-    //edges and faces around a vert we have
-    //to iterate v.edges and e.loops manually.
-    for (var v in vset) {
-      for (var e in v.edges) {
-        for (var l in v.loops) {
+      for (var e2 in e.edges) {
+        for (var l in e2.loops) {
           eset.add(l.e);
           fset.add(l.f);
         }
       }
-    }
-    
-    //copy data
-    var data = []
-    
-    pack_int(data, vset.length);
-    for (var v in vset) {
-      v.pack(data);
-    }
-    
-    pack_int(data, eset.length);
-    for (var e in eset) {
-      e.pack(data);
-    }
-    
-    pack_int(data, fset.length);
-    for (var f in fset) {
-      f.pack(data);
-    }
-    
-    data = new DataView(new Uint8Array(data).buffer);
-    
-    var veids = list(vset);
-    var eeids = list(eset);
-    var feids = list(fset);
-    
-    for (var i=0; i<veids.length; i++) {
-      veids[i] = veids[i].eid;
-    }
-    for (var i=0; i<eeids.length; i++) {
-      eeids[i] = eeids[i].eid;
-    }
-    for (var i=0; i<feids.length; i++) {
-      feids[i] = feids[i].eid;
-    }
-    
-    var max_eid = this.idgen.get_cur();
-    
-    var obj = {
-      v_eids : veids, 
-      e_eids : eeids, 
-      f_eids : feids, 
-      max_eid : max_eid, 
-      data : data,
-      eidgen : this.idgen.get_cur()};
-    
-    return obj;
-  }  
-  
-  this.load_partial = function(part) {
-    for (var f in part.f_eids) {
-      f = this.faces.get(f);
-      if (f == undefined)
-        continue;
+    } else if (e.type == MeshTypes.EDGE) {
+      eset.add(e);
       
-      if (f.type != MeshTypes.FACE) {
-        console.log("YEEK!");
-        throw "Invalid f eid type"+f;
-      }
+      test_vset.add(e.v1);
+      test_vset.add(e.v2);
       
-      this.kill_face(f);
-    }
-    for (var e in part.e_eids) {
-      e = this.edges.get(e);
-      if (e == undefined)
-        continue;
-        
-      if (e.type != MeshTypes.EDGE) {
-        console.log("YEEK!");
-        throw "Invalid e eid type"+e;
-      }
-        
-      this.kill_edge(e);
-    }
-    
-    for (var v in part.v_eids) {
-      v = this.verts.get(v);
-      if (v == undefined)
-        continue;
-        
-      if (v.type != MeshTypes.VERT) {
-        console.log("YEEK!");
-        throw "Invalid v eid type"+v;
-      }
-        
-      this.kill_vert(v);
-    }
-    
-    //destroy all geometry created after gen_partial was originally called
-    var last_e = this.idgen.get_cur();
-    
-    var eidmap = this.eidmap;
-    
-    for (var eid=part.max_eid; eid<last_e; eid++) {
-      var e = eidmap[eid];
-      
-      if (e == undefined)
-        continue;
-      
-      this.kill(e);
-    }
-    
-    //----   restore original eid generator counter   ----
-    var idgen = this.idgen;
-    idgen.set_cur(part.eidgen);
-    
-    var data = part.data;
-    var uctx = new unpack_ctx();
-    
-    var newvs = new set();
-    var verts = new GArray();
-    var edges = new GArray();
-    var faces = new GArray();
-    
-    var totv = unpack_int(data, uctx);
-    for (var i=0; i<totv; i++) {
-      var v = new Vertex();
-      v.unpack(data, uctx);
-      
-      newvs.add(v.eid);
-      verts.push(v);
-    }
-    
-    var tote = unpack_int(data, uctx);    
-    for (var i=0; i<tote; i++) {
-      var e = new Edge();
-      e.unpack(data, uctx);
-      
-      edges.push(e);
-    }
-    
-    var loops = {}; //includes all loops in the mesh
-    var loops2 = {}; //only includes new loops
-    
-    var totf = unpack_int(data, uctx);
-    for (var i=0; i<totf; i++) {
-      var f = new Face([]);
-      f.unpack(data, uctx);
-      
-      faces.push(f);
-      
-      for (var list in f.looplists) {
-        for (var l in list) {
-          l.list = list;
-          l.f = f;
-          loops[l.eid] = l;
-          loops2[l.eid] = l;
-          idgen.max_cur(l.eid);
+      for (var f in e.faces) {
+        if (!fset.has(f)) {
+          for (var v in f.verts) {
+            test_vset.add(v);
+          }  
         }
+        fset.add(f);
       }
-    }
-    
-    //we add verts/edges/faces eid's here, to ensure
-    //this.idgen ends up in the correct state
-    for (var v in verts) {
-      this.verts.push(v, false);
-    }
-    
-    for (var e in edges) {
-      this.edges.push(e, false);
-    }
-    
-    var i = 0;
-    for (var f in faces) {
-      this.faces.push(f, false);
-    }
-    
-    //add existing loops to loops set
-    for (var f in this.faces) {
-      for (var list in f.looplists) {
-        for (var l in list) {
-          loops[l.eid] = l;
-        }
+    } else if (e.type == MeshTypes.FACE) {
+      fset.add(e);
+      
+      var Face f = e;
+      for (var v in f.verts) {
+        test_vset.add(v);
       }
-    }
-    
-    var c = 0;
-    for (var f in faces) {
-      for (var list in f.looplists) {
-        for (var l in list) {
-          l.e = eidmap[l.e];
-          l.v = eidmap[l.v];
-          
-          l.radial_next = null; //loops[l.radial_next];
-          l.radial_prev = null; //loops[l.radial_prev];
-        }
-      }
-    }
-    
-    for (var e in edges) {
-      e.v1 = eidmap[e.v1];
-      e.v2 = eidmap[e.v2];
-      
-      if (!newvs.has(e.v1.eid))
-        e.v1.edges.push(e);
-      if (!newvs.has(e.v2.eid))
-        e.v2.edges.push(e);
-      
-      //if (e.loop == -1 || (e.loop in loops2))
-        e.loop = null;
-      //else 
-      //  e.loop = loops[e.loop];
-    }
-    
-    for (var v in verts) {
-      var elen = v.edges.length;
-      
-      for (var i=0; i<elen; i++) {
-        v.edges[i] = eidmap[v.edges[i]];
-      }
-      
-      //if (v.loop == -1)
-        v.loop = null;
-      //else 
-      //  v.loop = loops[v.loop];      
-    }
-    
-    for (var f in faces) {
-      for (var list in f.looplists) {
-        for (var l in list) {
-          this._radial_loop_insert(l.e, l);
-        }
-      }
-    }
-  }
-  
-  this.regen_positions = function() {
-    this.render.recalc |= RecalcFlags.REGEN_COS;
-    
-    this.do_callbacks(MeshEvents.RECALC);
-  }
-  
-  this.regen_normals = function() {
-    this.render.recalc |= RecalcFlags.REGEN_NORS;
-    
-    this.do_callbacks(MeshEvents.RECALC);
-  }
-  
-  this.do_callbacks = function(event) {
-    for (var k in this.event_users) {
-      this.event_users.get(k)(k, this, event);
-    }
-  }
-  
-  this.regen_render = function() {
-    this.render.recalc |= RecalcFlags.REGEN_NORS | RecalcFlags.REGEN_TESS | RecalcFlags.REGEN_COS | RecalcFlags.REGEN_COLORS;
-    for (var f in this.faces) {
-      f.flag |= Flags.DIRTY;
-    }
-    
-    this.do_callbacks(MeshEvents.RECALC);
-  }
-  
-  this.regen_colors = function() {
-    this.render.recalc |= RecalcFlags.REGEN_COLORS;
-    
-    this.do_callbacks(MeshEvents.RECALC);
-  }
-  
-  this.copy = function() : Mesh {
-    var m2 = new Mesh();
-    m2.render = new render();
-
-    m2.render.vertprogram = this.render.vertprogram;
-    m2.render.drawprogram = this.render.drawprogram;
-    
-    this.verts.index_update();
-    this.edges.index_update();
-    this.faces.index_update();
-    
-    var verts = new GArray()
-    
-    for (var v in this.verts) {
-      var v2 = m2.make_vert(v.co, v.no);
-      m2.copy_vert_data(v2, v, true);
-      verts.push(v2);
-    }
-    
-    for (var e in this.edges) {
-      var e2 = m2.make_edge(verts[e.v1.index], verts[e.v2.index], false);
-      m2.copy_edge_data(e2, e, true);
-    }
-    
-    for (var f in this.faces) {
-      var vlists = new GArray();
-      
-      for (var list in f.looplists) {
-        var loop = new GArray();
-        for (var l in list) {
-          loop.push(verts[l.v.index])
-        }
-        vlists.push(loop);
-      }
-      
-      var f2 = m2.make_face_complex(vlists);
-      m2.copy_face_data(f2, f, true);
-    }
-    
-    return m2;
-  }
-
-  this.pack = function(Array<byte> data, StructPackFunc dopack) {
-    pack_int(data, this.verts.length);
-    for (var v in this.verts) {
-      v.pack(data);
-    }
-    
-    pack_int(data, this.edges.length);
-    for (var e in this.edges) {
-      e.pack(data);
-    }
-    
-    pack_int(data, this.faces.length);
-    for (var f in this.faces) {
-      f.pack(data);
-    }
-  }
-  
-  this.unpack = function(ArrayBuffer data, unpack_ctx uctx) {
-    var vlen = unpack_int(data, uctx);
-    console.log("vlen: ", vlen);
-    
-    var loops = {}
-    var eidmap = this.eidmap;
-    
-    for (var i=0; i<vlen; i++) {
-      var v = new Vertex();
-      v.unpack(data, uctx);
-      
-      this.verts.push(v, false);
-    }
-    
-    var elen = unpack_int(data, uctx);
-    console.log("elen: ", elen);
-    for (var i=0; i<elen; i++) {
-      var e = new Edge();
-      e.unpack(data, uctx);
-      //console.log("e.v1", e.v1);
-      
-      this.edges.push(e, false);
-      
-      e.v1 = eidmap[e.v1];
-      e.v2 = eidmap[e.v2];
-    }
-    
-    var flen = unpack_int(data, uctx);
-    
-    console.log("flen: ", flen);
-    for (var i=0; i<flen; i++) {
-      var f = new Face([]);
-      f.unpack(data, uctx);
-      
-      for (var lst in f.looplists) {
-        for (var l in lst) {
-          l.v = eidmap[l.v];
-          l.e = eidmap[l.e];
-          l.f = f;
-          l.list = lst;
-          loops[l.eid] = l;
-        }
-      }
-      
-      this.faces.push(f, false);
-    }
-    
-    /*relink loops*/
-    for (var v in this.verts) {
-      for (var i=0; i<v.edges.length; i++) {
-        v.edges[i] = eidmap[v.edges[i]]
-      }
-      
-      if (v.loop != -1)
-        v.loop = loops[v.loop];
-      else
-        v.loop = null;
-    }
-    
-    for (var e in this.edges) {
-      if (e.loop != -1)
-        e.loop = loops[e.loop];
-      else
-        e.loop = null;
-    }
-    
-    for (var f in this.faces) {
-      for (var lst in f.looplists) {
-        for (var l in lst) {
-          l.radial_next = loops[l.radial_next];
-          l.radial_prev = loops[l.radial_prev];
-        }
-      }
-    }
-  }
-  
-  this.shallow_copy = function() : Mesh {
-    var m = new Mesh();
-    
-    m.verts = this.verts;
-    m.faces = this.faces;
-    m.edges = this.edges;
-    m.name = this.name;
-    m.materials = this.materials;
-    m.looptris = this.looptris;
-    
-    m.render = this.render;
-    m.render.recalc = true;
-    m.ops = this.ops;
-    
-    m.vdata = this.vdata;
-    m.edata = this.edata;
-    m.ldata = this.ldata;
-    m.fdata = this.fdata;
-    
-    return m;
-  }
-  
-  this.find_edge = function(Vert v1, Vert v2) : Edge {
-    for (var e in v1.edges) {
-      if (e.vert_in_edge(v2)) {
-        if (!e.vert_in_edge(v1)) {
-          console.trace();
-          throw new Error("Mesh integrity error")
-          return null;
-        }
-        return e;
-      }
-    }
-    
-    return null;
-  }
-  
-  this.make_vert = function(Vector3 co, Vector3 no) : Vert {
-    var v = new Vertex(co, no);
-    this.vdata.element_init(v.gdata);
-    
-    this.verts.push(v);
-    
-    return v;
-  }
-  
-  this.make_edge = function(Vert v1, Vert v2, Boolean check) : Edge { //check is optional
-    if (check == undefined)
-      check = true;
-      
-    if (v1 == v2) {
-      throw new Error("Cannot make edge from one vert only");
-    }
-    
-    if (check) {
-      var e = this.find_edge(v1, v2);
-      
-      if (e != null) {
-        if (e._gindex == -1)
-          throw new Error("Mesh integrity error; find_edge returned a deleted ghost edge");
-        
-        return e;
-      }
-    }
-     
-    var e = new Edge(v1, v2)
-    
-    if (e.v1.edges == undefined || e.v2.edges == undefined) {
-      console.trace();
-    }
-    
-    e.v1.edges.push(e);
-    e.v2.edges.push(e);
-    
-    this.edata.element_init(e.gdata);
-    
-    this.edges.push(e)
-    
-    return e;
-  }
-  
-  this._radial_loop_insert = function(Edge e, Loop l) {
-    if (e.loop == null) {
-        l.radial_next = l.radial_prev = l;
-        e.loop = l;
     } else {
-      l.radial_next = e.loop.radial_next;
-      l.radial_prev = e.loop;
-      
-      e.loop.radial_next.radial_prev = l;
-      e.loop.radial_next = l;
+      throw new Error("Invalid element type "+e.type+"!")
     }
-      
-    if (e.v1.loop == null)
-      e.v1.loop = l;
-    
-    if (e.v2.loop == null)
-      e.v2.loop = l;
   }
   
-  this._radial_loop_remove = function(Edge e, Loop l) {
-    if (l.f == l.v.loop.f) {
-      var l2 = l;
-      
-      do {
-        l2 = l2.radial_next;
-        
-        if (l2.v == l.v && l2.f != l.f)
+  for (var f in fset) {
+    for (var e in f.edges) {
+      var found = false;
+      for (var f2 in e.faces) {
+        if (!fset.has(f2)) {
+          found = true;
           break;
-      } while (l2 != l);
+        }
+      }
       
-      if (l2.f == l.f) { //find loop in another edge
-        l.v.loop = null;
-        
-        for (var e2 in l.v.edges) {
-          if (e2 != l.e && e2.loop != null && e2.loop.f != l.f) {
-            l.v.loop = e2.loop;
-            break;
+      if (!found) {
+        if (!eset.has(e)) {
+          eset.add(e);
+          test_vset.add(e.v1);
+          test_vset.add(e.v2);
+        }
+      }
+    }
+  }
+  
+  for (var v in test_vset) {
+    if (vset.has(v)) 
+      continue;
+    
+    var i=0, c=0;
+    for (var e in v.edges) {
+      c += eset.has(e) ? 1 : 0;
+      i++;
+    }
+    
+    if (i == c) {
+      vset.add(v);
+    }
+  }
+      
+  for (var i=0; i<expandlvl; i++) {
+    var vset2 = new set();
+    for (var v in vset) {
+      for (var e in v.edges) {
+        for (var l in e.loops) {
+          vset2.add(l.v);
+          eset.add(l.e);
+          fset.add(l.f);
+          for (var l2 in l.f.loops) {
+            vset2.add(l2.v);
+            eset.add(l2.e);
           }
         }
-      } else {
-        l.v.loop = l2;
       }
-    }    
-    
-    if (e.loop == null) {
-      console.log("Mesh integrity error; e.loop is null");
-      console.trace();
     }
     
-    if (e.loop.f == l.f) {
-      /*multiple loops from the same face may share an edge, so make sure we
-        find a loop with a different face*/
-      var i = 0;
-      do {
-        e.loop = e.loop.radial_next;
-        if (e.loop.f != l.f) 
-          break;
+    for (var v in vset2) {
+      vset.add(v);
+    }
+  }
+  
+  //v.loops is the set of loops around v
+  //where loop.v == v; thus, to reliably get all
+  //edges and faces around a vert we have
+  //to iterate v.edges and e.loops manually.
+  for (var v in vset) {
+    for (var e in v.edges) {
+      for (var l in v.loops) {
+        eset.add(l.e);
+        fset.add(l.f);
+      }
+    }
+  }
+  
+  //copy data
+  var data = []
+  
+  pack_int(data, vset.length);
+  for (var v in vset) {
+    v.pack(data);
+  }
+  
+  pack_int(data, eset.length);
+  for (var e in eset) {
+    e.pack(data);
+  }
+  
+  pack_int(data, fset.length);
+  for (var f in fset) {
+    f.pack(data);
+  }
+  
+  data = new DataView(new Uint8Array(data).buffer);
+  
+  var veids = list(vset);
+  var eeids = list(eset);
+  var feids = list(fset);
+  
+  for (var i=0; i<veids.length; i++) {
+    veids[i] = veids[i].eid;
+  }
+  for (var i=0; i<eeids.length; i++) {
+    eeids[i] = eeids[i].eid;
+  }
+  for (var i=0; i<feids.length; i++) {
+    feids[i] = feids[i].eid;
+  }
+  
+  var max_eid = this.idgen.get_cur();
+  
+  var obj = {
+    v_eids : veids, 
+    e_eids : eeids, 
+    f_eids : feids, 
+    max_eid : max_eid, 
+    data : data,
+    eidgen : this.idgen.get_cur()};
+  
+  return obj;
+}  
+
+Mesh.prototype.load_partial = function(part) {
+  for (var f in part.f_eids) {
+    f = this.faces.get(f);
+    if (f == undefined)
+      continue;
+    
+    if (f.type != MeshTypes.FACE) {
+      console.log("YEEK!");
+      throw "Invalid f eid type"+f;
+    }
+    
+    this.kill_face(f);
+  }
+  for (var e in part.e_eids) {
+    e = this.edges.get(e);
+    if (e == undefined)
+      continue;
+      
+    if (e.type != MeshTypes.EDGE) {
+      console.log("YEEK!");
+      throw "Invalid e eid type"+e;
+    }
+      
+    this.kill_edge(e);
+  }
+  
+  for (var v in part.v_eids) {
+    v = this.verts.get(v);
+    if (v == undefined)
+      continue;
+      
+    if (v.type != MeshTypes.VERT) {
+      console.log("YEEK!");
+      throw "Invalid v eid type"+v;
+    }
+      
+    this.kill_vert(v);
+  }
+  
+  //destroy all geometry created after gen_partial was originally called
+  var last_e = this.idgen.get_cur();
+  
+  var eidmap = this.eidmap;
+  
+  for (var eid=part.max_eid; eid<last_e; eid++) {
+    var e = eidmap[eid];
+    
+    if (e == undefined)
+      continue;
+    
+    this.kill(e);
+  }
+  
+  //----   restore original eid generator counter   ----
+  var idgen = this.idgen;
+  idgen.set_cur(part.eidgen);
+  
+  var data = part.data;
+  var uctx = new unpack_ctx();
+  
+  var newvs = new set();
+  var verts = new GArray();
+  var edges = new GArray();
+  var faces = new GArray();
+  
+  var totv = unpack_int(data, uctx);
+  for (var i=0; i<totv; i++) {
+    var v = new Vertex();
+    v.unpack(data, uctx);
+    
+    newvs.add(v.eid);
+    verts.push(v);
+  }
+  
+  var tote = unpack_int(data, uctx);    
+  for (var i=0; i<tote; i++) {
+    var e = new Edge();
+    e.unpack(data, uctx);
+    
+    edges.push(e);
+  }
+  
+  var loops = {}; //includes all loops in the mesh
+  var loops2 = {}; //only includes new loops
+  
+  var totf = unpack_int(data, uctx);
+  for (var i=0; i<totf; i++) {
+    var f = new Face([]);
+    f.unpack(data, uctx);
+    
+    faces.push(f);
+    
+    for (var list in f.looplists) {
+      for (var l in list) {
+        l.list = list;
+        l.f = f;
+        loops[l.eid] = l;
+        loops2[l.eid] = l;
+        idgen.max_cur(l.eid);
+      }
+    }
+  }
+  
+  //we add verts/edges/faces eid's here, to ensure
+  //this.idgen ends up in the correct state
+  for (var v in verts) {
+    this.verts.push(v, false);
+  }
+  
+  for (var e in edges) {
+    this.edges.push(e, false);
+  }
+  
+  var i = 0;
+  for (var f in faces) {
+    this.faces.push(f, false);
+  }
+  
+  //add existing loops to loops set
+  for (var f in this.faces) {
+    for (var list in f.looplists) {
+      for (var l in list) {
+        loops[l.eid] = l;
+      }
+    }
+  }
+  
+  var c = 0;
+  for (var f in faces) {
+    for (var list in f.looplists) {
+      for (var l in list) {
+        l.e = eidmap[l.e];
+        l.v = eidmap[l.v];
         
-        i++;
-        if (i > 2000) {
-          throw new Error("Mesh integrity error in Mesh._radial_loop_remove()");
-        }
-      } while (e.loop.f != l.f);
-    }
-    
-    if (e.loop.f == l.f)
-      e.loop = null;
-   
-    /*
-    if (e.loop.radial_next == e.loop) {
-      if (e.loop != l) {
-        console.log("Mesh integrity error; loop not in edge radial list");
-        console.log([e.loop.f.eid, l.f.eid, e.loop.index, l.index]);
-        console.trace();
-      } else {
-        e.loop = null;
-        return;
+        l.radial_next = null; //loops[l.radial_next];
+        l.radial_prev = null; //loops[l.radial_prev];
       }
-    }*/
-    
-    l.radial_prev.radial_next = l.radial_next;
-    l.radial_next.radial_prev = l.radial_prev;
+    }
   }
   
-  this.find_face = function(Array<Vert> verts) : Face {
-    var v1 = verts[0];
+  for (var e in edges) {
+    e.v1 = eidmap[e.v1];
+    e.v2 = eidmap[e.v2];
     
-    for (var f in v1.faces) {
-      if (f.totvert != verts.length) continue;
+    if (!newvs.has(e.v1.eid))
+      e.v1.edges.push(e);
+    if (!newvs.has(e.v2.eid))
+      e.v2.edges.push(e);
+    
+    //if (e.loop == -1 || (e.loop in loops2))
+      e.loop = null;
+    //else 
+    //  e.loop = loops[e.loop];
+  }
+  
+  for (var v in verts) {
+    var elen = v.edges.length;
+    
+    for (var i=0; i<elen; i++) {
+      v.edges[i] = eidmap[v.edges[i]];
+    }
+    
+    //if (v.loop == -1)
+      v.loop = null;
+    //else 
+    //  v.loop = loops[v.loop];      
+  }
+  
+  for (var f in faces) {
+    for (var list in f.looplists) {
+      for (var l in list) {
+        this._radial_loop_insert(l.e, l);
+      }
+    }
+  }
+}
 
-      var vset = new set(list(f.verts));
-      var found = true;
+Mesh.prototype.regen_positions = function() {
+  this.render.recalc |= RecalcFlags.REGEN_COS;
+  
+  this.do_callbacks(MeshEvents.RECALC);
+}
+
+Mesh.prototype.regen_normals = function() {
+  this.render.recalc |= RecalcFlags.REGEN_NORS;
+  
+  this.do_callbacks(MeshEvents.RECALC);
+}
+
+Mesh.prototype.do_callbacks = function(event) {
+  for (var k in this.event_users) {
+    this.event_users.get(k)(k, this, event);
+  }
+}
+
+Mesh.prototype.regen_render = function() {
+  this.render.recalc |= RecalcFlags.REGEN_NORS | RecalcFlags.REGEN_TESS | RecalcFlags.REGEN_COS | RecalcFlags.REGEN_COLORS;
+  for (var f in this.faces) {
+    f.flag |= Flags.DIRTY;
+  }
+  
+  this.do_callbacks(MeshEvents.RECALC);
+}
+
+Mesh.prototype.regen_colors = function() {
+  this.render.recalc |= RecalcFlags.REGEN_COLORS;
+  
+  this.do_callbacks(MeshEvents.RECALC);
+}
+
+Mesh.prototype.copy = function() : Mesh {
+  var m2 = new Mesh();
+  m2.render = new render();
+
+  m2.render.vertprogram = this.render.vertprogram;
+  m2.render.drawprogram = this.render.drawprogram;
+  
+  this.verts.index_update();
+  this.edges.index_update();
+  this.faces.index_update();
+  
+  var verts = new GArray()
+  
+  for (var v in this.verts) {
+    var v2 = m2.make_vert(v.co, v.no);
+    m2.copy_vert_data(v2, v, true);
+    verts.push(v2);
+  }
+  
+  for (var e in this.edges) {
+    var e2 = m2.make_edge(verts[e.v1.index], verts[e.v2.index], false);
+    m2.copy_edge_data(e2, e, true);
+  }
+  
+  for (var f in this.faces) {
+    var vlists = new GArray();
+    
+    for (var list in f.looplists) {
+      var loop = new GArray();
+      for (var l in list) {
+        loop.push(verts[l.v.index])
+      }
+      vlists.push(loop);
+    }
+    
+    var f2 = m2.make_face_complex(vlists);
+    m2.copy_face_data(f2, f, true);
+  }
+  
+  return m2;
+}
+
+Mesh.prototype.pack = function(Array<byte> data, StructPackFunc dopack) {
+  pack_int(data, this.verts.length);
+  for (var v in this.verts) {
+    v.pack(data);
+  }
+  
+  pack_int(data, this.edges.length);
+  for (var e in this.edges) {
+    e.pack(data);
+  }
+  
+  pack_int(data, this.faces.length);
+  for (var f in this.faces) {
+    f.pack(data);
+  }
+}
+
+Mesh.prototype.unpack = function(ArrayBuffer data, unpack_ctx uctx) {
+  var vlen = unpack_int(data, uctx);
+  console.log("vlen: ", vlen);
+  
+  var loops = {}
+  var eidmap = this.eidmap;
+  
+  for (var i=0; i<vlen; i++) {
+    var v = new Vertex();
+    v.unpack(data, uctx);
+    
+    this.verts.push(v, false);
+  }
+  
+  var elen = unpack_int(data, uctx);
+  console.log("elen: ", elen);
+  for (var i=0; i<elen; i++) {
+    var e = new Edge();
+    e.unpack(data, uctx);
+    //console.log("e.v1", e.v1);
+    
+    this.edges.push(e, false);
+    
+    e.v1 = eidmap[e.v1];
+    e.v2 = eidmap[e.v2];
+  }
+  
+  var flen = unpack_int(data, uctx);
+  
+  console.log("flen: ", flen);
+  for (var i=0; i<flen; i++) {
+    var f = new Face([]);
+    f.unpack(data, uctx);
+    
+    for (var lst in f.looplists) {
+      for (var l in lst) {
+        l.v = eidmap[l.v];
+        l.e = eidmap[l.e];
+        l.f = f;
+        l.list = lst;
+        loops[l.eid] = l;
+      }
+    }
+    
+    this.faces.push(f, false);
+  }
+  
+  /*relink loops*/
+  for (var v in this.verts) {
+    for (var i=0; i<v.edges.length; i++) {
+      v.edges[i] = eidmap[v.edges[i]]
+    }
+    
+    if (v.loop != -1)
+      v.loop = loops[v.loop];
+    else
+      v.loop = null;
+  }
+  
+  for (var e in this.edges) {
+    if (e.loop != -1)
+      e.loop = loops[e.loop];
+    else
+      e.loop = null;
+  }
+  
+  for (var f in this.faces) {
+    for (var lst in f.looplists) {
+      for (var l in lst) {
+        l.radial_next = loops[l.radial_next];
+        l.radial_prev = loops[l.radial_prev];
+      }
+    }
+  }
+}
+
+this.shallow_copy = function() : Mesh {
+  var m = new Mesh();
+  
+  m.verts = this.verts;
+  m.faces = this.faces;
+  m.edges = this.edges;
+  m.name = this.name;
+  m.materials = this.materials;
+  m.looptris = this.looptris;
+  
+  m.render = this.render;
+  m.render.recalc = true;
+  m.ops = this.ops;
+  
+  m.vdata = this.vdata;
+  m.edata = this.edata;
+  m.ldata = this.ldata;
+  m.fdata = this.fdata;
+  
+  return m;
+}
+
+Mesh.prototype.find_edge = function(Vert v1, Vert v2) : Edge {
+  for (var e in v1.edges) {
+    if (e.vert_in_edge(v2)) {
+      if (!e.vert_in_edge(v1)) {
+        console.trace();
+        throw new Error("Mesh integrity error")
+        return null;
+      }
+      return e;
+    }
+  }
+  
+  return null;
+}
+
+Mesh.prototype.make_vert = function(Vector3 co, Vector3 no) : Vert {
+  var v = new Vertex(co, no);
+  this.vdata.element_init(v.gdata);
+  
+  this.verts.push(v);
+  
+  return v;
+}
+
+Mesh.prototype.make_edge = function(Vert v1, Vert v2, Boolean check) : Edge { //check is optional
+  if (check == undefined)
+    check = true;
+    
+  if (v1 == v2) {
+    throw new Error("Cannot make edge from one vert only");
+  }
+  
+  if (check) {
+    var e = this.find_edge(v1, v2);
+    
+    if (e != null) {
+      if (e._gindex == -1)
+        throw new Error("Mesh integrity error; find_edge returned a deleted ghost edge");
       
-      for (var i=0; i<verts.length; i++) {
-        var v = verts[i];
+      return e;
+    }
+  }
+   
+  var e = new Edge(v1, v2)
+  
+  if (e.v1.edges == undefined || e.v2.edges == undefined) {
+    console.trace();
+  }
+  
+  e.v1.edges.push(e);
+  e.v2.edges.push(e);
+  
+  this.edata.element_init(e.gdata);
+  
+  this.edges.push(e)
+  
+  return e;
+}
 
-        if (!vset.has(v)) {
-          found = false;
+Mesh.prototype._radial_loop_insert = function(Edge e, Loop l) {
+  if (e.loop == null) {
+      l.radial_next = l.radial_prev = l;
+      e.loop = l;
+  } else {
+    l.radial_next = e.loop.radial_next;
+    l.radial_prev = e.loop;
+    
+    e.loop.radial_next.radial_prev = l;
+    e.loop.radial_next = l;
+  }
+    
+  if (e.v1.loop == null)
+    e.v1.loop = l;
+  
+  if (e.v2.loop == null)
+    e.v2.loop = l;
+}
+
+Mesh.prototype._radial_loop_remove = function(Edge e, Loop l) {
+  if (l.f == l.v.loop.f) {
+    var l2 = l;
+    
+    do {
+      l2 = l2.radial_next;
+      
+      if (l2.v == l.v && l2.f != l.f)
+        break;
+    } while (l2 != l);
+    
+    if (l2.f == l.f) { //find loop in another edge
+      l.v.loop = null;
+      
+      for (var e2 in l.v.edges) {
+        if (e2 != l.e && e2.loop != null && e2.loop.f != l.f) {
+          l.v.loop = e2.loop;
           break;
         }
       }
-      
-      if (found) {
-        return f;
-      }
+    } else {
+      l.v.loop = l2;
     }
-    
-    return null;
+  }    
+  
+  if (e.loop == null) {
+    console.log("Mesh integrity error; e.loop is null");
+    console.trace();
   }
   
-  this.make_face = function(Array<Vert> verts, Boolean check_exist) : Face { //check_exist is optional
-    if (check_exist == undefined)
-      check_exist = false;
+  if (e.loop.f == l.f) {
+    /*multiple loops from the same face may share an edge, so make sure we
+      find a loop with a different face*/
+    var i = 0;
+    do {
+      e.loop = e.loop.radial_next;
+      if (e.loop.f != l.f) 
+        break;
       
-    var loops = new LoopList(null);
-    var list = new GArray();
-    
-    var vset = new set();
-    for (var i=0; i<verts.length; i++) {
-      if (vset.has(verts[i])) {
-        console.trace();
-        throw "Tried to pass in duplicate verts to non-complex make_face"
+      i++;
+      if (i > 2000) {
+        throw new Error("Mesh integrity error in Mesh._radial_loop_remove()");
       }
-      vset.add(verts[i]);
+    } while (e.loop.f != l.f);
+  }
+  
+  if (e.loop.f == l.f)
+    e.loop = null;
+ 
+  /*
+  if (e.loop.radial_next == e.loop) {
+    if (e.loop != l) {
+      console.log("Mesh integrity error; loop not in edge radial list");
+      console.log([e.loop.f.eid, l.f.eid, e.loop.index, l.index]);
+      console.trace();
+    } else {
+      e.loop = null;
+      return;
+    }
+  }*/
+  
+  l.radial_prev.radial_next = l.radial_next;
+  l.radial_next.radial_prev = l.radial_prev;
+}
+
+Mesh.prototype.find_face = function(Array<Vert> verts) : Face {
+  var v1 = verts[0];
+  
+  for (var f in v1.faces) {
+    if (f.totvert != verts.length) continue;
+
+    var vset = new set(list(f.verts));
+    var found = true;
+    
+    for (var i=0; i<verts.length; i++) {
+      var v = verts[i];
+
+      if (!vset.has(v)) {
+        found = false;
+        break;
+      }
     }
     
-    if (check_exist) {
-      var f = this.find_face(verts);
-      
-      if (f != null) return f;
+    if (found) {
+      return f;
+    }
+  }
+  
+  return null;
+}
+
+Mesh.prototype.make_face = function(Array<Vert> verts, Boolean check_exist) : Face { //check_exist is optional
+  if (check_exist == undefined)
+    check_exist = false;
+    
+  var loops = new LoopList(null);
+  var list = new GArray();
+  
+  var vset = new set();
+  for (var i=0; i<verts.length; i++) {
+    if (vset.has(verts[i])) {
+      console.trace();
+      throw "Tried to pass in duplicate verts to non-complex make_face"
+    }
+    vset.add(verts[i]);
+  }
+  
+  if (check_exist) {
+    var f = this.find_face(verts);
+    
+    if (f != null) return f;
+  }
+  
+  var lprev = null, lstart=null;
+  for (var i=0; i<verts.length; i++) {
+    var v1 = verts[i];
+    var v2 = verts[(i+1)%verts.length];
+    
+    var e = this.make_edge(v1, v2, true); /*will find existing edge if one exists*/
+
+    var l = new Loop(v1, e);
+    l.list = loops;
+    this.ldata.element_init(l.gdata);
+    
+    if (lprev != null) {
+      l.prev = lprev;
+      lprev.next = l;
+    }
+    if (lstart == null) lstart = l;
+    
+    l.e = e;
+    l.eid = this.idgen.gen_eid();
+    
+    this._radial_loop_insert(e, l);
+    lprev = l;
+  }
+  lprev.next = lstart;
+  lstart.prev = lprev;
+  
+  loops.loop = lstart;
+  loops.length = verts.length;
+  
+  list.push(loops);
+  var f = new Face(list);
+  this.fdata.element_init(f.gdata);
+  
+  this.faces.push(f)
+  
+  return f;
+}
+
+Mesh.prototype.make_face_complex = function(Array<Array<Vert>> vertlists, Boolean check_exist) : Face { //check_exist is optional
+  if (check_exist == undefined) check_exist = false;
+  
+  if (check_exist) {
+    //concatenate boundary lists into a single flat list of vertices
+    var vlist = new GArray();
+    for (var i=0; i<vertlists.length; i++) {
+      for (var j=0; j<vertlists[i].length; j++) {
+        vlist.push(vertlists[i][j])
+      }
     }
     
-    var lprev = null, lstart=null;
+    var f = this.find_face(vlist);
+    if (f != null) return f;
+  }
+  
+  var vset = new set();
+  var list = new GArray();
+  
+  var totvert = 0;
+  for (var j=0; j<vertlists.length; j++) {
+    var verts = vertlists[j];
+    var loops = new LoopList(null);
+    
+    if (verts.length == 0) {
+      console.log("Tried to create face with empty boundary loops");
+      console.log(j);
+      console.trace();
+      return null;
+    }
+    
+    var lprev=null, lstart=null;
     for (var i=0; i<verts.length; i++) {
       var v1 = verts[i];
       var v2 = verts[(i+1)%verts.length];
       
+      if (vset.has(v1)) {
+        console.trace()
+        console.log("Warning: duplicate verts in make_face_complex")
+      }
+      
+      vset.add(v1);
+      
       var e = this.make_edge(v1, v2, true); /*will find existing edge if one exists*/
-
+      
       var l = new Loop(v1, e);
+      
+      l.eid = this.idgen.gen_eid();
+      
       l.list = loops;
+      totvert++;
       this.ldata.element_init(l.gdata);
       
-      if (lprev != null) {
-        l.prev = lprev;
+      if (lprev) {
         lprev.next = l;
+        l.prev = lprev;
       }
       if (lstart == null) lstart = l;
       
-      l.e = e;
-      l.eid = this.idgen.gen_eid();
+      if (v1.loop == null)
+        v1.loop = l;
       
       this._radial_loop_insert(e, l);
       lprev = l;
@@ -1819,277 +1955,195 @@ function Mesh() {
     loops.length = verts.length;
     
     list.push(loops);
-    var f = new Face(list);
-    this.fdata.element_init(f.gdata);
-    
-    this.faces.push(f)
-    
-    return f;
   }
   
-  this.make_face_complex = function(Array<Array<Vert>> vertlists, Boolean check_exist) : Face { //check_exist is optional
-    if (check_exist == undefined) check_exist = false;
-    
-    if (check_exist) {
-      //concatenate boundary lists into a single flat list of vertices
-      var vlist = new GArray();
-      for (var i=0; i<vertlists.length; i++) {
-        for (var j=0; j<vertlists[i].length; j++) {
-          vlist.push(vertlists[i][j])
-        }
-      }
-      
-      var f = this.find_face(vlist);
-      if (f != null) return f;
-    }
-    
-    var vset = new set();
-    var list = new GArray();
-    
-    var totvert = 0;
-    for (var j=0; j<vertlists.length; j++) {
-      var verts = vertlists[j];
-      var loops = new LoopList(null);
-      
-      if (verts.length == 0) {
-        console.log("Tried to create face with empty boundary loops");
-        console.log(j);
-        console.trace();
-        return null;
-      }
-      
-      var lprev=null, lstart=null;
-      for (var i=0; i<verts.length; i++) {
-        var v1 = verts[i];
-        var v2 = verts[(i+1)%verts.length];
-        
-        if (vset.has(v1)) {
-          console.trace()
-          console.log("Warning: duplicate verts in make_face_complex")
-        }
-        
-        vset.add(v1);
-        
-        var e = this.make_edge(v1, v2, true); /*will find existing edge if one exists*/
-        
-        var l = new Loop(v1, e);
-        
-        l.eid = this.idgen.gen_eid();
-        
-        l.list = loops;
-        totvert++;
-        this.ldata.element_init(l.gdata);
-        
-        if (lprev) {
-          lprev.next = l;
-          l.prev = lprev;
-        }
-        if (lstart == null) lstart = l;
-        
-        if (v1.loop == null)
-          v1.loop = l;
-        
-        this._radial_loop_insert(e, l);
-        lprev = l;
-      }
-      lprev.next = lstart;
-      lstart.prev = lprev;
-      
-      loops.loop = lstart;
-      loops.length = verts.length;
-      
-      list.push(loops);
-    }
-    
-    if (totvert==0) {
-      console.log("Tried to create empty face");
-      return null;
-    }
-    
-    var f = new Face(list);
-    this.fdata.element_init(f.gdata);
-    
-    this.faces.push(f)
-    
-    return f;
+  if (totvert==0) {
+    console.log("Tried to create empty face");
+    return null;
   }
   
-  this.kill = function(Element e) {
-    if (e.type == MeshTypes.VERT) 
-      this.kill_vert(e)
-    else if (e.type == MeshTypes.EDGE)
-      this.kill_edge(e)
-    else if (e.type == MeshTypes.FACE)
-      this.kill_face(e)
-    else
-      throw "Invalid element type " + e.type + " in Mesh.kill()"
-  }
+  var f = new Face(list);
+  this.fdata.element_init(f.gdata);
   
-  this.kill_vert = function(Vert v) {
-    if (v._gindex == -1) {
-      console.trace();
-      console.log("Tried to kill an already-removed vert!")
-      return;
-    }
+  this.faces.push(f)
+  
+  return f;
+}
 
-    var killedges = list(v.edges);
-    
-    for (var e in killedges) {
-      this.kill_edge(e);
-    }
-    
-    this.verts.remove(v);
+Mesh.prototype.kill = function(Element e) {
+  if (e.type == MeshTypes.VERT) 
+    this.kill_vert(e)
+  else if (e.type == MeshTypes.EDGE)
+    this.kill_edge(e)
+  else if (e.type == MeshTypes.FACE)
+    this.kill_face(e)
+  else
+    throw "Invalid element type " + e.type + " in Mesh.kill()"
+}
+
+Mesh.prototype.kill_vert = function(Vert v) {
+  if (v._gindex == -1) {
+    console.trace();
+    console.log("Tried to kill an already-removed vert!")
+    return;
+  }
+
+  var killedges = list(v.edges);
+  
+  for (var e in killedges) {
+    this.kill_edge(e);
   }
   
-  this.kill_edge = function(Edge e) {
-    //validate_mesh(this);
-    /*if (e.v1 == undefined) {
-      console.trace();
-      throw "Tried to kill an invalid edge";
-    }// */
-    
-    if (e._gindex == -1) {
-      console.log("Tried to kill an already-removed edge!")
-      console.trace();
-      return;
-    }
-    
-    /*var killfaces = new GArray(); //list(e.faces);
-    for (var f in this.faces) {
-      for (var e2 in f.edges) {
-        if (e2 == e) {
-          killfaces.push(f);
-        }
+  this.verts.remove(v);
+}
+
+Mesh.prototype.kill_edge = function(Edge e) {
+  //validate_mesh(this);
+  /*if (e.v1 == undefined) {
+    console.trace();
+    throw "Tried to kill an invalid edge";
+  }// */
+  
+  if (e._gindex == -1) {
+    console.log("Tried to kill an already-removed edge!")
+    console.trace();
+    return;
+  }
+  
+  /*var killfaces = new GArray(); //list(e.faces);
+  for (var f in this.faces) {
+    for (var e2 in f.edges) {
+      if (e2 == e) {
+        killfaces.push(f);
       }
     }
-    // */
-    
-    var killfaces = list(e.faces);
-    for (var f in killfaces) {
-      this.kill_face(f);
-    }
-    
-    e.v1.edges.remove(e);
-    e.v2.edges.remove(e);
-    
-    this.edges.remove(e);
-    
-    //validate_mesh(this);
+  }
+  // */
+  
+  var killfaces = list(e.faces);
+  for (var f in killfaces) {
+    this.kill_face(f);
   }
   
-  this.kill_face = function(Face f) {
-    //validate_mesh(this);
+  e.v1.edges.remove(e);
+  e.v2.edges.remove(e);
+  
+  this.edges.remove(e);
+  
+  //validate_mesh(this);
+}
 
-    if (f._gindex == -1) {
-      console.trace();
-      throw new Error("Tried to kill an already-removed face!"+f.eid)
-      return;
-    }
-    
-    for (var looplist in f.looplists) {
-      for (var l in looplist) {
-        this._radial_loop_remove(l.e, l);
-      }
-    }
-    
-    this.faces.remove(f);
-    
-    //validate_mesh(this);
+Mesh.prototype.kill_face = function(Face f) {
+  //validate_mesh(this);
+
+  if (f._gindex == -1) {
+    console.trace();
+    throw new Error("Tried to kill an already-removed face!"+f.eid)
+    return;
   }
   
-  this.copy_vert_data = function(Vert dest, Vert src, Boolean copy_eid) { //copy_eid is optional
-    this.verts.select(dest, src.flag & Flags.SELECT);
-    
-    if (copy_eid == undefined)
-      copy_eid = false;
-        
-    dest.flag = src.flag;
-    dest.index = src.index;
-
-    if (copy_eid)
-      this._set_eid<Vertex>(dest, this.verts, src.eid);
-    
-    this.vdata.copy(dest.gdata, src.gdata);
+  for (var looplist in f.looplists) {
+    for (var l in looplist) {
+      this._radial_loop_remove(l.e, l);
+    }
   }
+  
+  this.faces.remove(f);
+  
+  //validate_mesh(this);
+}
 
-  this.copy_edge_data = function(Edge dest, Edge src, Boolean copy_eid) {//copy_eid is optional
-    this.edges.select(dest, src.flag & Flags.SELECT);
-    
-    if (copy_eid == undefined)
-      copy_eid = false;
-
-    dest.flag = src.flag;
-    dest.index = src.index;
-
-    if (copy_eid)
-      this._set_eid<Edge>(dest, this.edges, src.eid);
-
-    this.edata.copy(dest.gdata, src.gdata);
-  }
-
-  this.copy_loop_data = function(Edge dest, Edge src, Boolean copy_eid) {//copy_eid is optional
-    if (copy_eid == undefined)
-      copy_eid = false;
+Mesh.prototype.copy_vert_data = function(Vert dest, Vert src, Boolean copy_eid) { //copy_eid is optional
+  this.verts.select(dest, src.flag & Flags.SELECT);
+  
+  if (copy_eid == undefined)
+    copy_eid = false;
       
-    dest.flag = src.flag;
-    dest.index = src.index;
+  dest.flag = src.flag;
+  dest.index = src.index;
 
-    if (copy_eid)
-      dest.eid = src.eid;
+  if (copy_eid)
+    this._set_eid<Vertex>(dest, this.verts, src.eid);
+  
+  this.vdata.copy(dest.gdata, src.gdata);
+}
 
-    this.ldata.copy(dest.gdata, src.gdata);
-  }
+Mesh.prototype.copy_edge_data = function(Edge dest, Edge src, Boolean copy_eid) {//copy_eid is optional
+  this.edges.select(dest, src.flag & Flags.SELECT);
   
-  this._set_eid = function<T>(Element e, GeoArray<T> elements, eid) {
-    delete elements.eidmap[e.eid]
-    
-    e.eid = eid;
-    elements.eidmap[eid] = e;
-    
-    if (elements.idgen.cur_eid <= eid)
-      elements.idgen.cur_eid = eid+1;
-  }
-  
-  this.copy_face_data = function(dest, src, Boolean copy_eid) {//copy_eid is optional
-    this.faces.select(dest, src.flag & Flags.SELECT);
-    
-    if (copy_eid == undefined)
-      copy_eid = false;
-    
-    dest.flag = src.flag;
-    dest.index = src.index;
+  if (copy_eid == undefined)
+    copy_eid = false;
 
-    if (copy_eid)
-      this._set_eid<Face>(dest, this.faces, src.eid);
+  dest.flag = src.flag;
+  dest.index = src.index;
+
+  if (copy_eid)
+    this._set_eid<Edge>(dest, this.edges, src.eid);
+
+  this.edata.copy(dest.gdata, src.gdata);
+}
+
+Mesh.prototype.copy_loop_data = function(Edge dest, Edge src, Boolean copy_eid) {//copy_eid is optional
+  if (copy_eid == undefined)
+    copy_eid = false;
     
-    dest.no.load(src.no);
-    dest.center.load(src.center);
-    
-    this.fdata.copy(dest.gdata, src.gdata);
-  }
+  dest.flag = src.flag;
+  dest.index = src.index;
+
+  if (copy_eid)
+    dest.eid = src.eid;
+
+  this.ldata.copy(dest.gdata, src.gdata);
+}
+
+Mesh.prototype._set_eid = function<T>(Element e, GeoArray<T> elements, eid) {
+  delete elements.eidmap[e.eid]
   
-  this.select = function(element, mode) {
-    if (element.type == MeshTypes.VERT) {
-      this.verts.select(element, mode);
-    } else if (element.type == MeshTypes.EDGE) {
-      this.edges.select(element, mode);
-    } else if (element.type == MeshTypes.FACE) {
-      this.faces.select(element, mode);
-    } else {
-      console.log("Invalid element passed into Mesh.select()");
-      console.trace();
-    }
-  }
+  e.eid = eid;
+  elements.eidmap[eid] = e;
   
-  this.error = function(msg) {
-    console.log(msg);
+  if (elements.idgen.cur_eid <= eid)
+    elements.idgen.cur_eid = eid+1;
+}
+
+Mesh.prototype.copy_face_data = function(dest, src, Boolean copy_eid) {//copy_eid is optional
+  this.faces.select(dest, src.flag & Flags.SELECT);
+  
+  if (copy_eid == undefined)
+    copy_eid = false;
+  
+  dest.flag = src.flag;
+  dest.index = src.index;
+
+  if (copy_eid)
+    this._set_eid<Face>(dest, this.faces, src.eid);
+  
+  dest.no.load(src.no);
+  dest.center.load(src.center);
+  
+  this.fdata.copy(dest.gdata, src.gdata);
+}
+
+Mesh.prototype.select = function(element, mode) {
+  if (element.type == MeshTypes.VERT) {
+    this.verts.select(element, mode);
+  } else if (element.type == MeshTypes.EDGE) {
+    this.edges.select(element, mode);
+  } else if (element.type == MeshTypes.FACE) {
+    this.faces.select(element, mode);
+  } else {
+    console.log("Invalid element passed into Mesh.select()");
+    console.trace();
   }
 }
-create_prototype(Mesh);
-  
+
+Mesh.prototype.error = function(msg) {
+  console.log(msg);
+}
+
+
 var _cent = new Vector3();
 var _mapi_frn_n1 = new Vector3();
-
 /*function recalc_normals_job(m2, use_sco) {
   this.__iterator__ = function() {
     return this;
@@ -2098,7 +2152,6 @@ var _mapi_frn_n1 = new Vector3();
     throw StopIteration;
   }
 }*/
-
 function recalc_normals_job(Mesh m2, Boolean use_sco) //use_sco is optional
 {
   this.iter = new recalc_normals_job_intern(m2, use_sco);

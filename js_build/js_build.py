@@ -245,6 +245,6 @@ if __name__ == "__main__":
   if build_cmd == "loop":
     while 1:
       main()
-      time.sleep(0.5);
+      time.sleep(0.75);
   else:
     main()

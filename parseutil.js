@@ -219,8 +219,24 @@ PUTL.parser.prototype.error = function(token, msg) {
   if (token == undefined)
     var estr = "Parse error at end of input: " + msg
   else
-    estr = "Parse error at line " + token.lineno + ": " + msg;
+    estr = "Parse error at line " + (token.lineno+1) + ": " + msg;
   
+  var buf = "1| "
+  var ld = this.lexer.lexdata;
+  var l = 1;
+  for (var i=0; i<ld.length; i++) {
+    var c = ld[i];
+    if (c == '\n') {
+      l++;
+      buf += "\n" + l + "| "
+    } else {
+      buf += c;
+    }
+  }
+  
+  console.log("------------------")
+  console.log(buf);
+  console.log("==================")
   console.log(estr);
   
   if (this.errfunc && !this.errfunc(token)) {
