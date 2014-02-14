@@ -1,15 +1,29 @@
 "use strict";
 
 function Scene(name) {
+  if (name == undefined)
+    name = "Scene";
+  
   //name is optional
-  prior(Scene, this).call(DataTypes.SCENE, name);
+  DataBlock.call(DataTypes.SCENE, name);
   
   this.objects = new DBList();
   this.graph = new SceneGraph();
-  this.active = undefined;
-  this.selection = new set();
 }
 inherit(Scene, DataBlock);
+
+Scene.STRUCT = STRUCT.inherit(Scene, DataBlock) + """
+  objects : DBList;
+}
+""";
+
+Scene.fromSTRUCT = function(unpacker) {
+  var sce = new Scene();
+  unpacker(sce);
+  
+  this.init_from_pack();
+  return sce;
+}
 
 Scene.prototype.update = function()
 {
@@ -24,13 +38,13 @@ Scene.prototype.add = function(ASObject ob)
   ob.scene = this;
   ob.lib_adduser(this, "sceneobj", SceneObjRem(this, ob));
   
-  if (this.active == undefined) {
+  if (this.objects.active == undefined) {
     this.set_active(ob);
   }
 }
 
 Scene.prototype.set_active = function(ASObject ob) {
-  this.active = ob;
+  this.objects.active = ob;
 }
 
 Scene.prototype.remove = function(ASObject ob)
@@ -47,9 +61,6 @@ Scene.prototype.pack = function(data) {
   
   this.objects.pack(data);
   this.graph.pack();
-  
-  pack_dataref(data, this.active);
-  this.selection.pack(data);
 }
 
 Scene.unpack = function(data, uctx) {
@@ -59,30 +70,13 @@ Scene.unpack = function(data, uctx) {
   
   this.objects = unpack_garray(data, uctx, unpack_dataref);
   this.graph = SceneGraph.unpack(data, uctx);
-  this.active = unpack_dataref(data, uctx);
-  this.selection = unpack_garray(data, uctx, unpack_dataref);
 }
 
-Scene.prototype.data_link = function(block, getblock) {
-  this.active = getblock(this, this.active, "active");
-  this.graph.data_link(this, getblock);
+Scene.prototype.data_link = function(block, getblock, getblock_us) {
+  this.objects.data_link(this, getblock, getblock_us);
+  this.graph.data_link(this, getblock, getblock_us);
   
   for (var i=0; i<this.objects.length; i++) {
-    this.objects[i] = getblock(this, this.objects[i], "", false);
-    this.objects[i].lib_adduser(this, "sceneobj", SceneObjRem(this, this.objects[i]));
-  }
-  
-  var newsel = new GArray();
-  for (var i=0; i<this.selection.length; i++) {
-    newsel.push(getblock(this, this.selection[i], "selection", false));
-  }
-  
-  this.selection = new set();
-  for (var i=0; i<newsel.length; i++) {
-    if (newsel[i] != undefined) {
-      this.selection.add(newsel[i]);
-    } else {
-      console.log("Warning: corrupted object selection list");
-    }
+    this.objects[i].lib_adduser(this.sceneobj, this, "sceneobj", SceneObjRem(this, this.objects[i]));
   }
 }

@@ -59,7 +59,11 @@ DataLib.prototype.gen_name = function(block, name) {
     name = DataNames[block.lib_type];
   }
   
-  var list = this.datalists(bock.lib_type);
+  if (!this.datalists.has(block.lib_type)) {
+    this.datalists.set(block.lib_type, new DataList(block.lib_type));
+  }
+  
+  var list = this.datalists.get(block.lib_type);
   if (!(name in list.namemap)) {
     block.name = name;
     list.namemap[name] = block;
@@ -96,9 +100,10 @@ DataLib.prototype.gen_name = function(block, name) {
 
 DataLib.prototype.add = function(block) {
   //ensure unique name
-  var name = this.gen_name(block.name);
+  var name = this.gen_name(block, block.name);
   block.name = name;
   
+  console.log("YAYAY");
   if (block.lib_id == -1) {
     block.lib_id = this.idgen.gen_id();
   }
@@ -106,11 +111,23 @@ DataLib.prototype.add = function(block) {
   this.idmap[block.lib_id] = block;
   
   if (!this.datalists.has(block.lib_type)) {
-    this.datalists.add(block.lib_type, new DataList(block.lib_type));
+    this.datalists.set(block.lib_type, new DataList(block.lib_type));
   }
   
-  this.datalists.get(block.lib_type).list.push(block);
-  this.datalists.get(block.lib_type).namemap[block.name] = block;  
+  var dl = this.datalists.get(block.lib_type);
+  if (dl.active == undefined)
+    dl.active = block;
+    
+  dl.list.push(block);
+  dl.namemap[block.name] = block;
+}
+
+DataLib.prototype.get_active = function(data_type) {
+  if (this.datalists.has(data_type)) {
+    return this.datalists.get(data_type).active;
+  } else {
+    return undefined;
+  }
 }
 
 DataLib.prototype.get = function(id) {
@@ -138,7 +155,7 @@ function DataBlock(type, name) {
       
     this.name = name;
     this.lib_id = -1;
-    this.lib_lib = 0; //this will be used for library linking
+    this.lib_lib = undefined; //this will be used for library linking
     
     this.lib_type = type;
     this.lib_users = new GArray();
@@ -146,6 +163,26 @@ function DataBlock(type, name) {
     this.lib_flag = 0;
 }
 create_prototype(DataBlock);
+
+DataBlock.STRUCT = """
+  DataBlock {
+    name : static_string[128];
+    lib_type : int;
+    lib_id : int;
+    lib_lib : int | lib_lib != undefined ? lib_lib.id : -1;
+
+    lib_refs : int;
+    lib_flag : int;
+  }
+""";
+
+DataBlock.prototype.init_from_pack = function() {
+  if (this.lib_lib == -1)
+    this.lib_lib = undefined;
+  
+  //need to do anything here?  set lib_lib reference,
+  //or leave it as an integer?
+}
 
 DataBlock.prototype.set_fake_user = function(val) {
   if ((this.lib_flag & DBFlags.FAKE_USER) && !val) {
@@ -199,7 +236,11 @@ DataBlock.unpack = function(data, uctx) {
   this.name = unpack_string(data, uctx);
 };
 
-DataBlock.prototype.data_link = function(block, getblock) {
+//getblock fetchs a datablock from a reference, but doesn't
+//make add user references.
+//getblock_us does add a user reference automatically.
+//see _Lib_GetBlock and _Lib_GetBlock_us in lib_utils.js.
+DataBlock.prototype.data_link = function(block, getblock, getblock_us) {
 };
 
 DataBlock.prototype.__hash__ = function() {

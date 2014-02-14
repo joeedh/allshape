@@ -719,10 +719,13 @@ function toJSON_intern (ob, tlevel) {
 <script type="text/javascript" src="content/font_out.js"></script>
 <script type="text/javascript" src="content/utils.js"></script>
 <script type="text/javascript" src="content/parseutil.js"></script>
+<script type="text/javascript" src="content/schema.js"></script>
 <script type="text/javascript" src="content/units.js"></script>
 <script type="text/javascript" src="content/grid.js"></script>
 <script type="text/javascript" src="content/spatialhash.js"></script>
 <script type="text/javascript" src="content/jobs.js"></script>
+<script type="text/javascript" src="content/lib_api.js"></script>
+<script type="text/javascript" src="content/lib_utils.js"></script>
 <script type="text/javascript" src="content/mathlib.js"></script>
 <script type="text/javascript" src="content/events.js"></script>
 <script type="text/javascript" src="content/ui.js"></script>
@@ -739,8 +742,6 @@ function toJSON_intern (ob, tlevel) {
 <script type="text/javascript" src="content/opsapi.js"></script>
 <script type="text/javascript" src="content/draw.js"></script>
 
-<script type="text/javascript" src="content/lib_api.js"></script>
-<script type="text/javascript" src="content/lib_utils.js"></script>
 <script type="text/javascript" src="content/dag.js"></script>
 <script type="text/javascript" src="content/dag_utils.js"></script>
 <script type="text/javascript" src="content/object.js"></script>
@@ -751,7 +752,6 @@ function toJSON_intern (ob, tlevel) {
 
 <script type="text/javascript" src="content/AppState.js"></script>
 <script type="text/javascript" src="content/ajax.js"></script>
-<script type="text/javascript" src="content/schema.js"></script>
 <script type="text/javascript" src="content/network_api.js"></script>
 <script type="text/javascript" src="content/fileapi.js"></script>
 <script type="text/javascript" src="content/fontutils.js"></script>
@@ -1259,21 +1259,14 @@ function toJSON_intern (ob, tlevel) {
         canvas.width = canvas.clientWidth;
         canvas.height = canvas.clientHeight;
         
+        g_app_state = new AppState();
+        
+        console.log("initializing data api...");
         api_define_context();
         api_define_ops();
         
-        g_app_state = new AppState(undefined, undefined);
-        
-        g.view3d = new View3DHandler(gl, g_app_state.mesh, program, program2, 
-                                    drawmats, 0, 0, canvas.clientWidth, 
-                                    canvas.clientHeight, 1, 10000);
-        
-        g.screen = gen_screen(gl, g.view3d, canvas.clientWidth, canvas.clientHeight);
-        g_app_state.screen = g.screen;
-        
-        g.view3d.gen_persmat()
-        g.view3d.gen_rendermats();
-        //g.view3d.set_canvasbox();
+        console.log("generating start file...");
+        gen_default_file([canvas.clientWidth, canvas.clientHeight]);
         
         g_app_state.session.validate_session();
         
@@ -1601,7 +1594,7 @@ function toJSON_intern (ob, tlevel) {
                                    alt: e.altKey, ctrl: 
                                    e.ctrlKey})
           
-          keystr = keystr.toUpperCase()
+          keystr = keystr.toString().toUpperCase()
           if (keystr in key_exclude_list) {
               stop_event_propegation(e);
           }

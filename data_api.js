@@ -261,6 +261,12 @@ function DataAPI(appstate) {
       }
     }
     
+    if (ctx.mesh == undefined) {
+      print_stack();
+      console.log(ctx);
+      throw new Error("Mesh operation called with bad context");
+    }
+    
     return ctx.mesh.ops.gen_select_iter(typemask);
   }
   

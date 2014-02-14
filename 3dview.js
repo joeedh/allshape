@@ -1184,7 +1184,11 @@ View3DHandler.prototype.check_subsurf = function(Context ctx) {
 }
 
 var _v3d_static_mat = new Matrix4()
+
 View3DHandler.prototype.on_draw = function(WebGLRenderingContext gl, test) {
+  this.ctx = new Context(this);
+  this.mesh = this.ctx.mesh;
+  
   this.check_subsurf(this.ctx);
   
   this.ss_steps = 24;

@@ -123,6 +123,10 @@ function Dag() {
 }
 create_prototype(Dag);
 
+Dag.prototype.data_link = function(block, getblock, getblock_us)
+{
+}
+
 Dag.prototype.sort = function() {
   var nodes = this.nodes;
   

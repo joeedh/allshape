@@ -721,6 +721,8 @@ function toJSON_intern (ob, tlevel) {
 <script type="text/javascript" src="/content/parseutil.js"></script>
 <script type="text/javascript" src="/content/schema.js"></script>
 <script type="text/javascript" src="/content/units.js"></script>
+<script type="text/javascript" src="/content/lib_api.js"></script>
+<script type="text/javascript" src="/content/lib_utils.js"></script>
 <script type="text/javascript" src="/content/grid.js"></script>
 <script type="text/javascript" src="/content/spatialhash.js"></script>
 <script type="text/javascript" src="/content/jobs.js"></script>
@@ -740,8 +742,6 @@ function toJSON_intern (ob, tlevel) {
 <script type="text/javascript" src="/content/opsapi.js"></script>
 <script type="text/javascript" src="/content/draw.js"></script>
 
-<script type="text/javascript" src="/content/lib_api.js"></script>
-<script type="text/javascript" src="/content/lib_utils.js"></script>
 <script type="text/javascript" src="/content/dag.js"></script>
 <script type="text/javascript" src="/content/dag_utils.js"></script>
 <script type="text/javascript" src="/content/mesh_ops.js"></script>
@@ -1136,8 +1136,12 @@ function toJSON_intern (ob, tlevel) {
 <script>
     var g = {};
     
+    gl = {program : undefined, program2 : undefined};
+    
+    g_app_state = new AppState(undefined, makeBoxMesh());
+    
     init_struct_packer();
-    test_struct();
+    //do_unit_tests();
     
     function init()
     {

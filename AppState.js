@@ -21,6 +21,7 @@ AppSettings.fromJSON = function(obj) {
   return as;
 };
 
+
 function UserSession() {
   this.tokens = {} : ObjectMap;
   this.username = "";
@@ -85,22 +86,58 @@ UserSession.fromJSON = function(obj) {
   return us;
 }
 
-function gen_default_file() {
+//size is screen size
+function gen_default_file(size) {
   var g = g_app_state;
   
+  if (size == undefined)
+    var size = [512, 512];
+  
+  //reset app state, calling without args
+  //will leave .screen and .mesh undefined
+  g.reset_state();
+  
+  //drawmats
+  var mesh = makeBoxMesh(undefined);
+  g.mesh = mesh;
+  
+  //make scene
   var scene = new Scene();
   scene.set_fake_user();
   
   g.datalib.add(scene);
   
+  //object
   var object = new ASObject();
   scene.add(object);
   
   object.type = ObTypes.MESH;
-  object.data = makeBoxMesh(undefined);
+  
+  //mesh
+  object.data = mesh;
   
   g.datalib.add(object);
   g.datalib.add(object.data);
+
+  //set up screen UI
+  var mvMatrix = new Matrix4();
+  mvMatrix.rotate(Math.PI/2.0, new Vector3([1, 0, 0]));
+  var drawmats = new DrawMats(new Matrix4(), mvMatrix, new Matrix4());
+  
+  //a 3d viewport
+  var view3d = new View3DHandler(gl, mesh, gl.program, gl.program2,
+                     drawmats, 0, 0, size[0], size[1], 0.1, 1000.0);
+  
+  g.view3d = g.active_view3d = view3d;
+  g.view3d.gen_persmat()
+  g.view3d.gen_rendermats();
+  //g.view3d.set_canvasbox();
+
+  //now create screen
+  gen_screen(gl, view3d, size[0], size[1]);
+    
+  g.set_mesh(mesh);
+  view3d.ctx = new Context(view3d);
 }
 
 function AppState(screen, mesh) {
@@ -128,6 +165,7 @@ function AppState(screen, mesh) {
     mesh = this.mesh;
   }
   
+  
   if (0) { //localStorage.mesh_bytes != undefined && localStorage.mesh_bytes != "undefined") {//hasOwnProperty("mesh_bytes") {
     var ren = this.mesh.render;
     
@@ -150,6 +188,27 @@ AppState.prototype.kill_mesh = function(Mesh m2) {
   m2.render.destroy();
 }
 
+AppState.prototype.update_context = function() {
+  var scene = this.datalib.get_active(DataTypes.SCENE);
+  if (scene == undefined) return;
+  
+  var obj = scene.active;
+  if (obj == undefined) return;
+  
+  if (obj.type == ObTypes.MESH)
+    this.set_mesh(obj.data)
+  else
+    this.set_mesh(undefined);
+}
+
+AppState.prototype.reset_state = function(screen, mesh) {
+  var g2 = new AppState(screen, mesh);
+  
+  for (var k in g2) {
+    this[k] = g2[k];
+  }
+}
+
 AppState.prototype.set_mesh = function(Mesh m2) {
   if (this.mesh != m2)
     this.kill_mesh(this.mesh);
@@ -161,6 +220,48 @@ AppState.prototype.set_mesh = function(Mesh m2) {
       if (View3DHandler.name in c.screens)
         c.screens[View3DHandler.name].mesh = m2;
     }
+  }
+}
+
+AppState.prototype.create_user_file_new = function(different_mesh) : ArrayBuffer {
+  var mesh = different_mesh != undefined ? different_mesh : this.mesh;
+  
+  var data = [];
+  
+  //header "magic"
+  pack_static_string(data, "ALSH", 4);
+  
+  //version
+  var major = Math.floor(g_app_version);
+  var minor = g_app_version - Math.floor(g_app_version);
+  
+  pack_int(major);
+  pack_int(minor);
+  
+  //the schema struct definitions used to save
+  //the non-JSON parts of this file.
+  pack_static_string(data, "STRT", 4);
+  var buf = gen_struct_str();
+  pack_string(data, buf);
+  
+  var jsonpart = JSON.stringify(this.screen.toJSON());
+  
+  pack_static_string(data, "JSON", 4);
+  pack_static_string(data, "SCRN", 4);
+  pack_string(data, jsonpart);
+  
+  var data2 = [];
+  for (var lib in this.datalists.values()) {
+    for (var block in lib) {
+      data2.length = 0;      
+      istruct.write_object(data2, block);
+      
+      pack_static_string(data, "BLCK", 4);
+      pack_int(block.lib_type);
+      pack_int(data2.length);
+      
+      data.concat(data2);
+    }   
   }
 }
 
@@ -254,7 +355,29 @@ function Context(view3d) {
   this.font = view3d.font
   this.api = g_app_state.api;
   this.screen = g_app_state.screen;
-  this.mesh = g_app_state.mesh;
+  
+  //find active scene, object, and object data, respectively
+  var sce = g_app_state.datalib.get_active(DataTypes.SCENE);
+  this.scene = sce;
+  this.object = undefined;
+  this.mesh = undefined;
+  
+  if (sce != undefined) {
+    if (sce.active == undefined && sce.objects.length > 0) {
+      console.log("WARNING: sce.objects (a DBList) had an undefined .active");
+      console.log("in the prescence of objects.  This should be impossible.");
+      console.log("Correcting.");
+      
+      sce.active = sce.objects[0];
+    }
+    
+    if (sce.active != undefined) {
+      this.object = sce.active;
+      if (sce.active.type == ObTypes.MESH)
+        this.mesh = sce.active.data;
+    }
+  }
+  
   this.appstate = g_app_state;
   this.toolstack = g_app_state.toolstack;
   this.keymap_mpos = [0, 0]; //mouse position at time of keymap event firing

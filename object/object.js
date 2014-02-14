@@ -16,6 +16,8 @@ var BBDisplayTypes = {BOX: 1, SPHERE: 2, CYLINDER: 3, CONE: 4, VIEWCIRCLE: 5};
 
 function ASObject(data, name) {
   //name is optional
+  if (name == undefined)
+    name = "Object";
   
   DataBlock.call(this, DataTypes.OB, name);
   
@@ -55,6 +57,30 @@ function ASObject(data, name) {
   this.layermask = 0x7FFFFFFF;
 }
 inherit(ASObject, DataBlock);
+
+ASObject.STRUCT = STRUCT.inherit(ASObject, DataBlock) + """
+  matrix : mat4;
+  loc : vec3;
+  rot_ruler : vec3;
+  rot_method : int;
+  size : vec3;
+  flag : int;
+  data : dataref(DataBlock);
+  layermask : int;
+  bb : array(vec3);
+  bb_display : int;
+  scene : dataref(Scene);
+}
+""";
+
+ASObject.fromSTRUCT = function(unpacker) {
+  var ob = new ASObject(undefined, "");
+  
+  unpacker(ob);
+  ob.init_from_pack();
+  
+  return ob;
+}
 
 ASObject.prototype.dag_exec = function() {
   var mat = this.matrix = this.basic_matrix();
@@ -133,8 +159,10 @@ ASObject.prototype.unpack = function(data, uctx) {
   //hrm, need to unpack 'this.data' still
 }
 
-ASObject.prototype.data_link = function(block, getblock) {
-  this.parent = getblock(this, this.parent, "parent");
+ASObject.prototype.data_link = function(block, getblock, getblock_us) {
+  //this should automatically add user to parent, with default callbacks
+  this.parent = getblock_us(this.parent, this, "parent");
+  this.data = getblock_us(this.data, this, "data");
 }
 
 ASObject.prototype.unparent = function(scene) {

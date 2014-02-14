@@ -279,8 +279,6 @@ Loop.STRUCT = """
     f : int | obj.f.eid;
     radial_next : int | obj.radial_next.eid;
     radial_prev : int | obj.radial_prev.eid;
-    next : int | obj.next.eid;
-    prev : int | obj.prev.eid;
   }
 """
  
@@ -367,14 +365,16 @@ function Face(GArray< GArray<Loop> > looplists) {
     parametric surface.*/
   this.mapcenter = new Vector3(); 
   
-  for (var i=0; i<looplists.length; i++) {
-    for (var l in looplists[i]) {
-      l.f = this;
-      l.list = looplists[i];
-      this.totvert++;
+  if (looplists != undefined) {
+    for (var i=0; i<looplists.length; i++) {
+      for (var l in looplists[i]) {
+        l.f = this;
+        l.list = looplists[i];
+        this.totvert++;
+      }
     }
   }
-
+  
   //#$().MeshIterate
   Object.defineProperty(this, "loops", {get: function() {
     return new MeshIterate(MeshIter.FACE_ALL_LOOPS, this);
@@ -411,6 +411,39 @@ Face.STRUCT = STRUCT.inherit(Face, Element) + """
     totvert : int;
   }
 """;
+
+Face.fromSTRUCT = function(unpacker) {
+  var f = new Face();
+  unpacker(f);
+  
+  var looplists = f.looplists;  
+  for (var i=0; i<looplists.length; i++) {
+    var list = new LoopList()
+    var arr = looplists[i];
+   
+    list.loop = arr.length > 0 ? arr[0] : undefined;
+    var lastl = undefined;
+    
+    for (var j=0; j<arr.length; j++) {
+      var l = arr[j];
+      if (lastl != undefined) {
+        lastl.next = l;
+        l.prev = lastl;
+      }
+      lastl = l;
+    }
+    
+    if (lastl != undefined) {
+      list.loop.prev = lastl;
+      lastl.next = list.loop;
+    }
+    
+    looplists[i] = list;
+  }
+  
+  f.looplists = new GArray(looplists);
+  return f;
+}
 
 Face.prototype.pack = function(Array<byte> data, StructPackFunc dopack) {
   Element.prototype.pack.call(this, data);
@@ -1064,6 +1097,8 @@ function MeshIterate(type, data) {
 
 var _mesh_id_gen = 0
 function Mesh() {
+  DataBlock.call(this, DataTypes.MESH, "Mesh");
+  
   this.ops = new MeshOpAPI(this);
   
   this._id = _mesh_id_gen++;
@@ -1094,22 +1129,93 @@ function Mesh() {
   this.render = 0;
   this.api = new MeshAPI(this);
 }
-create_prototype(Mesh);
+inherit(Mesh, DataBlock);
 
 Mesh.STRUCT = """
   Mesh {
     idgen : EIDGen;
     _id : int;
     name : string;
-    verts : array(Vertex);
-    edges : array(Edges);
-    faces : array(Faces);
+    verts : iter(Vertex);
+    edges : iter(Edge);
+    faces : iter(Face);
   }
 """;
 
-Mesh.toSTRUCT = function(data, structr) {
-  var verts = this.verts;
+Mesh.fromSTRUCT = function(unpacker) {
+  var m = new Mesh()
+  
+  unpacker(m);
+  
+  console.log(m);
+  
+  var verts = m.verts;
+  var edges = m.edges;
+  var faces = m.faces;
+  
+  m.verts = new GeoArray<Vert>(MeshTypes.VERT, m.idgen, m.eidmap);
+  m.edges = new GeoArray<Edge>(MeshTypes.EDGE, m.idgen, m.eidmap);
+  m.faces = new GeoArray<Face>(MeshTypes.FACE, m.idgen, m.eidmap);
+  
+  var loops = {}
+  
   var vlen = verts.length;
+  var elen = edges.length;
+  var flen = faces.length;
+  
+  for (var i=0; i<vlen; i++) {
+    m.verts.push(verts[i], false);
+  }
+  
+  for (var i=0; i<elen; i++) {
+    m.edges.push(edges[i], false);
+  }
+  
+  for (var i=0; i<flen; i++) {
+    var f = faces[i];
+    
+    m.faces.push(f, false);
+    for (var list in f.looplists) {
+      for (var l in list) {
+        loops[l.eid] = l;
+      }
+    }
+  }
+  
+  var eidmap = m.eidmap;
+  for (var i=0; i<vlen; i++) {
+    var v = verts[i];
+    v.loop = v.loop != -1 ? loops[v.loop] : null;
+    v.edges = new GArray(v.edges);
+    
+    for (var j=0; j<v.edges.length; j++) {
+      v.edges[j] = eidmap[v.edges[j]];
+    }
+  }
+  
+  for (var i=0; i<elen; i++) {
+    var e = edges[i];
+    e.loop = e.loop != -1 ? loops[e.loop] : null;
+    e.v1 = eidmap[e.v1];
+    e.v2 = eidmap[e.v2];
+  }
+  
+  for (var i=0; i<flen; i++) {
+    var f = faces[i];
+    
+    for (var list in f.looplists) {
+      for (var l in list) {
+        l.v = eidmap[l.v];
+        l.e = eidmap[l.e];
+        l.f = f;
+        l.list = list;
+        l.radial_next = loops[l.radial_next];
+        l.radial_prev = loops[l.radial_prev];
+      }
+    }
+  }
+  
+  return m;
 }
 
 Mesh.prototype.__hash__ = function() : String {

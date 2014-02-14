@@ -35,22 +35,20 @@ function DataRem(dst, field) {
 
 /*utility callback function used when loading files.
 
-  block is a datablock,
   dataref is a [blockid, libid] array,
+  block is an optional datablock,
   fieldname is the name of the field in the datablock,
   refname is the tag name for the dataref,
   and rem_func is a function that is called
   when another object delinks itself from block
   
   refname, rem_func are optional, and default to 
-  fieldname, DataRem(block, fieldname), respectively
+  fieldname, DataRem(block, fieldname), respectively.
 */
-function _Lib_GetBlock(block, dataref, fieldname, add_user, refname, rem_func) {
-  
-  if (add_user == undefined)
-    add_user = true;
+function _Lib_GetBlock_us(dataref, block, fieldname, add_user, refname, rem_func) {
   if (rem_func == undefined)
     rem_func = DataRem(block, fieldname);
+    
   if (refname == undefined)
     refname = fieldname;
   
@@ -73,11 +71,31 @@ function _Lib_GetBlock(block, dataref, fieldname, add_user, refname, rem_func) {
   }  
 }
 
-/*generic container list for datablocks*/
+function _Lib_GetBlock(dataref) {;
+  var id = dataref[0];
+  //var lib_id = dataref[1];
+  
+  if (id == -1) {
+    return undefined;
+  } else {
+    var b = g_app_state.datalib.get(id);
+    
+    if (b != undefined) {
+    } else {
+      console.log("WARNING WARNING WARNING saved block reference isn't in database!!!");
+    }
+    
+    return b;
+  }  
+}
+
+/* 'DataBlock List.                     *
+ *  A generic container list for datablocks */
 function DBList(type) {
+  GArray.call(this);
+  
   this.type = type;
   this.idmap = {}
-  this.list = new GArray();
   this.selected = new GArray();
   this.active = undefined;
   this.length = 0;
@@ -85,7 +103,38 @@ function DBList(type) {
   //private variable
   this.selset = {};
 }
-create_prototype(DBList);
+inherit(DBList, GArray);
+
+DBList.STRUCT = """
+  DBList {
+    type : int;
+    selected : array(dataref(DataBlock));
+    arrdata : array(dataref(DataBlock)) | obj;
+    active : dataref(DataBlock);
+    length : int;
+  }
+""";
+
+DBList.fromSTRUCT = function(unpacker) {
+  var dblist = new DBList(0);
+  
+  unpacker(dblist);
+  
+  var arr = dblist.arrdata;
+  
+  //get rid of temp varable we used to store the actual
+  //array data
+  delete dblist.arrdata;
+  
+  //note that array data is still in dataref form
+  //at this point
+  for (var i=0; i<arr.length; i++) {
+    GArray.prototype.push.call(this, arr[i]);
+  }
+  dblist.selected = new GArray(dblist.selected);
+  
+  return dblist;
+}
 
 DBList.prototype.toJSON = function() {
   var list = [];
@@ -119,69 +168,83 @@ DBList.fromJSON = function(obj) {
   list.length = obj.length;
 }
 
-DBList.prototype.data_link = function(getblock) {
-  
+DBList.prototype.select = function(block, do_select) {
+  if (do_select) {
+    if (this.selset.has(block)) {
+      return;
+    }
+    
+    this.selset[block.lib_id] = block;
+    this.selected.push(block);
+  } else {
+    if (!this.selset.has(block)) {
+      return;
+    }
+    
+    delete this.selset[block.lib_id];
+    this.selected.remove(block);
+  }
 }
 
-DBList.prototype.add = function(block) {
-  this.list.push(block);
+//note that this doesn't set datablock user linkages.
+DBList.prototype.data_link = function(block, getblock, getblock_us) {
+  for (var i=0; i<this.length; i++) {
+    this[i] = getblock(this[i]);
+    this.idmap[this[i].lib_id] = this[i];
+  }
+  
+  var sel = this.selected;
+  for (var i=0; i<sel.length; i++) {
+    sel[i] = getblock(sel[i]);
+    this.selmap[sel[i].lib_id] = sel[i];
+  }
+  
+  this.active = getblock(this.active);
+}
+
+DBList.prototype.push = function(block) {
+  GArray.push.call(this, block);
   this.idmap[block.lib_id] = block;
   
   if (this.active == undefined) {
     this.active = block;
   }
-  
-  this.length++;
 }
 
 DBList.prototype.remove = function(block) {
-  var i = this.list.indexOf(block);
+  var i = this.indexOf(block);
   
   if (i < 0 || i == undefined) {
     console.log("WARNING: Could not remove block " + block.name + " from a DBList");
     return;
   }
   
-  this.list.pop(i);
-  delete this.idmap[block.lib_id];
-  
-  if (this.active == block) {
-    this.active = this.list.length > 0 ? this.list[0] : undefined;
-  }
-  
-  if (block.lib_id in this.selset) {
-    this.selected.remove(block);
-    delete this.selset[block.lib_id];
-  }
-  
-  this.length--;
+  this.pop(i); 
 }
 
 DBList.prototype.pop = function(i) {
-  if (i < 0 || i >= this.length)
+  if (i < 0 || i >= this.length) {
+    console.log("WARNING: Invalid argument ", i, " to DBList.pop()");
+    print_stack();
     return;
+  }
   
-  var block = this.list[i];
-  this.list.pop(i);
+  var block = this[i];
+
+  prior(DataBlock, this).pop.call(this, i);
   
   delete this.idmap[block.lib_id];
   
   if (this.active == block) {
-    this.active = this.list.length > 0 ? this.list[0] : undefined;
+    this.active = this.length > 0 ? this[0] : undefined;
   }
   
   if (block.lib_id in this.selset) {
     this.selected.remove(block);
     delete this.selset[block.lib_id];
   }
-  
-  this.length--;
 }
 
-DBList.prototype.__iterator__ = function() {
-  return this.list.__iterator__();
-}
-
-DBList.prototype.get = function(id) {
+DBList.prototype.idget = function(id) {
   return this.idmap[id];
 }

@@ -193,6 +193,10 @@ catch (Error) {
 
 var _prototype_id_gen=1;
 var defined_classes=new Array();
+var defined_tests=new Array();
+function create_test(obj) {
+ defined_tests.push(obj);
+}
 function inherit(obj, parent) {
  defined_classes.push(obj);
  obj.prototype = Object.create(parent.prototype);
@@ -1145,6 +1149,55 @@ function is_obj_lit(obj) {
  if (obj.prototype==undefined)
   return true;
  return false;
+}
+function UnitTestError(msg) {
+ Error.call(this, msg);
+ this.msg = msg;
+}
+inherit(UnitTestError, Error);
+function utest(func) {
+ try {
+  func();
+ }
+ catch (err) {
+   if (err instanceof UnitTestError) {
+     console.log("---------------");
+     console.log("Error: Unit Test Failure");
+     console.log("  "+func.name+": "+err.msg);
+     console.log("---------------");
+     return false;
+   }
+   else {
+    print_stack(err);
+    throw err;
+   }
+   return false;
+ }
+ console.log(func.name+" succeeded.");
+ return true;
+}
+function do_unit_tests() {
+ console.log("-----Unit testing-----");
+ console.log("Total number of tests: ", defined_tests.length);
+ console.log(" ");
+ var totok=0, toterr=0;
+ console.log("Defined tests:");
+ for (var i=0; i<defined_tests.length; i++) {
+   var test=defined_tests[i];
+   console.log("  "+test.name);
+ }
+ console.log(" ");
+ for (var i=0; i<defined_tests.length; i++) {
+   var test=defined_tests[i];
+   if (!utest(test))
+    toterr++;
+   else 
+    totok++;
+ }
+ console.log("OK: ", totok);
+ console.log("FAILED: ", toterr);
+ console.log("-------------------");
+ return toterr==0;
 }
 
 //# sourceMappingURL=/content/../server/js_build/utils.js.sm

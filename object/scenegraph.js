@@ -1,4 +1,4 @@
 function SceneGraph() {
-	DAG.call(this);
+	Dag.call(this);
 }
 inherit(SceneGraph, Dag);

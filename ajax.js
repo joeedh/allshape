@@ -74,7 +74,7 @@ function _pack_rec(type, data) { //data is optional
 }
 
 /*interface definition*/
-var _static_byte = new Uint8Array([0, 0, 0, 0]);
+var _static_byte = new Uint8Array([0, 0, 0, 0, 0, 0, 0, 0]);
 var _static_view = new DataView(_static_byte.buffer);
 function pack_int(Array<byte> data, int i)
 {
@@ -105,6 +105,18 @@ function pack_float(Array<byte> data, float f)
   
   _static_view.setFloat32(0, f);
   for (var j=0; j<4; j++) {
+    data.push(_static_byte[j]);
+  }
+}
+
+function pack_double(Array<byte> data, float f)
+{
+  if (_rec_pack) {
+    _pack_rec(SchmTypes.DOUBLE);
+  }
+  
+  _static_view.setFloat64(0, f);
+  for (var j=0; j<8; j++) {
     data.push(_static_byte[j]);
   }
 }
@@ -224,6 +236,28 @@ function pack_dataref(Array<byte> data, DataBlock b)
   }
 }
 
+function truncate_utf8(Array<byte>arr, int maxlen)
+{
+  var last_codepoint = 0;
+  var len = Math.min(arr.length, maxlen+4);
+  
+  var last2 = 0;
+  for (var i=0; i<len; i++) {
+    if (i != 0 && !(arr[i] & 128)) {
+      if (last_codepoint < maxlen)
+        last2 = last_codepoint;
+      
+      last_codepoint=i+1;
+    }
+  }
+  
+  if (last_codepoint < maxlen)
+    arr.length = last_codepoint;
+  else
+    arr.length = last2;
+}
+
+var _static_sbuf_ss = new Array(32);
 function pack_static_string(Array<byte> data, String str, int length)
 {
   if (_rec_pack) {
@@ -232,13 +266,19 @@ function pack_static_string(Array<byte> data, String str, int length)
   }
   
   if (length == undefined)
-    length = str.length;
+   throw new Error("'length' paremter is not optional for pack_static_string()");
+  
+  var arr = length < 2048 ? _static_sbuf_ss : new Array();
+  arr.length = 0;
+  
+  encode_utf8(arr, str);
+  truncate_utf8(arr, length);
   
   for (var i=0; i<length; i++) {
-    if (i >= str.length) {
-      pack_int(0);
+    if (i >= arr.length) {
+      data.push(0);
     } else {
-      pack_int(data, str.charCodeAt(i));
+      data.push(arr[i]);
     }
   }
   
@@ -248,6 +288,43 @@ function pack_static_string(Array<byte> data, String str, int length)
   }
 }
 
+function test_str_packers() {
+  function static_string_test() {
+    var arr = []
+    //pack_string(arr, "yay");
+    
+    //this string tests whether
+    //utf8 truncation works, as well
+    //as the encoding/decoding functinos
+    
+    var teststr = "12345678" + String.fromCharCode(8800)
+    console.log(teststr);
+    
+    var arr2 = [];
+    encode_utf8(arr2, teststr);
+    console.log(arr2.length);
+    
+    pack_static_string(arr, teststr, 9);
+    if (arr.length != 9)
+      throw new UnitTestError("Bad length " + arr.length.toString());
+    
+    arr = new DataView(new Uint8Array(arr).buffer)
+    
+    var str2 = unpack_static_string(arr, new unpack_ctx(), 9)
+    
+    console.log(teststr, str2);
+    console.log("'12345678'", "'"+str2+"'");
+    
+    if (str2 != "12345678") 
+      throw new UnitTestError("Bad truncation");
+  }
+  
+  static_string_test();
+  return true;
+}
+create_test(test_str_packers);
+
+var _static_sbuf = new Array(32);
 /*strings are packed as 32-bit unicode codepoints*/
 function pack_string(Array<byte> data, String str)
 {
@@ -256,10 +333,13 @@ function pack_string(Array<byte> data, String str)
     push_pack_stack();
   }
   
-  pack_int(data, str.length);
+  _static_sbuf.length = 0;
+  encode_utf8(_static_sbuf, str);
   
-  for (var i=0; i<str.length; i++) {
-    pack_int(data, str.charCodeAt(i));
+  pack_int(data, _static_sbuf.length);
+  
+  for (var i=0; i<_static_sbuf.length; i++) {
+    data.push(_static_sbuf[i]);
   }
   
   //discard pack records from composite pack
@@ -377,33 +457,104 @@ function unpack_mat4(Array<byte> data, unpack_ctx uctx)
   return new Matrix4(m);
 }
 
-function unpack_static_string(DataView data, unpack_ctx uctx, int length) : String
-{
-  var str = "";
-  var at_end = false;
-  
-  for (var i=0; i<length; i++) {
-    var c = unpack_int(data, uctx);
+function encode_utf8(arr, str) {
+  for (var i=0; i<str.length; i++) {
+    var c = str.charCodeAt(i);
     
-    at_end = true;
-    if (!at_end)
-      str += String.fromCharcode(c);
+    while (c != 0) {
+      var uc = c & 127;
+      c = c>>7;
+      
+      if (c != 0)
+        uc |= 128;
+      
+      arr.push(uc);
+    }
+  }
+}
+
+function decode_utf8(arr) {
+  var str = ""
+  var i = 0;
+  
+  while (i < arr.length) {
+    var c = arr[i];
+    var sum = c & 127;
+    var j = 0;
+    var lasti = i;
+    
+    while (i < arr.length && (c & 128)) {
+      j += 7;
+      i++;
+      c = arr[i];
+      
+      c = (c&127)<<j;
+      sum |= c;
+    }
+    
+    console.log(sum)
+    
+    str += String.fromCharCode(sum);
+    i++;
   }
   
   return str;
 }
 
+function test_utf8()
+{
+  var s = "a" + String.fromCharCode(8800) + "b";
+  var arr = [];
+  
+  encode_utf8(arr, s);
+  var s2 = decode_utf8(arr);
+  
+  if (s != s2) {
+    throw new Error("UTF-8 encoding/decoding test failed");
+  }
+  
+  return true;
+}
+
+var _static_arr_uss = new Array(32);
+function unpack_static_string(DataView data, unpack_ctx uctx, int length) : String
+{
+  var str = "";
+  var at_end = false;
+  
+  if (length == undefined)
+    throw new Error("'length' cannot be undefined in unpack_static_string()");
+  
+  var arr = length < 2048 ? _static_arr_uss : new Array(length);
+  
+  for (var i=0; i<length; i++) {
+    var c = unpack_byte(data, uctx);
+    
+    if (c == 0) {
+      at_end = true;
+      arr.length = i;
+    }
+    if (!at_end)
+      arr[i] = c;
+  }
+  
+  return decode_utf8(arr);
+}
+
+var _static_arr_us = new Array(32);
 function unpack_string(DataView data, unpack_ctx uctx) : String
 {
   var str = ""
   
   var slen = unpack_int(data, uctx);
+  var arr = slen < 2048 ? _static_arr_us : new Array(slen);
   
+  arr.length = slen;
   for (var i=0; i<slen; i++) {
-    str += String.fromCharCode(unpack_int(data, uctx));
+    arr[i] = unpack_byte(data, uctx);
   }
   
-  return str;
+  return decode_utf8(arr);
 }
 
 function unpack_ctx() {
