@@ -49,9 +49,34 @@ function ToolProperty(type, apiname, uiname, description, flag) {
 }
 create_prototype(ToolProperty);
 
+/*
+ToolProperty.STRUCT = """
+  ToolProperty {
+    type : int;
+    apiname : static_string[32] | obj.apiname ? obj.apiname : "";
+    uiname : static_string[32] | obj.uiname ? obj.uiname : "";
+    flag : int;
+    unit : static_string[16];
+  }
+""";
+*/
+
 ToolProperty.prototype.user_set_data = function(this_input) { }
 ToolProperty.prototype.update = function(prop_this) { }
 ToolProperty.prototype.api_update = function(ctx, path) { }
+
+ToolProperty.prototype.pack = function(data) {
+  pack_int(data, this.type);
+  var unit = this.unit != undefined ? "" : this.unit;
+  
+  pack_static_string(data, unit, 16);
+}
+
+ToolProperty.prototype.unpack = function(data, unpack_uctx uctx) {
+  this.unit = unpack_static_string(data, 16);
+  if (this.unit == "")
+    this.unit = undefined;
+}
 
 ToolProperty.prototype.set_data = function(data) {
   this.data = data;
@@ -122,6 +147,10 @@ function FlagProperty(value, maskmap, uinames, apiname, uiname, description, ran
 }
 inherit(FlagProperty, ToolProperty);
 
+FlagProperty.prototype.pack = function(data) {
+  pack_int(this.data);
+}
+
 FlagProperty.prototype.set_flag = function(value) {
   var flag;
   if (this.values.hasOwnProperty(value)) {
@@ -179,6 +208,10 @@ function IntProperty(i, apiname, uiname, description, range, uirange, flag) {
 }
 inherit(IntProperty, ToolProperty);
 
+IntProperty.prototype.pack = function(data) {
+  pack_int(this.data);
+}
+
 function BoolProperty(bool, apiname, uiname, description, flag) {
   ToolProperty.call(this, PropTypes.BOOL, apiname, uiname, description, flag);
   
@@ -186,12 +219,20 @@ function BoolProperty(bool, apiname, uiname, description, flag) {
 }
 inherit(BoolProperty, ToolProperty);
 
+BoolProperty.prototype.pack = function(data) {
+  pack_int(this.data);
+}
+
 function StringProperty(string, apiname, uiname, description, flag) {
   ToolProperty.call(this, PropTypes.STRING, apiname, uiname, description, flag);
   
   this.data = new String(string)
 }
 inherit(StringProperty, ToolProperty);
+
+StringProperty.prototype.pack = function(data) {
+  pack_string(this.data);
+}
 
 function EnumProperty(string, valid_values, apiname, uiname, description, flag) {
   ToolProperty.call(this, PropTypes.ENUM, apiname, uiname, description, flag);
@@ -224,6 +265,10 @@ function EnumProperty(string, valid_values, apiname, uiname, description, flag) 
 }
 inherit(EnumProperty, ToolProperty);
 
+EnumProperty.prototype.pack = function(data) {
+  pack_string(this.data);
+}
+
 EnumProperty.prototype.set_value = function(val) {
   if (!this.values.hasOwnProperty(val)) {
     console.log(val, this.values);
@@ -251,6 +296,13 @@ function ElementBufProperty(elements, apiname, uiname, description, flag) {
 }
 inherit(ElementBufProperty, ToolProperty);
 
+ElementBufProperty.prototype.pack = function(data) {
+  pack_int(this.data.length);
+  for (var i=0; i<this.data.length; i++) {
+    pack_int(this.data[i]);
+  }
+}
+
 function Vec4Property(vec4, apiname, uiname, description, flag) {
   ToolProperty.call(this, PropTypes.VEC4, apiname, uiname, description, flag);
   
@@ -259,6 +311,10 @@ function Vec4Property(vec4, apiname, uiname, description, flag) {
   this.data = new Vector4(vec4);  
 }
 inherit(Vec4Property, ToolProperty);
+
+Vec4Property.prototype.pack = function(data) {
+  pack_vec4(this.data);
+}
 
 var UndoFlags = {IGNORE_UNDO: 2}
 var ToolFlags = {HIDE_TITLE_IN_LAST_BUTTONS: 1}
@@ -282,6 +338,27 @@ function ToolOp() {
 }
 
 inherit(ToolOp, EventHandler);
+
+ToolOp.prototype.pack = function(data) {
+  pack_static_string(data, this.constructor.name, 32);
+  pack_static_string(data, this.name, 32);
+  pack_static_string(data, this.uiname, 32);
+  
+  var ilen=0, olen=0;
+  for (var k in this.inputs) ilen++;
+  for (var k in this.outputs) olen++;
+  
+  pack_int(data, ilen);
+  pack_int(data, olen);
+  
+  for (var k in this.inputs) {
+    this.inputs[k].pack(data);
+  }
+  
+  for (var k in this.outputs) {
+    this.outputs[k].pack(data);
+  }
+}
 
 ToolOp.prototype.undo_ignore = function() {
   this.undoflag |= UndoFlags.IGNORE_UNDO;
