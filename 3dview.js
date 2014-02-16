@@ -1506,7 +1506,7 @@ View3DHandler.prototype.on_keydown = function(Keyboard event) {
 View3DHandler.prototype.on_resize = function(Array<int> newsize, Array<int> oldsize)
 {
   for (var c in this.rows) {
-    if (c.pos[1] > 30)
+    if (c.pos[1] > 70)
       c.pos[1] = this.size[1] - 28;
       
     c.size[0] = this.size[0];
@@ -1619,7 +1619,7 @@ View3DHandler.prototype.build_sidebar1 = function()
   
   var row = new RowFrame(this.ctx);
   
-  row.size = [115, this.size[1]]
+  row.size = [115, this.size[1]-50]
   row.draw_background = true
   row.rcorner = 100.0
   row.pos = [0, 28]

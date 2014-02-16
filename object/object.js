@@ -12,14 +12,14 @@ var ObFlags = {
 };
 
 var RotTypes = { EULER: 0};
-var BBDisplayTypes = {BOX: 1, SPHERE: 2, CYLINDER: 3, CONE: 4, VIEWCIRCLE: 5};
+var BBDispTypes = {BOX: 1, SPHERE: 2, CYLINDER: 3, CONE: 4, VIEWCIRCLE: 5};
 
 function ASObject(data, name) {
   //name is optional
   if (name == undefined)
     name = "Object";
   
-  DataBlock.call(this, DataTypes.OB, name);
+  DataBlock.call(this, DataTypes.OBJECT, name);
   
   this.scene = undefined : Scene;
   

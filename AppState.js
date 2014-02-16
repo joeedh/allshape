@@ -112,7 +112,6 @@ function gen_default_file(size) {
   scene.add(object);
   
   object.type = ObTypes.MESH;
-  
   //mesh
   object.data = mesh;
   
@@ -202,11 +201,7 @@ AppState.prototype.update_context = function() {
 }
 
 AppState.prototype.reset_state = function(screen, mesh) {
-  var g2 = new AppState(screen, mesh);
-  
-  for (var k in g2) {
-    this[k] = g2[k];
-  }
+  AppState.call(this, screen, mesh);
 }
 
 AppState.prototype.set_mesh = function(Mesh m2) {

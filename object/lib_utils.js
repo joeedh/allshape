@@ -203,7 +203,7 @@ DBList.prototype.data_link = function(block, getblock, getblock_us) {
 }
 
 DBList.prototype.push = function(block) {
-  GArray.push.call(this, block);
+  GArray.prototype.push.call(this, block);
   this.idmap[block.lib_id] = block;
   
   if (this.active == undefined) {

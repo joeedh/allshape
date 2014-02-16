@@ -635,7 +635,9 @@ Framerate.prototype.updateFramerate = function() {
     var framerate = tot / this.framerates.length;
     framerate = Math.round(framerate);
     
-    g.view3d.framerate = framerate;
+	if (g.view3d != undefined) {
+		g.view3d.framerate = framerate;
+	}
     //document.getElementById(this.id).innerHTML = "Framerate:"+framerate+"fps";
 }
 

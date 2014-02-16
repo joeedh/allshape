@@ -5,7 +5,7 @@ function Scene(name) {
     name = "Scene";
   
   //name is optional
-  DataBlock.call(DataTypes.SCENE, name);
+  DataBlock.call(this, DataTypes.SCENE, name);
   
   this.objects = new DBList();
   this.graph = new SceneGraph();

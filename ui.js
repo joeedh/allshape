@@ -1914,7 +1914,7 @@ RowFrame.prototype.pack = function(UICanvas canvas, Boolean is_vertical) {
       c.pack(canvas, is_vertical);
   }
   
-  this.size[1] = Math.max(this.size[1], minsize[1]);
+  //this.size[1] = Math.max(this.size[1], minsize[1]);
 }
 
 function ColumnFrame(ctx, path_prefix, align)

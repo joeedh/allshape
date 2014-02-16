@@ -1430,7 +1430,7 @@ function gen_screen(WebGLRenderingContext gl, View3DHandler view3d, int width, i
     scr.add(new ScreenArea(view3d, scr.ctx, view3d.pos, view3d.size));
   }
   
-  if (localStorage.screen != undefined && localStorage.screen != "undefined") {
+  if (0) { //localStorage.screen != undefined && localStorage.screen != "undefined") {
     console.log(localStorage.screen)
     var obj = JSON.parse(localStorage.screen);
     

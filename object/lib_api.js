@@ -59,6 +59,7 @@ DataLib.prototype.gen_name = function(block, name) {
     name = DataNames[block.lib_type];
   }
   
+  console.log(block, name);
   if (!this.datalists.has(block.lib_type)) {
     this.datalists.set(block.lib_type, new DataList(block.lib_type));
   }
