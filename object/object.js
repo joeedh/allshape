@@ -55,8 +55,13 @@ function ASObject(data, name) {
   this.data = data;
   
   this.layermask = 0x7FFFFFFF;
+  this.selbuf_id = -1; //only set when obj is added to database
 }
 inherit(ASObject, DataBlock);
+
+ASObject.prototype.on_add = function(DataLib lib) {
+  this.selbuf_id = ibuf_idgen.gen_id();
+}
 
 ASObject.STRUCT = STRUCT.inherit(ASObject, DataBlock) + """
   matrix : mat4;

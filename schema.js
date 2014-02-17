@@ -10,7 +10,11 @@ Okay.  The serialization system needs to do three things:
 
 Thus, all the existing serialization schemes (that I know of) for JS
 are ineligible.  Here is my final solution: a serialization language
-that can compile itself to JS.
+that can compile itself to JS, and minimizes new object creation.
+
+Note: this is *not* like C structs; specifically, variable-length
+member fields are allowed (e.g. arrays, "abstract" sub-structs, etc).
+There are no enforced byte alignments, either.
 
 Format:
 
@@ -23,12 +27,19 @@ where:
 member-name = any valid identifier, or 'this' 
               (needed for if a struct is subtyping Array or Iter;
                e.g. SomeArraySubClass {this : array(int); bleh : int;})
-data-type : int float double, vec2, vec3, vec4, mat4
+data-type : int float double vec2 vec3 vec4 mat4
+
             static_string(max-length) 
+            
             array([optional iter name for helepr JS], type),
+            
             iter([optional iter name for help JS], type),
+            
             dataref(SomeDataBlockType),
+            
             NameOfAStruct
+            
+            abstract(StructName) //write type info for reading child classes
 helper-js-code : an expression to get a value.  a local variable 'obj'
                  is the equivalent of 'this'.
                  note that this code is not saved when serializing files.
@@ -38,6 +49,8 @@ of fetching list items by iterating over a numeric range,
 e.g. for (i=0; i<arr.lenght; i++), it uses the (much slower) 
 iteration API.
 */
+
+#define MAX_CLSNAME 24
 
 #define T_INT 0
 #define T_FLOAT 1
@@ -49,9 +62,13 @@ iteration API.
 #define T_STRING 7
 #define T_STATIC_STRING 8
 #define T_STRUCT 9
-#define T_ARRAY 10
-#define T_ITER 11
-#define T_DATAREF 12
+
+//like struct, but also writes a ref to the type of struct
+
+#define T_TSTRUCT 10
+#define T_ARRAY 11
+#define T_ITER 12
+#define T_DATAREF 13
 
 var SchemaTypes = Object.create({
     "int" : T_INT,
@@ -64,6 +81,7 @@ var SchemaTypes = Object.create({
     "string" : T_STRING,
     "static_string" : T_STATIC_STRING,
     "struct" : T_STRUCT,
+    "typed_struct" : T_TSTRUCT,
     "array" : T_ARRAY,
     "iter" : T_ITER,
     "dataref" : T_DATAREF
@@ -97,7 +115,8 @@ function SchemaParser() {
     "static_string",
     "array",
     "iter",
-    "dataref"]);
+    "dataref",
+    "abstract"]);
 
   function tk(name, re, func) {
     return new PUTL.tokdef(name, re, func);
@@ -214,6 +233,17 @@ function SchemaParser() {
     return {type : T_ITER, data : {type : arraytype, iname : itername}};
   }
   
+  function p_Abstract(p) {
+    p.expect("abstract");
+    p.expect("LPARAM");
+    
+    var type = p_Type(p);
+    
+    p.expect("RPARAM");
+    
+    return {type : T_TSTRUCT, data : type};
+  }
+  
   function p_Type(p) {
     var tok = p.peek()
     
@@ -229,6 +259,8 @@ function SchemaParser() {
       return p_Iter(p);
     } else if (tok.type == "STATIC_STRING") {
       return p_Static_String(p);
+    } else if (tok.type == "ABSTRACT") {
+      return p_Abstract(p);
     } else if (tok.type == "DATAREF") {
       return p_DataRef(p);
     } else {
@@ -267,6 +299,17 @@ function SchemaParser() {
     var st = {}
     st.name = p.expect("ID", "struct name")
     st.fields = [];
+    st.id = -1;
+    
+    var tok = p.peek()
+    var id = -1;
+    
+    if (tok.type == "ID" && tok.value == "id") {
+      p.next();
+      p.expect("=");
+      
+      st.id = p.expect("NUM");
+    } 
     
     p.expect("OPEN");
     
@@ -291,15 +334,65 @@ var schema_parse = SchemaParser();
 
 function STRUCT()
 {
+  this.struct_ids = {};
+  this.idgen = new EIDGen();
+  
   this.structs = {};
   this.struct_cls = {};
   this.compiled_code = {};
 }
 create_prototype(STRUCT);
 
+STRUCT.prototype.parse_structs = function(buf) {
+  global defined_classes;
+  var clsmap = {}
+  
+  for (var i=0; i<defined_classes.length; i++) {
+    clsmap[defined_classes[i].name] = defined_classes[i];
+  }
+  
+  schema_parse.input(buf);
+  while (!schema_parse.at_end()) {
+    var stt = schema_parse.parse(undefined, false);
+    
+    //if struct does not exist anymore, load it into a dummy object
+    if (!(stt.name in clsmap)) {
+      console.log("WARNING: struct " + stt.name + " no longer exists.  will try to convert.");
+      var dummy = Object.create();
+      dummy.prototype = Object.create(Object.prototype());
+      dummy.STRUCT = this.fmt_struct(stt);
+      dummy.fromSTRUCT = function(reader) {
+        var obj = {};
+        reader(obj);
+        
+        return obj;
+      }
+      dummy.name = stt.name;
+      dummy.prototype.name = dummy.name;
+      dummy.prototype.constructor = dummy;
+      
+      this.struct_cls[dummy.name] = dummy;
+      this.struct_cls[dummy.name] = stt;
+    } else {
+      this.struct_cls[stt.name] = clsmap[stt.name];
+      this.structs[stt.name] = stt;
+    }
+  }  
+}
+
 STRUCT.prototype.add_struct = function(cls) {
-  this.structs[cls.name] = schema_parse.parse(cls.STRUCT);
+  var stt = schema_parse.parse(cls.STRUCT);
+  
+  if (stt.id == -1)
+    stt.id = this.idgen.gen_id();
+  
+  this.structs[cls.name] = stt;
   this.struct_cls[cls.name] = cls;
+  this.struct_ids[stt.id] = stt;
+}
+
+STRUCT.prototype.get_id_struct = function(id) {
+  return this.struct_ids[id];
 }
 
 STRUCT.prototype.get_struct = function(name) {
@@ -335,8 +428,13 @@ STRUCT.fmt_struct = function(stt, internal_only, no_helper_js) {
   
   var s = ""
   
-  if (!internal_only)
-    s += stt.name + " {\n"
+  if (!internal_only) {
+    s += stt.name
+    if (stt.id != -1)
+      s += " id=" + stt.id;
+    s += " {\n";
+  }
+  
   var tab = "  ";
   
   function fmt_type(type) {
@@ -457,6 +555,23 @@ var _st_packers = [
   },
   function(data, val, obj, thestruct, field, type) { //struct
     thestruct.write_struct(data, val, thestruct.get_struct(type.data));
+  },  
+  function(data, val, obj, thestruct, field, type) { //tstruct (struct with type)
+    var cls = thestruct.get_struct_cls(type.data);
+    var stt = thestruct.get_struct(type.data);
+        
+    if (val.constructor.name != type.data && (val instanceof cls)) {
+      console.log(val.constructor.name + " inherits from " + cls.name);
+      stt = thestruct.get_struct(val.constructor.name);
+    } else if (val.constructor.name == type.data) {
+      stt = thestruct.get_struct(type.data);
+    } else {
+      console.trace();
+      throw new Error("Bad struct " + val.constructor.name + " passed to write_struct");
+    }
+    
+    pack_int(data, stt.id);
+    thestruct.write_struct(data, val, stt);
   },
   function(data, val, obj, thestruct, field, type) { //array
     pack_int(data, val.length);
@@ -608,6 +723,16 @@ STRUCT.prototype.read_object = function(data, cls, unpack_ctx uctx) {
       
       return thestruct.read_object(data, cls2, uctx);
     },
+    T_TSTRUCT : function(type) {
+      var id = unpack_int(data, uctx);
+      if (!(id in this.struct_ids)) {
+        console.trace();
+        throw new Error("Unknown struct type " + cls2 + ".");
+      }
+      
+      var cls2 = this.get_struct_id(id);      
+      return thestruct.read_object(data, cls2, uctx);
+    },
     T_DATAREF : function(type) {
       return unpack_dataref(data, uctx);
     }
@@ -646,7 +771,6 @@ var test_vertex_struct = """
     edges : array(e, int) | e.eid;
   }
 """;
-
 var test_struct_str = """
   Test {
     a : array(iter(Test2));

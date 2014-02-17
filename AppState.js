@@ -218,8 +218,25 @@ AppState.prototype.set_mesh = function(Mesh m2) {
   }
 }
 
+/*
+  new file format:
+  ALSH | 4 chars
+  version major | int
+  version minor | int
+  
+  block {
+    type : 4 chars
+    subtype : 4 chars
+    datalen : int
+  }
+*/
 AppState.prototype.create_user_file_new = function(different_mesh) : ArrayBuffer {
   var mesh = different_mesh != undefined ? different_mesh : this.mesh;
+  
+  function bheader(data, type, subtype) {
+    pack_static_string(data, type, 4);
+    pack_static_string(data, subtype, 4);
+  }
   
   var data = [];
   
@@ -228,39 +245,92 @@ AppState.prototype.create_user_file_new = function(different_mesh) : ArrayBuffer
   
   //version
   var major = Math.floor(g_app_version);
-  var minor = g_app_version - Math.floor(g_app_version);
+  var minor = (g_app_version - Math.floor(g_app_version));
+  while (minor - Math.floor(minor) != 0.0 && minor < 100) {
+    minor *= 10.0;
+  }
+  minor -= Math.floor(minor);
   
   pack_int(major);
   pack_int(minor);
   
   //the schema struct definitions used to save
   //the non-JSON parts of this file.
-  pack_static_string(data, "STRT", 4);
   var buf = gen_struct_str();
+  
+  bheader(data, "SDEF", "JSON") ;
   pack_string(data, buf);
   
-  var jsonpart = JSON.stringify(this.screen.toJSON());
+  var scrn = JSON.stringify(this.screen.toJSON());
   
-  pack_static_string(data, "JSON", 4);
-  pack_static_string(data, "SCRN", 4);
-  pack_string(data, jsonpart);
+  bheader(data, "SCRN", "JSON");
+  pack_string(data, scrn);
   
   var data2 = [];
   for (var lib in this.datalists.values()) {
     for (var block in lib) {
-      data2.length = 0;      
+      data2.length = 0;     
       istruct.write_object(data2, block);
       
-      pack_static_string(data, "BLCK", 4);
+      bheader(data, "BLCK", "STRT");
+      pack_int(data2.length+4);
       pack_int(block.lib_type);
-      pack_int(data2.length);
       
       data.concat(data2);
     }   
+  } 
+}
+
+AppState.prototype.load_user_file_new = function(DataView data, unpack_ctx uctx) {
+  if (uctx == undefined) {
+    uctx = new unpack_ctx();
+  }
+  
+  var s = unpack_static_string(data, uctx, 4);
+  if (s != "ALSH") {
+    throw new Error("Could not load file.");
+  }
+  
+  var version_major = unpack_int(data, uctx);
+  var version_minor = unpack_int(data, uctx)/(1<<30);
+  
+  var version = Number.parseFloat(version_major.toString() + "." + version_minor.toString());
+  
+  var blocks = []
+  var fstructs = new STRUCT();
+  
+  while (uctx.i < data.length) {
+    var type = unpack_static_string(data, uctx, 4);
+    var subtype = unpack_static_string(data, uctx, 4);
+    var len = unpack_int(data, uctx);
+    var bdata;
+    
+    if (subtype == "JSON") {
+      bdata = unpack_static_string(data, uctx, len);
+    } else if (subtype == "STRT") {
+      bdata = unpack_bytes(data, uctx, len);
+    } else {
+      throw new Error("Unknown block type.");
+    }
+    
+    if (type == "SDEF") {
+      fstructs.parse_structs(bdata);
+    }
+    
+    blocks.push({type : type, subtype : subtype, len : len, data : bdata});
+  }
+  
+  for (var i=0; i<blocks.length; i++) {
+    var b = blocks[i];
+    if (b.subtype == "JSON") {
+      b.data = JSON.parse(b.data);
+    } else if (b.subtype == "STRT") {
+      b.data = fstructs.read_object(b.data);
+    }
   }
 }
 
-AppState.prototype.create_user_file = function(different_mesh) : ArrayBuffer {
+AppState.prototype.create_user_file = function(Mesh different_mesh) : ArrayBuffer {
   //we save a json part and a binary part
   var obj = {}
   
@@ -280,40 +350,6 @@ AppState.prototype.create_user_file = function(different_mesh) : ArrayBuffer {
   
   return new DataView(data);
 }
-
-var _filemagic = ["A".charCodeAt(0), "L".charCodeAt(0), "S".charCodeAt(0), "A".charCodeAt(0)]
-AppState.prototype.create_user_file_new = function() {
-  var obj = {};
-  
-  var bjson = new BJSON();
-  
-  var data = [];
-
-  obj.lib = this.lib;
-  obj.screen = this.screen;
-  obj.owner = this.session.username;
-  
-  data = bjson.binify(obj);
-  
-  var data2 = new Array(8+schemas.length);
-  
-  pack_int(data2, _filemagic);
-  pack_int(data2, schemas.length);
-  
-  for (var i=0; i<schemas.length; i++) {
-    data2[i+8] = schemas[i].charCodeAt(i);
-  }
-  
-  data = data2.concat(data);
-  
-  return data;
-}
-
-AppState.prototype.load_user_file_new = function(data) : ArrayBuffer {
-  
-}
-
-
 
 AppState.prototype.load_user_file = function(data) : ArrayBuffer {
   //we save a json part and a binary part

@@ -1,5 +1,42 @@
 "use strict";
 
+var EditModes = {OBJECT : 1, GEOMETRY : 2};
+var ibuf_idgen = new EIDGen();
+
+ibuf_idgen.gen_id();
+
+function ObjectEditor(name, type, lib_type, keymap) {
+  this.name = name;
+  this.type = type;
+  this.lib_type = lib_type;
+  this.keymap = keymap;
+}
+create_prototype(ObjectEditor);
+
+ObjectEditor.prototype.render_selbuf = function(gl, view3d, typemask) {
+}
+
+ObjectEditor.prototype.selbuf_changed = function(typemask) {
+}
+
+ObjectEditor.prototype.reset_selbuf_changed = function(typemask) {
+}
+
+//returns number of selected items
+ObjectEditor.prototype.do_select = function(event, mpos, view3d) {
+  
+}
+
+ObjectEditor.prototype.gen_sidebar1 = function(view3d) {
+}
+
+ObjectEditor.prototype.gen_bottombar = function(view3d) {
+}
+
+ObjectEditor.prototype.draw_object = function(gl, view3d, object, is_active)
+{
+}
+
 function drawline(co1, co2) {
   this.v1 = co1;
   this.v2 = co2;
@@ -12,6 +49,12 @@ drawline.prototype.set_clr = function(Array<float> clr) {
   this.clr = clr;
 }
 
+function IndexBufItem(id, owner) {
+  this.user_id = id;
+}
+
+create_prototype(IndexBufItem);
+
 function FrameBuffer(gl, size)
 {
   this.size = size;
@@ -20,6 +63,8 @@ function FrameBuffer(gl, size)
   this.rbuf2 = undefined;
   this.gl = gl;
   this.caller = undefined;
+  
+  this.idmap = {};
 }
 create_prototype(FrameBuffer)
 
@@ -198,6 +243,8 @@ function View3DHandler(WebGLRenderingContext gl, Mesh mesh, ShaderProgram vprogr
   this.keymap = new KeyMap()
   this.define_keymap();
   this._id = _v3d_id_gen++;
+  
+  this.editor = new MeshEditor(this);
 }
 
 inherit(View3DHandler, Area);
@@ -450,8 +497,8 @@ View3DHandler.prototype.findnearest_backbuf = function(Vector2 mpos, int type) {
     
     var idx = unpack_index(pix);
     
-    if (idx > 0) {
-      var e = mesh.eidmap[idx-1];
+    if (idx > 0 && ((idx-1) in mesh.sidmap)) {
+      var e = mesh.sidmap[idx-1];
       
       if (e != undefined && e.type == type) {
         var d = x2*x2+y2*y2;
@@ -467,7 +514,7 @@ View3DHandler.prototype.findnearest_backbuf = function(Vector2 mpos, int type) {
   if (ret == undefined)
     return null;
   else
-    return mesh.eidmap[ret];
+    return mesh.sidmap[ret];
 }
 
 View3DHandler.prototype.findnearestedge_mapco = function(Vector2 mpos) {
@@ -749,7 +796,7 @@ View3DHandler.prototype.ensure_selbuf = function(typemask) {//typemask is option
   var redo_selbuf = this.redo_selbuf
   
   redo_selbuf |= fbuf.capture(this.size, this);
-  redo_selbuf |= (this.last_selectmode != (this.selectmode|typemask))
+  redo_selbuf |= this.editor.selbuf_changed(typemask);
   
   if (redo_selbuf) {
     console.log("yay");
@@ -765,12 +812,8 @@ View3DHandler.prototype.ensure_selbuf = function(typemask) {//typemask is option
     gl.disable(gl.DITHER);
     gl.enable(gl.DEPTH_TEST);
     
-    if (this.ss_mesh) 
-      subsurf_selbuf_render(this.gl, this.ss_mesh, this.mesh, this.drawmats, 
-                            (this.selectmode|MeshTypes.FACE|typemask));
-    else
-      render_mesh_selbuf(this.gl, this.mesh, this.drawmats, 
-                       (this.selectmode|MeshTypes.FACE|typemask));
+    this.editor.render_selbuf(this.gl, this, typemask);
+
     gl.flush();
     gl.finish();
     
@@ -779,7 +822,7 @@ View3DHandler.prototype.ensure_selbuf = function(typemask) {//typemask is option
     fbuf.unbind()
     
     this.redo_selbuf = false;
-    this.last_selectmode = this.selectmode|typemask;
+    this.editor.reset_selbuf_changed(typemask);
   }
 }
 
@@ -1070,6 +1113,7 @@ View3DHandler.prototype.on_mousemove = function(MouseEvent event) {
 
 View3DHandler.prototype.set_selectmode = function(int mode) {
   this.selectmode = mode;
+  this.editor.selectmode = mode;
 }
 
 View3DHandler.prototype.on_mousewheel = function(MouseEvent event, float delta) {
@@ -1160,101 +1204,17 @@ View3DHandler.prototype.draw_lines = function(WebGLRenderingContext gl) {
 View3DHandler.prototype.on_tick = function() {
   UIFrame.prototype.on_tick.call(this);
 }
-
-View3DHandler.prototype.check_subsurf = function(Context ctx) {
-  if (this.use_subsurf && this.ss_mesh)
-    return;
-  if (!this.use_subsurf && this.ss_mesh == null)
-    return;
-    
-  if (this.use_subsurf) {
-      if (!this.ss_mesh) {
-        ctx.mesh.regen_render();
-        
-        this.ss_mesh = gpu_subsurf(this.gl, ctx.mesh, this.get_ss_steps());
-      }
-    } else {
-      if (ctx.view3d.ss_mesh) {
-        destroy_subsurf_mesh(this.gl, this.ss_mesh);
-        
-        this.ss_mesh = null;
-        ctx.mesh.regen_render();
-      }
-    }  
-}
-
 var _v3d_static_mat = new Matrix4()
 
 View3DHandler.prototype.on_draw = function(WebGLRenderingContext gl, test) {
   this.ctx = new Context(this);
-  this.mesh = this.ctx.mesh;
-  
-  this.check_subsurf(this.ctx);
-  
-  this.ss_steps = 24;
-  this.set_canvasbox()
   
   gl.getExtension("OES_TEXTURE_FLOAT");
   
-  this.mesh.update_callback(this, function(view3d, mesh, event) {
-    if (event == MeshEvents.RECALC) {
-      if (mesh.render.recalc & (RecalcFlags.REGEN_TESS|RecalcFlags.REGEN_COS)) 
-      {
-        view3d.redo_selbuf = true;
-      }
-    }
-  });
-  
-  this.gl = gl;
-  if (this.gpu_test) {
-    var ret = this.gpu_test.compute(false);
-    render_points(gl, ret[1], ret[0][0]*ret[0][1], this, this.drawmats);
-  } else {
-    if (this.ss_mesh != null) {
-      //console.log("face length: ", this.ss_mesh.faces.length);
-      var steps = this.get_ss_steps();
-      var ss_recalc = this.mesh.render.recalc;
-      
-      if (steps != this.last_steps) {
-        this.last_steps = steps;
-        ss_recalc |= RecalcFlags.REGEN_TESS;
-      }
-      
-      if ((ss_recalc & RecalcFlags.REGEN_TESS)==0)
-        this.mesh.render.recalc &= ~RecalcFlags.REGEN_NORS;
-
-      if (ss_recalc != 0) {
-        if (ss_recalc != RecalcFlags.REGEN_COLORS) {
-          if (ss_recalc & RecalcFlags.REGEN_TESS) {
-            destroy_subsurf_mesh(gl, this.ss_mesh);
-            this.ss_mesh = gpu_subsurf(gl, this.mesh, steps);
-          } else {
-            this.ss_mesh = gpu_subsurf(gl, this.mesh, steps, this.ss_mesh);
-          }
-        }
-        
-        if (ss_recalc & RecalcFlags.REGEN_TESS)
-          this.mesh.flag |= MeshFlags.USE_MAP_CO;
-        
-        gen_mesh_render(gl, this.mesh, this.mesh.render.drawprogram, this.mesh.render.vertprogram, this.mesh.render.recalc);        
-      }
-      
-      this.mesh.flag |= MeshFlags.USE_MAP_CO;
-      
-      if (0) {
-        subsurf_selbuf_render(this.gl, this.ss_mesh, this.mesh, this.drawmats, 
-                            (this.selectmode|MeshTypes.FACE));
-      } else {
-        subsurf_render(gl, this, this.ss_mesh, this.mesh, 
-                       this.drawmats, !this.use_backbuf_sel);
-      }
-    } else {
-      this.mesh.flag &= ~MeshFlags.USE_MAP_CO;
-      render_mesh(gl, this, this.mesh, this.drawmats, !this.use_backbuf_sel); 
-    }
-  }
-  
+  this.set_canvasbox();
+  this.editor.draw_object(gl, this, this.ctx.object, true);
   this.draw_lines(gl);
+  
   Area.prototype.on_draw.call(this, gl)
 }
 
@@ -1350,32 +1310,12 @@ View3DHandler.prototype.define_keymap = function() {
              "appstate.save()");
   k.add_tool(new KeyHandler("C", ["CTRL"], "Loop Cut"),
              "mesh.loopcut()");
-  k.add_tool(new KeyHandler("F", [], "Create Face"),
-             "mesh.context_create(verts=mesh_selected(v))");
-  k.add_tool(new KeyHandler("D", ["SHIFT"], "Duplicate"), 
-             "mesh.duplicate_transform()");
-  k.add_tool(new KeyHandler("D", [], "Smooth Subdivide"), 
-             "mesh.smooth_subdivide(faces=mesh_selected(f))");
-  k.add_tool(new KeyHandler("Y", [], "Connect"), 
-             "mesh.vert_connect(verts=mesh_selected(v))");
-  k.add_tool(new KeyHandler("E", [], "Extrude"), 
-             "mesh.extrude(geometry=mesh_selected(vef))");
-  k.add_tool(new KeyHandler("L", [], "Remove Duplicate Verts"), 
-             "mesh.remove_doubles(verts=mesh_selected(v))");
   k.add_tool(new KeyHandler("G", [], "Translate"), 
              "mesh.translate()");
   k.add_tool(new KeyHandler("S", [], "Scale"), 
              "mesh.scale()");
   k.add_tool(new KeyHandler("R", [], "Rotate"), 
              "mesh.rotate()");
-  k.add_tool(new KeyHandler("A", [], "Toggle Select All"), 
-             "mesh.toggle_select_all()");
-  k.add_func(new KeyHandler("A", ["SHIFT"], "Add"), 
-             function(ctx) {
-              ctx.view3d.add_menu();
-             });
-  k.add_tool(new KeyHandler("C", [], "Circle Select"), 
-             "view3d.circle_select()");
   
   k.add(new KeyHandler("K", [], "Test Dialog"), new FuncKeyHandler(function (ctx) {
     console.log("Dialog test");
@@ -1391,13 +1331,6 @@ View3DHandler.prototype.define_keymap = function() {
     col.add(new UIButton(ctx, "Cancel", undefined, undefined, undefined, cb));    
     
     d.call(ctx.screen.mpos);
-  }));
-  
-  k.add(new KeyHandler("X", [], "Delete Menu"), new FuncKeyHandler(function (ctx) {
-    ctx.view3d.delete_menu(new MyMouseEvent(ctx.keymap_mpos[0], ctx.keymap_mpos[1], 0));
-  }));
-  k.add(new KeyHandler("Delete", [], "Delete Menu"), new FuncKeyHandler(function (ctx) {
-    ctx.view3d.delete_menu(new MyMouseEvent(ctx.keymap_mpos[0], ctx.keymap_mpos[1], 0));
   }));
   
   k.add(new KeyHandler("Z", ["CTRL", "SHIFT"], "Redo"), new FuncKeyHandler(function(ctx) {
@@ -1420,33 +1353,6 @@ View3DHandler.prototype.define_keymap = function() {
     _do_frame_debug ^= 1;
     test_nested_with();
   }));
-  k.add(new KeyHandler("F", ["CTRL"], "Face Menu"), new FuncKeyHandler(function(ctx) {
-    var mpos = ctx.keymap_mpos;
-    ctx.view3d.rightclick_menu_face({x : mpos[0], y : mpos[1]});
-  }));
-  k.add(new KeyHandler("E", ["CTRL"], "Edge Menu"), new FuncKeyHandler(function(ctx) {
-    var mpos = ctx.keymap_mpos;
-    ctx.view3d.rightclick_menu_edge({x : mpos[0], y : mpos[1]});
-  }));
-  k.add(new KeyHandler("V", ["CTRL"], "Vertex Menu"), new FuncKeyHandler(function(ctx) {
-    var mpos = ctx.keymap_mpos;
-    ctx.view3d.rightclick_menu_vert({x : mpos[0], y : mpos[1]});
-  }));
-  k.add(new KeyHandler("W", [], "Tools Menu"), new FuncKeyHandler(function(ctx) {
-    var mpos = ctx.keymap_mpos;
-    ctx.view3d.tools_menu(ctx, mpos);
-  }));
-  k.add(new KeyHandler("E", ["SHIFT"], "Toggle Subsurf"), new FuncKeyHandler(function(ctx) {
-    console.log("subsurf");
-    if (ctx.view3d.ss_mesh == null) {
-      ctx.mesh.regen_render();
-      ctx.view3d.ss_mesh = gpu_subsurf(ctx.view3d.gl, ctx.mesh, ctx.view3d.get_ss_steps());
-    } else {
-      destroy_subsurf_mesh(ctx.view3d.gl, ctx.view3d.ss_mesh);
-      ctx.view3d.ss_mesh = null;
-      ctx.mesh.regen_render();
-    }
-  }));
   k.add(new KeyHandler("Up", [], "Increment Debug Value"), new FuncKeyHandler(function(ctx) {
     //flip_max++;
     global debug_int_1;
@@ -1466,17 +1372,6 @@ View3DHandler.prototype.define_keymap = function() {
     console.log("debug_int_1: ", debug_int_1);
     ctx.mesh.regen_render();
   }));
-  k.add(new KeyHandler("T", [], "Toggle Select Mode"), new FuncKeyHandler(function(ctx) {
-    var mode = ctx.view3d.selectmode;
-    if (mode == MeshTypes.VERT)
-      mode = MeshTypes.EDGE;
-    else if (mode == MeshTypes.EDGE)
-      mode = MeshTypes.FACE;
-    else if (mode == MeshTypes.FACE)
-      mode = MeshTypes.VERT;
-      
-    ctx.view3d.set_selectmode(mode);
-  }));
 }
 
 View3DHandler.prototype._on_keyup = function(KeyboardEvent event) {
@@ -1491,6 +1386,9 @@ View3DHandler.prototype.on_keyup = function(KeyboardEvent event) {
 
   var ctx = new Context(this);
   var ret = this.keymap.process_event(ctx, event);
+  
+  if (ret == undefined)
+    ret = this.editor.keymap.process_event(ctx, event);
   
   if (ret != undefined) {
     ret.handle(ctx);
@@ -1542,29 +1440,6 @@ View3DHandler.prototype.area_duplicate = function()
   return cpy
 }
 
-View3DHandler.prototype.build_bottombar = function()
-{
-  this.ctx = new Context(this);
-  
-  var col = new ColumnFrame(this.ctx);
-  col.draw_background = true;
-  col.rcorner = 100.0
-  col.pos = [0,0]
-  col.size = [this.size[0], 30];
-  
-  col.prop("view3d.use_subsurf");
-  
-  //col.add(new UIMenuLabel(this.ctx, "File", undefined, gen_file_menu));
-  col.label("  |  Select Mode:  ");
-  col.prop("view3d.selectmode");
-  col.prop("view3d.use_backbuf_sel");
-  col.label("  |   ");
-  col.prop("view3d.zoomfac");
-  
-  this.rows.push(col);
-  this.add(col);
-}
-
 View3DHandler.prototype.gen_file_menu = function(ctx, uimenulabel)
 {
   return toolop_menu(ctx, "", ["appstate.save_as()", "appstate.save()", "appstate.open()"]);
@@ -1582,6 +1457,14 @@ View3DHandler.prototype.on_area_inactive = function()
 
 View3DHandler.prototype.on_area_active = function()
 {
+}
+
+View3DHandler.prototype.build_bottombar = function() {
+  this.editor.build_bottombar(this);
+}
+
+View3DHandler.prototype.build_sidebar1 = function() {
+  this.editor.build_sidebar1(this);
 }
 
 View3DHandler.prototype.build_topbar = function()
@@ -1612,40 +1495,6 @@ View3DHandler.prototype.build_topbar = function()
   this.rows.push(col);
   this.add(col);
 }
-
-View3DHandler.prototype.build_sidebar1 = function()
-{
-  this.ctx = new Context(this);
-  
-  var row = new RowFrame(this.ctx);
-  
-  row.size = [115, this.size[1]-50]
-  row.draw_background = true
-  row.rcorner = 100.0
-  row.pos = [0, 28]
-  
-  this.cols.push(row);
-  this.add(row);
-  
-  row.toolop("screen.area_split_tool()", PackFlags.INHERIT_WIDTH);
-  row.label("");
-  
-  row.toolop("mesh.subdivide(faces=mesh_selected(f))", PackFlags.INHERIT_WIDTH);
-  row.toolop("mesh.translate()", PackFlags.INHERIT_WIDTH);
-  row.toolop("mesh.extrude()", PackFlags.INHERIT_WIDTH);
-  row.toolop("mesh.rotate()", PackFlags.INHERIT_WIDTH);
-  row.toolop("mesh.scale()", PackFlags.INHERIT_WIDTH);
-  row.toolop("mesh.flip_normals(faces=mesh_selected(f))", PackFlags.INHERIT_WIDTH);
-  row.toolop("mesh.triangulate(faces=mesh_selected(f))", PackFlags.INHERIT_WIDTH);
-  row.toolop("mesh.tri2quad(faces=mesh_selected(f))", PackFlags.INHERIT_WIDTH);
-  row.toolop("mesh.duplicate_transform()", PackFlags.INHERIT_WIDTH);
-  row.toolop("mesh.bridge_edges(edges=mesh_selected(e))", PackFlags.INHERIT_WIDTH);
-  row.toolop("mesh.vertsmooth(verts=mesh_selected(v))", PackFlags.INHERIT_WIDTH);
-  
-  row.label("Last Tool:", false)
-  row.add(new ToolOpFrame(this.ctx, "last_tool"), PackFlags.INHERIT_WIDTH);
-}
-
 
 View3DHandler.fromJSON = function(obj)
 {

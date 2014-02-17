@@ -17,6 +17,7 @@ function Element() {
   this.gdata = new ElementData();
   this.flag = 0;
   this.index = 0;
+  this.sid = ibuf_idgen.gen_id();
 }
 
 Element.STRUCT = """
@@ -672,12 +673,13 @@ function AllTypesSelectIter(mesh) {
 }
 
 //#$().class
-function GeoArray<T>(type, idgen, eidmap) {
+function GeoArray<T>(type, idgen, eidmap, sidmap) {
   this.arr = new Array();
   this.length = 0;  
   this.idgen = idgen
   this.type = type
   this.global_eidmap = eidmap;
+  this.sidmap = sidmap;
   
   this.highlight = null;
   this.freelist = new GArray()
@@ -782,6 +784,8 @@ function GeoArray<T>(type, idgen, eidmap) {
     item._gindex = this.arr.length;
     this.arr.push(item);
     
+    this.sidmap[item.sid] = item;
+    
     this.length += 1;
   }
   
@@ -808,6 +812,8 @@ function GeoArray<T>(type, idgen, eidmap) {
     
     delete this.eidmap[item.eid];
     delete this.global_eidmap[item.eid];
+    delete this.sidmap[item.sid];
+    
     this.arr[item._gindex] = undefined;
     
     this.freelist.push(item._gindex);
@@ -1105,14 +1111,15 @@ function Mesh() {
   
   this.idgen = new EIDGen();
   this.eidmap = {};
+  this.sidmap = {}; //for selection index buffer IDs
   
   Object.defineProperty(this, "selected", {get: function() : Iterator<T> {
     return new AllTypesSelectIter(this);
   }});
   
-  this.verts = new GeoArray<Vert>(MeshTypes.VERT, this.idgen, this.eidmap);
-  this.edges = new GeoArray<Edge>(MeshTypes.EDGE, this.idgen, this.eidmap);
-  this.faces = new GeoArray<Face>(MeshTypes.FACE, this.idgen, this.eidmap);
+  this.verts = new GeoArray<Vert>(MeshTypes.VERT, this.idgen, this.eidmap, this.sidmap);
+  this.edges = new GeoArray<Edge>(MeshTypes.EDGE, this.idgen, this.eidmap, this.sidmap);
+  this.faces = new GeoArray<Face>(MeshTypes.FACE, this.idgen, this.eidmap, this.sidmap);
  
   this.vdata = new GeoDataLayout();
   this.edata = new GeoDataLayout();
@@ -1153,9 +1160,9 @@ Mesh.fromSTRUCT = function(unpacker) {
   var edges = m.edges;
   var faces = m.faces;
   
-  m.verts = new GeoArray<Vert>(MeshTypes.VERT, m.idgen, m.eidmap);
-  m.edges = new GeoArray<Edge>(MeshTypes.EDGE, m.idgen, m.eidmap);
-  m.faces = new GeoArray<Face>(MeshTypes.FACE, m.idgen, m.eidmap);
+  m.verts = new GeoArray<Vert>(MeshTypes.VERT, m.idgen, m.eidmap, this.sidmap);
+  m.edges = new GeoArray<Edge>(MeshTypes.EDGE, m.idgen, m.eidmap, this.sidmap);
+  m.faces = new GeoArray<Face>(MeshTypes.FACE, m.idgen, m.eidmap, this.sidmap);
   
   var loops = {}
   

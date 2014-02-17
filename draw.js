@@ -288,14 +288,14 @@ function gen_mesh_selbufs(gl, mesh)
   
   var i = 0;
   for (var v in mesh.verts) {
-    i = pack_index(v.eid+1, vsels, i);
+    i = pack_index(v.sid+1, vsels, i);
   }
   
   var esels = new Array(mesh.edges.length*8);
   i = 0;
   for (var e in mesh.edges) {
-    i = pack_index(e.eid+1, esels, i);
-    i = pack_index(e.eid+1, esels, i);
+    i = pack_index(e.sid+1, esels, i);
+    i = pack_index(e.sid+1, esels, i);
   }
   
   var tri_selbuff = new Array(mesh.looptris.length*4);
@@ -305,9 +305,9 @@ function gen_mesh_selbufs(gl, mesh)
   i = 0;
   for (var j=0; j<Math.floor(ls.length/3); j++) {
     try {
-    i = pack_index(ls[j*3].f.eid+1, tri_selbuff, i);
-    i = pack_index(ls[j*3+1].f.eid+1, tri_selbuff, i);
-    i = pack_index(ls[j*3+2].f.eid+1, tri_selbuff, i);
+    i = pack_index(ls[j*3].f.sid+1, tri_selbuff, i);
+    i = pack_index(ls[j*3+1].f.sid+1, tri_selbuff, i);
+    i = pack_index(ls[j*3+2].f.sid+1, tri_selbuff, i);
     } catch (_error) {
     console.log("j", j);
     }

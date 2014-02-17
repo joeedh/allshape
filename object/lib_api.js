@@ -121,6 +121,8 @@ DataLib.prototype.add = function(block) {
     
   dl.list.push(block);
   dl.namemap[block.name] = block;
+  
+  block.on_add(this);
 }
 
 DataLib.prototype.get_active = function(data_type) {
@@ -176,6 +178,12 @@ DataBlock.STRUCT = """
     lib_flag : int;
   }
 """;
+
+DataBlock.prototype.on_add = function(DataLib lib) {
+}
+
+DataBlock.prototype.on_remove = function(DataLib lib) {
+}
 
 DataBlock.prototype.init_from_pack = function() {
   if (this.lib_lib == -1)

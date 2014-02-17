@@ -195,12 +195,15 @@ PUTL.parser = function(lexer, errfunc) {
 }
 create_prototype(PUTL.parser);
 
-PUTL.parser.prototype.parse = function(data) {
+PUTL.parser.prototype.parse = function(data, err_on_unconsumed) {
+  if (err_on_unconsumed == undefined)
+    err_on_unconsumed = true;
+    
   if (data != undefined)
     this.lexer.input(data);
   
   var ret = this.start(this);
-  if (!this.lexer.at_end() && this.lexer.next() != undefined) {
+  if (err_on_unconsumed && !this.lexer.at_end() && this.lexer.next() != undefined) {
     //console.log(this.lexer.lexdata.slice(this.lexer.lexpos-1, this.lexer.lexdata.length));
     this.error(undefined, "parser did not consume entire input");
   }

@@ -13,6 +13,21 @@ function Area(type, ctx, pos, size)
 }
 inherit(Area, UIFrame);
 
+Area.STRUCT = """
+  Area { 
+    pos : vec2;
+    size : vec2;
+    type : string;
+  }
+"""
+
+Area.fromSTRUCT = function(reader) {
+  var ob = {};
+  reader(ob);
+  
+  return ob;
+}
+
 Area.prototype.on_add = function(parent)
 {
   this.build_topbar();
@@ -91,10 +106,26 @@ function ScreenArea(area, ctx, pos, size)
   this.area = area;
   area.pos[0] = 0; area.pos[1] = 0;
   
-  console.log(this)
   this.add(area);
 }
 inherit(ScreenArea, UIFrame);
+
+ScreenArea.STRUCT = """
+  ScreenArea { 
+    pos : vec2;
+    size : vec2;
+    type : string;
+    this.screens : iter(k, abstract(Area)) | obj.screens[k];
+    active : string | obj.area.constructor.name;
+  }
+"""
+
+ScreenArea.fromSTRUCT = function(reader) {
+  var ob = {};
+  reader(ob);
+  
+  return ob;
+}
 
 ScreenArea.prototype.on_add = function(parent)
 {
@@ -895,6 +926,8 @@ function Screen(WebGLRenderingContext gl,
   this.keymap = new KeyMap();
   this.last_sync = time_ms();
   
+  this.areas = new GArray();
+  
   var this2 = this;
   function handle_split_areas() {
     this2.split_areas();
@@ -903,6 +936,23 @@ function Screen(WebGLRenderingContext gl,
   this.keymap.add_func(new KeyHandler("V", [], "Split Areas"), handle_split_areas)
 }
 inherit(Screen, UIFrame);
+
+Screen.STRUCT = """
+  Screen { 
+    pos : vec2;
+    size : vec2;
+    areas : array(ScreenArea);
+  }
+"""
+
+Screen.fromSTRUCT = function(reader) {
+  var ob = {};
+  reader(ob);
+  
+  this.children = new GArray(this.children);
+  
+  return ob;
+}
 
 Screen.prototype.split_areas = function() {
   console.log("split areas", this);
@@ -1301,6 +1351,8 @@ Screen.prototype.remove = function(UIElement child) {
   UIFrame.prototype.remove.call(this, child);
   
   if (child instanceof ScreenArea) {
+    this.areas.remove(child);
+    
     var bs = this.child_borders.get(child);
     for (var i=0; i<4; i++) {
       this.remove(bs[i]);
@@ -1314,6 +1366,8 @@ Screen.prototype.add = function(UIElement child, packflag) { //packflag is optio
   var view3d;
   
   if (child instanceof ScreenArea) {
+    this.areas.push(child);
+    
     for (var k in child.screens) {
       var area = child.screens[k];
       if (area instanceof View3DHandler)
