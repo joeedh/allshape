@@ -1199,5 +1199,38 @@ function do_unit_tests() {
  console.log("-------------------");
  return toterr==0;
 }
+function EIDGen() {
+ this.cur_eid = 1;
+}
+create_prototype(EIDGen);
+EIDGen.STRUCT = "\n  EIDGen {\n    cur_eid : int;\n  }";
+EIDGen.fromSTRUCT = function(unpacker) {
+ var g=new EIDGen();
+ unpacker(g);
+ return g;
+}
+EIDGen.prototype.set_cur = function(cur) {
+ this.cur_eid = Math.ceil(cur);
+}
+EIDGen.prototype.max_cur = function(cur) {
+ this.cur_eid = Math.max(Math.ceil(cur)+1, this.cur_eid);
+}
+EIDGen.prototype.get_cur = function(cur) {
+ return this.cur_eid;
+}
+EIDGen.prototype.gen_eid = function() {
+ return this.cur_eid++;
+}
+EIDGen.prototype.gen_id = function() {
+ return this.gen_eid();
+}
+EIDGen.prototype.toJSON = function() {
+ return {cur_eid: this.cur_eid}
+}
+EIDGen.fromJSON = function(obj) {
+ var idgen=new EIDGen();
+ idgen.cur_eid = obj.cur_eid;
+ return idgen;
+}
 
 //# sourceMappingURL=/content/../server/js_build/utils.js.sm

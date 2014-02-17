@@ -1020,3 +1020,53 @@ function do_unit_tests() {
   
   return toterr == 0;
 }
+
+function EIDGen() {
+  this.cur_eid = 1;
+}
+create_prototype(EIDGen);
+
+EIDGen.STRUCT = """
+  EIDGen {
+    cur_eid : int;
+  }""";
+  
+EIDGen.fromSTRUCT = function(unpacker) {
+  var g = new EIDGen();
+  unpacker(g);
+  
+  return g;
+}
+
+EIDGen.prototype.set_cur = function(cur) {
+  this.cur_eid = Math.ceil(cur);
+}
+
+//if cur is >= to this.cur_eid, 
+//set this.cur to cur+1
+EIDGen.prototype.max_cur = function(cur) {
+  this.cur_eid = Math.max(Math.ceil(cur)+1, this.cur_eid);
+}
+
+EIDGen.prototype.get_cur = function(cur) : int {
+  return this.cur_eid;
+}
+
+EIDGen.prototype.gen_eid = function() : int {
+  return this.cur_eid++;
+}
+
+EIDGen.prototype.gen_id = function() : int {
+  return this.gen_eid();
+}
+
+EIDGen.prototype.toJSON = function() {
+  return { cur_eid : this.cur_eid };
+}
+
+EIDGen.fromJSON = function(obj) {
+  var idgen = new EIDGen()
+  idgen.cur_eid = obj.cur_eid;
+  
+  return idgen;
+}

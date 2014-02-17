@@ -131,6 +131,7 @@ function SchemaParser() {
       return t;
     }),
     tk("OPEN", /\{/),
+    tk("EQUALS", /=/),
     tk("CLOSE", /}/),
     tk("COLON", /:/),
     tk("SOPEN", /\[/),
@@ -234,7 +235,7 @@ function SchemaParser() {
   }
   
   function p_Abstract(p) {
-    p.expect("abstract");
+    p.expect("ABSTRACT");
     p.expect("LPARAM");
     
     var type = p_Type(p);
@@ -306,7 +307,7 @@ function SchemaParser() {
     
     if (tok.type == "ID" && tok.value == "id") {
       p.next();
-      p.expect("=");
+      p.expect("EQUALS");
       
       st.id = p.expect("NUM");
     } 
@@ -334,11 +335,11 @@ var schema_parse = SchemaParser();
 
 function STRUCT()
 {
-  this.struct_ids = {};
   this.idgen = new EIDGen();
   
   this.structs = {};
   this.struct_cls = {};
+  this.struct_ids = {};
   this.compiled_code = {};
 }
 create_prototype(STRUCT);
@@ -756,6 +757,7 @@ STRUCT.prototype.read_object = function(data, cls, unpack_ctx uctx) {
   
   return cls.fromSTRUCT(load);
 }
+
 var istruct = new STRUCT();
 
 var test_vertex_struct = """
@@ -855,9 +857,18 @@ function init_struct_packer() {
   console.log("parsing class serialization scripts...");
   
   for (var cls in defined_classes) {
-    if (cls.STRUCT != undefined && cls.fromSTRUCT != undefined) {
-      istruct.add_struct(cls);
-    }
+    try {
+      if (cls.STRUCT != undefined && cls.fromSTRUCT != undefined) {
+        istruct.add_struct(cls);
+      }
+    } catch (err) {
+      if (err instanceof PUTLParseError) {
+        console.log("Error parsing struct: " + err.message);
+      } else {
+        print_stack(err);
+        throw err;
+      }
+    }    
   }
   console.log("done");
 }
@@ -871,7 +882,7 @@ function gen_struct_str() {
   return buf;
 }
 
-//typeof function, that handles object instances of basic types
+//ltypeof function, that handles object instances of basic types
 var _bt_h = {
   "String" : "string",
   "Number" : "number",

@@ -24,8 +24,8 @@ inherit(MeshEditor, ObjectEditor);
 
 MeshEditor.STRUCT = """
   MeshEditor {
-    selectmode : int,
-    use_subsurf : int
+    selectmode : int;
+    use_subsurf : int;
   }
 """
 

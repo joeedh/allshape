@@ -115,7 +115,7 @@ ScreenArea.STRUCT = """
     pos : vec2;
     size : vec2;
     type : string;
-    this.screens : iter(k, abstract(Area)) | obj.screens[k];
+    screens : iter(k, abstract(Area)) | obj.screens[k];
     active : string | obj.area.constructor.name;
   }
 """
@@ -941,7 +941,7 @@ Screen.STRUCT = """
   Screen { 
     pos : vec2;
     size : vec2;
-    areas : array(ScreenArea);
+    areas : array(abstract(ScreenArea));
   }
 """
 
