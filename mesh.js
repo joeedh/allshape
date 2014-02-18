@@ -2280,6 +2280,69 @@ recalc_normals_job.jobtype = new recalc_normals_job();
 function MeshAPI(Mesh mesh) {
   this.mesh = mesh;
   
+  this.select_flush = function(selmode) {
+    var m = this.mesh;
+    
+    if (selmode == MeshTypes.VERT) {
+      for (var v in m.verts) {
+        for (var e in v.edges) {
+          m.select(e, (v.flag & Flags.SELECT) && (e.other_vert(v).flag & Flags.SELECT));
+        }
+      }
+      
+      for (var f in m.faces) {
+        var totsel = 0;
+        
+        for (var v in f.verts) {
+          totsel += (v.flag & Flags.SELECT) != 0;
+        }
+        
+        m.select(f, totsel==f.totvert);
+      }
+      
+    } else if (selmode == MeshTypes.EDGE) {
+      for (var v in m.verts) {
+        var found = false;
+        for (var e in v.edges) {
+          if (e.flag & Flags.SELECT) {
+            found = true;
+            break;
+          }
+        }
+        
+        m.verts.select(v, found);
+      }
+      
+      for (var f in m.faces) {
+        var totsel = 0;
+        var tote = 0;
+        
+        for (var e in f.edges) {
+          totsel += e.flag & Flags.SELECT;
+          tote++;
+        }
+        
+        m.faces.select(f, totsel==tote);
+      }
+    } else {
+      for (var v in m.verts)
+        m.verts.select(v, false);
+      
+      for (var e in m.edges)
+        m.edges.select(e, false);
+      
+      for (var f in m.faces) {
+        if (!(f.flag & Flags.SELECT))
+          continue;
+        
+        for (var v in f.verts)
+          m.verts.select(v, true);
+        for (var e in f.edges)
+          m.edges.select(e, true);
+      }
+    }
+  }
+
   this.recalc_normals = function() {
     var k = 0;
     var m2 = this.mesh;

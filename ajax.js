@@ -679,7 +679,7 @@ function api_exec(path, netjob, mode,
   
   req.responseType = responseType
   req.onreadystatechange=function() {
-   console.log(req.readyState, req.status);
+   //console.log(req.readyState, req.status);
     if (req.readyState==4 && (req.status>=200 && req.status <=300)) {
       var obj;
       

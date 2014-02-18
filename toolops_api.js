@@ -81,7 +81,7 @@ ToolProperty.prototype.unpack = function(data, unpack_uctx uctx) {
 ToolProperty.prototype.set_data = function(data) {
   this.data = data;
   this.api_update(this.ctx, this.path);
-  this.update(this);
+  this.update.call(this);
 }
 
 ToolProperty.prototype.toJSON = function() {
@@ -265,8 +265,27 @@ function EnumProperty(string, valid_values, apiname, uiname, description, flag) 
 }
 inherit(EnumProperty, ToolProperty);
 
+EnumProperty.prototype.copy = function() {
+  var p = new EnumProperty("dummy", ["dummy"], this.apiname, this.uiname, this.description, this.flag)
+  p.keys = this.keys;
+  p.values = this.values;
+  p.data = this.data;
+  p.ui_value_names = this.ui_value_names;
+  p.update = this.update;
+  p.api_update = this.api_update;
+  
+  return p;
+}
+
 EnumProperty.prototype.pack = function(data) {
   pack_string(this.data);
+}
+
+EnumProperty.prototype.get_value = function() {
+  if (this.data in this.values)
+    return this.values[this.data];
+  else
+    return this.data;
 }
 
 EnumProperty.prototype.set_value = function(val) {
@@ -431,10 +450,10 @@ ToolMacro.prototype.connect_tools = function(ToolOp output, ToolOp input)
 {
   var old_set = input.user_set_data;
   
-  input.user_set_data = function(ToolProperty input2) {
-    input2.data = output.data;
+  input.user_set_data = function() {
+    this.data = output.data;
     
-    old_set(input2);
+    old_set.call(this);
   }
 }
 
@@ -460,7 +479,7 @@ ToolMacro.prototype.exec = function(Context ctx) {
     for (var k in op.inputs) {
       var p = op.inputs[k];
       if (p.user_set_data != undefined)
-        p.user_set_data(p);
+        p.user_set_data.call(p);
     }
     
     op.undo_pre(ctx);    
@@ -482,7 +501,7 @@ ToolMacro.prototype.modal_init = function(Context ctx) {
       for (var k in op.inputs) {
         var p = op.inputs[k];
         if (p.user_set_data != undefined)
-          p.user_set_data(p);
+          p.user_set_data.call(p);
       }
       op.modal_ctx = this.modal_ctx;
       
@@ -492,7 +511,7 @@ ToolMacro.prototype.modal_init = function(Context ctx) {
       for (var k in op.inputs) {
         var p = op.inputs[k];
         if (p.user_set_data != undefined)
-          p.user_set_data(p);
+          p.user_set_data.call(p);
       }
       
       op.undo_pre(ctx);

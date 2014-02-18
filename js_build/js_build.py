@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.3
+#!/usr/bin/env python3
 
 import os, sys, os.path, time, random, math
 import shelve, struct, io, imp, ctypes, re
@@ -9,6 +9,7 @@ try:
 except:
   do_smap_roots = False
 
+from js_sources import js_sources
 db = None
 db_depend = None
 
@@ -29,20 +30,20 @@ else:
 if build_cmd == "clean": build_cmd = "cleanbuild"
 
 files = []
-for f in os.listdir("../"):
-  if f.endswith(".js"):
-    files.append([".."+os.path.sep+f, f])
+for f in js_sources: 
+  if os.path.sep in f or "/" in f:
+    f2 = os.path.split(f)[1]
+  else:
+    f2 = f
+  files.append([".."+os.path.sep+f, f2])
 
-for f in os.listdir("../object"):
-  if f.endswith(".js"):
-    files.append(["../object"+os.path.sep+f, f])
-    
+"""
 for f in os.listdir("../server/"):
   if f.endswith(".js"):
     files.append(["../server/%s"%f, "../server/js_build/%s"%f])
+#"""
 
 #sha1 library
-files.append(["../crypto/sha1.js", "sha1.js"])
 files.append(["../tinygpu/tinygpu_test.html.in".replace("/", os.path.sep), ""])
 files.append(["../unit_test.html".replace("/", os.path.sep), "unit_test.html"])
 
@@ -58,7 +59,7 @@ PYBIN += " "
 JCC = "../js_parser/js_cc.py".replace("/", os.path.sep)
 TCC = "../tinygpu/tinygpu.py".replace("/", os.path.sep)
 
-JFLAGS = "-gm"
+JFLAGS = "-gm -mn"
 if do_smap_roots:
   JFLAGS += " -gsr"
   
@@ -197,9 +198,11 @@ def main():
     db.sync();
   
   built_files = []
+  fi = 0
   for f, target, abspath in iter_files(files):
     fname = os.path.split(abspath)[1]
-      
+    fi += 1
+    
     if not do_rebuild(abspath): continue
     
     build_depend(abspath);
@@ -211,7 +214,8 @@ def main():
         cmd = handlers[k](f, target)
         re_size = len(k)
     
-    print(cmd)
+    perc = int((float(fi) / len(files))*100.0)
+    print("[%i%%] " % perc, cmd)
     ret = os.system(cmd)
     
     if ret in [-1, 65280]:
@@ -240,7 +244,25 @@ def main():
 
   db.close()
   db_depend.close()
-
+  
+  #write aggregate, minified file
+  if len(built_files) > 0:
+    print("\n\nwriting app.js...")
+    aggregate()
+  
+def aggregate(outpath="app.js"):
+  outfile = open(outpath, "w")
+  
+  for f in files:
+    if not f[0].endswith(".js"): continue
+    
+    f2 = open(f[1], "r")
+    outfile.write(f2.read())
+    outfile.write("\n")
+    f2.close()
+    
+  outfile.close()
+    
 if __name__ == "__main__":
   if build_cmd == "loop":
     while 1:

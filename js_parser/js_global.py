@@ -22,6 +22,7 @@ glob_cmd_short_override["g_include_dirs"] = "I"
 glob_cmd_short_override["g_do_annote"] = "na"
 glob_cmd_short_override["g_gen_source_map"] = "gm"
 glob_cmd_short_override["g_gen_smap_orig"] = "gsr"
+glob_cmd_short_override["g_minify"] = "mn"
 
 def argv_to_argline():
   s = ""
@@ -34,8 +35,11 @@ dont_set = set(["destroy", "force", "print", "process", "pre", "do", "exit"])
 
 class Glob:
     g_gen_source_map = False;
+    g_semi_debug = False;
     g_gen_smap_orig = False;
+    g_minify = False;
     g_error = False
+    g_smap_file = 0;
     g_line = 0
     g_log_productions = False
     g_production_debug = False

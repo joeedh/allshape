@@ -213,7 +213,13 @@ class NumLitNode (ValueNode):
   
   def get_type_str(self):
     return "float" if type(self.val) == float else "int"
-    
+  
+  def fmt(self):
+    if type(self.val) == HexInt:
+      return hex(self.val)
+    elif type(self.val) in [int, float]:
+      return str(self.val)
+  
   def gen_js(self, tlevel):
     if type(self.val) == HexInt:
       s = hex(self.val)
@@ -810,11 +816,11 @@ class ObjLitNode (Node):
   def gen_js(self, tlevel):
     s = self.s("{")
     
-    for i, c in enumerate(self.children):
+    for i, c in enumerate(self):
       if i > 0: 
         s += self.s(", ")
         
-      s += c.children[0].gen_js(tlevel) + self.s(": ") + c.children[1].gen_js(tlevel)
+      s += c[0].gen_js(tlevel) + self.s(": ") + c[1].gen_js(tlevel)
       
     s += self.s("}")
     return s
@@ -1567,14 +1573,14 @@ class DoWhileNode(Node):
     
     s = self.s("do {\n")    
     
-    if type(self.children[1]) != StatementList:
+    if type(self[1]) != StatementList:
       s += self.s(t2);
       
-    c = self.children[1].gen_js(tlevel)
-    if type(self.children[1]) != StatementList:
+    c = self[1].gen_js(tlevel)
+    if type(self[1]) != StatementList:
       c += self.s("\n")
       
-    s += c + self.s(t + "} while (") + self.children[0].gen_js(tlevel) + self.s(")")
+    s += c + self.s(t + "} while (") + self[0].gen_js(tlevel) + self.s(")")
     return s
 
 class ElseNode(Node):
@@ -1640,7 +1646,7 @@ class KeywordNew(Node):
     return n2
     
   def gen_js(self, tlevel):
-    return self.s("new ") + self.children[0].gen_js(tlevel)
+    return self.s("new ") + self[0].gen_js(tlevel)
     
   def extra_str(self):
     return ""

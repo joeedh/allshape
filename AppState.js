@@ -535,7 +535,7 @@ ToolStack.prototype.exec_tool = function(ToolOp tool) {
   console.log(tool);
   if (tool.can_call(ctx) == false) {
     console.trace()
-    console.log("Can not call tool.");
+    console.log("Can not call tool '" + tool.constructor.name + "'");
     console.log(typeof tool);
     return;
   }
@@ -545,9 +545,11 @@ ToolStack.prototype.exec_tool = function(ToolOp tool) {
   
   for (var k in tool.inputs) {
     var p = tool.inputs[k];
-     
+    
+    p.ctx = ctx;
+    
     if (p.user_set_data != undefined)
-      p.user_set_data(p);
+      p.user_set_data.call(p);
   }
   
   if (tool.is_modal) {

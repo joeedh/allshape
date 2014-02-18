@@ -74,10 +74,13 @@ function SelectOp(mode) {
   
   var mode_vals = ["add", "subtract"];
   
+  var selmode_enum = mesh_selectmode_enum.copy();
+  
   this.inputs = {eid_vs: new ElementBufProperty([], "verts", "Vertices", "Vertices"),
                  eid_es: new ElementBufProperty([], "edges", "Edges", "Edges"),
                  eid_fs: new ElementBufProperty([], "faces", "Faces", "Faces"),
                  mode: new EnumProperty(mode, mode_vals, "mode", "Mode", "mode"),
+                 selmode : selmode_enum,
                  do_flush: new BoolProperty(true, "do_flush", "Do Flush", "Updated selection of other element types")}
 }
 
@@ -90,10 +93,17 @@ function ToggleSelectAllOp(mode) { //mode is optional, defaults to "auto"
     mode = "auto";
   
   this.name = "ToggleSelectAll"
+  this.uiname = "Toggle Select"
+  
   this.is_modal = false;
+  var selmode_enum = mesh_selectmode_enum.copy();
+  selmode_enum.flag |= PackFlags.UI_DATAPATH_IGNORE;
   
   var mode_vals = ["select", "deselect", "auto"];
-  this.inputs = {mode: new EnumProperty(mode, mode_vals, "mode", "Mode", "mode")}
+  this.inputs = {
+                  mode: new EnumProperty(mode, mode_vals, "mode", "Mode", "mode"),
+                  selmode : selmode_enum
+                }
 }
 
 inherit(ToggleSelectAllOp, SelectOpAbstract);
@@ -124,13 +134,13 @@ ToggleSelectAllOp.prototype.exec = function(ctx) {
     mode = this.inputs.mode.data == "deselect";
   }
   
-  mesh = ctx.view3d.mesh;
+  var mesh = ctx.view3d.mesh;
   for (var v in lst) {
     lst.select(v, !mode);
   }
   
-  ctx.view3d.select_flush();
-  ctx.view3d.mesh.regen_colors();
+  mesh.api.select_flush(this.inputs.selmode.get_value());
+  mesh.regen_colors();
 }
 
 SelectOp.prototype.can_call = function(ctx) {
@@ -164,7 +174,7 @@ SelectOp.prototype.exec = function(ctx) {
   }
   
   if (this.inputs.do_flush.data) {
-    ctx.view3d.select_flush();
+    mesh.api.select_flush(this.inputs.selmode.get_value());
   }
   
   ctx.view3d.mesh.regen_colors();
@@ -177,10 +187,14 @@ function EdgeLoopOp(mode) {
   this.is_modal = false;
   this.flag = ToolFlags.HIDE_TITLE_IN_LAST_BUTTONS;
   
+  var selmode_enum = mesh_selectmode_enum.copy();
+  
   var mode_vals = ["add", "subtract"];
   this.inputs = {eid_es: new ElementBufProperty([], "edges", "Start Edges", "Start Edges"),
                  mode: new EnumProperty(mode, mode_vals, "mode", "Mode", "mode"),
-                 do_flush: new BoolProperty(true, "do_flush", "Do Flush", "Updated selection of other element types")}
+                 do_flush: new BoolProperty(true, "do_flush", "Do Flush", "Updated selection of other element types"),
+                 selmode : selmode_enum
+                 }
 }
 
 inherit(EdgeLoopOp, SelectOpAbstract);
@@ -242,7 +256,7 @@ EdgeLoopOp.prototype.exec = function(ctx) {
   }
   
   if (flush) {
-    ctx.view3d.select_flush();
+    ctx.mesh.api.select_flush(this.inputs.selmode.get_value());
   }
   
   ctx.view3d.mesh.regen_colors();
@@ -255,9 +269,12 @@ function FaceLoopOp(mode) {
   this.is_modal = false;
   this.flag = ToolFlags.HIDE_TITLE_IN_LAST_BUTTONS;
   
+  var selmode_enum = mesh_selectmode_enum.copy();
+  
   var mode_vals = ["add", "subtract"];
   this.inputs = {eid_es: new ElementBufProperty([], "edges", "Start Edges", "Start Edges"),
                  mode: new EnumProperty(mode, mode_vals, "mode", "Mode", "mode"),
+                 selmode : selmode_enum,
                  do_flush: new BoolProperty(true, "do_flush", "Do Flush", "Updated selection of other element types")}
 }
 
@@ -308,7 +325,7 @@ FaceLoopOp.prototype.exec = function(ctx) {
   }
   
   if (flush) {
-    ctx.view3d.select_flush();
+    ctx.mesh.api.select_flush(this.inputs.selmode.get_value());
   }
   
   ctx.view3d.mesh.regen_colors();
@@ -333,9 +350,12 @@ function CircleSelectOp() {
   this.selset = new set();
   this.unselset = new set();
   
+  var selmode_enum = mesh_selectmode_enum.copy();
+  
   var mode_vals = ["add", "subtract"];
   this.inputs = {sel_eids: new ElementBufProperty([], "sel_geometry", "SelGeometry", "Geometry to select"),
                  unsel_eids: new ElementBufProperty([], "unsel_geometry", "UnselGeometry", "Geometry to deselect"),
+                 selmode : selmode_enum,
                  do_flush: new BoolProperty(true, "do_flush", "Do Flush", "Update selection of other element types")};
 }
 
@@ -568,7 +588,7 @@ CircleSelectOp.prototype.on_mousemove = function(event) {
     var found = this.do_sel(event);
     if (found) {
       if (this.inputs.do_flush.data) {
-        this.modal_ctx.view3d.select_flush();
+        this.modal_ctx.mesh.api.select_flush(this.inputs.selmode.get_value());
       }
       this.modal_ctx.mesh.regen_colors();      
     }
@@ -662,7 +682,7 @@ CircleSelectOp.prototype.exec = function(ctx)
   }
   
   if (this.inputs.do_flush.data) {
-    ctx.view3d.select_flush();
+    ctx.mesh.api.select_flush(this.inputs.selmode.get_value());
   }
   
   ctx.mesh.regen_colors();

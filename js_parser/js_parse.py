@@ -52,9 +52,11 @@ def push_scope():
   
 def pop_scope():
   global scopestack, parsescope
+  
   if len(scopestack) > 0:
     parsescope = scopestack.pop(-1)
   else:
+    #traceback.print_stack()
     sys.stderr.write("Warning: invalid pop_scope() in parse internals\n");
     
 statestack = []
@@ -1800,8 +1802,8 @@ def p_error(p):
       
       yacc.errok()
       glob.g_error = False
-      if glob.g_production_debug:
-        sys.stdout.write("handled semicolon error : %d\n" % glob.g_line)
+      if glob.g_production_debug or glob.g_semi_debug:
+        sys.stdout.write("handled semicolon error : %d\n" % p.lexpos)
       return
     else:      
       glob.g_error = True

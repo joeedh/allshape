@@ -12,7 +12,8 @@ var PackFlags = {
   INHERIT_HEIGHT : 1, INHERIT_WIDTH: 2, 
   ALIGN_RIGHT : 4, ALIGN_LEFT: 8, 
   ALIGN_CENTER: 16, ALIGN_BOTTOM : 32, 
-  IGNORE_LIMIT : 64, NO_REPACK : 128
+  IGNORE_LIMIT : 64, NO_REPACK : 128,
+  UI_DATAPATH_IGNORE : 256
 }
 var CanvasFlags = {NOT_ROOT : 1, NO_PROPEGATE : 2}
 
@@ -280,6 +281,7 @@ var _trilist_c1 = new Vector4(); var _trilist_c2 = new Vector4()
 var _trilist_c3 = new Vector4(); var _trilist_c4 = new Vector4()
 var _trilist_v5 = new Vector3(); var _trilist_v6 = new Vector3();
 var _trilist_v7 = new Vector3(); var _trilist_v8 = new Vector3();
+var _trilist_v9 = new Vector3();
 
 function TriList(View3DHandler view3d, UICanvas canvas) {
   this.verts = [];
@@ -348,7 +350,8 @@ function TriList(View3DHandler view3d, UICanvas canvas) {
   this.transform = function(v) {
     if (v.length == 2) v.push(0);
     
-    var v3 = new Vector3([v[0], v[1], 0])
+    var v3 = _trilist_v9;
+    v3[0] = v[0]; v3[1] = v[1]; v3[2] = v[2];
     
     v3.multVecMatrix(this.canvas.transmat);
     
@@ -1154,7 +1157,7 @@ UICanvas.prototype.box1 = function(pos, size, clr, rfac, outline_only) {//clr,rf
   
   var start = 0;
   var ang = Math.PI/2;
-  var r = 8 //Math.sqrt(size[0]*size[1])
+  var r = 4 //Math.sqrt(size[0]*size[1])
   
   if (rfac == undefined) 
     rfac = 1;
@@ -2047,7 +2050,8 @@ ToolOpFrame.prototype.do_rebuild = function(ctx) {
   this.strct = strct;
   for (var p in strct) {
     //console.log(p.name, "=-");
-    this.prop(p.name, PackFlags.INHERIT_WIDTH);
+    if (!(p.flag & PackFlags.UI_DATAPATH_IGNORE))
+      this.prop(p.name, PackFlags.INHERIT_WIDTH);
   }
 }
 

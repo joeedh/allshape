@@ -1,11 +1,13 @@
-function api_define_view3d() {
-  var selmode = new EnumProperty("FACE", {"VERT":MeshTypes.VERT, "EDGE":MeshTypes.EDGE, "FACE":MeshTypes.FACE}, "selmode", "Select Mode", "Selection mode")
-  selmode.ui_value_names = {"VERT": "Vertices", "EDGE": "Edges", "FACE": "Faces"}
+var mesh_selectmode_enum = new EnumProperty("FACE", {"VERT":MeshTypes.VERT, "EDGE":MeshTypes.EDGE, "FACE":MeshTypes.FACE}, "selmode", "Select Mode", "Selection mode")
+mesh_selectmode_enum.ui_value_names = {"VERT": "Vertices", "EDGE": "Edges", "FACE": "Faces"}
 
+function api_define_view3d() {
+  var selmode = mesh_selectmode_enum.copy();
+  
   selmode.update = function() {
     this.ctx.view3d.selectmode = this.values[this.data];
   }
-
+  
   var zoomfac = new FloatProperty(0, "zoomfac", "Zoom", "Zoom Factor", [-7, 7], [-7, 7]);
   zoomfac.update = function() {
     var view3d = this.ctx.view3d;
@@ -302,7 +304,10 @@ function api_define_ops() {
       return macro;
     },
     "mesh.toggle_select_all" : function(ctx, args) {
-      return new ToggleSelectAllOp();
+      var op = new ToggleSelectAllOp();
+      op.inputs.selmode.set_data(ctx.view3d.selectmode)
+      
+      return op;
     },
     "mesh.triangulate" : function(ctx, args) {
       if (!("faces" in args))

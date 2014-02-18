@@ -514,7 +514,7 @@ function DataAPI(appstate) {
     }
     
     if (p.update != undefined) {
-      p.update(p);
+      p.update.call(p);
     }
   }
   

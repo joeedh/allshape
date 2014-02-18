@@ -85,6 +85,10 @@ inherit(UIMenuButton, UIElement);
 UIMenuButton.prototype.on_tick = function() {
   if (this.state & UIFlags.USE_PATH) {
     var val = this.get_prop_data();
+    
+    if (val == undefined)
+      val = "(undefined)"
+    
     if (val != this.val) {
       this.val = val;
       

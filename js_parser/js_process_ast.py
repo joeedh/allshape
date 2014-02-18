@@ -1,14 +1,70 @@
-from js_global import glob
-from js_typespace import *
-from js_ast import *
-from js_util_types import *
+def find_node(node, ntype, strict=False, depth=0):
+  if type(node) == ntype:
+    if not (depth == 0 and strict):
+      return node
+    
+  for n in node.children:
+    ret = find_node(n, ntype, strict, depth+1)
+    if ret != None: return ret
+  return None
 
-import js_ast
-node_types = set()
-for k in js_ast.__dict__:
-  if isinstance(getattr(js_ast, k), Node):
-    node_types.add(getattr(js_ast, k))
+def traverse_i(n, ntype, func, i, cur=None, use_depth=False, 
+             exclude=[], copy_children=False, depth=0):
+  if cur == None:
+    cur = [0]
+  
+  if type(n) in exclude and depth != 0:
+    return
+  
+  if copy_children:
+    cs = n[:]
+  
+  if type(n) == ntype: 
+    if cur[0] == i:
+      cur[0] += 1
+      if use_depth:
+        func(n, depth)
+      else:
+        func(n)
+    else:
+      cur[0] += 1
+    
+  if not copy_children:
+    cs = n.children
+    
+  for c in cs:
+    traverse_i(c, ntype, func, i, cur, use_depth, exclude, copy_children, depth+1)
 
+def null_node(n):
+  return n in [0, None]
+
+def traverse(n, ntype, func, use_depth=False, 
+             exclude=[], copy_children=False, 
+             use_scope=False, scope=None, depth=0):
+  if scope == None: scope = {}
+  scope = handle_scope(n, scope)
+  
+  if type(n) in exclude and depth != 0:
+    return
+
+  if copy_children:
+    cs = n[:]
+  
+  if type(n) == ntype: 
+    if use_depth and use_scope:
+      func(n, scope, depth)
+    elif use_scope:
+      func(n, scope)
+    elif use_depth:
+      func(n, depth)
+    else:
+      func(n)
+  
+  if not copy_children:
+    cs = n.children
+    
+  for c in cs:
+    traverse(c, ntype, func, use_depth, exclude, copy_children, use_scope, scope, depth+1)
      
 class VarBinding:
   def __init__(self, node, name, type):
@@ -94,7 +150,7 @@ class NodeVisit:
   def __init__(self):
     pass
   
-  def traverse(self, node, scope, tlevel=0):
+  def traverse(self, node, scope={}, tlevel=0):
     if scope == None and tlevel != 0:
       raise RuntimeError("emit called without scope")
       
@@ -154,15 +210,6 @@ def handle_nodescope_post(n, scope):
     elif type(n) == BinOpNode and n.op == ".":
       scope.pop()
     
-def find_node(node, ntype, strict=False, depth=0):
-  if type(node) == ntype:
-    if not (depth == 0 and strict):
-      return node
-    
-  for n in node.children:
-    ret = find_node(n, ntype, strict, depth+1)
-    if ret != None: return ret
-  return None
 
 def templates_match(n1, n2):
   if n1 != None and n2 == None: return False
@@ -221,64 +268,6 @@ def handle_scope(n, scope):
     
     return scope
     
-def traverse(n, ntype, func, use_depth=False, 
-             exclude=[], copy_children=False, 
-             use_scope=False, scope=None, depth=0):
-  if scope == None: scope = {}
-  scope = handle_scope(n, scope)
-  
-  if type(n) in exclude and depth != 0:
-    return
-
-  if copy_children:
-    cs = n[:]
-  
-  if type(n) == ntype: 
-    if use_depth and use_scope:
-      func(n, scope, depth)
-    elif use_scope:
-      func(n, scope)
-    elif use_depth:
-      func(n, depth)
-    else:
-      func(n)
-  
-  if not copy_children:
-    cs = n.children
-    
-  for c in cs:
-    traverse(c, ntype, func, use_depth, exclude, copy_children, use_scope, scope, depth+1)
-
-def traverse_i(n, ntype, func, i, cur=None, use_depth=False, 
-             exclude=[], copy_children=False, depth=0):
-  if cur == None:
-    cur = [0]
-  
-  if type(n) in exclude and depth != 0:
-    return
-  
-  if copy_children:
-    cs = n[:]
-  
-  if type(n) == ntype: 
-    if cur[0] == i:
-      cur[0] += 1
-      if use_depth:
-        func(n, depth)
-      else:
-        func(n)
-    else:
-      cur[0] += 1
-    
-  if not copy_children:
-    cs = n.children
-    
-  for c in cs:
-    traverse_i(c, ntype, func, i, cur, use_depth, exclude, copy_children, depth+1)
-
-def null_node(n):
-  return n in [0, None]
-
 def flatten_statementlists(node, typespace):
   if node == None: 
     print("None passed to flatten_statementlists")
@@ -1024,3 +1013,21 @@ def infer_types(ts):
   
   set_const_types()
 
+from js_global import glob
+from js_typespace import *
+from js_ast import *
+from js_util_types import *
+
+import js_ast
+node_types = set()
+
+for k in js_ast.__dict__:
+  n = js_ast.__dict__[k]
+  try:
+    if not issubclass(getattr(js_ast, k), Node):
+      continue;
+  except TypeError:
+    continue
+  node_types.add(k)
+
+  

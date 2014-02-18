@@ -392,11 +392,11 @@ def gen_re():
     
   return Lit()
 
-print(gen_re())
+#print(gen_re())
 re1 = gen_re()
  
 str1 = r"/ 3) * 3;              //"
-print("\n" + str(str1))
+#print("\n" + str(str1))
 
 m = re.match(re1, str1)
 if m != None:

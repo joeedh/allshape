@@ -882,7 +882,7 @@ function set_highlight_uniforms(gl, highlight, program)
   
   var clr = [0, 0, 0, 0];
   if (highlight != undefined) {
-    pack_index(highlight.eid+1, clr, 0);
+    pack_index(highlight.sid+1, clr, 0);
   }
   
   gl.uniform4fv(gl.getUniformLocation(program.program, eidstr), clr);

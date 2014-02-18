@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.3
+#!/usr/bin/env python3
 import sys, os.path, os, time, stat, struct, ctypes, io, subprocess, math, random, difflib
 import ply, re, traceback
 import argparse, base64
@@ -1655,9 +1655,13 @@ def parse_intern(data, create_logger=False, expand_loops=True, expand_generators
     
     set_smap(result, smap)
     
-    buf = result.gen_js(0)
-    map = gen_source_map(data, buf, smap);
-    
+    if not glob.g_minify:
+      buf = result.gen_js(0)
+      map = gen_source_map(data, buf, smap);
+    else:
+      buf, smap = js_minify(result)
+      map = gen_source_map(data, buf, smap)
+      
     buf += "\n//# sourceMappingURL=/content/%s\n"%(glob.g_outfile+".sm")
     
     if glob.g_gen_smap_orig:
@@ -1665,7 +1669,10 @@ def parse_intern(data, create_logger=False, expand_loops=True, expand_generators
       f.write(data)
       f.close()
   else:
-    buf = result.gen_js(0)
+    if not glob.g_minify:
+      buf = result.gen_js(0)
+    else:
+      buf, smap = js_minify(result)
   
   if glob.g_outfile == "":
     print(buf)
@@ -1795,7 +1802,9 @@ def test_regexpr():
   print(buf)
   buf = rparser.parse(buf, lexer=rlexer)
   print(buf)
-  
+ 
+from js_minify import *
+ 
 def main():
     cparse = argparse.ArgumentParser(add_help=False)
 
