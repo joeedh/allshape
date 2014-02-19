@@ -14,7 +14,7 @@ class MinOutVisit (NodeVisit):
     self.smap = smap;
     
     #self.max_col = 75;
-    self.max_col = 600
+    self.max_col = 2500000
     self.col = 0;
     self.required_nodes = s = set()
     

@@ -347,7 +347,7 @@ def gen_source_map(src, gensrc, map):
   basename = os.path.split(os.path.abspath(glob.g_file))[1]
   
   if glob.g_gen_smap_orig:
-    orig = "/content/" + basename + ".sm.origsrc"
+    orig = "/content/" + basename + ".origsrc"
   else:
     orig = ""
     
@@ -360,24 +360,7 @@ def gen_source_map(src, gensrc, map):
     "mappings":
   """ % (basename, orig)
   
-  segs2 = []
-  for seg in map.segments:
-    segs2.append(seg)
-    
-    #[lexpos, node, length, str]
-    s = gensrc[seg[0]:seg[0]+seg[2]]
-    if s.strip() == "":
-      continue
-      
-    #print("%d: \"%s\" : \"%s\"" % (seg[0], s.replace("\n", "\\n"), seg[3].replace("\n", "\\n")))
-    
-    if (s != seg[3]):
-      print(gensrc2[seg[0]-10:seg[0]] + "^^^" +gensrc2[seg[0]:seg[0]+55])
-      print("")
-      #print(seg[1])
-      raise JSError("Source map corruption at node type " + seg[1].get_ntype_name() + " parent: " + seg[1].parent.get_ntype_name())
-    
-    #segs2.append(seg)
+  segs2 = map.segments
     
   line_segs = [[]]
   for seg in segs2:
@@ -405,6 +388,9 @@ def gen_source_map(src, gensrc, map):
         line_segs.append([s])
   
   def get_col(lexpos, text):
+    if len(line_segs) == 1:
+      return lexpos
+    
     i2 = 0
     while lexpos > 0 and text[lexpos] != "\n":
       i2 += 1
@@ -447,7 +433,7 @@ def gen_source_map(src, gensrc, map):
   if glob.g_outfile == "":
     print(js)
   else:
-    file = open(glob.g_outfile + ".sm", "w")
+    file = open(glob.g_outfile + ".map", "w")
     file.write(js)
     file.close()
   return js
@@ -1661,11 +1647,12 @@ def parse_intern(data, create_logger=False, expand_loops=True, expand_generators
     else:
       buf, smap = js_minify(result)
       map = gen_source_map(data, buf, smap)
-      
-    buf += "\n//# sourceMappingURL=/content/%s\n"%(glob.g_outfile+".sm")
+    
+    if glob.g_add_srcmap_ref:
+      buf += "\n//# sourceMappingURL=/content/%s\n"%(glob.g_outfile+".map")
     
     if glob.g_gen_smap_orig:
-      f = open(glob.g_outfile + ".sm.origsrc", "w")
+      f = open(glob.g_outfile + ".origsrc", "w")
       f.write(data)
       f.close()
   else:

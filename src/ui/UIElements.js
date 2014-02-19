@@ -5,16 +5,16 @@ function UIButton(ctx, text, pos, size, path, callback) {
   UIElement.call(this, ctx, path);
   
   this.clicked = false;
-  this.text = text
-  this.pos = pos
-  this.size = size
+  this.text = text;
+  this.pos = pos;
+  this.size = size;
   this.callback = callback;
 }
 inherit(UIButton, UIElement);
 
 UIButton.prototype.on_mousedown = function(MouseEvent event) {
   if (event.button == 0 && !this.clicked) {
-    this.push_modal()
+    this.push_modal();
     
     this.clicked = true;
     this.do_recalc();

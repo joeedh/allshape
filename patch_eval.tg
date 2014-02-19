@@ -1,3 +1,0 @@
-output float co[3][3];
-
-uniform sampler2D sampler2d;

@@ -134,7 +134,7 @@ class WSGIServerBridge:
     if self.has_handler(self.path):
       self.exec_handler(self.path, self.method)
     elif self.path in ["", "/"]:
-      file = open(doc_root + os.path.sep + "js_build"+os.path.sep+"tinygpu_test.html", "rb")
+      file = open((doc_root+"/src/html/main.html").replace("/", os.path.sep), "rb")
       
       body = file.read()
       file.close()

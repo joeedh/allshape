@@ -28,27 +28,19 @@ else:
   build_cmd = "build"
 
 if build_cmd == "clean": build_cmd = "cleanbuild"
+if not os.path.exists("build"):
+  os.mkdir("build")
 
+#read sources
 files = []
 for f in js_sources: 
   if os.path.sep in f or "/" in f:
     f2 = os.path.split(f)[1]
   else:
     f2 = f
-  files.append([".."+os.path.sep+f, f2])
-
-"""
-for f in os.listdir("../server/"):
-  if f.endswith(".js"):
-    files.append(["../server/%s"%f, "../server/js_build/%s"%f])
-#"""
-
-#sha1 library
-files.append(["../tinygpu/tinygpu_test.html.in".replace("/", os.path.sep), ""])
-files.append(["../unit_test.html".replace("/", os.path.sep), "unit_test.html"])
+  files.append([f, "build/"+f2])
 
 win32 = sys.platform == "win32"
-
 PYBIN = sys.executable
 if PYBIN == "":
   sys.stderr.write("Warning: could not find python binary, reverting to default\n")
@@ -56,10 +48,11 @@ if PYBIN == "":
 
 PYBIN += " "
 
-JCC = "../js_parser/js_cc.py".replace("/", os.path.sep)
-TCC = "../tinygpu/tinygpu.py".replace("/", os.path.sep)
+JCC = "tools/extjs_cc/js_cc.py".replace("/", os.path.sep)
+TCC = "tools/tinygpu/tinygpu.py".replace("/", os.path.sep)
 
-JFLAGS = "-gm -mn"
+#minified, concatenated build
+JFLAGS = "-gm -mn -nref"
 if do_smap_roots:
   JFLAGS += " -gsr"
   
@@ -162,7 +155,8 @@ def do_rebuild(abspath):
   
   if "[Conflict]" in abspath: return False
   
-  if build_cmd in ["filter", "single"] and fname not in filter:
+  if build_cmd in ["filter", "single"] and fname.lower() not in filter \
+                  and filter not in fname.lower():
     return False
   
   if abspath not in db or build_cmd in ["cleanbuild", "single"]:
@@ -189,8 +183,8 @@ def do_rebuild(abspath):
 def main():
   global db, db_depend
   
-  db = shelve.open("../../../jbuild.db".replace("/", os.path.sep))
-  db_depend = shelve.open("../../../jbuild_dependencies.db".replace("/", os.path.sep))
+  db = shelve.open("jbuild.db".replace("/", os.path.sep))
+  db_depend = shelve.open("jbuild_dependencies.db".replace("/", os.path.sep))
   
   if build_cmd == "cleanbuild":  
     for k in db:
@@ -216,11 +210,14 @@ def main():
     
     perc = int((float(fi) / len(files))*100.0)
     print("[%i%%] " % perc, cmd)
+    
+    #execute build command
     ret = os.system(cmd)
     
     if ret in [-1, 65280]:
       print("build failure\n\n")
       built_files.pop(-1)
+
       for pathtime in built_files:
         db[pathtime[0]] = pathtime[1]
       
@@ -248,21 +245,57 @@ def main():
   #write aggregate, minified file
   if len(built_files) > 0:
     print("\n\nwriting app.js...")
+    sys.stdout.flush()
     aggregate()
   
-def aggregate(outpath="app.js"):
+def aggregate(outpath="build/app.js"):
   outfile = open(outpath, "w")
   
+  sbuf = """{"version" : 3,
+  "file" : "app.js",
+  "sections" : [
+  """
+  
+  si = 0
   for f in files:
     if not f[0].endswith(".js"): continue
     
     f2 = open(f[1], "r")
-    outfile.write(f2.read())
+    buf = f2.read()
+    if "\n" in buf:
+      print("EEK!!", f)
+
+    outfile.write(buf)
     outfile.write("\n")
     f2.close()
     
+    smap = f[1] + ".map"
+    if 1: #os.path.exists(smap):
+      if si > 0:
+        sbuf += ",\n"
+        
+      line = si
+      col = 0
+      url = "/content/" + os.path.split(smap)[1]
+      
+      f2 = open(smap, "r")
+      map = f2.read()
+      f2.close()
+      
+      sbuf += "{\"offset\": {\"line\":%d, \"column\":%d}, \"url\": \"%s\"}" % \
+              (line, col, url)
+      si += 1
+
+  sbuf += "]}\n"
+  
+  outfile.write("//# sourceMappingURL=/content/app.js.map\n")
   outfile.close()
-    
+  
+  mapfile = open(outpath+".map", "w")
+  mapfile.write(sbuf)
+  mapfile.close()
+  
+  
 if __name__ == "__main__":
   if build_cmd == "loop":
     while 1:
