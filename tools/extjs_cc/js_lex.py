@@ -401,9 +401,9 @@ str1 = r"/ 3) * 3;              //"
 m = re.match(re1, str1)
 if m != None:
   s = m.span()
-  print(str1[s[0]: s[1]])
+#  print(str1[s[0]: s[1]])
 else:
-  print(None)
+  pass
 
 #sys.exit()
 #"""
@@ -413,6 +413,8 @@ t_REGEXPR = gen_re() #r'(((?<!\\)|(?<=\\\\))/)(([^\n\r\*\\/\[]|(((?<!\\)|(?<=\\\
 #t_STRINGLIT = r'".*"'
 strlit_val = StringLit("")
 start_q = 0
+
+t_mlstr_ignore = "WHYISTHISREQUIRED[][34"
 
 def t_MLSTRLIT(t):
   r'"""';
@@ -542,7 +544,11 @@ def t_incomment_error(t):
 def t_instr_error(t):
     print("Illegal character in string '%s'" % t.value[0])
     t.lexer.skip(1)
-    
+
+def t_mlstr_error(t):
+    print("Illegal character in multiline string '%s'" % t.value[0])
+    t.lexer.skip(1)
+  
 def t_COMMENT(t):
   r'//.*\n'
   

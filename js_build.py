@@ -2,12 +2,21 @@
 
 import os, sys, os.path, time, random, math
 import shelve, struct, io, imp, ctypes, re
+import subprocess, shlex
+
+num_cores = 5
 
 try:
   import jsbuild_config_local
   do_smap_roots = jsbuild_config_local.do_smap_roots
 except:
   do_smap_roots = False
+
+import jsbuild_config_local as config
+if "aggregate_smaps" in config.__dict__:
+  aggregate_smaps = config.aggregate_smaps
+else:
+  aggregate_smaps = True
 
 from js_sources import js_sources
 db = None
@@ -155,8 +164,7 @@ def do_rebuild(abspath):
   
   if "[Conflict]" in abspath: return False
   
-  if build_cmd in ["filter", "single"] and fname.lower() not in filter \
-                  and filter not in fname.lower():
+  if build_cmd in ["filter", "single"] and fname.lower() not in filter:
     return False
   
   if abspath not in db or build_cmd in ["cleanbuild", "single"]:
@@ -183,6 +191,8 @@ def do_rebuild(abspath):
 def main():
   global db, db_depend
   
+  procs = []
+  
   db = shelve.open("jbuild.db".replace("/", os.path.sep))
   db_depend = shelve.open("jbuild_dependencies.db".replace("/", os.path.sep))
   
@@ -192,6 +202,7 @@ def main():
     db.sync();
   
   built_files = []
+  failed_files = []
   fi = 0
   for f, target, abspath in iter_files(files):
     fname = os.path.split(abspath)[1]
@@ -212,25 +223,53 @@ def main():
     print("[%i%%] " % perc, cmd)
     
     #execute build command
-    ret = os.system(cmd)
+    while len(procs) >= num_cores:
+      newprocs = []
+      for p in procs:
+        if p[0].poll() == None:
+          newprocs.append(p)
+        else:
+          ret = p[0].returncode
+          if ret in [-1, 65280]:
+            failed_files.append(p[1])
+          
+      procs = newprocs
+      time.sleep(0.01)
     
-    if ret in [-1, 65280]:
-      print("build failure\n\n")
-      built_files.pop(-1)
-
-      for pathtime in built_files:
-        db[pathtime[0]] = pathtime[1]
+    if len(failed_files) > 0: continue  
+          
+    proc = subprocess.Popen(shlex.split(cmd))
+    procs.append([proc, f])
       
-      db.close()
-      db_depend.close()
-      
-      if build_cmd != "loop":
-        sys.exit(-1)
-      else:
-        return
-        
-    print(ret)
+    #ret = os.system(cmd)
   
+  while len(procs) > 0:
+    newprocs = []
+    for p in procs:
+      if p[0].poll() == None:
+        newprocs.append(p)
+      else:
+        ret = p[0].returncode
+        if ret in [-1, 65280]:
+          failed_files.append(p[1])
+    procs = newprocs
+    
+  if len(failed_files) > 0:
+    print("build failure\n\n")
+    for f in failed_files:
+      built_files.remove(f)
+
+    for pathtime in built_files:
+      db[pathtime[0]] = pathtime[1]
+    
+    db.close()
+    db_depend.close()
+    
+    if build_cmd != "loop":
+      sys.exit(-1)
+    else:
+      return
+        
   for pathtime in built_files:
     try:
       print("saving", db[pathtime[0]], pathtime[1])
@@ -247,10 +286,19 @@ def main():
     print("\n\nwriting app.js...")
     sys.stdout.flush()
     aggregate()
-  
+  if build_cmd != "loop":
+    print("build finished")
+
 def aggregate(outpath="build/app.js"):
   outfile = open(outpath, "w")
   
+  if aggregate_smaps:
+    f = open("build/srclist.txt", "w")
+    for p in files:
+      if not p[0].endswith(".js"): continue
+      f.write(p[1]+".map"+"\n")
+    f.close()
+    
   sbuf = """{"version" : 3,
   "file" : "app.js",
   "sections" : [
@@ -270,21 +318,20 @@ def aggregate(outpath="build/app.js"):
     f2.close()
     
     smap = f[1] + ".map"
-    if 1: #os.path.exists(smap):
-      if si > 0:
-        sbuf += ",\n"
-        
-      line = si
-      col = 0
-      url = "/content/" + os.path.split(smap)[1]
-      
-      f2 = open(smap, "r")
-      map = f2.read()
-      f2.close()
-      
-      sbuf += "{\"offset\": {\"line\":%d, \"column\":%d}, \"url\": \"%s\"}" % \
-              (line, col, url)
-      si += 1
+    if si > 0:
+      sbuf += ",\n"
+
+    line = si
+    col = 0
+    url = "/content/" + os.path.split(smap)[1]
+
+    f2 = open(smap, "r")
+    map = f2.read()
+    f2.close()
+
+    sbuf += "{\"offset\": {\"line\":%d, \"column\":%d}, \"map\": %s}" % \
+          (line, col, map)
+    si += 1
 
   sbuf += "]}\n"
   
@@ -300,6 +347,6 @@ if __name__ == "__main__":
   if build_cmd == "loop":
     while 1:
       main()
-      time.sleep(0.75);
+      time.sleep(0.15);
   else:
     main()

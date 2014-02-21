@@ -56,8 +56,9 @@ def pop_scope():
   if len(scopestack) > 0:
     parsescope = scopestack.pop(-1)
   else:
+    pass
     #traceback.print_stack()
-    sys.stderr.write("Warning: invalid pop_scope() in parse internals\n");
+    #sys.stderr.write("Warning: invalid pop_scope() in parse internals\n");
     
 statestack = []
 def push_state():
@@ -201,7 +202,7 @@ def handle_semi_error(p):
     #for l in prodname_log[-5:-1]:
     #  print(l)
       
-    print("a real error occurred 2!")
+    #print("a real error occurred 2!?")
     #print_err(p)
     
   return ret

@@ -24,6 +24,7 @@ glob_cmd_short_override["g_gen_source_map"] = "gm"
 glob_cmd_short_override["g_gen_smap_orig"] = "gsr"
 glob_cmd_short_override["g_minify"] = "mn"
 glob_cmd_short_override["g_add_srcmap_ref"] = "nref"
+glob_cmd_short_override["g_expand_iterators"] = "nei"
 
 def argv_to_argline():
   s = ""
@@ -32,46 +33,10 @@ def argv_to_argline():
   return s
 
 glob_defaults = {}
-dont_set = set(["destroy", "add", "force", "print", "process", "pre", "do", "exit"])
+dont_set = set(["expand", "destroy", "add", "force", 
+                "print", "process", "pre", "do", "exit"])
 
-class Glob:
-    g_gen_source_map = False;
-    g_add_srcmap_ref = True
-    g_semi_debug = False;
-    g_gen_smap_orig = False;
-    g_minify = False;
-    g_error = False
-    g_smap_file = 0;
-    g_line = 0
-    g_log_productions = False
-    g_production_debug = False
-    g_print_stack = True
-    g_file = ""
-    g_error_pre = None
-    g_tried_semi = False
-    g_lexpos = 0
-    g_clear_slashr = False
-    g_print_warnings = True
-    g_gen_log_code = False
-    g_msvc_errors = False
-    g_exit_on_err = True
-    g_do_annote = True
-    g_print_classes = False
-    g_outfile = ""
-    g_lexer = None
-    g_print_nodes = False
-    g_print_tokens = False
-    g_validate_mode = False
-    g_lex_templates = True
-    g_lexdata = None
-    g_lines = None
-    g_emit_code = False
-    g_include_dirs=None
-    g_preprocess_code = True
-    g_combine_ifelse_nodes = False
-    g_add_newlines = False
-    g_force_global_strict = False
-    
+class AbstractGlob:
     __arg_map = {}
     
     def reset(self):
@@ -222,5 +187,44 @@ class Glob:
         if val != None and val != getattr(self, attr):
           setattr(self, attr, val)
           glob_defaults[attr] = val
-      
+
+class Glob(AbstractGlob):
+    g_gen_source_map = False;
+    g_add_srcmap_ref = True
+    g_semi_debug = False;
+    g_gen_smap_orig = False;
+    g_minify = False;
+    g_error = False
+    g_smap_file = 0;
+    g_line = 0
+    g_log_productions = False
+    g_production_debug = False
+    g_print_stack = True
+    g_file = ""
+    g_error_pre = None
+    g_tried_semi = False
+    g_lexpos = 0
+    g_clear_slashr = False
+    g_print_warnings = True
+    g_gen_log_code = False
+    g_msvc_errors = False
+    g_exit_on_err = True
+    g_do_annote = True
+    g_print_classes = False
+    g_outfile = ""
+    g_lexer = None
+    g_print_nodes = False
+    g_print_tokens = False
+    g_validate_mode = False
+    g_lex_templates = True
+    g_lexdata = None
+    g_lines = None
+    g_emit_code = False
+    g_include_dirs=None
+    g_preprocess_code = True
+    g_combine_ifelse_nodes = False
+    g_add_newlines = False
+    g_force_global_strict = False
+    g_expand_iterators = True
+          
 glob = Glob()
