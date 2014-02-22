@@ -25,6 +25,7 @@ glob_cmd_short_override["g_gen_smap_orig"] = "gsr"
 glob_cmd_short_override["g_minify"] = "mn"
 glob_cmd_short_override["g_add_srcmap_ref"] = "nref"
 glob_cmd_short_override["g_expand_iterators"] = "nei"
+glob_cmd_short_override["g_harmony_iterators"] = "hi"
 
 def argv_to_argline():
   s = ""
@@ -226,5 +227,6 @@ class Glob(AbstractGlob):
     g_add_newlines = False
     g_force_global_strict = False
     g_expand_iterators = True
+    g_harmony_iterators = False
           
 glob = Glob()

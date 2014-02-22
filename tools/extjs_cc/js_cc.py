@@ -1669,7 +1669,104 @@ def parse_intern(data, create_logger=False, expand_loops=True, expand_generators
     return "", None
     #sys.stdout.write("Error: empty compilation\n");
     #raise JSError("Empty compilation");
+  
+  def expand_mozilla_forloops_new(node, scope):
+    func = node.parent
+    while not null_node(func) and type(func) != FunctionNode: 
+      func = func.parent
+      
+    if not null_node(func):
+      if func.name in forloop_expansion_exclude: return
     
+    def prop_ident_change(node, oldid, newid):
+      if type(node) in [IdentNode, VarDeclNode] and node.val == oldid:
+        if type(node.parent) == BinOpNode and node.parent.op == ".":
+          if node != node.parent[1]:
+            node.val = newid
+        else:
+            node.val = newid
+        
+      for c in node.children:
+        if type(c) == FunctionNode:
+          continue
+        prop_ident_change(c, oldid, newid)
+    
+    #for-in-loops don't seem to behave like for-C-loops,
+    #the iteration variable is in it's own scope, and 
+    #doesn't seem to affect the parent scope.
+    val = node[0].val
+    di = 0
+    while node[0].val in scope:
+      node[0].val = "%s_%d" % (val, di)
+      di += 1
+      
+      #print(node[0].val)
+    
+    if node[0].val != val:
+      scope[node[0].val] = node[0]
+      prop_ident_change(node.parent, val, node[0].val)
+    
+    slist = node.parent.children[1]
+    if type(slist) != StatementList:
+      s = StatementList()
+      s.add(slist)
+      slist = s
+      
+    itername = node[0].val
+    objname = node[1].gen_js(0)
+    n2 = js_parse("""
+      var __iter_$s1 = __get_iter($s2);
+      while (1) {
+        var __ival_$s1 = __iter_$s1.next();
+        if (__ival_$s1.done) break;
+        
+        $s1 = __ival_$s1.value;
+        $n3
+      }
+    """, (itername, objname, slist));
+    
+    node.parent.parent.replace(node.parent, n2)
+    return;
+    
+    whilenode = WhileNode(NumLitNode(1))
+    slist = node.parent[1]
+    
+    itername = "__iter_%s"%(node[0].val);
+    
+    n = js_parse("var $s;", node[0].val, start_node=VarDeclNode)
+    
+    n2 = FuncCallNode(BinOpNode(IdentNode(itername), IdentNode("next"), "."))
+    
+    if type(slist) != StatementList:
+      s = StatementList()
+      s.add(slist)
+      slist = s
+    
+    slist.prepend(AssignNode(n, n2))
+    
+    slist2 = StatementList()
+    trynode = TryNode()
+    trynode.add(slist)
+    slist2.add(trynode)
+    
+    slist3.add(BreakNode());
+    catch.add(slist3)
+    
+    slist2.add(catch)
+    whilenode.add(slist2)
+    
+    slist4 = StatementList()
+    n = js_parse("var $s;", itername, start_node=VarDeclNode)
+    n2 = node.children[1]
+    
+    fn = FuncCallNode(IdentNode("__get_iter"))
+    fn.add(ExprListNode([n2]))
+    
+    slist4.add(AssignNode(n, fn))
+    slist4.add(whilenode)
+    
+    node.parent.parent.replace(node.parent, slist4)
+   
   def expand_mozilla_forloops(node, scope):
     func = node.parent
     while not null_node(func) and type(func) != FunctionNode: 
@@ -1813,7 +1910,10 @@ def parse_intern(data, create_logger=False, expand_loops=True, expand_generators
   #combine_try_nodes(result);
   
   if expand_loops:
-    traverse(result, ForInNode, expand_mozilla_forloops, use_scope=True)
+    if glob.g_harmony_iterators:
+      traverse(result, ForInNode, expand_mozilla_forloops_new, use_scope=True)
+    else:
+      traverse(result, ForInNode, expand_mozilla_forloops, use_scope=True)
     #combine_try_nodes(result);
   
   #combine_try_nodes may have nested statementlists again, so better reflatten
