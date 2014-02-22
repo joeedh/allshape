@@ -189,7 +189,7 @@ function View3DHandler(WebGLRenderingContext gl, Mesh mesh, ShaderProgram vprogr
   
   this.mesh = mesh;
   
-  if (mesh.render == 0) {
+  if (mesh != undefined && mesh.render == 0) {
     mesh.render = new render();
   }
   
@@ -197,9 +197,11 @@ function View3DHandler(WebGLRenderingContext gl, Mesh mesh, ShaderProgram vprogr
   var sm = this.selectmode;
   if (sm!= 2 && sm != 4 && sm != 8) this.selectmode = MeshTypes.VERT;
 
-  mesh.render.drawprogram = gl.program;
-  mesh.render.vertprogram = gl.program2;
-
+  if (mesh != undefined && gl != undefined) {
+    mesh.render.drawprogram = gl.program;
+    mesh.render.vertprogram = gl.program2;
+  }
+  
   this.gl = gl;
   this.pos = new Vector2([x, y]);
   this.size = new Vector2([width, height]);
@@ -242,6 +244,27 @@ function View3DHandler(WebGLRenderingContext gl, Mesh mesh, ShaderProgram vprogr
 }
 
 inherit(View3DHandler, Area);
+
+View3DHandler.STRUCT = STRUCT.inherit(View3DHandler, Area) + """
+    use_backbuf_sel : int;
+    drawmats : DrawMats;
+    zoomfac : float;
+    zoomwheel : float;
+    _id : int;
+    selectmode : int;
+    zoom_wheelrange : array(float);
+    zoom_range : array(float);
+  }
+"""
+
+View3DHandler.fromSTRUCT = function(reader) {
+  var v3d = new View3DHandler()
+  
+  reader(v3d)
+  
+  v3d.gl = g_app_state.gl;
+  return v3d;
+}
 
 View3DHandler.framebuffer = undefined;
 

@@ -17,7 +17,8 @@ EXPORT_FUNC(NetMessage)
 function NetError(code, msg) {
   this.msg = msg;
 }
-create_prototype(NetError);
+inherit(NetError, Error);
+
 EXPORT_FUNC(NetError)
 
 NetError.prototype.toString = function() {

@@ -414,7 +414,7 @@ t_REGEXPR = gen_re() #r'(((?<!\\)|(?<=\\\\))/)(([^\n\r\*\\/\[]|(((?<!\\)|(?<=\\\
 strlit_val = StringLit("")
 start_q = 0
 
-t_mlstr_ignore = "WHYISTHISREQUIRED[][34"
+t_mlstr_ignore = ''
 
 def t_MLSTRLIT(t):
   r'"""';
@@ -448,6 +448,7 @@ def ml_escape(s):
     
     if c in ["'", '"']:
       s2 += "\\"
+    
     if c == "\n": c = "\\n"
     if c == "\r": c = "\\r"
     
@@ -464,27 +465,24 @@ def t_mlstr_MLSTRLIT(t):
     strlit_val = StringLit(strlit_val + t.value);
     return
     
-  str = ml_escape(strlit_val)
-  str = StringLit(str)
+  str = StringLit(ml_escape(strlit_val))
+  #str = StringLit(str)
   
-  t.lexer.pop_state();
   t.strval = t.value;
   t.value = StringLit('"' + str + '"');
   t.type = "STRINGLIT"
-  
+
+  t.lexer.pop_state();
   return t;
 
 def t_mlstr_ALL(t):
-  r'.|[\n\r]' 
-  
-  #(.|[\n\r])+((?=""")+)'
+  r'(.|[\n\r\v])'
   
   global strlit_val
-  if t.lexer.lexdata[t.lexpos:t.lexpos+3] != '"""':
+  if 1: #t.lexer.lexdata[t.lexpos:t.lexpos+3] != '"""':
     strlit_val = StringLit(strlit_val + t.value)
-    t.lexer.lineno += t.value.count('\n')
-    
-    #return t;
+  
+  t.lexer.lineno += t.value.count('\n')  
   
 def t_STRINGLIT(t):
   r'\"|\''

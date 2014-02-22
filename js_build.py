@@ -4,7 +4,12 @@ import os, sys, os.path, time, random, math
 import shelve, struct, io, imp, ctypes, re
 import subprocess, shlex
 
+#normpath helper func
+def np(path):
+  return os.path.abspath(os.path.normpath(path))
+
 num_cores = 5
+sp = os.path.sep
 
 try:
   import jsbuild_config_local
@@ -43,7 +48,7 @@ if not os.path.exists("build"):
 #read sources
 files = []
 for f in js_sources: 
-  if os.path.sep in f or "/" in f:
+  if sp in f or "/" in f:
     f2 = os.path.split(f)[1]
   else:
     f2 = f
@@ -51,14 +56,15 @@ for f in js_sources:
 
 win32 = sys.platform == "win32"
 PYBIN = sys.executable
+print(PYBIN)
 if PYBIN == "":
   sys.stderr.write("Warning: could not find python binary, reverting to default\n")
   PYBIN = "python3.2"
 
 PYBIN += " "
 
-JCC = "tools/extjs_cc/js_cc.py".replace("/", os.path.sep)
-TCC = "tools/tinygpu/tinygpu.py".replace("/", os.path.sep)
+JCC = np("tools/extjs_cc/js_cc.py")
+TCC = np("tools/tinygpu/tinygpu.py")
 
 #minified, concatenated build
 JFLAGS = "-gm -mn -nref"
@@ -74,7 +80,7 @@ TFLAGS = ""
 
 def cp_handler(file, target):
   if win32:
-    return "copy %s %s" % (file, target)
+    return "copy %s %s" % (np(file), np(target)) #file.replace("/", "\\"), target.replace("/", "\\"))
   else:
     return "cp %s %s" % (file, target)
 
@@ -84,10 +90,15 @@ def jcc_handler(file, target):
 def tcc_handler(file, target):
   return PYBIN + "%s %s" % (TCC, TFLAGS)
 
+class Handler (object):
+  def __init__(self, func, can_popen=True):
+    self.use_popen = can_popen
+    self.func = func
+    
 handlers = {
-  r'.*\.js\b' : jcc_handler,
-  r'.*\.html\.in\b' : tcc_handler,
-  r'.*\.html\b' : cp_handler
+  r'.*\.js\b' : Handler(jcc_handler),
+  r'.*\.html\.in\b' : Handler(tcc_handler),
+  r'.*\.html\b' : Handler(cp_handler, can_popen=False)
 }
 
 def iter_files(files):
@@ -188,13 +199,16 @@ def do_rebuild(abspath):
     
   return False
 
+def failed_ret(ret):
+  return ret != 0
+
 def main():
   global db, db_depend
   
   procs = []
   
-  db = shelve.open("jbuild.db".replace("/", os.path.sep))
-  db_depend = shelve.open("jbuild_dependencies.db".replace("/", os.path.sep))
+  db = shelve.open("jbuild.db".replace("/", sp))
+  db_depend = shelve.open("jbuild_dependencies.db".replace("/", sp))
   
   if build_cmd == "cleanbuild":  
     for k in db:
@@ -211,12 +225,14 @@ def main():
     if not do_rebuild(abspath): continue
     
     build_depend(abspath);
-    built_files.append([abspath, os.stat(abspath).st_mtime])
+    built_files.append([abspath, os.stat(abspath).st_mtime, f])
     
     re_size = 0
+    use_popen = None
     for k in handlers:
       if re.match(k, f) and len(k) > re_size:
-        cmd = handlers[k](f, target)
+        cmd = handlers[k].func(np(f), np(target))
+        use_popen = handlers[k].use_popen
         re_size = len(k)
     
     perc = int((float(fi) / len(files))*100.0)
@@ -230,18 +246,31 @@ def main():
           newprocs.append(p)
         else:
           ret = p[0].returncode
-          if ret in [-1, 65280]:
+          if failed_ret(ret):
             failed_files.append(p[1])
           
       procs = newprocs
-      time.sleep(0.01)
+      time.sleep(0.25)
     
-    if len(failed_files) > 0: continue  
-          
-    proc = subprocess.Popen(shlex.split(cmd))
-    procs.append([proc, f])
+    if len(failed_files) > 0: continue
+    
+    print(cmd)
+    if use_popen:
+      #shlex doesn't like backslashes
+      if win32:
+        cmd = cmd.replace("\\", "/")
+      else:
+        cmd = cmd.replace("\\", "\\\\")
       
-    #ret = os.system(cmd)
+      cmdlist = shlex.split(cmd)
+      #cmdlist[0] = np(cmdlist[0])
+      print(cmdlist)
+      proc = subprocess.Popen(cmdlist)
+      procs.append([proc, f])
+    else:
+      ret = os.system(cmd)
+      if failed_ret(ret):
+        failed_files.append(f)
   
   while len(procs) > 0:
     newprocs = []
@@ -250,14 +279,17 @@ def main():
         newprocs.append(p)
       else:
         ret = p[0].returncode
-        if ret in [-1, 65280]:
+        if failed_ret(ret): #ret in [-1, 65280]:
           failed_files.append(p[1])
     procs = newprocs
     
   if len(failed_files) > 0:
     print("build failure\n\n")
     for f in failed_files:
-      built_files.remove(f)
+      for i, f2 in enumerate(built_files):
+        if f2[2] == f: break
+      
+      built_files.pop(i)
 
     for pathtime in built_files:
       db[pathtime[0]] = pathtime[1]
@@ -286,6 +318,8 @@ def main():
     print("\n\nwriting app.js...")
     sys.stdout.flush()
     aggregate()
+    print("done.")
+    
   if build_cmd != "loop":
     print("build finished")
 
@@ -310,7 +344,7 @@ def aggregate(outpath="build/app.js"):
     
     f2 = open(f[1], "r")
     buf = f2.read()
-    if "\n" in buf:
+    if "-mn" in JFLAGS and "\n" in buf:
       print("EEK!!", f)
 
     outfile.write(buf)

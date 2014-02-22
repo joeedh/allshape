@@ -43,8 +43,8 @@ js_sources = [
 	"src/ui/UIElements.js",
 	"src/ui/UIMenu.js",
 	"src/ui/RadialMenu.js",
-	"src/view3d/dialogs.js",
 	"src/view3d/dialog.js",
+	"src/view3d/dialogs.js",
 	"src/view3d/FrameManager.js",
 
 	"src/util/dag.js",

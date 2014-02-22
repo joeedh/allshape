@@ -2,6 +2,38 @@
 
 var DEFL_NAMELEN = 64
 
+if (typeof String.prototype.toUTF8 != "function") {
+  String.prototype.toUTF8 = function() {
+    var input = String(this);
+    
+    var b = [], i, unicode;
+    for(i = 0; i < input.length; i++) {
+        unicode = input.charCodeAt(i);
+        // 0x00000000 - 0x0000007f -> 0xxxxxxx
+        if (unicode <= 0x7f) {
+            b.push(unicode);
+        // 0x00000080 - 0x000007ff -> 110xxxxx 10xxxxxx
+        } else if (unicode <= 0x7ff) {
+            b.push((unicode >> 6) | 0xc0);
+            b.push((unicode & 0x3F) | 0x80);
+        // 0x00000800 - 0x0000ffff -> 1110xxxx 10xxxxxx 10xxxxxx
+        } else if (unicode <= 0xffff) {
+            b.push((unicode >> 12) | 0xe0);
+            b.push(((unicode >> 6) & 0x3f) | 0x80);
+            b.push((unicode & 0x3f) | 0x80);
+        // 0x00010000 - 0x001fffff -> 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
+        } else {
+            b.push((unicode >> 18) | 0xf0);
+            b.push(((unicode >> 12) & 0x3f) | 0x80);
+            b.push(((unicode >> 6) & 0x3f) | 0x80);
+            b.push((unicode & 0x3f) | 0x80);
+        }
+    }
+
+    return b;
+  }
+}
+
 Number.prototype.pack = function(data) {
   if (Number(Math.ceil(this)) == Number(this)) {
     pack_int(data, this);
@@ -238,17 +270,23 @@ function pack_dataref(Array<byte> data, DataBlock b)
 
 function truncate_utf8(Array<byte>arr, int maxlen)
 {
-  var last_codepoint = 0;
-  var len = Math.min(arr.length, maxlen+4);
+  var len = Math.min(arr.length, maxlen);
   
+  var last_codepoint = 0;
   var last2 = 0;
-  for (var i=0; i<len; i++) {
-    if (i != 0 && !(arr[i] & 128)) {
-      if (last_codepoint < maxlen)
-        last2 = last_codepoint;
-      
-      last_codepoint=i+1;
+  
+  var incode = false;
+  var i = 0;
+  var code = 0;
+  while (i < len) {
+    incode = arr[i] & 128;
+    
+    if (!incode) {
+      last2 = last_codepoint+1;
+      last_codepoint = i+1;
     }
+    
+    i++;
   }
   
   if (last_codepoint < maxlen)
@@ -346,6 +384,14 @@ function pack_string(Array<byte> data, String str)
   if (_rec_pack) {
     pop_pack_stack();
   }
+}
+
+function unpack_bytes(DataView data, unpack_ctx uctx, int len)
+{
+  var ret = new Uint8Array(data.buffer.slice(uctx.i, uctx.i+len));
+  uctx.i += len;
+  
+  return ret;
 }
 
 function unpack_array(DataView data, unpack_ctx uctx, Function unpacker)
@@ -492,8 +538,6 @@ function decode_utf8(arr) {
       sum |= c;
     }
     
-    console.log(sum)
-    
     str += String.fromCharCode(sum);
     i++;
   }
@@ -520,7 +564,6 @@ var _static_arr_uss = new Array(32);
 function unpack_static_string(DataView data, unpack_ctx uctx, int length) : String
 {
   var str = "";
-  var at_end = false;
   
   if (length == undefined)
     throw new Error("'length' cannot be undefined in unpack_static_string()");
@@ -531,12 +574,13 @@ function unpack_static_string(DataView data, unpack_ctx uctx, int length) : Stri
     var c = unpack_byte(data, uctx);
     
     if (c == 0) {
-      at_end = true;
-      arr.length = i;
+      break;
     }
-    if (!at_end)
-      arr[i] = c;
+    
+    arr[i] = c;
   }
+  
+  arr.length = i;
   
   return decode_utf8(arr);
 }
@@ -560,7 +604,6 @@ function unpack_string(DataView data, unpack_ctx uctx) : String
 function unpack_ctx() {
   this.i = 0;
 }
-
 create_prototype(unpack_ctx);
 
 function send_mesh(Mesh mesh)

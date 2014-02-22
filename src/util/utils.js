@@ -47,8 +47,19 @@ function prior(thisproto, obj) {
 }
 EXPORT_FUNC(prior)
 
-debug_int_1 = 0;
+function Iter() {
+}
+create_prototype(CanIter);
+GIterator.prototype.next = function () {} //returns {value:int, done:bool}
+GIterator.prototype.reset = function() {} //note: this is an extension to harmony draft spec
 
+function CanIter() {
+}
+create_prototype(Iter);
+GIterable.prototype.iterator = function() : GIterator {
+}
+
+debug_int_1 = 0;
 function GArray<T>(Array<T> input) {
   Array<T>.call(this)
   

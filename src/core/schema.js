@@ -81,7 +81,7 @@ var SchemaTypes = Object.create({
     "string" : T_STRING,
     "static_string" : T_STATIC_STRING,
     "struct" : T_STRUCT,
-    "typed_struct" : T_TSTRUCT,
+    "abstract" : T_TSTRUCT,
     "array" : T_ARRAY,
     "iter" : T_ITER,
     "dataref" : T_DATAREF
@@ -238,8 +238,7 @@ function SchemaParser() {
     p.expect("ABSTRACT");
     p.expect("LPARAM");
     
-    var type = p_Type(p);
-    
+    var type = p.expect("ID");
     p.expect("RPARAM");
     
     return {type : T_TSTRUCT, data : type};
@@ -378,6 +377,11 @@ STRUCT.prototype.parse_structs = function(buf) {
       this.struct_cls[stt.name] = clsmap[stt.name];
       this.structs[stt.name] = stt;
     }
+    
+    var tok = schema_parse.peek()
+    while (tok != undefined && tok.value == "\n") {
+      tok = schema_parse.peek();
+    }
   }  
 }
 
@@ -392,19 +396,21 @@ STRUCT.prototype.add_struct = function(cls) {
   this.struct_ids[stt.id] = stt;
 }
 
-STRUCT.prototype.get_id_struct = function(id) {
+STRUCT.prototype.get_struct_id = function(id) {
   return this.struct_ids[id];
 }
 
 STRUCT.prototype.get_struct = function(name) {
   if (!(name in this.structs)) {
+    console.trace();
     throw new Error("Unknown struct " + name);
   }
   return this.structs[name];
 }
 
 STRUCT.prototype.get_struct_cls = function(name) {
-  if (!(name in this.structs)) {
+  if (!(name in this.struct_cls)) {
+    console.trace();
     throw new Error("Unknown struct " + name);
   }
   
@@ -451,6 +457,8 @@ STRUCT.fmt_struct = function(stt, internal_only, no_helper_js) {
       return "static_string[" + type.data.maxlength + "]";
     } else if (type.type == T_STRUCT) {
       return type.data;
+    } else if (type.type == T_TSTRUCT) {
+      return "abstract(" + type.data + ")";
     } else {
       return SchemaTypeMap[type.type];
     }
@@ -525,39 +533,99 @@ STRUCT.prototype._env_call = function(code, obj, env) {
   }
 }
 
+function gen_tabstr(t) {
+  var s = "";
+  for (var i=0; i<t; i++) {
+    s += "  ";
+  }
+  
+  return s;
+}
+
+var _packdebug_tlvl = 0;
+var _do_packdebug = false;
+
+if (_do_packdebug) {
+  var packer_debug = function(msg) {
+    if (msg != undefined) {
+      var t = gen_tabstr(_packdebug_tlvl);
+      console.log(t + msg);
+    }
+  };
+
+  var packer_debug_start = function(funcname) {
+    packer_debug("Start " + funcname);
+    _packdebug_tlvl++;
+  };
+
+  var packer_debug_end = function(funcname) {
+    _packdebug_tlvl--;
+    packer_debug("Leave " + funcname);
+  };
+} else {
+  var packer_debug = function() {};
+  var packer_debug_start = function() {};
+  var packer_debug_end = function() {};
+}
+
 var _ws_env = [[undefined, undefined]];
 var _st_packers = [
   function(data, val) { //int
+    packer_debug("int");
     pack_int(data, val);
   },
   function(data, val) { //float
+    packer_debug("float");
     pack_float(data, val);
   },
   function(data, val) { //double
+    packer_debug("double");
     pack_double(data, val);
   },
   function(data, val) { //vec2
+    if (val == undefined) val = [0, 0];
+    
+    packer_debug("vec2");
     pack_vec2(data, val);
   },
   function(data, val) { //vec3
+    if (val == undefined) val = [0, 0, 0];
+    
+    packer_debug("vec3")
     pack_vec3(data, val);
   },
   function(data, val) { //vec4
+    if (val == undefined) val = [0, 0, 0, 0];
+    
+    packer_debug("vec4")
     pack_vec4(data, val);
   },
   function(data, val) { //mat4
+    if (val == undefined) val = new Matrix4();
+    
+    packer_debug("mat4")
     pack_mat4(data, val);
   },
   function(data, val) { //string
+    if (val == undefined) val = "";
+    
+    packer_debug("string: " + val)
     pack_string(data, val);
   },
   function(data, val, obj, thestruct, field, type) { //static_string
+    if (val == undefined) val = "";
+    
+    packer_debug("static_string: '" + val + "' length=" + type.data.maxlength);
     pack_static_string(data, val, type.data.maxlength);
   },
   function(data, val, obj, thestruct, field, type) { //struct
+    packer_debug_start("struct");
     thestruct.write_struct(data, val, thestruct.get_struct(type.data));
+    packer_debug_end("struct");
   },  
   function(data, val, obj, thestruct, field, type) { //tstruct (struct with type)
+    packer_debug_start("tstruct " + type.data);
+    
     var cls = thestruct.get_struct_cls(type.data);
     var stt = thestruct.get_struct(type.data);
         
@@ -573,8 +641,21 @@ var _st_packers = [
     
     pack_int(data, stt.id);
     thestruct.write_struct(data, val, stt);
+    packer_debug_end("tstruct");
   },
   function(data, val, obj, thestruct, field, type) { //array
+    packer_debug_start("array");
+  
+    if (val == undefined) {
+      console.trace();
+      console.log("Undefined array fed to schema struct packer!");
+      console.log("Field: ", field);
+      console.log("Type: ", type);
+      console.log("");
+      pack_int(data, 0);
+      return;
+    }
+    
     pack_int(data, val.length);
     
     var d = type.data;
@@ -596,8 +677,21 @@ var _st_packers = [
       
       _st_pack_type(data, val2, obj, thestruct, f2, type2);
     }
+    packer_debug_end("array");
   },
   function(data, val, obj, thestruct, field, type) { //iter
+    packer_debug_start("iter");
+    
+    if (val == undefined) {
+      console.trace();
+      console.log("Undefined iterable list fed to schema struct packer!");
+      console.log("Field: ", field);
+      console.log("Type: ", type);
+      console.log("");
+      pack_int(data, 0);
+      return;
+    }
+    
     var len = 0;
     for (var val2 in val) {
       len++;
@@ -620,13 +714,16 @@ var _st_packers = [
       var f2 = {type : type2, get : undefined, set: undefined};
       _st_pack_type(data, val2, obj, thestruct, f2, type2);
     }
+    packer_debug_end("iter");
   },
   function (data, val) { //dataref
+    packer_debug("dataref");
     pack_dataref(data, val);
   }
 ];
 
 function _st_pack_type(data, val, obj, thestruct, field, type) {
+  packer_debug("pack_type call")
   _st_packers[field.type.type](data, val, obj, thestruct, field, type);
 }
 
@@ -649,7 +746,7 @@ STRUCT.prototype.write_struct = function(data, obj, stt) {
         val = obj[f.name];
       }
       
-      if (t2 != T_STRUCT && t2 != T_STATIC_STRING)
+      if (t2 != T_STRUCT && t2 != T_STATIC_STRING && t2 != T_TSTRUCT)
         _st_packers[t2](data, val);
       else
         _st_pack_type(data, val, obj, thestruct, f, t1);
@@ -662,7 +759,7 @@ STRUCT.prototype.write_struct = function(data, obj, stt) {
 
 STRUCT.prototype.write_object = function(data, obj) {
   var cls = obj.constructor.name;
-  var stt = this.structs[cls];
+  var stt = this.get_struct(cls);
   this.write_struct(data, obj, stt);  
 }
 
@@ -726,12 +823,15 @@ STRUCT.prototype.read_object = function(data, cls, unpack_ctx uctx) {
     },
     T_TSTRUCT : function(type) {
       var id = unpack_int(data, uctx);
-      if (!(id in this.struct_ids)) {
+      
+      console.log(thetruct)
+	  
+      if (!(id in thestruct.struct_ids)) {
         console.trace();
         throw new Error("Unknown struct type " + cls2 + ".");
       }
       
-      var cls2 = this.get_struct_id(id);      
+      var cls2 = thestruct.get_struct_id(id);      
       return thestruct.read_object(data, cls2, uctx);
     },
     T_DATAREF : function(type) {
@@ -852,9 +952,11 @@ function test_struct() {
 create_test(test_struct);
 
 function init_struct_packer() {
-  global defined_classes;
+  global defined_classes, istruct;
   
   console.log("parsing class serialization scripts...");
+  
+  istruct = new STRUCT();
   
   for (var cls in defined_classes) {
     try {
@@ -879,6 +981,27 @@ function gen_struct_str() {
     buf += STRUCT.fmt_struct(istruct.structs[k], false, true) + "\n";
   }
   
+  //strip out leading whitespace from lines
+  var buf2 = buf;
+  buf = "";
+  
+  for (var i=0; i<buf2.length; i++) {
+    var c = buf2[i];
+    
+    if (c == "\n") {
+      buf += "\n"
+      var i2 = i;
+      
+      while (i < buf2.length && (buf2[i] == " " || buf2[i] == "\t" || buf2[i] == "\n")) {
+        i++;
+      }
+      
+      if (i != i2) i--;
+    } else {
+      buf += c;
+    }
+  } 
+
   return buf;
 }
 

@@ -1,5 +1,7 @@
 "use strict";
 
+var FileFlags = {COMPRESSED_LZJB : 1}
+
 var formacad_file_ext = ".fc3";
 var g_app_version = 0.02;
 
@@ -220,15 +222,25 @@ AppState.prototype.set_mesh = function(Mesh m2) {
 
 /*
   new file format:
-  ALSH | 4 chars
+  ALSH          | 4 chars
+  file flags    | int (e.g. whether compression was used)
   version major | int
   version minor | int
   
   block {
-    type : 4 chars
-    subtype : 4 chars
-    datalen : int
+    type    | 4 chars 
+    subtype | 4 chars [STRT (Struct), JSON, SDEF (struct definition[s])]
+    datalen | int
   }
+  
+  BLCK blocks correspond to DataBlocks, and are defined like so:
+  
+  BLCK         | 4 chars
+  STRT         | 4 chars
+  data_length  | int
+  blocktype    | int
+  data (of length data_length-4)
+  
 */
 AppState.prototype.create_user_file_new = function(different_mesh) : ArrayBuffer {
   var mesh = different_mesh != undefined ? different_mesh : this.mesh;
@@ -243,42 +255,47 @@ AppState.prototype.create_user_file_new = function(different_mesh) : ArrayBuffer
   //header "magic"
   pack_static_string(data, "ALSH", 4);
   
+  //general file flags, e.g. compression
+  pack_int(data, 0);
+  
   //version
   var major = Math.floor(g_app_version);
-  var minor = (g_app_version - Math.floor(g_app_version));
-  while (minor - Math.floor(minor) != 0.0 && minor < 100) {
-    minor *= 10.0;
-  }
-  minor -= Math.floor(minor);
+  var minor = Math.floor((g_app_version - Math.floor(g_app_version))*100);
   
-  pack_int(major);
-  pack_int(minor);
+  pack_int(data, major);
+  pack_int(data, minor);
   
   //the schema struct definitions used to save
   //the non-JSON parts of this file.
   var buf = gen_struct_str();
   
-  bheader(data, "SDEF", "JSON") ;
+  bheader(data, "SDEF", "SDEF") ;
   pack_string(data, buf);
   
-  var scrn = JSON.stringify(this.screen.toJSON());
-  
-  bheader(data, "SCRN", "JSON");
-  pack_string(data, scrn);
+  //write screen block
+  var data2 = []
+  istruct.write_object(data2, this.screen);
+
+  bheader(data, "SCRN", "STRT");
+  pack_int(data, data2.length);
+  data = data.concat(data2);
   
   var data2 = [];
-  for (var lib in this.datalists.values()) {
+  for (var lib in this.datalib.datalists.values()) {
     for (var block in lib) {
-      data2.length = 0;     
+      data2 = [];
+
       istruct.write_object(data2, block);
       
       bheader(data, "BLCK", "STRT");
-      pack_int(data2.length+4);
-      pack_int(block.lib_type);
+      pack_int(data, data2.length+4);
+      pack_int(data, block.lib_type);
       
-      data.concat(data2);
+      data = data.concat(data2);
     }   
-  } 
+  }
+  
+  return new DataView(new Uint8Array(data).buffer);
 }
 
 AppState.prototype.load_user_file_new = function(DataView data, unpack_ctx uctx) {
@@ -288,33 +305,40 @@ AppState.prototype.load_user_file_new = function(DataView data, unpack_ctx uctx)
   
   var s = unpack_static_string(data, uctx, 4);
   if (s != "ALSH") {
+    console.log(s, s.length)
     throw new Error("Could not load file.");
   }
   
+  var file_flag = unpack_int(data, uctx);
+  //XXX need to write code to handle compressed files
+  
   var version_major = unpack_int(data, uctx);
-  var version_minor = unpack_int(data, uctx)/(1<<30);
+  var version_minor = unpack_int(data, uctx)/100.0;
   
-  var version = Number.parseFloat(version_major.toString() + "." + version_minor.toString());
+  var version = version_major + version_minor;
   
-  var blocks = []
+  var blocks = [];
   var fstructs = new STRUCT();
   
-  while (uctx.i < data.length) {
+  while (uctx.i < data.byteLength) {
     var type = unpack_static_string(data, uctx, 4);
     var subtype = unpack_static_string(data, uctx, 4);
     var len = unpack_int(data, uctx);
     var bdata;
     
+    console.log(JSON.stringify({type : type, subtype : subtype, len : len}))
+    
     if (subtype == "JSON") {
       bdata = unpack_static_string(data, uctx, len);
     } else if (subtype == "STRT") {
       bdata = unpack_bytes(data, uctx, len);
-    } else {
-      throw new Error("Unknown block type.");
-    }
-    
-    if (type == "SDEF") {
+    } else if (subtype == "SDEF") {
+      bdata = unpack_static_string(data, uctx, len).trim();
       fstructs.parse_structs(bdata);
+    } else {
+      console.log(subtype, type, uctx.i, data.byteLength);
+      console.trace();
+      throw new Error("Unknown block type '" + subtype + "', " + JSON.stringify({subtype: subtype, type : type}));
     }
     
     blocks.push({type : type, subtype : subtype, len : len, data : bdata});

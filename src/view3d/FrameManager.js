@@ -234,6 +234,24 @@ ScreenArea.prototype.on_draw = function(WebGLRenderingContext gl)
   //prior(this, ScreenArea).on_draw.call(this, gl);
 }
 
+ScreenArea.prototype.add = function(child, packflag) {
+  if ((child instanceof Area) && this.type == undefined) {
+    this.type = child.constructor.name;
+    //XXX probably need more boilerplate code than this
+  }
+  
+  prior(ScreenArea, this).add.call(this, child, packflag);
+}
+
+ScreenArea.prototype.remove = function(child) {
+  if ((child instanceof Area) && this.type == child.constructor.name) {
+    this.type = undefined
+    //XXX deal with this code, should switch to another editor
+    //or perhaps raise an exception disallowing the removal of editors
+    //altogether?
+  }
+}
+
 ScreenArea.prototype.on_resize = function(Array<int> newsize, Array<int> oldsize)
 {
   var oldsize = new Vector2(this.area.size);

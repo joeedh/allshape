@@ -26,6 +26,10 @@ function DataList(type) {
 }
 create_prototype(DataList);
 
+DataList.prototype.__iterator__ = function() {
+  return this.list.__iterator__();
+}
+
 function DataLib() {
   this.id = 0;
   this.datalists = new hashtable();
@@ -66,9 +70,7 @@ DataLib.prototype.gen_name = function(block, name) {
   
   var list = this.datalists.get(block.lib_type);
   if (!(name in list.namemap)) {
-    block.name = name;
-    list.namemap[name] = block;
-    return;
+    return name;
   }
   
   var i = 0;
@@ -97,6 +99,8 @@ DataLib.prototype.gen_name = function(block, name) {
       break;
     }
   }
+  
+  return name;
 }
 
 DataLib.prototype.add = function(block) {
@@ -172,7 +176,7 @@ DataBlock.STRUCT = """
     name : static_string[128];
     lib_type : int;
     lib_id : int;
-    lib_lib : int | lib_lib != undefined ? lib_lib.id : -1;
+    lib_lib : int | obj.lib_lib != undefined ? obj.lib_lib.id : -1;
 
     lib_refs : int;
     lib_flag : int;

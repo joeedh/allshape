@@ -790,6 +790,23 @@ function DrawMats(Matrix4 normalmat, Matrix4 cameramat, Matrix4 persmat) {
 }
 create_prototype(DrawMats);
 
+DrawMats.STRUCT = """
+  DrawMats {
+    normalmat : mat4;
+    cameramat : mat4;
+    persmat : mat4;
+    rendermat : mat4;
+  }
+"""
+
+DrawMats.fromSTRUCT = function(reader) {
+  var ret = new DrawMats();
+  
+  reader(ret);
+  
+  return ret;
+}
+
 DrawMats.prototype.copy = function() : DrawMats {
   var cpy = new DrawMats(this.normalmat, this.cameramat, 
                          this.persmat);
