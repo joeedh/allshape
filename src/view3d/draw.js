@@ -372,7 +372,9 @@ function gen_mesh_render(WebGLRenderingContext ctx, Mesh mesh, ShaderProgram dra
       
       mesh.flag &= ~MeshFlags.TESS_JOB_FINISHED;
     } else {
-      // /*
+      gen_tris(mesh);
+      
+       /*
       var gen = new gen_tris_job(mesh);
       var i = 0;
       

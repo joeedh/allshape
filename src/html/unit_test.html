@@ -558,13 +558,14 @@ function arr_iter(keys)
   
   this.next = function() {
     if (this.cur >= this.keys.length) {
-      throw StopIteration;
+      return {value : undefined, done : true};
     }
     
-    return this.keys[this.cur++];
+    return {value : this.keys[this.cur++], done : false};
   }
 }
 
+/*
 try {
   var i = StopIteration;
 } catch (error) {
@@ -573,7 +574,7 @@ try {
   }
   
   StopIteration.prototype = Object.create(Error.prototype);
-}
+}*/
 
 function obj_get_keys(obj) {
   var ret = [];

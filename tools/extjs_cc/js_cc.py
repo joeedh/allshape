@@ -1569,20 +1569,22 @@ def process_generators(result, typespace):
           }
           
           if (ret[0] == this.frames.length) {
-            throw StopIteration;
+            return {done : true, value : undefined};
             break;
           }
           
           if (ret[0] == this.cur) {
             console.trace();
             console.log("YEEK!")
-            throw StopIteration;
+            return {done : true, value : undefined};
           }
           
           this.cur = ret[0];
           
           if (ret[1] != undefined) {
-            return ret[1][0];
+            return {value : ret[1][0], done : false};
+          } else {
+            return {value : undefined, done : false};
           }
         }
       }
@@ -1711,62 +1713,40 @@ def parse_intern(data, create_logger=False, expand_loops=True, expand_generators
       s = StatementList()
       s.add(slist)
       slist = s
-      
+    
     itername = node[0].val
     objname = node[1].gen_js(0)
     n2 = js_parse("""
       var __iter_$s1 = __get_iter($s2);
+      var $s1;
       while (1) {
         var __ival_$s1 = __iter_$s1.next();
-        if (__ival_$s1.done) break;
+        if (__ival_$s1.done) {
+          break;
+        }
         
         $s1 = __ival_$s1.value;
-        $n3
       }
-    """, (itername, objname, slist));
+    """, (itername, objname));
+    
+    def set_line(n, slist, line, lexpos):
+      n.line = line
+      n.lexpos = lexpos
+      
+      for c in n.children:
+          set_line(c, slist, line, lexpos)
+    
+    #preserving line info is a bit tricky.
+    #slist goes through a js->gen_js->js cycle,
+    #so make sure we still have it (and its
+    #line/lexpos information).
+    
+    set_line(n2, slist, node.line, node.lexpos)
+    for c in slist:
+      n2[2][1].add(c)
     
     node.parent.parent.replace(node.parent, n2)
-    return;
     
-    whilenode = WhileNode(NumLitNode(1))
-    slist = node.parent[1]
-    
-    itername = "__iter_%s"%(node[0].val);
-    
-    n = js_parse("var $s;", node[0].val, start_node=VarDeclNode)
-    
-    n2 = FuncCallNode(BinOpNode(IdentNode(itername), IdentNode("next"), "."))
-    
-    if type(slist) != StatementList:
-      s = StatementList()
-      s.add(slist)
-      slist = s
-    
-    slist.prepend(AssignNode(n, n2))
-    
-    slist2 = StatementList()
-    trynode = TryNode()
-    trynode.add(slist)
-    slist2.add(trynode)
-    
-    slist3.add(BreakNode());
-    catch.add(slist3)
-    
-    slist2.add(catch)
-    whilenode.add(slist2)
-    
-    slist4 = StatementList()
-    n = js_parse("var $s;", itername, start_node=VarDeclNode)
-    n2 = node.children[1]
-    
-    fn = FuncCallNode(IdentNode("__get_iter"))
-    fn.add(ExprListNode([n2]))
-    
-    slist4.add(AssignNode(n, fn))
-    slist4.add(whilenode)
-    
-    node.parent.parent.replace(node.parent, slist4)
-   
   def expand_mozilla_forloops(node, scope):
     func = node.parent
     while not null_node(func) and type(func) != FunctionNode: 

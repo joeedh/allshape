@@ -318,21 +318,26 @@ Loop.prototype.__hash__ = function() : String {
 
 //#$(LoopList).iter
 function LoopIter(LoopList looplist) {
+  this.ret = {done : false, value : undefined};
   this.list = looplist;
   this.startl = looplist.loop;
   this.cur = this.startl;
   
   this.next = function() : Loop {
+    var ret2 = this.ret;
     var ret = this.cur;
     
-    if (this.cur == null)
-      throw StopIteration;
-      
+    if (this.cur == null) {
+      ret2.done = true;
+      return ret2;
+    }
+    
     this.cur = this.cur.next;
     if (this.cur == this.startl)
       this.cur = null;
     
-    return ret;
+    ret2.value = ret;
+    return ret2;
   }
 }
 
@@ -547,15 +552,19 @@ Face.prototype.recalc_normal = function() {
 }
   
 function GeoArrayIter<T>(GeoArray<T> arr) {
+  this.ret = {done : false, value : undefined};
   this.cur = 0;
   this.arr = arr;
   
   this.reset = function() {
     this.cur = 0;
+    this.ret = {done : false, value : undefined};
   }
   
   this.next = function() : T {
+    var reti = this.ret;
     var cur = this.cur;
+    
     var len = this.arr.arr.length;
     var arr = this.arr.arr
     
@@ -563,17 +572,22 @@ function GeoArrayIter<T>(GeoArray<T> arr) {
       cur++;
     }
     
-    if (cur == len) {
+    if (cur >= len) {
       this.reset();
-      throw StopIteration;
+      
+      reti.done = true;
+      return reti;
     } else {
       this.cur = cur+1;
-      return arr[cur];
+      reti.value = arr[cur];
+      
+      return reti;
     }
   }
 }
 
 function AllTypesSelectIter(mesh) {
+  this.ret = {done : false, value : undefined};
   this.type = MeshTypes.VERT;
   this.mesh = mesh;
   this.iter = undefined : Iter;
@@ -583,6 +597,7 @@ function AllTypesSelectIter(mesh) {
   }
   
   this.reset = function() {
+    this.ret = {done : false, value : undefined};
     this.type = MeshTypes.VERT;
     this.iter = undefined;
   }
@@ -594,28 +609,27 @@ function AllTypesSelectIter(mesh) {
       this.iter = this.mesh.verts.selected.__iterator__();
     }
     
-    try {
-      var next = this.iter.next();
-      
-      return next;
-    } catch (_error) {
-      if (_error != StopIteration) {
-        throw _error;
+    var iret;
+    if (!(iret = this.iter.next()).done) {
+      return iret;
+    } else {
+      if (this.type == MeshTypes.VERT) {
+        this.type = MeshTypes.EDGE;
+        this.iter = this.mesh.edges.selected.__iterator__();
+        
+        return this.next();
+      } else if (this.type == MeshTypes.EDGE) {
+        this.type = MeshTypes.FACE;
+        this.iter = this.mesh.faces.selected.__iterator__();
+        
+        return this.next();
       } else {
-        if (this.type == MeshTypes.VERT) {
-          this.type = MeshTypes.EDGE;
-          this.iter = this.mesh.edges.selected.__iterator__();
-          
-          return this.next();
-        } else if (this.type == MeshTypes.EDGE) {
-          this.type = MeshTypes.FACE;
-          this.iter = this.mesh.faces.selected.__iterator__();
-          
-          return this.next();
-        } else {
-          this.reset();
-          throw StopIteration;
-        }
+        var ret = this.ret;
+        
+        this.reset();
+        
+        ret.done = true;
+        return ret;
       }
     }
   }
@@ -783,6 +797,7 @@ function CountIter(Iterator iter) {
 
 //#$(Face).class
 function FaceVertIter(Face data) {
+  this.ret = {done : false, value : undefined};
   this.data = data
   this.curlist = 0;
   this.curloop = data.looplists[0].loop;
@@ -790,8 +805,12 @@ function FaceVertIter(Face data) {
   
   //#$().Vertex
   this.next = function() : Vertex {
-    if (this.curloop == null) throw StopIteration;
-    
+    var reti = this.ret;
+    if (this.curloop == null) {
+      reti.done = true;
+      return reti;
+    }
+
     var ret = this.curloop.v;
     
     this.curloop = this.curloop.next;
@@ -804,12 +823,14 @@ function FaceVertIter(Face data) {
       }
     }
     
-    return ret;
+    reti.value = ret;
+    return reti;
   }
 }
 
 //#$(Face).class
 function FaceLoopIter(Face data) {
+  this.ret = {done : false, value : undefined};
   this.data = data
   this.curlist = 0;
   this.curloop = data.looplists[0].loop;
@@ -817,7 +838,13 @@ function FaceLoopIter(Face data) {
   
   //#$().Vertex
   this.next = function() : Loop {
-    if (this.curloop == null) throw StopIteration;
+    var reti = this.ret;
+    
+    if (this.curloop == null) {
+      this.reti.done = true;
+
+      return this.reti;
+    }
     
     var ret = this.curloop;
     
@@ -831,12 +858,14 @@ function FaceLoopIter(Face data) {
       }
     }
     
-    return ret;
+    reti.value = ret;
+    return reti;
   }
 }
 
 //#$(Face).class
 function FaceEdgeIter(Face data) {
+  this.ret = {done : false, value : undefined};
   this.data = data
   this.curlist = 0;
   this.curloop = data.looplists[0].loop;
@@ -844,7 +873,12 @@ function FaceEdgeIter(Face data) {
   
   //#$().Vertex
   this.next = function() : Edge {
-    if (this.curloop == null) throw StopIteration;
+    var reti = this.ret;
+    
+    if (this.curloop == null) {
+      reti.done = true;
+      return reti;
+    }
     
     var ret = this.curloop.e;
     
@@ -858,27 +892,33 @@ function FaceEdgeIter(Face data) {
       }
     }
     
-    return ret;
+    reti.value = ret;
+    return reti;
   }
 }
 
 //#$(Vert).class
 function VertEdgeIter(Vert data) {
+  this.ret = {done : false, value : undefined};
   this.data = data
   this.first = data;
   this.cur = 0;
 
   //#$().Edge
   this.next = function() : Edge {
+    var reti = this.ret;
     if (this.cur < this.data.edges.length()) {
-      return this.data.edges[this.cur++];
+      reti.value = this.data.edges[this.cur++];
     } else {
-      throw StopIteration;
+      reti.done = true;
     }
+    
+    return reti;
   }
 }
 
 function VertLoopIter(Vert data) {
+  this.ret = {done : false, value : undefined};
   this.data = data;
   this.first = data;
   this.cur = 0;
@@ -892,9 +932,11 @@ function VertLoopIter(Vert data) {
   
   this.next = function() : Loop {
     var ret = null;
-
+    var reti = this.ret;
+    
     if (this.curloop == null) {
-      throw StopIteration;
+      reti.done = true;
+      return reti;
     }
     
     ret = this.curloop;
@@ -911,11 +953,13 @@ function VertLoopIter(Vert data) {
         this.curloop = null;
     }
     
-    return ret;
+    reti.value = ret;
+    return reti;
   }
 }
 
 function VertFaceIter(Vert data) {
+  this.ret = {done : false, value : undefined};
   this.data = data
   this.first = data;
   this.cur = 0;
@@ -928,8 +972,11 @@ function VertFaceIter(Vert data) {
     this.curloop = null;
   
   this.next = function() : Face {
+    var reti = this.ret;
+    
     if (this.curedge == this.data.edges.length || this.curloop == null) {
-      throw StopIteration;
+      reti.done = true;
+      return reti;
     }
 
     var ret = this.curloop.f;
@@ -942,41 +989,56 @@ function VertFaceIter(Vert data) {
         this.curloop = this.data.edges[this.curedge].loop;
     }
     
-    return ret;
+    reti.value = ret;
+    return reti;
   }
 }
 
 function EdgeVertIter(Edge data) {
+  this.ret = {done : false, value : undefined};
   this.data = data;
   this.i = 0;
   
   this.next = function() : Vertex {
+    var reti = this.ret;
+    
     if (this.i == 0) {
       this.i++;
-      return this.data.v1;
+      
+      reti.value = this.data.v1;
+      return reti;
     } else if (this.i == 1) {
       this.i++;
+      reti.value = this.data.v2;
       return this.data.v2;
     } else {
       this.i = 0;
-      throw StopIteration;
+      this.ret = {done : false, value : undefined};
+      reti.done = true;
+      
+      return reti;
     }
   }
   
   this.reset = function() {
     this.i = 0;
+    this.ret = {done : false, value : undefined};
   }
 }
 
 function EdgeFaceIter(Edge data) {
+  this.ret = {done : false, value : undefined};
   this.data = data
   this.first = data;
   this.cur = 0;
   this.curloop = data.loop;
   
   this.next = function() : Face {
+    var reti = this.ret;
+    
     if (this.curloop == null) {
-      throw StopIteration;
+      reti.done = true;
+      return reti;
     }
     
     var ret = this.curloop.f;
@@ -986,19 +1048,23 @@ function EdgeFaceIter(Edge data) {
       this.curloop = null; //set stop condition
     }
     
-    return ret;
+    reti.value = ret;
+    return reti;
   }
 }
 
 function EdgeLoopIter(Edge data) {
+  this.ret = {done : false, value : undefined};
   this.data = data
   this.first = data;
   this.cur = 0;
   this.curloop = data.loop;
   
   this.next = function() : Loop {
+    var reti = this.ret;
     if (this.curloop == null) {
-      throw StopIteration;
+      reti.done = true;
+      return reti;
     }
     
     var ret = this.curloop;
@@ -1008,7 +1074,8 @@ function EdgeLoopIter(Edge data) {
       this.curloop = null; //set stop condition
     }
     
-    return ret;
+    reti.ret = ret;
+    return reti;
   }
 }
 
@@ -2211,7 +2278,7 @@ var _mapi_frn_n1 = new Vector3();
     return this;
   }
   this.next = function() {
-    throw StopIteration;
+    return {done : true, value : undefined};
   }
 }*/
 function recalc_normals_job(Mesh m2, Boolean use_sco) //use_sco is optional
@@ -2224,13 +2291,15 @@ function recalc_normals_job(Mesh m2, Boolean use_sco) //use_sco is optional
   }
   
   this.next = function() {
-    this.iter.next();
+    var reti = this.iter.next();
     this.i++;
     
     if (this.i > 5000) {
       console.log("Inifite loop detected in recalc normals job!");
-      throw StopIteration;
+      return {done : true, value : undefined};
     }
+    
+    return reti;
   }
 }
 // /*
@@ -3250,18 +3319,12 @@ function MeshAPI(Mesh mesh) {
       mesh.copy_face_data(nf, f);
       
       while (1) {
-        try {
-          var l1 = iter1.next();
-          var l2 = iter2.next();
-          
-          mesh.copy_loop_data(l2, l1);
-        } catch (err) {
-          if (err != StopIteration) {
-            throw err;
-          } else {
-            break;
-          }
-        }
+        var l1 = iter1.next();
+        var l2 = iter2.next();
+        
+        if (l1.done || l2.done) break;
+        
+        mesh.copy_loop_data(l2.value, l1.value);
       }
     }
     

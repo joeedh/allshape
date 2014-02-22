@@ -1,5 +1,9 @@
 "use strict";
 
+//todo: merge this file with toolops_api.js
+//      we do need a separate operator api for mesh ops,
+//      but we don't need separate data structures.
+
 var MPropTypes = {
   INT: 0,
   FLOAT: 1,
@@ -102,7 +106,7 @@ function element_filter_iter(iter, typemask) {
     
     var e = this.iter.next();
 
-    while (!(e.type & this.typemask)) {
+    while (!e.done && !(e.type & this.typemask)) {
       e = this.iter.next();
     }
     
@@ -146,6 +150,7 @@ function element_iter_convert(iter, type) {
       this.iter.reset();
       
     this.vset = new set();
+	
     if (this.mesh != undefined)
       this.iter.mesh = this.mesh;
   }
@@ -159,47 +164,40 @@ function element_iter_convert(iter, type) {
       this.iter.mesh = this.mesh;
       
     var v = this._next();
+	
+    if (v.done) return v;
+	
     var vset = this.vset;
-    
-    while (v == undefined || vset.has(v)) {
+    while (v == undefined || vset.has(v.value)) {
       v = this._next();
     }
     
-    vset.add(v);
+    vset.add(v.value);
     return v;
   }
   
   this._next = function() {
-    try {
-      if (this.subiter == undefined) {
-        var next = this.iter.next();
-        
-        if (next.constructor.name == this.type.name) {
-          return next;
-        }
-        
-        this.subiter = next.verts.__iterator__();
-      }
+    if (this.subiter == undefined) {
+      var next = this.iter.next();
       
-      var vset = this.vset;
-      try {
-        var v = this.subiter.next();
-        return v;
-      } catch (_error2) {
-        if (_error2 != StopIteration) {
-          throw _error2;
-        } else {
-          this.subiter = undefined;
-        }
-      }
-    } catch (_error) {
-      if (_error != StopIteration) {
-        throw _error;
-      } else {
+      if (next.done) {
         this.reset();
-        throw StopIteration;
+        return next;
       }
-    }   
+  
+      if (next.value.constructor.name == this.type.name)
+        return next;
+      
+      this.subiter = next.value.verts.__iterator__();
+    }
+    
+    var vset = this.vset;
+	  var v = this.subiter.next();
+	  if (v.done) {
+        this.subiter = undefined;
+	  }
+	  
+	  return v;
   }
 }
 
@@ -247,39 +245,35 @@ selectiter.prototype.next = function() {
   }
   
   var next;
-  try {
-    next = this.iter.next();
-  } catch (_error) {
-    if (_error != StopIteration) {
-      throw _error;
-    } else {
-      var mask = this.mask;
-      if (this.curtype == MeshTypes.VERT) {
-        if (mask & MeshTypes.EDGE) {
-          this.curtype = MeshTypes.EDGE;
-          this.iter = get_iter(MeshTypes.EDGE);
-          return this.next();
-        } else if (mask & MeshTypes.FACE) {
-          this.curtype = MeshTypes.FACE;
-          this.iter = get_iter(MeshTypes.FACE);
-          return this.next();
-        } else {
-          this.reset();
-          throw StopIteration;
-        }
-      } else if (this.curtype == MeshTypes.EDGE) {
-        if (mask & MeshTypes.FACE) {
-          this.curtype = MeshTypes.FACE;
-          this.iter = get_iter(MeshTypes.FACE);
-          return this.next();
-        } else {
-          this.reset();
-          throw StopIteration;
-        }
-      } else if (this.curtype == MeshTypes.FACE) {
+  next = this.iter.next();
+  if (next.done) {
+    var mask = this.mask;
+    
+    if (this.curtype == MeshTypes.VERT) {
+      if (mask & MeshTypes.EDGE) {
+        this.curtype = MeshTypes.EDGE;
+        this.iter = get_iter(MeshTypes.EDGE);
+        return this.next();
+      } else if (mask & MeshTypes.FACE) {
+        this.curtype = MeshTypes.FACE;
+        this.iter = get_iter(MeshTypes.FACE);
+        return this.next();
+      } else {
         this.reset();
-        throw StopIteration;
+        return next;
       }
+    } else if (this.curtype == MeshTypes.EDGE) {
+      if (mask & MeshTypes.FACE) {
+        this.curtype = MeshTypes.FACE;
+        this.iter = get_iter(MeshTypes.FACE);
+        return this.next();
+      } else {
+        this.reset();
+        return next;
+      }
+    } else if (this.curtype == MeshTypes.FACE) {
+      this.reset();
+      return next;
     }
   }
   
@@ -330,8 +324,9 @@ function flagiter(mesh, typemask, flag) {
       
       while (this.cur < len) {
         var v2 = this.iter.next();
+        if (v2.done) break;
         
-        if ((v2.flag & this.flag) != 0) {
+        if ((v2.value.flag & this.flag) != 0) {
           v = v2;
           this.cur++;
           break;
@@ -357,7 +352,7 @@ function flagiter(mesh, typemask, flag) {
           return this.next();
         } else {
           this.cur = -1;
-          throw StopIteration;
+          return {done: true, value: undefined};
         }          
       }
     } else if (this.curtype == MeshTypes.EDGE) {
@@ -366,8 +361,9 @@ function flagiter(mesh, typemask, flag) {
       
       while (this.cur < len) {
         var e2 = this.iter.next();
+        if (e2.done) break;
         
-        if ((e2.flag & this.flag) != 0) {
+        if ((e2.value.flag & this.flag) != 0) {
           e = e2;
           this.cur++;
           break;
@@ -387,7 +383,7 @@ function flagiter(mesh, typemask, flag) {
           return this.next();
         } else {
           this.cur = -1;
-          throw StopIteration;
+          return {done : true, value : undefined};
         }          
       }    
     } else if (this.curtype == MeshTypes.FACE) {
@@ -396,8 +392,9 @@ function flagiter(mesh, typemask, flag) {
       
       while (this.cur < len) {
         var f = this.iter.next();
+        if (f.done) break;
         
-        if ((f.flag & this.flag) != 0) {
+        if ((f.value.flag & this.flag) != 0) {
           this.cur++;
           break;
         }
@@ -410,7 +407,7 @@ function flagiter(mesh, typemask, flag) {
         return f;
       } else {
         this.cur = -1;
-        throw StopIteration;
+        return {done : true, value : undefined};
       }    
     }
   }

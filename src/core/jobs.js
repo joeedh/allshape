@@ -187,7 +187,7 @@ JobManager.prototype.queue_replace = function(Joblet job, JobStartFunc start) { 
 }
 
 JobManager.prototype.run = function() {
-  if (time_ms - this.last_ms < this.ival)
+  if (time_ms() - this.last_ms < this.ival)
     return;
   
   var host_ival = time_ms() - this.last_ms - this.ival;
@@ -205,19 +205,14 @@ JobManager.prototype.run = function() {
       
       var ms = time_ms();
       
-      try {
-        job.iter.next();
-        
+      
+      var reti = job.iter.next();
+      if (!reti.done) {
         var d = time_ms() - job.last_ms 
         job.time_mean.update(d);
         
         job.last_ms = time_ms();
-      } catch (_r_err) {
-        if (_r_err !== StopIteration) {
-          throw _r_err;
-          console.trace();
-        }
-        
+      } else {
         if (job.finish != undefined)
           job.finish(job);
         

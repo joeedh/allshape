@@ -870,6 +870,8 @@ last_queue_time = window.performance.now();
 
 function server_log(msg)
 {
+  return; //XXX
+  
   if (msg != undefined) {
     if (log_cache.hasOwnProperty(msg))
       return;
@@ -913,6 +915,7 @@ function flush_server_log()
 //a basic array iterator utility function
 function arr_iter(keys)
 {
+  this.ret = {done : false, value : undefined};
   this.keys = keys;
   this.cur = 0;
   
@@ -922,14 +925,18 @@ function arr_iter(keys)
   
   this.next = function() {
     if (this.cur >= this.keys.length) {
-      throw StopIteration;
+      this.ret.done = true;
+      
+      return this.ret;
     }
     
-    return this.keys[this.cur++];
+    this.ret.value = this.keys[this.cur++];
+    return this.ret;
   }
 }
 
 //not every browser implements JS1.7 Harmony iterators
+/*
 try {
   var i = StopIteration;
 } catch (error) {
@@ -939,6 +946,7 @@ try {
   StopIteration.prototype = Object.create(Error.prototype);
   StopIteration.prototype.constructor = StopIteration;
 }
+*/
 
 function obj_get_keys(obj) {
   var ret = [];
@@ -950,7 +958,7 @@ function obj_get_keys(obj) {
   
   return ret;
 }
-__use_Iterator = false;
+
 _do_frame_debug = false;
 _do_iter_err_stacktrace = true;
 
@@ -985,19 +993,15 @@ function __get_iter(obj)
   if (obj.__proto__.hasOwnProperty("__iterator__") || obj.hasOwnProperty("__iterator__")) {
     return obj.__iterator__();
   } else {
-    if (__use_Iterator) {
-      return Iterator(obj);
-    } else {
-      keys = []
-      for (var k in obj) {
-        keys.push(k)
-      }
-      return new arr_iter(keys);
+    keys = []
+    for (var k in obj) {
+      keys.push(k)
     }
+    return new arr_iter(keys);
   }
 }
 
-function __get_iter2(obj)
+function _KeyValIterator(obj)
 {
   if (obj.__proto__.hasOwnProperty("__iterator__") || obj.hasOwnProperty("__iterator__")) {
     return obj.__iterator__();
@@ -1010,12 +1014,7 @@ function __get_iter2(obj)
   }
 }
 
-try {
-  _tst = Iterator({});
-} catch (Error) {
-  __use_Iterator = false;
-  Iterator = __get_iter2;
-}
+Iterator = _KeyValIterator;
 
 /*
 with any luck, all browsers have JSON.stringify and JSON.parse
@@ -1084,6 +1083,7 @@ function toJSON_intern (ob, tlevel) {
 
 <script>
     var g = {};
+    var _skip_draw = false;
     
     function gl_blend_func(gl) 
     {
@@ -1253,7 +1253,7 @@ function toJSON_intern (ob, tlevel) {
 
     function drawPicture(gl)
     {
-		var g = g_app_state;
+        var g = g_app_state;
 
         // Make sure the canvas is sized correctly.
         reshape(gl);
@@ -1313,11 +1313,13 @@ function toJSON_intern (ob, tlevel) {
         incAngle = 0.5;
         framerate = new Framerate("framerate");
         var f = function() {
-          try {          
-            drawPicture(gl);
+          try {
+            if (!_skip_draw) 
+              drawPicture(gl);
           } catch (_error) {
             print_stack(_error);
             console.log("Draw error: ", _error.message);
+            _skip_draw = true;
           }
           
           requestId = window.requestAnimFrame(f, canvas);

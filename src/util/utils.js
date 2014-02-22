@@ -50,13 +50,13 @@ EXPORT_FUNC(prior)
 function Iter() {
 }
 create_prototype(CanIter);
-GIterator.prototype.next = function () {} //returns {value:int, done:bool}
-GIterator.prototype.reset = function() {} //note: this is an extension to harmony draft spec
+Iter.prototype.next = function () {} //returns {value:int, done:bool}
+Iter.prototype.reset = function() {} //note: this is an extension to harmony draft spec
 
 function CanIter() {
 }
 create_prototype(Iter);
-GIterable.prototype.iterator = function() : GIterator {
+CanIter.prototype.iterator = function() : Iter {
 }
 
 debug_int_1 = 0;
@@ -177,41 +177,19 @@ GArray.prototype.toString = function() : String {
   return s
 }
 
-/*
-function obj_value_iter(obj) {
-  this.obj = obj;
-  this.iter = Iterator(obj);
-  
-  this.next = function() {
-      try {
-        return this.iter.next()[1];
-      } catch (err) {
-        if (err != StopIteration) {
-          console.trace();
-          throw err;
-        } else {
-          this.iter = Iterator(this.obj);
-          throw StopIteration;
-        }
-      }
-  }
-  
-  this.reset = function() {
-    this.iter = Iterator(this.obj);
-  }
-  
-  this.__iterator__() = function() {
-    return this;
-  }
-}*/
-
-
 function obj_value_iter(Object obj) {
+  this.ret = {done : false, value : undefined};
   this.obj = obj;
   this.iter = Iterator(obj);
   
   this.next = function() {
-    return this.iter.next()[1];
+    var reti = this.ret;
+    
+    var ret = this.iter.next()
+    if (ret.done) return ret;
+    
+    reti.value = ret.value[1];
+    return reti;
   }
   
   this.__iterator__ = function() {
@@ -270,6 +248,7 @@ Array.prototype.__hash__ = function() : String {
 //an iterator that allows removing elements from
 //a set during iteration
 function SafeSetIter<T>(set) {
+  this.ret = {done : false, value : undefined};
   this.set = set
   this.iter = new SetIter(set)
   this.nextitem = undefined;
@@ -279,25 +258,17 @@ function SafeSetIter<T>(set) {
   }
   
   this.next = function() : T {
+    throw new Error("Fix this before using");
+    
+    var reti = this.ret;
     var iter = this.iter
     
     if (this.nextitem == undefined) {
       this.nextitem = iter.next();
-    } else if (this.nextitem === StopIteration) {
-      throw StopIteration;
     }
     
     var ret = this.nextitem;
-    
-    try {
-      this.nextitem = iter.next();
-    } catch (_error) {
-      if (_error !== StopIteration) {
-        throw _error;
-      } else {
-        this.nextitem = StopIteration;
-      }
-    }
+    this.nextitem = iter.next();
     
     return ret;
   }
@@ -323,21 +294,27 @@ function SafeSetIter<T>(set) {
 } */
 
 function SetIter<T>(set) {
+  this.ret = {done : false, value : undefined};
   this.set = set
   this.iter = Iterator(set.items)
   
   this.next = function() : T {
+    var reti = this.ret;
     var iter = this.iter
     var items = this.set.items
     
     var item = iter.next();
-    
+    if (item.done)
+      return item;
+      
     /*skip over any built-in properties*/
-    while (!items.hasOwnProperty(item[0])) {
+    while (!items.hasOwnProperty(item.value[0])) {
       item = iter.next()
+      if (item.done) return item;
     }
     
-    return item[1]
+    reti.value = item.value[1];
+    return reti;
   }
 }
 EXPORT_FUNC(SetIter)
@@ -432,38 +409,54 @@ set.prototype.has = function(T item) {
 }
 
 function GArrayIter<T>(GArray<T> arr) {
+  this.ret = {done : false, value : undefined};
   this.arr = arr;
   this.cur = 0;
   
   this.next = function() : T {
+    var reti = this.ret;
+    
     if (this.cur >= this.arr.length) {
       this.cur = 0;
-      throw StopIteration;
+      this.ret = {done : false, value : undefined};
+      
+      reti.done = true;
+      return reti;
     } else { 
-      return this.arr[this.cur++];
+      reti.value = this.arr[this.cur++];
+      return reti;
     }
   }
   
   this.reset = function() {
+    this.ret = {done : false, value : undefined};
     this.cur = 0;
   }
 }
 
 function HashKeyIter(hash) {
+  this.ret = {done : false, value : undefined};
   this.hash = hash;
   this.iter = Iterator(hash.items);
   
   this.next = function() {
+    var reti = this.ret;
     var iter = this.iter;
     var items = this.hash.items;
     
     var item = iter.next();
     
-    while (!items.hasOwnProperty(item[0])) {
+    if (item.done)
+      return item;
+      
+    while (!items.hasOwnProperty(item.value[0])) {
+      if (item.done) return item;
+      
       item = iter.next();
     }
     
-    return this.hash.keymap[item[0]];
+    reti.value = this.hash.keymap[item.value[0]];
+    return reti;
   }
 }
 EXPORT_FUNC(HashKeyIter)
@@ -1053,3 +1046,4 @@ EIDGen.fromJSON = function(obj) {
   
   return idgen;
 }
+

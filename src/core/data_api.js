@@ -22,25 +22,36 @@ function DataPath(prop, name, path, dest_is_prop, use_path) { //dest_is_prop is 
 create_prototype(DataPath);
 
 function DataStructIter(s) {
-  this.strct = s;
+  this.ret = {done : false, value : undefined};
   this.cur = 0;
+  
+  this.strct = s;
+  this.value = undefined;
   
   this.__iterator__ = function() { return this; }
   
   this.reset = function() {
     this.cur = 0;
+    this.ret = {done : false, value : undefined};
   }
   
   this.next = function() {
     if (this.cur >= this.strct.paths.length) {
+      var ret = this.ret;
+      
       this.cur = 0;
-      throw StopIteration;
+      
+      ret.done = true;
+      this.ret = {done : false, value : undefined};
+      
+      return ret;
     }
     
     var p = this.strct.paths[this.cur++];
     p.data.path = p.path;
     
-    return p;
+    this.ret.value = p;
+    return this.ret;
   }
 }
 
@@ -332,17 +343,17 @@ function DataAPI(appstate) {
   }
   
   this.call_op = function(ctx, str) {
-    try {
+    //try {
       var op = this.get_op_intern(ctx, str);
       this.appstate.toolstack.exec_tool(op);
-    } catch (error) {
+    /*} catch (error) {
       if (error != TinyParserError) {
         throw error;
       } else {
         console.log("Error calling " + str);
         console.trace();
       }
-    }
+    }*/
   }
   
   this.get_op_uiname = function(ctx, str) {

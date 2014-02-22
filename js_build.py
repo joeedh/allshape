@@ -67,7 +67,7 @@ JCC = np("tools/extjs_cc/js_cc.py")
 TCC = np("tools/tinygpu/tinygpu.py")
 
 #minified, concatenated build
-JFLAGS = "-gm -mn -nref"
+JFLAGS = "-gm -hi -mn -nref"
 if do_smap_roots:
   JFLAGS += " -gsr"
   

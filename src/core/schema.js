@@ -170,6 +170,8 @@ function SchemaParser() {
   ];
 
   for (var rt in reserved_tokens) {
+    console.log(rt);
+    console.log(__ival_rt);
     tokens.push(tk(rt.toUpperCase()));
   }
   

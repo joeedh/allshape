@@ -742,15 +742,10 @@ function api_exec(path, netjob, mode,
         netjob.value = req.response;
       }     
       
-      try {
-        iter.next();
-      } catch (_error) {
-        if (_error != StopIteration) {
-          throw _error;
-        } else {
-          if (netjob.finish) {
-            netjob.finish(netjob, owner);
-          }
+      var reti = iter.next();
+      if (reti.done) {
+        if (netjob.finish) {
+          netjob.finish(netjob, owner);
         }
       }
     } else if (req.status >= 400) {
@@ -791,13 +786,7 @@ function auth_session(user, password, finish, error, status) {
   obj.iter = new AuthSessionGen(obj.job, user, password);
   
   obj.job.iter = obj.iter;
-  try {
-    obj.iter.next();
-  } catch (_error) {
-    if (_error != StopIteration) {
-      throw _error;
-    }
-  }
+  obj.iter.next();
   
   return obj;
 }
@@ -812,13 +801,7 @@ function call_api(iternew, args, finish, error, status) {
   iter.job = obj.job;
   obj.iter = obj.job.iter = iter;
   
-  try {
-    obj.iter.next();
-  } catch (_error) {
-    if (_error != StopIteration) {
-      throw _error;
-    }
-  }
+  obj.iter.next();
   
   return obj;
 }
