@@ -325,9 +325,7 @@ function DataAPI(appstate) {
       if (element == undefined)
         return undefined;
       
-      console.log("----", element);
       if (element.keymap != null) {
-        console.log("----", element.keymap.op_map);
         var handler = element.keymap.get_tool_handler(str);
         if (handler != undefined)
           return handler;

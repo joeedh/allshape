@@ -187,6 +187,10 @@ function makeBoxMesh(WebGLRenderingContext ctx) : Mesh
     mesh.make_face(new GArray([v4, v3, v8, v7]))
     mesh.make_face(new GArray([v7, v5, v6, v8]))
     
+    for (var v in mesh.verts) {
+      mesh.verts.select(v, true);
+    }
+    
     mesh.api.consistent_windings();
     
     return mesh;

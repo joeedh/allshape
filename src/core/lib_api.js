@@ -18,6 +18,17 @@ var DataNames = {
   SCENE  : "Scene"
 };
 
+//this function shouldn't be manual; need to automate it
+var get_data_typemap = function() {
+  var obj = {};
+  
+  obj[DataTypes.OBJECT] = ASObject;
+  obj[DataTypes.MESH] = Mesh;
+  obj[DataTypes.SCENE] = Scene;
+  
+  return obj;
+}
+
 function DataList(type) {
   this.list = new GArray();
   this.namemap = {};

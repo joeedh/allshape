@@ -388,7 +388,7 @@ function pack_string(Array<byte> data, String str)
 
 function unpack_bytes(DataView data, unpack_ctx uctx, int len)
 {
-  var ret = new Uint8Array(data.buffer.slice(uctx.i, uctx.i+len));
+  var ret = new DataView(data.buffer.slice(uctx.i, uctx.i+len));
   uctx.i += len;
   
   return ret;

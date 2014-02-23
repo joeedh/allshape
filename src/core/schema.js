@@ -967,6 +967,7 @@ function init_struct_packer() {
       }
     } catch (err) {
       if (err instanceof PUTLParseError) {
+        print_stack(err);
         console.log("Error parsing struct: " + err.message);
       } else {
         print_stack(err);

@@ -472,7 +472,7 @@ UINumBox.prototype.on_mousemove = function(MouseEvent event) {
 
 UINumBox.prototype.build_draw = function(UICanvas canvas) {
   canvas.begin(this);
- 
+  
   var clr = uicolors["Box"];
   
   if (this.clicked) 
@@ -483,7 +483,7 @@ UINumBox.prototype.build_draw = function(UICanvas canvas) {
     canvas.box([0, 0], this.size, this.do_flash_color(clr));
   
   var unit = this.unit;    
-  var valstr = Unit.gen_string(this.val, unit);
+  var valstr = this.val.toString(); //XXX Unit.gen_string(this.val, unit);
   
   var str = this.text + " " + valstr
   var pad = 15
@@ -534,8 +534,10 @@ function UILabel(ctx, text, pos, size, path) {
 inherit(UILabel, UIElement);
 
 UILabel.prototype.set_text = function(text) {
+  if (this.text != text)
+    this.do_recalc();
+  
   this.text = text;
-  this.do_recalc();
 }
 
 UILabel.prototype.on_tick = function() {
@@ -799,8 +801,10 @@ function UITextBox(ctx, text, pos, size, path) {
 inherit(UITextBox, UIElement);
 
 UITextBox.prototype.set_text = function(text) {
+  if (this.text != text)
+    this.do_recalc();
+    
   this.text = text;
-  this.do_recalc();
 }
 
 UITextBox.prototype.on_tick = function() {
@@ -1467,12 +1471,13 @@ function UIVScroll(ctx, range, pos, size, callback) {
 inherit(UIVScroll, UIFrame);
 
 UIVScroll.prototype.set_range = function(range) {
+  if (this.range == undefined || this.range[0] != range[0] || this.range[1] != range[1])
+    this.do_recalc();
+    
   this.range = range;
   
   this.val = Math.min(Math.max(this.val, this.range[0]), this.range[1]);
   this.pack_bar();
-  
-  this.do_recalc();
 }
 
 UIVScroll.prototype.do_drag = function(mpos) {

@@ -1172,7 +1172,7 @@ Screen.prototype.on_draw = function(WebGLRenderingContext gl)
   /*recalculate root scissor box*/
   gl.enable(gl.SCISSOR_TEST);
   
-  reset_scissor_stack(this.gl, [0, 0, this.size[0], this.size[1]]);
+  reset_scissor_stack(this.gl);
   push_scissor(this.gl, [0, 0], this.size);
   
   if ((this.active instanceof ScreenArea) && this.active.area instanceof
@@ -1197,7 +1197,7 @@ Screen.prototype.on_draw = function(WebGLRenderingContext gl)
     pop_scissor(gl);
   }
   
-  if (time_ms() - this.last_tick > (IsMobile ? 500 : 450)) {
+  if (time_ms() - this.last_tick > 200) { //(IsMobile ? 500 : 150)) {
     this.on_tick();
     this.last_tick = time_ms();
   }
@@ -1483,9 +1483,6 @@ function gen_screen(WebGLRenderingContext gl, View3DHandler view3d, int width, i
 {
   var scr = new Screen(gl, view3d, width, height);
   view3d.screen = scr;
-  
-  //first scissor
-  push_scissor(gl, [0, 0], [width, height]);
   
   g_app_state.screen = scr;
   g_app_state.gl = gl;

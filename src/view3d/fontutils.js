@@ -4,6 +4,17 @@ default_font_color = new Float32Array([0.9, 0.8, 0.3, 1.0]);
 
 function FontAddCharFunc(Array<Array<float>> vrect, Array<Array<float>> trect);
 
+var _st_vr = [0, 0, 0, 0];
+var _st_tr = [0, 0, 0, 0];
+//static cached return values for calc_string, to avoid 
+//object (array) creation overhead
+var _cs_rt = [];
+for (var i=0; i<32; i++) {
+  _cs_rt.push([[0,0], [0,0]]);
+}
+
+var _cs_cur_rt = 0;
+
 function Font(WebGLRenderingContext gl, View3DHandler view3d) {
   this.finfo = font_info;
   
@@ -61,7 +72,13 @@ function Font(WebGLRenderingContext gl, View3DHandler view3d) {
       y += this.linehgt;
     }
     
-    return [mm.max[0]-mm.min[0], mm.max[1]-mm.min[1]]
+    var ret = _cs_rt[_cs_cur_rt][0];
+    _cs_cur_rt = (_cs_cur_rt+1) % _cs_rt.length;
+    
+    ret[0] = mm.max[0]-mm.min[0];
+    ret[1] = mm.max[1]-mm.min[1];
+    
+    return ret;
   }
   
   this.calc_string = function(String text, FontAddCharFunc add_char) : Array<Array<float>> { //add_char is optional (vrect, trect) function
@@ -97,8 +114,18 @@ function Font(WebGLRenderingContext gl, View3DHandler view3d) {
       }
       
       var g = finfo.glyphs[c];
-      var vrect = [x+g.bearing[0], y+g.bearing[1]-g.size[1], g.size[0], g.size[1]];
-      var trect = [g.cellpos[0], g.cellpos[1]+g.bitmap_size[1], g.bitmap_size[0], -g.bitmap_size[1]];
+      var vrect = _st_vr;
+      
+      vrect[0] = x+g.bearing[0];
+      vrect[1] = y+g.bearing[1]-g.size[1];
+      vrect[2] = g.size[0];
+      vrect[3] = g.size[1];
+      
+      var trect = _st_tr;
+      trect[0] = g.cellpos[0]
+      trect[1] = g.cellpos[1]+g.bitmap_size[1]
+      trect[2] = g.bitmap_size[0]
+      trect[3] = -g.bitmap_size[1]
       
       add_char(vrect, trect);
       
@@ -118,7 +145,12 @@ function Font(WebGLRenderingContext gl, View3DHandler view3d) {
       maxy = this.linehgt;
     }
     
-    return [[minx, Math.max(maxx, x)], [miny, maxy]];
+    var ret = _cs_rt[_cs_cur_rt];
+    _cs_cur_rt = (_cs_cur_rt+1) % _cs_rt.length;
+    
+    ret[0][0] = minx; ret[0][1] = Math.max(maxx, x);
+    ret[1][0] = miny; ret[1][1] = maxy;
+    return ret;
   };
   
   this.draw_text = function(WebGLRenderingContext gl, int x, 
@@ -227,6 +259,7 @@ function Font(WebGLRenderingContext gl, View3DHandler view3d) {
   }
   
   this._static_split_text = new GArray([0,0,0,0,0]);
+  this._st_tx_rt = [0, 0];
   
   this.split_text = function(text) {
     var i = 0;
@@ -246,7 +279,11 @@ function Font(WebGLRenderingContext gl, View3DHandler view3d) {
       }
     }
     
-    return [lines, i+1];
+    var ret = this._st_tx_rt;
+    ret[0] = lines;
+    ret[1] = i+1;
+    
+    return ret;
   }
   
   this.gen_text_buffers = function(WebGLRenderingContext gl, int x, 
@@ -312,9 +349,12 @@ function Font(WebGLRenderingContext gl, View3DHandler view3d) {
     }
     
     function transform_texcos(Array<float> texcos) {
-      for (var i=0; i<texcos.length/2; i++) {
-        texcos[i*2] = (texcos[i*2]/finfo.size[0]);
-        texcos[i*2+1] = (texcos[i*2+1]/finfo.size[1]);
+      var size = finfo.size;
+      var len = texcos.length/2;
+      
+      for (var i=0; i<len; i++) {
+        texcos[i*2] /= size[0];
+        texcos[i*2+1] /= size[1];
       }
     }
     
@@ -327,7 +367,7 @@ function Font(WebGLRenderingContext gl, View3DHandler view3d) {
       var ret = this.calc_string(lines[j], add_char);
       y += this.linehgt;
     }
-
+    
     transform_verts(verts);
     transform_texcos(texcos);
     

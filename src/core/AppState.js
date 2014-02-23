@@ -320,6 +320,8 @@ AppState.prototype.load_user_file_new = function(DataView data, unpack_ctx uctx)
   var blocks = [];
   var fstructs = new STRUCT();
   
+  var tmap = get_data_typemap()
+  
   while (uctx.i < data.byteLength) {
     var type = unpack_static_string(data, uctx, 4);
     var subtype = unpack_static_string(data, uctx, 4);
@@ -331,7 +333,9 @@ AppState.prototype.load_user_file_new = function(DataView data, unpack_ctx uctx)
     if (subtype == "JSON") {
       bdata = unpack_static_string(data, uctx, len);
     } else if (subtype == "STRT") {
-      bdata = unpack_bytes(data, uctx, len);
+      var dtype = unpack_int(data, uctx);
+      bdata = unpack_bytes(data, uctx, len-4);
+      bdata = [dtype, bdata];
     } else if (subtype == "SDEF") {
       bdata = unpack_static_string(data, uctx, len).trim();
       fstructs.parse_structs(bdata);
@@ -346,10 +350,11 @@ AppState.prototype.load_user_file_new = function(DataView data, unpack_ctx uctx)
   
   for (var i=0; i<blocks.length; i++) {
     var b = blocks[i];
+    
     if (b.subtype == "JSON") {
       b.data = JSON.parse(b.data);
-    } else if (b.subtype == "STRT") {
-      b.data = fstructs.read_object(b.data);
+    } else if (b.subtype == "STRT") { //struct data should only be lib blocks
+      b.data = fstructs.read_object(b.data[1], tmap[b.data[0]]);
     }
   }
 }

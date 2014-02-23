@@ -1573,6 +1573,7 @@ UIFrame.prototype.on_draw = function(gl) {
 
 var _static_mat = new Matrix4();
 var _ufbd_v1 = new Vector3();
+var _canvas_threshold = 0.35;
 
 UIFrame.prototype.build_draw = function(canvas, skip_box) { //skip_box is optional
   var mat = _static_mat;
@@ -1587,6 +1588,9 @@ UIFrame.prototype.build_draw = function(canvas, skip_box) { //skip_box is option
     canvas.simple_box([0, 0], this.size, undefined, this.rcorner);
   }
   
+  var retag_recalc = false;
+  this.recalc = 0;
+  
   for (var c in this.children) {
     if (c.pos == undefined) {
       c.pos = [0,0];
@@ -1594,7 +1598,7 @@ UIFrame.prototype.build_draw = function(canvas, skip_box) { //skip_box is option
       console.log("eek2");
       console.trace();
     }
-  
+    
     mat.makeIdentity();
     _ufbd_v1.zero(); _ufbd_v1[0] = c.pos[0]; _ufbd_v1[1] = c.pos[1];
     
@@ -1604,25 +1608,38 @@ UIFrame.prototype.build_draw = function(canvas, skip_box) { //skip_box is option
       continue;
     if (c.is_canvas_root())
       continue;
-      
-    if (!c.recalc && canvas.has_cache(c)) {
+    
+    var do_skip = true;
+    if (c instanceof UIFrame)
+      do_skip = !c.recalc;
+    else
+      do_skip = !c.recalc || Math.random() > _canvas_threshold;
+
+    if (canvas.has_cache(c) && do_skip) {
+      if (c.recalc) {
+        retag_recalc = true;
+        c.do_recalc();
+      }
       canvas.use_cache(c);
     } else {
       if (!(c instanceof UIFrame)) {
         //console.log("recalculating element", c.__hash__());
       }
       
+      var r = this.recalc;
+      
       if (!(c.packflag & PackFlags.NO_REPACK))
         c.pack(this.get_canvas(), false);
-      
+        
       canvas.push_transform(mat);
       c.build_draw(canvas);
       canvas.pop_transform(mat);
       c.recalc = 0;
     }
   }
-  
-  this.recalc = 0;
+
+  if (retag_recalc)
+    this.do_recalc();
 }
 
 UIFrame.prototype.on_tick = function() {
@@ -1681,7 +1698,7 @@ UIPackFrame.prototype.toolop = function(path, inherit_flag) {
 }
 
 UIPackFrame.prototype.pack = function(canvas, isVertical) {
-  this.do_full_recalc();
+  //this.do_full_recalc();
 }
 
 UIPackFrame.prototype.prop = function(path, packflag) {
@@ -1862,7 +1879,7 @@ RowFrame.prototype.get_min_size = function(UICanvas canvas, Boolean isvertical) 
 }
 
 RowFrame.prototype.pack = function(UICanvas canvas, Boolean is_vertical) {
-  this.do_full_recalc();
+//  this.do_full_recalc();
   
   if (this.size[0] == 0 && this.size[1] == 0) {
     this.size[0] = this.parent.size[0];
@@ -1951,7 +1968,7 @@ ColumnFrame.prototype.get_min_size = function(UICanvas canvas, Boolean isvertica
 }
 
 ColumnFrame.prototype.pack = function(UICanvas canvas, Boolean is_vertical) {
-  this.do_full_recalc();
+  //this.do_full_recalc();
   
   if (this.size[0] == 0 && this.size[1] == 0) {
     this.size[0] = this.parent.size[0];
