@@ -141,13 +141,14 @@ function gen_default_file(size) {
   view3d.ctx = new Context(view3d);
 }
 
-function AppState(screen, mesh) {
+function AppState(screen, mesh, gl) {
   this.screen = screen;
   this.toolstack = new ToolStack(this);
   this.active_view3d = undefined;
   this.api = new DataAPI(this);
   this.filepath = ""
   this.version = g_app_version;
+  this.gl = gl;
   
   this.datalib = new DataLib();
   
@@ -203,7 +204,7 @@ AppState.prototype.update_context = function() {
 }
 
 AppState.prototype.reset_state = function(screen, mesh) {
-  AppState.call(this, screen, mesh);
+  AppState.call(this, screen, mesh, this.gl);
 }
 
 AppState.prototype.set_mesh = function(Mesh m2) {
@@ -333,9 +334,13 @@ AppState.prototype.load_user_file_new = function(DataView data, unpack_ctx uctx)
     if (subtype == "JSON") {
       bdata = unpack_static_string(data, uctx, len);
     } else if (subtype == "STRT") {
-      var dtype = unpack_int(data, uctx);
-      bdata = unpack_bytes(data, uctx, len-4);
-      bdata = [dtype, bdata];
+      if (type == "BLCK") {
+        var dtype = unpack_int(data, uctx);
+        bdata = unpack_bytes(data, uctx, len-4);
+        bdata = [dtype, bdata];
+      } else {
+        bdata = unpack_bytes(data, uctx, len);        
+      }
     } else if (subtype == "SDEF") {
       bdata = unpack_static_string(data, uctx, len).trim();
       fstructs.parse_structs(bdata);
@@ -351,10 +356,24 @@ AppState.prototype.load_user_file_new = function(DataView data, unpack_ctx uctx)
   for (var i=0; i<blocks.length; i++) {
     var b = blocks[i];
     
+    console.log(JSON.stringify({type : b.type, subtype : b.subtype, len : b.len}))
+    
     if (b.subtype == "JSON") {
       b.data = JSON.parse(b.data);
     } else if (b.subtype == "STRT") { //struct data should only be lib blocks
-      b.data = fstructs.read_object(b.data[1], tmap[b.data[0]]);
+      if (b.type == "BLCK") {
+        var lt = tmap[b.data[0]];
+        
+        lt = lt != undefined ? lt.name : lt;
+        console.log("lib type: ", lt);
+        console.log(b.data[1].byteLength);
+        
+        b.data = fstructs.read_object(b.data[1], tmap[b.data[0]]);
+      } else {
+        if (b.type == "SCRN") {
+          b.data = fstructs.read_object(b.data, Screen);
+        }
+      }
     }
   }
 }

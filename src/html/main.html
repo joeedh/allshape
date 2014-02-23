@@ -1209,7 +1209,7 @@ function toJSON_intern (ob, tlevel) {
         canvas.width = canvas.clientWidth;
         canvas.height = canvas.clientHeight;
         
-        g_app_state = new AppState();
+        g_app_state = new AppState(undefined, undefined, gl);
         
         console.log("initializing data api...");
         api_define_ops();

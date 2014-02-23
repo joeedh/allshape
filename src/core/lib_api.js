@@ -184,7 +184,7 @@ create_prototype(DataBlock);
 
 DataBlock.STRUCT = """
   DataBlock {
-    name : static_string[128];
+    name : string;
     lib_type : int;
     lib_id : int;
     lib_lib : int | obj.lib_lib != undefined ? obj.lib_lib.id : -1;

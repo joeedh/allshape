@@ -21,7 +21,7 @@ Scene.fromSTRUCT = function(unpacker) {
   var sce = new Scene();
   unpacker(sce);
   
-  this.init_from_pack();
+  sce.init_from_pack();
   return sce;
 }
 

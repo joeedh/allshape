@@ -170,8 +170,6 @@ function SchemaParser() {
   ];
 
   for (var rt in reserved_tokens) {
-    console.log(rt);
-    console.log(__ival_rt);
     tokens.push(tk(rt.toUpperCase()));
   }
   
@@ -375,9 +373,14 @@ STRUCT.prototype.parse_structs = function(buf) {
       
       this.struct_cls[dummy.name] = dummy;
       this.struct_cls[dummy.name] = stt;
+      
+      if (stt.id != -1)
+        this.struct_ids[stt.id] = stt;
     } else {
       this.struct_cls[stt.name] = clsmap[stt.name];
       this.structs[stt.name] = stt;
+      if (stt.id != -1)
+        this.struct_ids[stt.id] = stt;
     }
     
     var tok = schema_parse.peek()
@@ -643,6 +646,7 @@ var _st_packers = [
     
     pack_int(data, stt.id);
     thestruct.write_struct(data, val, stt);
+    
     packer_debug_end("tstruct");
   },
   function(data, val, obj, thestruct, field, type) { //array
@@ -826,14 +830,15 @@ STRUCT.prototype.read_object = function(data, cls, unpack_ctx uctx) {
     T_TSTRUCT : function(type) {
       var id = unpack_int(data, uctx);
       
-      console.log(thetruct)
-	  
       if (!(id in thestruct.struct_ids)) {
         console.trace();
-        throw new Error("Unknown struct type " + cls2 + ".");
+        console.log(thestruct.struct_ids);
+        throw new Error("Unknown struct type " + id + ".");
       }
       
-      var cls2 = thestruct.get_struct_id(id);      
+      var cls2 = thestruct.get_struct_id(id);
+      cls2 = thestruct.struct_cls[cls2.name];
+
       return thestruct.read_object(data, cls2, uctx);
     },
     T_DATAREF : function(type) {

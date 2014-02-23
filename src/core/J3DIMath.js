@@ -1029,6 +1029,10 @@ function Vector3(Array<float> vec)
   if (vec == undefined)
     vec = _v3_init;
     
+  if (vec[0] == undefined) vec[0] = 0;
+  if (vec[1] == undefined) vec[1] = 0;
+  if (vec[2] == undefined) vec[2] = 0;
+  
   if (typeof(vec) == "number" || typeof(vec[0]) != "number")
     throw new Error("Invalid argument to new Vector3(vec)")
   
@@ -1494,6 +1498,9 @@ function Vector2(Array<float> vec) {
   
   if (vec == undefined)
     vec = _vec2_init;
+  
+  if (vec[0] == undefined) vec[0] = 0;
+  if (vec[1] == undefined) vec[1] = 0;
   
   if (typeof(vec) == "number" || typeof(vec[0]) != "number")
     throw new Error("Invalid argument to new Vector2(vec)")

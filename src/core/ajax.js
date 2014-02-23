@@ -162,7 +162,6 @@ function pack_vec2(Array<byte> data, Vector2 vec)
   
   pack_float(data, vec[0]);
   pack_float(data, vec[1]);
-  pack_float(data, vec[2]);
   
   //discard pack records from composite pack
   if (_rec_pack) {

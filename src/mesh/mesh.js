@@ -1176,9 +1176,9 @@ Mesh.fromSTRUCT = function(unpacker) {
   var edges = m.edges;
   var faces = m.faces;
   
-  m.verts = new GeoArray<Vert>(MeshTypes.VERT, m.idgen, m.eidmap, this.sidmap);
-  m.edges = new GeoArray<Edge>(MeshTypes.EDGE, m.idgen, m.eidmap, this.sidmap);
-  m.faces = new GeoArray<Face>(MeshTypes.FACE, m.idgen, m.eidmap, this.sidmap);
+  m.verts = new GeoArray<Vert>(MeshTypes.VERT, m.idgen, m.eidmap, m.sidmap);
+  m.edges = new GeoArray<Edge>(MeshTypes.EDGE, m.idgen, m.eidmap, m.sidmap);
+  m.faces = new GeoArray<Face>(MeshTypes.FACE, m.idgen, m.eidmap, m.sidmap);
   
   var loops = {}
   

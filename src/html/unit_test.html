@@ -1143,7 +1143,7 @@ function toJSON_intern (ob, tlevel) {
     
     gl = {program : undefined, program2 : undefined};
     
-    g_app_state = new AppState(undefined, makeBoxMesh());
+    g_app_state = new AppState(undefined, makeBoxMesh(), gl);
     
     init_struct_packer();
     //do_unit_tests();

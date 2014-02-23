@@ -951,7 +951,14 @@ function Screen(WebGLRenderingContext gl,
     this2.split_areas();
   }
   
-  this.keymap.add_func(new KeyHandler("V", [], "Split Areas"), handle_split_areas)
+  var k = this.keymap;
+  k.add_tool(new KeyHandler("O", ["CTRL"], "Open File"),
+             "appstate.open()");
+  k.add_tool(new KeyHandler("S", ["CTRL", "ALT"], "Open File"),
+             "appstate.save_as()");
+  k.add_tool(new KeyHandler("S", ["CTRL", "S"], "Open File"),
+             "appstate.save()");
+  k.add_func(new KeyHandler("V", [], "Split Areas"), handle_split_areas)
 }
 inherit(Screen, UIFrame);
 

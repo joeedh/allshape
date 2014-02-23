@@ -211,7 +211,10 @@ function View3DHandler(WebGLRenderingContext gl, Mesh mesh, ShaderProgram vprogr
   this.znear = znear;
   this.last_tick = time_ms()
   
-  this.font = new Font(gl, this);
+  if (gl != undefined)
+    this.font = new Font(gl, this);
+  else
+    this.font = undefined;
   
   this.gpu_test = null;
   
@@ -258,7 +261,7 @@ View3DHandler.STRUCT = STRUCT.inherit(View3DHandler, Area) + """
 """
 
 View3DHandler.fromSTRUCT = function(reader) {
-  var v3d = new View3DHandler()
+  var v3d = new View3DHandler(g_app_state.gl)
   
   reader(v3d)
   
@@ -673,12 +676,6 @@ View3DHandler.prototype.add_menu = function() {
 View3DHandler.prototype.define_keymap = function() {
   var k = this.keymap;
   
-  k.add_tool(new KeyHandler("O", ["CTRL"], "Open File"),
-             "appstate.open()");
-  k.add_tool(new KeyHandler("S", ["CTRL", "ALT"], "Open File"),
-             "appstate.save_as()");
-  k.add_tool(new KeyHandler("S", ["CTRL", "S"], "Open File"),
-             "appstate.save()");
   k.add_tool(new KeyHandler("C", ["CTRL"], "Loop Cut"),
              "mesh.loopcut()");
   k.add_tool(new KeyHandler("G", [], "Translate"), 
@@ -689,19 +686,7 @@ View3DHandler.prototype.define_keymap = function() {
              "mesh.rotate()");
   
   k.add(new KeyHandler("K", [], "Test Dialog"), new FuncKeyHandler(function (ctx) {
-    console.log("Dialog test");
-    var d = new PackedDialog("Test", ctx, ctx.screen, DialogFlags.END_ON_ESCAPE|DialogFlags.MODAL);
-    d.size = [200, 200];
-    
-    function cb() {
-      d.end();
-    }
-    
-    var col = d.subframe.col()
-    col.add(new UIButton(ctx, "Okay", undefined, undefined, undefined, cb));    
-    col.add(new UIButton(ctx, "Cancel", undefined, undefined, undefined, cb));    
-    
-    d.call(ctx.screen.mpos);
+    g_app_state.load_user_file_new(g_app_state.create_user_file_new());
   }));
   
   k.add(new KeyHandler("Z", ["CTRL", "SHIFT"], "Redo"), new FuncKeyHandler(function(ctx) {
