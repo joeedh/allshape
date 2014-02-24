@@ -1573,7 +1573,8 @@ UIFrame.prototype.on_draw = function(gl) {
 
 var _static_mat = new Matrix4();
 var _ufbd_v1 = new Vector3();
-var _canvas_threshold = 0.35;
+//hack for spreading updates across frames
+var _canvas_threshold = 1.0;
 
 UIFrame.prototype.build_draw = function(canvas, skip_box) { //skip_box is optional
   var mat = _static_mat;
@@ -1609,12 +1610,12 @@ UIFrame.prototype.build_draw = function(canvas, skip_box) { //skip_box is option
     if (c.is_canvas_root())
       continue;
     
-    var do_skip = true;
-    if (c instanceof UIFrame)
-      do_skip = !c.recalc;
-    else
+    var do_skip = !c.recalc;
+    
+    if (!(c instanceof UIFrame) && this.constructor.name != UIMenu.name) {
       do_skip = !c.recalc || Math.random() > _canvas_threshold;
-
+    }
+    
     if (canvas.has_cache(c) && do_skip) {
       if (c.recalc) {
         retag_recalc = true;
@@ -1847,6 +1848,18 @@ UIPackFrame.prototype.col = function(path_prefix, align) { //path_prefix is opti
   return col;
 }
 
+UIPackFrame.prototype._pack_recalc = function() 
+{
+  return;
+  this.do_full_recalc();
+  
+  for (var c in this.children) {
+    if (!(c instanceof UIFrame)) {
+      c.recalc = 1;
+    }
+  }
+}
+
 function RowFrame(ctx, path_prefix, align)
 {
   UIPackFrame.call(this, ctx, path_prefix);
@@ -1879,7 +1892,7 @@ RowFrame.prototype.get_min_size = function(UICanvas canvas, Boolean isvertical) 
 }
 
 RowFrame.prototype.pack = function(UICanvas canvas, Boolean is_vertical) {
-//  this.do_full_recalc();
+  this._pack_recalc();
   
   if (this.size[0] == 0 && this.size[1] == 0) {
     this.size[0] = this.parent.size[0];
@@ -1968,7 +1981,7 @@ ColumnFrame.prototype.get_min_size = function(UICanvas canvas, Boolean isvertica
 }
 
 ColumnFrame.prototype.pack = function(UICanvas canvas, Boolean is_vertical) {
-  //this.do_full_recalc();
+  this._pack_recalc();
   
   if (this.size[0] == 0 && this.size[1] == 0) {
     this.size[0] = this.parent.size[0];

@@ -41,21 +41,23 @@ function api_define_view3d() {
     var ctx = this.ctx
     
     if (this.data) {
-      if (!ctx.view3d.ss_mesh) {
+      if (!ctx.view3d.editor.ss_mesh) {
         ctx.mesh.flag |= MeshFlags.USE_MAP_CO;
         
-        ctx.view3d.ss_mesh = gpu_subsurf(ctx.view3d.gl, ctx.mesh, ctx.view3d.get_ss_steps());
+        ctx.view3d.editor.ss_mesh = gpu_subsurf(ctx.view3d.gl, ctx.mesh, ctx.view3d.editor.get_ss_steps());
         
         ctx.mesh.regen_render();
+        ctx.view3d.editor.use_subsurf = true;
       }
     } else {
-      if (ctx.view3d.ss_mesh) {
+      if (ctx.view3d.editor.ss_mesh) {
         ctx.mesh.flag &= ~MeshFlags.USE_MAP_CO;
         
-        destroy_subsurf_mesh(ctx.view3d.gl, ctx.view3d.ss_mesh);
+        destroy_subsurf_mesh(ctx.view3d.gl, ctx.view3d.editor.ss_mesh);
         
-        ctx.view3d.ss_mesh = null;
+        ctx.view3d.editor.ss_mesh = null;
         ctx.mesh.regen_render();
+        ctx.view3d.editor.use_subsurf = false;
       }
     }    
   }

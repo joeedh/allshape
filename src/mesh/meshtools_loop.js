@@ -259,7 +259,7 @@ LoopCutOp.prototype.on_mousemove = function(event) {
   
   var ctx = this.modal_ctx
   
-  var e = ctx.view3d.findnearestedge(mpos);
+  var e = ctx.view3d.editor.findnearestedge(mpos);
   
   if (e != null && e != this.curedge) {
     this.curedge = e;

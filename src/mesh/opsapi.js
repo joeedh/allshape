@@ -106,7 +106,7 @@ function element_filter_iter(iter, typemask) {
     
     var e = this.iter.next();
 
-    while (!e.done && !(e.type & this.typemask)) {
+    while (!e.done && !(e.value.type & this.typemask)) {
       e = this.iter.next();
     }
     
@@ -168,7 +168,7 @@ function element_iter_convert(iter, type) {
     if (v.done) return v;
 	
     var vset = this.vset;
-    while (v == undefined || vset.has(v.value)) {
+    while (!v.done && (v.value == undefined || vset.has(v.value))) {
       v = this._next();
     }
     
@@ -195,6 +195,7 @@ function element_iter_convert(iter, type) {
 	  var v = this.subiter.next();
 	  if (v.done) {
         this.subiter = undefined;
+        return this._next();
 	  }
 	  
 	  return v;
@@ -232,12 +233,12 @@ selectiter.prototype.next = function() {
   var mesh = this.mesh;
   
   function get_iter(type) {
-      if (type == MeshTypes.VERT)
-        return mesh.verts.selected;
-      else if (type == MeshTypes.EDGE)
-        return mesh.edges.selected;
-      else
-        return mesh.faces.selected;
+    if (type == MeshTypes.VERT)
+      return mesh.verts.selected;
+    else if (type == MeshTypes.EDGE)
+      return mesh.edges.selected;
+    else
+      return mesh.faces.selected;
   }
   
   if (this.iter == undefined) {

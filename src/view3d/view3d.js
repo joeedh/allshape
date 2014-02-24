@@ -434,7 +434,7 @@ View3DHandler.prototype.ensure_selbuf = function(typemask) {//typemask is option
   redo_selbuf |= this.editor.selbuf_changed(typemask);
   
   if (redo_selbuf) {
-    console.log("yay");
+    console.log("render selbuf");
     fbuf.bind()
     
     gl.colorMask(true, true, true, true);

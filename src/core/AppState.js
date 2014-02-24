@@ -468,8 +468,15 @@ Context.prototype.kill_mesh_ctx = function(Mesh m2) {
 }
 
 Context.prototype.set_mesh = function(Mesh m2) {
-  this.appstate.set_mesh(m2);
-  this.mesh = m2;
+  var render = this.mesh.render;
+  
+  if (this.mesh != m2)
+    this.appstate.kill_mesh(this.mesh);
+  
+  this.mesh.load(m2);
+  
+  this.mesh.render = render;
+  this.mesh.regen_render();
 }
 
 function ToolStack(appstate) {

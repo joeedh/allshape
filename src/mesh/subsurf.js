@@ -1014,7 +1014,7 @@ function subsurf_selbuf_render(gl, ss_mesh, mesh, drawmats, typemask)
   
   if (typemask & MeshTypes.FACE) {
     for (var f in ss_mesh.faces) {
-      pack_index(f.old_face.eid+1, clr, 0);
+      pack_index(f.old_face.sid+1, clr, 0);
       
       gl.uniform4fv(gl.getUniformLocation(program.program, "face_color"), clr);
       gl.uniform1f(gl.getUniformLocation(program.program, "patch1"), i);
@@ -1038,7 +1038,7 @@ function subsurf_selbuf_render(gl, ss_mesh, mesh, drawmats, typemask)
       if (f.old_edge == undefined)
         continue;
       
-      pack_index(f.old_edge.eid+1, clr, 0);
+      pack_index(f.old_edge.sid+1, clr, 0);
       
       gl.uniform4fv(gl.getUniformLocation(program.program, "face_color"), clr);
       gl.uniform1f(gl.getUniformLocation(program.program, "patch1"), i);

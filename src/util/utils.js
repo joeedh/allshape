@@ -1047,3 +1047,16 @@ EIDGen.fromJSON = function(obj) {
   return idgen;
 }
 
+function copy_into(dst, src) {
+  console.log(dst);
+  
+  var keys2 = list(obj_get_keys(src));
+  for (var i=0; i<keys2.length; i++) {
+    var k = keys2[i];
+    dst[k] = src[k];
+  }
+  
+  console.log(dst);
+  
+  return dst;
+}

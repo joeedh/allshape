@@ -182,16 +182,19 @@ MeshEditor.prototype.build_sidebar1 = function(view3d)
   row.toolop("screen.area_split_tool()", PackFlags.INHERIT_WIDTH);
   row.label("");
   
-  /*
-  row.toolop("mesh.subdivide(faces=mesh_selected(f))", PackFlags.INHERIT_WIDTH);
-  row.toolop("mesh.translate()", PackFlags.INHERIT_WIDTH);
-  row.toolop("mesh.extrude(geometry=mesh_selected(vef))", PackFlags.INHERIT_WIDTH);
-  row.toolop("mesh.rotate()", PackFlags.INHERIT_WIDTH);
-  row.toolop("mesh.scale()", PackFlags.INHERIT_WIDTH);
-  row.toolop("mesh.flip_normals(faces=mesh_selected(f))", PackFlags.INHERIT_WIDTH);
-  row.toolop("mesh.triangulate(faces=mesh_selected(f))", PackFlags.INHERIT_WIDTH);
-  row.toolop("mesh.tri2quad(faces=mesh_selected(f))", PackFlags.INHERIT_WIDTH);
-  */
+  var col = row.col()
+  var row2 = col.row()
+  row2.toolop("mesh.subdivide(faces=mesh_selected(f))", PackFlags.INHERIT_WIDTH);
+  row2.toolop("mesh.translate()", PackFlags.INHERIT_WIDTH);
+  row2.toolop("mesh.extrude(geometry=mesh_selected(vef))", PackFlags.INHERIT_WIDTH);
+  row2.toolop("mesh.rotate()", PackFlags.INHERIT_WIDTH);
+  
+  row2 = col.row()
+  row2.toolop("mesh.scale()", PackFlags.INHERIT_WIDTH);
+  row2.toolop("mesh.flip_normals(faces=mesh_selected(f))", PackFlags.INHERIT_WIDTH);
+  row2.toolop("mesh.triangulate(faces=mesh_selected(f))", PackFlags.INHERIT_WIDTH);
+  row2.toolop("mesh.tri2quad(faces=mesh_selected(f))", PackFlags.INHERIT_WIDTH);
+  
   row.toolop("mesh.duplicate_transform()", PackFlags.INHERIT_WIDTH);
   row.toolop("mesh.bridge_edges(edges=mesh_selected(e))", PackFlags.INHERIT_WIDTH);
   row.toolop("mesh.vertsmooth(verts=mesh_selected(v))", PackFlags.INHERIT_WIDTH);
@@ -295,7 +298,7 @@ MeshEditor.prototype.define_keymap = function() {
 
 MeshEditor.prototype.set_selectmode = function(int mode) {
   this.selectmode = mode;
-  this.editor.selectmode = mode;
+  this.view3d.selectmode = mode;
 }
 
 MeshEditor.prototype.get_mode_highlight = function() : Element {

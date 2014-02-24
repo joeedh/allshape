@@ -21,19 +21,25 @@ js_sources = [
 	"src/core/schema.js",
 	"src/core/network_api.js",
 	"src/core/fileapi.js",
-
+  
+  "src/mesh/mesh_types.js",
 	"src/mesh/mesh.js",
+  "src/mesh/mesh_api.js",
 	"src/mesh/opsapi.js",
 	"src/mesh/esubdivide.js",
 	"src/mesh/triangulate_job.js",
 	"src/mesh/geodata.js",
+  
+	"src/mesh/triangulate.js",
+	"src/mesh/subsurf.js",
+
 	"src/view3d/events.js",
 	"src/view3d/toolops_api.js",
-	"src/mesh/triangulate.js",
+
 	"src/mesh/meshtools_cad.js",
 	"src/mesh/meshtools_loop.js",
-	"src/mesh/subsurf.js",
 	"src/mesh/meshtools_create.js",
+
 	"src/view3d/trans_ops_special.js",
 	"src/view3d/trans_ops.js",
 	"src/view3d/fontutils.js",
