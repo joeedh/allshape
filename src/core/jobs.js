@@ -1,6 +1,6 @@
 "use strict";
 
-var default_job_interval = 2; //at least five miliseconds between runs
+var default_job_interval = 1; //at least two miliseconds between runs
 
 function JobDestroyFunc(Joblet job);
 function JobStartFunc(Joblet job);

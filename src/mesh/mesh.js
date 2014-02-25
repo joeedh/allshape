@@ -75,9 +75,8 @@ Mesh.fromSTRUCT = function(unpacker) {
   m.render = new render();
   m.render.drawprogram = gl.program; 
   m.render.vertprogram = gl.program2;
-  m.regen_render();
   
-  console.log(m);
+  m.regen_render();
   
   var verts = m.verts;
   var edges = m.edges;

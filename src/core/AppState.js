@@ -188,8 +188,10 @@ AppState.prototype.kill_mesh = function(Mesh m2) {
   m2.do_callbacks(MeshEvents.DESTROY);
   this.jobs.kill_owner_jobs(m2);
   
-  if (m2.render != undefined && m2.render != 0)
+  if (m2.render != undefined && m2.render != 0) {
     m2.render.destroy();
+    m2.regen_render();
+  }
 }
 
 AppState.prototype.update_context = function() {
@@ -199,10 +201,9 @@ AppState.prototype.update_context = function() {
   var obj = scene.active;
   if (obj == undefined) return;
   
-  if (obj.data instanceof Mesh)
-    this.set_mesh(obj.data)
-  else
-    this.set_mesh(undefined);
+  this.scene = scene;
+  this.object = obj;
+  this.mesh = obj.data;
 }
 
 AppState.prototype.reset_state = function(screen, mesh) {
@@ -382,7 +383,7 @@ AppState.prototype.load_user_file_new = function(DataView data, unpack_ctx uctx)
         
         b.data = fstructs.read_object(b.data[1], tmap[b.data[0]]);
         
-        datalib.add(b.data);
+        datalib.add(b.data, false);
       } else {
         if (b.type == "SCRN") {
           b.data = fstructs.read_object(b.data, Screen);
@@ -393,7 +394,6 @@ AppState.prototype.load_user_file_new = function(DataView data, unpack_ctx uctx)
   
   var ascopy = this.copy();
   
-  //not sure if I need to set datalib here or not. . .
   this.datalib = datalib;
   
   //ensure we get an error if the unpacking code/
@@ -403,6 +403,10 @@ AppState.prototype.load_user_file_new = function(DataView data, unpack_ctx uctx)
   var getblock = wrap_getblock(datalib);
   var getblock_us = wrap_getblock_us(datalib);  
   var screen = undefined;
+  
+  this.mesh = undefined;
+  this.object = undefined;
+  this.scene = undefined;
   
   var this2 = this;
   function load_state() {
@@ -444,7 +448,7 @@ AppState.prototype.load_user_file_new = function(DataView data, unpack_ctx uctx)
     }
     
     var ctx = new Context(this2.active_view3d);
-    this2.set_mesh(ctx.mesh);
+    this2.mesh = ctx.mesh;
     
     if (screen != undefined) {
       screen.view3d = this2.active_view3d;
@@ -460,7 +464,6 @@ AppState.prototype.load_user_file_new = function(DataView data, unpack_ctx uctx)
     //this2.screen.on_resize(this2.size, new Vector2(this2.screen.size));
     
     var ctx = new Context(this2.active_view3d);
-    this2.set_mesh(ctx.mesh);
   }
   
   load_state();
@@ -556,14 +559,21 @@ Context.prototype.kill_mesh_ctx = function(Mesh m2) {
 }
 
 Context.prototype.set_mesh = function(Mesh m2) {
-  var render = this.mesh.render;
-  
+  if (this.mesh != undefined)
+    var render = this.mesh.render;
+  else 
+    var render = undefined;
+    
   if (this.mesh != m2)
     this.appstate.kill_mesh(this.mesh);
-  
+  else
+    return
+    
   this.mesh.load(m2);
   
-  this.mesh.render = render;
+  if (render != undefined)
+    this.mesh.render = render;
+  
   this.mesh.regen_render();
 }
 

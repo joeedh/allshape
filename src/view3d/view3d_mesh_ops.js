@@ -60,6 +60,10 @@ MeshEditor.prototype.data_link = function(block, getblock, getblock_us) {
   this.ctx = new Context(this.view3d);
   this.mesh = this.ctx.mesh;
   this.drawmats == this.view3d.drawmats;
+  
+  if (this.mesh != undefined) {
+    this.mesh.regen_render();
+  }
 }
 
 MeshEditor.prototype.render_selbuf = function(gl, view3d, typemask) {
@@ -124,6 +128,8 @@ MeshEditor.prototype.draw_object = function(gl, view3d, object, is_active)
   
   this.ctx = new Context(view3d);
   this.mesh = object.data;
+  this.object = object;
+  
   this.gl = gl;
   this.selectmode = view3d.selectmode;
   

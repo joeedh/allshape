@@ -113,7 +113,10 @@ DataLib.prototype.gen_name = function(block, name) {
   return name;
 }
 
-DataLib.prototype.add = function(block) {
+DataLib.prototype.add = function(block, set_id) {
+  if (set_id == undefined)
+    set_id = true;
+  
   //ensure unique name
   var name = this.gen_name(block, block.name);
   block.name = name;
@@ -121,6 +124,8 @@ DataLib.prototype.add = function(block) {
   console.log("YAYAY");
   if (block.lib_id == -1) {
     block.lib_id = this.idgen.gen_id();
+  } else {
+    this.idgen.max_cur(block.lib_id);
   }
   
   this.idmap[block.lib_id] = block;

@@ -343,7 +343,7 @@ function gen_mesh_render(WebGLRenderingContext ctx, Mesh mesh, ShaderProgram dra
       
   if (mesh.render == 0) {
     mesh.render = new render();
-    mesh.render.recalc = 0;
+    mesh.regen_render();
   }
   
   //if (recalcflags & RecalcFlags.REGEN_COS)
@@ -374,14 +374,12 @@ function gen_mesh_render(WebGLRenderingContext ctx, Mesh mesh, ShaderProgram dra
     } else {
       gen_tris(mesh);
       
-       /*
       var gen = new gen_tris_job(mesh);
       var i = 0;
       
       var job = new Joblet(mesh, gen, undefined, 10, undefined, tess_finish);
       
       g_app_state.jobs.queue_replace(job);
-      // */
       
       /*
       recalcflags |= RecalcFlags.REGEN_NORS | RecalcFlags.REGEN_COS | RecalcFlags.REGEN_COLORS | RecalcFlags.REGEN_TESS;

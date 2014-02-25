@@ -206,6 +206,9 @@ function View3DHandler(WebGLRenderingContext gl, Mesh mesh, ShaderProgram vprogr
   
   if (mesh != undefined && mesh.render == 0) {
     mesh.render = new render();
+    mesh.render.drawprogram = gl.program;
+    mesh.render.vertprogram = gl.program2;
+    mesh.regen_render();
   }
   
   this.selectmode = this.user_pref.selectmode;
@@ -305,6 +308,8 @@ View3DHandler.prototype.data_link = function(block, getblock, getblock_us) {
   
   if (this.mesh == undefined) {
     this.mesh = new Mesh();
+  } else {
+    this.mesh.regen_render();
   }
   
   this.ctx = new Context(this);

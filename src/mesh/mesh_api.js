@@ -368,8 +368,9 @@ function recalc_normals_job_intern(Mesh m2, Boolean use_sco) //use_sco is option
     //console.log("doing face", i, f != undefined ? f.__hash__() : undefined, ";");
     
     i += 1;
-    if (i % 20 == 0)
-      yield 1;
+
+    yield;
+    
     if (i > 80000) {
       console.log("Infinite loop");
       console.trace();

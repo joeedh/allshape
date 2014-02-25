@@ -381,10 +381,9 @@ class UploadStatus:
     self.gen_realpath()
     
   def gen_realpath(self):
-    path = files_root + os.sep + rot_userid(self.userid)
-    path += os.sep + self.dir.replace("/", os.sep)
+    path = files_root + "/" + rot_userid(self.userid)
     path = os.path.abspath(os.path.normpath(path))
-
+    
     if not os.path.exists(path):
       os.makedirs(path)
     

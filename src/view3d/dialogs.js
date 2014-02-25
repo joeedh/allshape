@@ -129,7 +129,7 @@ FileOpenOp.prototype.exec = function(ctx)
   var mesh_data = []
   
   ctx.mesh.pack(mesh_data);
-  mesh_data = ctx.appstate.create_user_file().buffer;
+  mesh_data = ctx.appstate.create_user_file_new().buffer;
   
   function error(job, owner, msg) {
     console.log("network error", msg);
@@ -143,7 +143,7 @@ FileOpenOp.prototype.exec = function(ctx)
     console.log("loading...", path);
     
     function finish(job, owner) {
-      g_app_state.load_user_file(new DataView(job.value));
+      g_app_state.load_user_file_new(new DataView(job.value));
       g_app_state.filepath = path;
       console.log("finished downloading");
     }
@@ -177,7 +177,7 @@ FileSaveAsOp.prototype.exec = function(ctx)
   var mesh_data = []
   
   ctx.mesh.pack(mesh_data);
-  mesh_data = ctx.appstate.create_user_file().buffer;
+  mesh_data = ctx.appstate.create_user_file_new().buffer;
   
   function error(job, owner, msg) {
     console.log("network error", msg);
@@ -227,7 +227,7 @@ FileSaveOp.prototype.exec = function(ctx)
   var mesh_data = []
   
   ctx.mesh.pack(mesh_data);
-  mesh_data = ctx.appstate.create_user_file().buffer;
+  mesh_data = ctx.appstate.create_user_file_new().buffer;
   
   function error(job, owner, msg) {
     console.log("network error", msg);
