@@ -2,7 +2,7 @@
 
 var FileFlags = {COMPRESSED_LZJB : 1}
 
-var formacad_file_ext = ".fc3";
+var formacad_file_ext = ".al3";
 var g_app_version = 0.02;
 
 function AppSettings() {
