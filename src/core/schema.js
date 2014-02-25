@@ -668,11 +668,11 @@ var _st_packers = [
     var itername = d.iname;
     var type2 = d.type;
     var env = _ws_env;
-      
+    
     for (var i=0; i<val.length; i++) {
       var val2 = val[i];
       
-      if (field.get) {
+      if (itername != "" && itername != undefined && field.get) {
         env[0][0] = itername;
         env[0][1] = val2;
         
@@ -711,9 +711,10 @@ var _st_packers = [
     var env = _ws_env;
     
     for (var val2 in val) {
-      if (field.get) {
+      if (itername != "" && itername != undefined && field.get) {
         env[0][0] = itername;
         env[0][1] = val2;
+        
         val2 = thestruct._env_call(field.get, obj, env);
       }
       
@@ -734,6 +735,13 @@ function _st_pack_type(data, val, obj, thestruct, field, type) {
 }
 
 STRUCT.prototype.write_struct = function(data, obj, stt) {
+  function use_helper_js(field) {
+    if (field.type.type == T_ARRAY || field.type.type == T_ITER) {
+      return field.type.data.iname == undefined || field.type.data.iname == "";
+    }
+    return true;
+  }
+  
   var fields = stt.fields;
   var thestruct = this;
   
@@ -742,7 +750,7 @@ STRUCT.prototype.write_struct = function(data, obj, stt) {
     var t1 = f.type;
     var t2 = t1.type;
     
-    if (t2 != T_ARRAY && t2 != T_ITER) {
+    if (use_helper_js(f)) {
       var val;
       var type = t2;
       
@@ -752,10 +760,7 @@ STRUCT.prototype.write_struct = function(data, obj, stt) {
         val = obj[f.name];
       }
       
-      if (t2 != T_STRUCT && t2 != T_STATIC_STRING && t2 != T_TSTRUCT)
-        _st_packers[t2](data, val);
-      else
-        _st_pack_type(data, val, obj, thestruct, f, t1);
+      _st_pack_type(data, val, obj, thestruct, f, t1);
     } else { //if (t2 == T_ARRAY || t2 == T_ITER) {
       var val = obj[f.name];
       _st_pack_type(data, val, obj, thestruct, f, t1);

@@ -682,7 +682,7 @@ def parse_intern(data, create_logger=False, expand_loops=True, expand_generators
       glob.g_error = True
     
     result = StatementList()
-    
+
   if glob.g_error:
     print_err(glob.g_error_pre)
     
@@ -919,7 +919,6 @@ def parse_intern(data, create_logger=False, expand_loops=True, expand_generators
   
   
   flatten_statementlists(result, typespace)
-  #combine_try_nodes(result);
   
   if expand_loops:
     if glob.g_harmony_iterators:
@@ -934,12 +933,11 @@ def parse_intern(data, create_logger=False, expand_loops=True, expand_generators
   if create_logger:
     traverse(result, FunctionNode, create_type_logger)
   
-  #combine_if_else_nodes(result);
   if expand_generators:
     flatten_statementlists(result, typespace)
     process_generators(result, typespace);
     flatten_statementlists(result, typespace)
-  
+    
   debug_forloop_expansion = False
   if debug_forloop_expansion:
     reset = 0

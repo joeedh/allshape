@@ -1,12 +1,5 @@
 "use strict";
 
-var ObTypes = {
-  MESH : "ME",
-  CSG : "CS",
-  GROUP : "GR",
-  NULL : "NU",
-};
-
 var ObFlags = {
   Display_BB: 1
 };
@@ -165,6 +158,7 @@ ASObject.prototype.unpack = function(data, uctx) {
 }
 
 ASObject.prototype.data_link = function(block, getblock, getblock_us) {
+  
   //this should automatically add user to parent, with default callbacks
   this.parent = getblock_us(this.parent, this, "parent");
   this.data = getblock_us(this.data, this, "data");

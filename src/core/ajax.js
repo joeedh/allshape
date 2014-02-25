@@ -226,19 +226,9 @@ function pack_quat(Array<byte> data, Quat vec)
 function pack_mat4(Array<byte> data, Matrix4 mat)
 {
   var m = mat.getAsArray();
-  if (_rec_pack) {
-    _pack_rec(SchmTypes.MAT4);
-    push_pack_stack();
-  }
-  
   
   for (var i=0; i<16; i++) {
-    pack_float(data, m);
-  }
-  
-  //discard pack records from composite pack
-  if (_rec_pack) {
-    pop_pack_stack();
+    pack_float(data, m[i]);
   }
 }
 

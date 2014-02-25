@@ -1,6 +1,7 @@
 from js_lex import HexInt, StringLit
 from js_global import glob
 from js_util_types import odict
+import sys, traceback
 
 def tab(tlvl, tstr=" "):
   s = ""
@@ -85,6 +86,9 @@ class Node:
     
     return node
   
+  def pop(self, i):
+    self.children.pop(i);
+    
   def add(self, node):
     node = self._default_node(node)
     
@@ -267,6 +271,20 @@ class IdentNode (ValueNode):
     return n2
     
 class VarDeclNode(IdentNode):
+  def __init__(self, expr, local=False, name="(unnamed)"):
+    super(VarDeclNode, self).__init__(expr)
+    self.modifiers = set()
+    self.val = name
+    
+    if local:
+        self.modifiers.add("local")
+    
+    self.type = None
+    self.add(expr)
+    
+    #make sure to add type to self, please;
+    #it should be self[1]
+  
   def get_type_str(self):
     def get_type(n, visit=None):
       if visit == None: visit = set()
@@ -295,22 +313,12 @@ class VarDeclNode(IdentNode):
       return self.val
     return get_type(self[1])
     
-  def __init__(self, expr, local=False, name="(unnamed)"):
-    super(VarDeclNode, self).__init__(expr)
-    self.modifiers = set()
-    self.val = name
-    
-    if local:
-        self.modifiers.add("local")
-    
-    self.type = None
-    
-    self.add(expr)
-    
-    #make sure to add type to self.children, please;
-    #it can be self.children[1]
-    
   def gen_js(self, tlevel):
+    if type(self.modifiers) != set:
+       sys.stderr.write("WARNING: corrupted modifiers in VarDeclNode.  Regenerating.\n")
+       self.modifiers = set()
+       print(self)
+       
     if self.local: self.modifiers.add("local")
     elif "local" in self.modifiers:
       self.local = True
@@ -1009,8 +1017,10 @@ class StatementList (Node):
         c2 = c.gen_js(tlevel);
       else:
         self.s(t)
-        
+      
         c2 = c.gen_js(tlevel+1)
+          
+        #if tlevel == -1: continue
         if 0: #XXX len(c2.strip()) == 0: 
           if self.smap != None:
             self.smap.lexpos -= len(c2)+len(t)
@@ -1351,7 +1361,7 @@ class IfNode(Node):
       s += sadd
     elif type(self.children[1]) != StatementList:
       sadd = self.s(")\n" + t2)
-      sadd += self.children[1].gen_js(tlevel) + self.s(";");
+      sadd += self.children[1].gen_js(tlevel) #+ self.s(";");
       
       s += sadd
     else:

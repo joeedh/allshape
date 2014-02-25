@@ -13,6 +13,21 @@ function ObjectEditor(name, type, lib_type, keymap) {
 }
 create_prototype(ObjectEditor);
 
+ObjectEditor.STRUCT = """
+  ObjectEditor {
+  }
+""";
+
+//objecteditor is an abstract class,
+//but struct system does require the presence
+//of fromSTRUCT.  need to review that.
+ObjectEditor.fromSTRUCT = function(reader) {
+  var obj = {};
+  reader(obj);
+  
+  return obj;
+}
+
 ObjectEditor.prototype.on_area_inactive = function(view3d) {}
 
 //returns new copy
@@ -244,6 +259,7 @@ function View3DHandler(WebGLRenderingContext gl, Mesh mesh, ShaderProgram vprogr
   this._id = _v3d_id_gen++;
   
   this.editor = new MeshEditor(this);
+  this.editors = new GArray([this.editor]);
 }
 
 inherit(View3DHandler, Area);
@@ -257,6 +273,8 @@ View3DHandler.STRUCT = STRUCT.inherit(View3DHandler, Area) + """
     selectmode : int;
     zoom_wheelrange : array(float);
     zoom_range : array(float);
+    editors : array(abstract(ObjectEditor));
+    editor : int | obj.editors.indexOf(obj.editor);
   }
 """
 
@@ -265,8 +283,44 @@ View3DHandler.fromSTRUCT = function(reader) {
   
   reader(v3d)
   
+  v3d.editors = new GArray(v3d.editors);
+  v3d.editor = v3d.editors[v3d.editor];
+  
+  if (v3d.editor == undefined) {
+    console.log("WARNING: corrupted View3DHandler sturct data");
+    v3d.editor = v3d.editors[0];
+  }
+  
   v3d.gl = g_app_state.gl;
+  
   return v3d;
+}
+
+View3DHandler.prototype.data_link = function(block, getblock, getblock_us) {
+  this.mesh = this.ctx.mesh;
+  
+  //make dummy mesh, if necassary
+  //stupid!
+  var mesh = this.mesh
+  
+  if (this.mesh == undefined) {
+    this.mesh = new Mesh();
+  }
+  
+  this.ctx = new Context(this);
+  this.ctx.mesh = this.mesh;
+  
+  for (var e in this.editors) {
+    e.view3d = this;
+    e.mesh = this.mesh;
+    e.ctx = this.ctx;
+    
+    e.data_link(block, getblock, getblock_us);
+    e.mesh = mesh;
+  }
+  
+  this.mesh = mesh; 
+  this.ctx = new Context(this);
 }
 
 View3DHandler.framebuffer = undefined;
@@ -659,6 +713,7 @@ var _v3d_static_mat = new Matrix4()
 
 View3DHandler.prototype.on_draw = function(WebGLRenderingContext gl, test) {
   this.ctx = new Context(this);
+  this.mesh = this.ctx.mesh;
   
   gl.getExtension("OES_TEXTURE_FLOAT");
   
@@ -834,6 +889,7 @@ View3DHandler.prototype.build_bottombar = function() {
 }
 
 View3DHandler.prototype.build_sidebar1 = function() {
+  this.ctx = new Context(this);
   this.editor.build_sidebar1(this);
 }
 

@@ -4,24 +4,55 @@ import os, sys, os.path, time, random, math
 import shelve, struct, io, imp, ctypes, re
 import subprocess, shlex
 
+try:
+  import jsbuild_config_local as config
+  config_dict = config.__dict__
+except IOError:
+  config_dict = {}
+
+def validate_cfg(val, vtype):
+  if vtype == "bool":
+    if type(val) == str:
+      return val.lower() in ["0", "1", "true", "false", "yes", "no"]
+    elif type(val) == int:
+      return val in [0, 1]
+    else: return val in [True, False]
+  elif vtype == "int":
+    return type(val) in [int, float] and floor(val) == val
+  else: return True
+
+localcfg = {}
+def getcfg(key, default, type):
+  if key in config_dict:
+    val = config_dict[key]
+    if not validate_cfg(val, type):
+      raise RuntimeError("Invalid value for " + key + ": " + str(val))
+    
+    localcfg[key] = val
+    
+    return val
+  return default
+
+num_cores = getcfg("num_cores", 5, "int")
+do_minify = getcfg("do_minify", True, "bool")
+do_smaps = getcfg("do_smaps", True, "bool")
+do_smap_roots = getcfg("do_smap_roots", False, "bool")
+aggregate_smaps = getcfg("aggregate_smaps", True, "bool")
+if len(localcfg) > 0:
+  print("build config:")
+  keys = list(localcfg.keys())
+  keys.sort()
+  for key in keys:
+    val = localcfg[key]
+    print("  " + key + ": " + str(val)) 
+    
+  print("\n")
+
 #normpath helper func
 def np(path):
   return os.path.abspath(os.path.normpath(path))
 
-num_cores = 5
 sp = os.path.sep
-
-try:
-  import jsbuild_config_local
-  do_smap_roots = jsbuild_config_local.do_smap_roots
-except:
-  do_smap_roots = False
-
-import jsbuild_config_local as config
-if "aggregate_smaps" in config.__dict__:
-  aggregate_smaps = config.aggregate_smaps
-else:
-  aggregate_smaps = True
 
 from js_sources import js_sources
 db = None
@@ -67,9 +98,18 @@ JCC = np("tools/extjs_cc/js_cc.py")
 TCC = np("tools/tinygpu/tinygpu.py")
 
 #minified, concatenated build
-JFLAGS = "-gm -mn -nref"
-if do_smap_roots:
-  JFLAGS += " -gsr"
+JFLAGS = ""
+
+if aggregate_smaps:
+  JFLAGS += " -nref"
+
+if do_minify:
+  JFLAGS += " -mn"
+
+if do_smaps:
+  JFLAGS += " -gm"
+  if do_smap_roots:
+    JFLAGS += " -gsr"
   
 try:
   JFLAGS += " " + jsbuild_config_local.JFLAGS
@@ -369,7 +409,9 @@ def aggregate(outpath="build/app.js"):
 
   sbuf += "]}\n"
   
-  outfile.write("//# sourceMappingURL=/content/app.js.map\n")
+  if do_smaps:
+    outfile.write("//# sourceMappingURL=/content/app.js.map\n")
+  
   outfile.close()
   
   mapfile = open(outpath+".map", "w")

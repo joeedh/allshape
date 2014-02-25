@@ -1246,6 +1246,8 @@ function toJSON_intern (ob, tlevel) {
           g.view3d.gen_rendermats()
         }
         
+        g.size = new Vector2(newsize);
+        
         if (g.screen != undefined) {
           g.screen.on_resize(newsize, oldsize);
         }

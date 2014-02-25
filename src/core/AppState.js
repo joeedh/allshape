@@ -113,12 +113,11 @@ function gen_default_file(size) {
   var object = new ASObject();
   scene.add(object);
   
-  object.type = ObTypes.MESH;
   //mesh
   object.data = mesh;
   
   g.datalib.add(object);
-  g.datalib.add(object.data);
+  g.datalib.add(mesh);
 
   //set up screen UI
   var mvMatrix = new Matrix4();
@@ -149,6 +148,7 @@ function AppState(screen, mesh, gl) {
   this.filepath = ""
   this.version = g_app_version;
   this.gl = gl;
+  this.size = [512, 512];
   
   this.datalib = new DataLib();
   
@@ -187,7 +187,9 @@ create_prototype(AppState);
 AppState.prototype.kill_mesh = function(Mesh m2) {
   m2.do_callbacks(MeshEvents.DESTROY);
   this.jobs.kill_owner_jobs(m2);
-  m2.render.destroy();
+  
+  if (m2.render != undefined && m2.render != 0)
+    m2.render.destroy();
 }
 
 AppState.prototype.update_context = function() {
@@ -197,7 +199,7 @@ AppState.prototype.update_context = function() {
   var obj = scene.active;
   if (obj == undefined) return;
   
-  if (obj.type == ObTypes.MESH)
+  if (obj.data instanceof Mesh)
     this.set_mesh(obj.data)
   else
     this.set_mesh(undefined);
@@ -205,6 +207,17 @@ AppState.prototype.update_context = function() {
 
 AppState.prototype.reset_state = function(screen, mesh) {
   AppState.call(this, screen, mesh, this.gl);
+}
+
+//shallow copy
+AppState.prototype.copy = function() {
+  var as = new AppState(this.screen, this.mesh, this.gl);
+  as.datalib = this.datalib;
+  as.session = this.session;
+  as.toolstack = this.toolstack;
+  as.filepath = this.filepath;
+  
+  return as;
 }
 
 AppState.prototype.set_mesh = function(Mesh m2) {
@@ -215,8 +228,8 @@ AppState.prototype.set_mesh = function(Mesh m2) {
   
   for (var c in this.screen.children) {
     if (c instanceof ScreenArea) {
-      if (View3DHandler.name in c.screens)
-        c.screens[View3DHandler.name].mesh = m2;
+      if (View3DHandler.name in c.editors)
+        c.editors[View3DHandler.name].mesh = m2;
     }
   }
 }
@@ -299,6 +312,10 @@ AppState.prototype.create_user_file_new = function(different_mesh) : ArrayBuffer
   return new DataView(new Uint8Array(data).buffer);
 }
 
+AppState.prototype.do_versions = function(datalib, blocks, version)
+{
+}
+
 AppState.prototype.load_user_file_new = function(DataView data, unpack_ctx uctx) {
   if (uctx == undefined) {
     uctx = new unpack_ctx();
@@ -320,16 +337,15 @@ AppState.prototype.load_user_file_new = function(DataView data, unpack_ctx uctx)
   
   var blocks = [];
   var fstructs = new STRUCT();
+  var datalib = new DataLib();
   
-  var tmap = get_data_typemap()
+  var tmap = get_data_typemap();
   
   while (uctx.i < data.byteLength) {
     var type = unpack_static_string(data, uctx, 4);
     var subtype = unpack_static_string(data, uctx, 4);
     var len = unpack_int(data, uctx);
     var bdata;
-    
-    console.log(JSON.stringify({type : type, subtype : subtype, len : len}))
     
     if (subtype == "JSON") {
       bdata = unpack_static_string(data, uctx, len);
@@ -356,8 +372,6 @@ AppState.prototype.load_user_file_new = function(DataView data, unpack_ctx uctx)
   for (var i=0; i<blocks.length; i++) {
     var b = blocks[i];
     
-    console.log(JSON.stringify({type : b.type, subtype : b.subtype, len : b.len}))
-    
     if (b.subtype == "JSON") {
       b.data = JSON.parse(b.data);
     } else if (b.subtype == "STRT") { //struct data should only be lib blocks
@@ -365,10 +379,10 @@ AppState.prototype.load_user_file_new = function(DataView data, unpack_ctx uctx)
         var lt = tmap[b.data[0]];
         
         lt = lt != undefined ? lt.name : lt;
-        console.log("lib type: ", lt);
-        console.log(b.data[1].byteLength);
         
         b.data = fstructs.read_object(b.data[1], tmap[b.data[0]]);
+        
+        datalib.add(b.data);
       } else {
         if (b.type == "SCRN") {
           b.data = fstructs.read_object(b.data, Screen);
@@ -376,6 +390,80 @@ AppState.prototype.load_user_file_new = function(DataView data, unpack_ctx uctx)
       }
     }
   }
+  
+  var ascopy = this.copy();
+  
+  //not sure if I need to set datalib here or not. . .
+  this.datalib = datalib;
+  
+  //ensure we get an error if the unpacking code/
+  //tries to access g_app_state.active_view3d.
+  this.active_view3d = undefined;
+  
+  var getblock = wrap_getblock(datalib);
+  var getblock_us = wrap_getblock_us(datalib);  
+  var screen = undefined;
+  
+  var this2 = this;
+  function load_state() {
+    //handle version changes
+    this2.do_versions(datalib, blocks, version);
+    
+    for (var i=0; i<blocks.length; i++) {
+      var block = blocks[i];
+      
+      if (block.subtype == "STRT" && block.type != "SCRN") {
+        block.data.data_link(block.data, getblock, getblock_us);
+      }
+    }
+    
+    for (var i=0; i<blocks.length; i++) {
+      var block = blocks[i];
+      
+      if (block.type == "SCRN") {
+        screen = block.data;
+      }
+    }
+    
+    if (screen == undefined) {
+      //generate default UI layout
+      gen_default_file(this2.size);
+      this2.datalib = datalib;
+    } else {
+      this2.reset_state(screen, undefined);
+      this2.datalib = datalib;
+    }
+    
+    //stupid. . .
+    for (var sa in screen.areas) {
+      //need to get rid of appstate.active_view3d
+      if (sa.area instanceof View3DHandler) {
+        this2.active_view3d = sa.area;
+        break;
+      }
+    }
+    
+    var ctx = new Context(this2.active_view3d);
+    this2.set_mesh(ctx.mesh);
+    
+    if (screen != undefined) {
+      screen.view3d = this2.active_view3d;
+      screen.data_link(screen, getblock, getblock_us);
+    }
+    
+    //load data into appstate
+    this2.datalib = datalib;
+    if (this2.screen.canvas == undefined) {
+      this2.screen.canvas = new UICanvas(this2.active_view3d, [new Vector2(this2.screen.pos), new Vector2(this2.screen.size)])
+    }
+    
+    //this2.screen.on_resize(this2.size, new Vector2(this2.screen.size));
+    
+    var ctx = new Context(this2.active_view3d);
+    this2.set_mesh(ctx.mesh);
+  }
+  
+  load_state();
 }
 
 AppState.prototype.create_user_file = function(Mesh different_mesh) : ArrayBuffer {
@@ -452,7 +540,7 @@ function Context(view3d) {
     
     if (sce.active != undefined) {
       this.object = sce.active;
-      if (sce.active.type == ObTypes.MESH)
+      if (sce.active.data instanceof Mesh)
         this.mesh = sce.active.data;
     }
   }

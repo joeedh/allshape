@@ -12,7 +12,12 @@ function MeshEditor(view3d) {
 
   this.view3d = view3d;
   
-  this.mesh = view3d.mesh : Mesh;
+  if (view3d != undefined) {
+    this.mesh = view3d.mesh : Mesh;
+  } else {
+    this.mesh = undefined;
+  }
+  
   this.use_subsurf = 0 : Boolean;
   this.ss_mesh = undefined : Mesh;
   this.ctx = undefined : Context;
@@ -49,6 +54,12 @@ MeshEditor.fromSTRUCT = function(reader) {
   reader(m);
   
   return m;
+}
+
+MeshEditor.prototype.data_link = function(block, getblock, getblock_us) {
+  this.ctx = new Context(this.view3d);
+  this.mesh = this.ctx.mesh;
+  this.drawmats == this.view3d.drawmats;
 }
 
 MeshEditor.prototype.render_selbuf = function(gl, view3d, typemask) {
@@ -109,12 +120,13 @@ MeshEditor.prototype.get_ss_steps = function() : int {
 
 MeshEditor.prototype.draw_object = function(gl, view3d, object, is_active)
 {
+  this.drawmats = view3d.drawmats;
+  
   this.ctx = new Context(view3d);
-  this.mesh = this.ctx.mesh;
+  this.mesh = object.data;
   this.gl = gl;
   this.selectmode = view3d.selectmode;
   
-  this.drawmats = view3d.drawmats;
   this.check_subsurf(this.ctx);
   this.ss_steps = 24;
   

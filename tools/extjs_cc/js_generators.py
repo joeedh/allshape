@@ -3,8 +3,10 @@ from js_process_ast import traverse, traverse_i, null_node, \
                            kill_bad_globals
 from js_ast import *
 from js_cc import js_parse, unpack_for_c_loops, combine_if_else_nodes
+import sys, os, time, math, struct, io, imp
 
 typespace = None
+debug_gen = False
 
 class Frame (list):
   def __init__(self, input=[], parent=None, node=None):
@@ -14,19 +16,39 @@ class Frame (list):
     self.locals = {}
     self.leaf = False
     self.pop_trystack = False
+    self.paths = []
     
   def append(self, item):
     if type(item) == Frame:
       item.parent = self
+    else:
+      item.frame = self
     
     super(Frame, self).append(item)
 
   def prepend(self, item):
     if type(item) == Frame:
       item.parent = self
-    
+    else:
+      item.frame = self
+      
     super(Frame, self).insert(0, item)
-
+  
+  def replace(self, i1, i2):
+    self[self.index(i1)] = i2
+    if type(i2) == Frame:
+      i2.parent = self
+    else:
+      i2.frame = self
+    
+  def insert(self, i, item):
+    if type(item) == Frame:
+      item.parent = self
+    else:
+      item.frame = self
+    
+    super(Frame, self).insert(i, item)
+    
 def print_frames(frames, tlevel=0):
   tstr = tab(tlevel)
   tstr2 = tab(tlevel+1)
@@ -145,6 +167,8 @@ def visit_generators(node):
   def is_stype(n):
     ret = type(n) in stypes # and (n._has_yield or n.parent._has_yield)
     
+    return ret
+    
     if type(n) == CatchNode:
       ret |= prior_try(n)._has_yield
     if type(n) == ElseNode:
@@ -159,7 +183,9 @@ def visit_generators(node):
         p5 = p5.parent
         
     return ret
-
+  
+  combine_if_else_nodes(node)
+  
   traverse(node, ForCNode, unpack_for_c_loops, exclude=[FunctionNode], copy_children=True);
   traverse(node, IdentNode, _remove_this)
   traverse(node, VarDeclNode, _remove_this)
@@ -170,75 +196,30 @@ def visit_generators(node):
   stack.reverse()
   
   stypes = set([ForLoopNode, WhileNode, DoWhileNode, IfNode,
-                ElseNode, StatementList, TryNode, CatchNode])
+                ElseNode, TryNode, CatchNode])
   
   for c in stack: 
     set_cur(c)
-      
+  
   while len(stack) > 0:
     n = stack.pop(-1)
     
-    if is_stype(n) and n._start:
-      n._start = False
-      if type(n) != StatementList or not is_stype(n.parent):
-        frame2 = Frame(node=n)
-        frame.append(frame2)
-        frame = frame2
-        n.frame = frame2
+    if is_stype(n) or type(n) == StatementList:
+      if n._start:
+        if type(n) != StatementList:
+          f = Frame(node=n)
+          frame.append(f)
+          frame = f
+        n._start = False
       
-    if not is_stype(n):
-      frame.append(n)
-      
-    if is_stype(n):
       if n._cur < len(n.children):
         stack.append(n)
-        
         stack.append(n[n._cur])
         n._cur += 1
-        
-        #only do statement block on control nodes
-        if type(n) != StatementList:
-          n._cur = len(n.children)
-      else:
-        if type(n) != StatementList or not is_stype(n.parent):
-          frame = frame.parent
-          
-  def handle_else(n):
-    pif = prior_if(n)
-    
-    print("pif: ", type(pif))
-    if pif == None: return None
-    
-    #print(pif)
-    #print(pif.frame)
-    #raise "sdf"
-    expr = LogicalNotNode(ExprNode([pif[0].copy()]))
-    expr[0].add_parens = True
-    
-    n2 = IfNode(expr)
-    n.parent.replace(n, n2)
-    n2.add(n[0])
-    
-    n2._has_yield = n._has_yield
-    n2._startcur = 1
-    n2._cur = 1
-    n2._start = n._start
-    
-    n.parent = None
-    
-    return n2;
-  
-  def do_elses(f):
-    if type(f) == Frame:
-      if type(f.node) == ElseNode:
-        n2 = handle_else(f.node)
-        f.node = n2
-        
-      for c in f:
-        if type(c) == Frame:
-          do_elses(c)
-        
-  #do_elses(frames)
+      elif type(n) != StatementList:
+        frame = frame.parent
+    else:
+      frame.append(n)
   
   def compact_frames(frames):
     i = 0
@@ -401,7 +382,7 @@ def visit_generators(node):
       
     #print(node.gen_js(0))
     #print(scope)
-    print_frames(frames)
+    #print_frames(frames)
     s = gen_frame_validate(frames)
     
     s2 = js_parse(s).gen_js(0).strip()
@@ -469,7 +450,501 @@ def visit_generators(node):
     
   def f_ref(f):
     return "this.frame_%d" % f.label
+
+  def f_raw_next(f):
+    if f.parent == None: 
+       f = Frame()
+       f.label = len(flatframes)
+       return f
+      
+    while f.parent != None:
+        i = f.parent.index(f)+1
+        while i < len(f.parent):
+          if type(f.parent[i]) == Frame:
+            return f.parent[i]
+          i += 1
+          
+        f = f.parent
+        
+    f = Frame()
+    f.label = len(flatframes)
+    return f
   
+  def f_next(f, ignore_loops=False):
+    if f.parent == None: 
+      f = Frame()
+      f.label = len(flatframes)
+      return f
+      
+    while f.parent != None:
+      i = f.parent.index(f)+1
+      while i < len(f.parent):
+        if type(f.parent[i]) == Frame:
+          if type(f.parent[i].node) not in [CatchNode, ElseNode]:
+            return f.parent[i]
+        i += 1
+        
+      if not ignore_loops and f.parent != None and \
+         type(f.parent.node) in \
+         [WhileNode, DoWhileNode, ForLoopNode]:
+        return f.parent
+      
+      f = f.parent
+    
+    f = Frame()
+    f.label = len(flatframes)
+    return f
+    
+  def f_first(f):
+    for f2 in f:
+      if type(f2) == Frame:
+        return f2
+  
+  def f_last(f):
+    return f[-1]
+  
+  def has_parent(f, p):
+    while f != p and f != None:
+      f = f.parent
+    return f == p
+   
+  def find_exit_points(f, p=None, vset=None):
+    stack = []
+    
+    if p == None: p = f 
+    if vset == None: vset = set()
+    
+    lst = []
+    """
+    lst = []
+    for f2 in f:
+      if type(f2) == Frame:
+        for f3 in f2.paths:
+          if type(f3) == Frame:
+            if not has_parent(f3, p) and f3.label not in vset:
+              lst.append(f3)
+              vset.add(f3.label)
+            lst += find_exit_points(f3, p, vset)
+          else:
+            continue
+    """
+    
+    for f2 in f.paths:
+      if not has_parent(f2, p) and f2.label not in vset:
+        lst.append(f)
+        vset.add(f.label)
+      else:
+        lst += find_exit_points(f2, p, vset)
+    
+    for f in lst:
+      print(f.label)
+      
+    #sys.exit()
+    return lst
+    
+  tot = len(node)-1
+  for i in range(tot):
+    node.pop(1)
+  
+  def param_var(k):
+    for c in node[0]:
+      val = c.gen_js(0)
+      val = val.strip()
+      k = k.strip()
+      if k == val: return True  
+    return False
+    
+  #build generator state data
+  scopestr = "{"
+  for k in scope:
+    if scopestr != "{": scopestr += ", ";
+    if param_var(k):
+      scopestr += "%s_%i : %s" % (k, scope[k], k);
+    else:
+      scopestr += "%s_%i : %s" % (k, scope[k], "undefined");
+  scopestr += "}"
+  
+  node.add(js_parse("this.scope = $s;", [scopestr], start_node=AssignNode))
+  node.add(js_parse("this.ret = {done : false, value : undefined};", start_node=AssignNode))
+  node.add(js_parse("this.state = 1;", start_node=AssignNode))
+  node.add(js_parse("this.trystack = [];", start_node=AssignNode))
+  
+  node.add(js_parse("""
+    this.next = function() {
+      var ret;
+      var stack = this.trystack;
+      
+      try {
+        ret = this._next();
+      } catch (err) {
+        if (stack.length > 0) {
+          var item = stack.pop(stack.length-1);
+          this.state = item[0];
+          this.scope[item[1]] = err;
+          
+          return this.next();
+        } else {
+          throw err;
+        }
+      }
+      
+      return ret;
+    }""", start_node=AssignNode))
+    
+  node.add(js_parse("""
+    this.push_trystack = function(catchstate, catchvar) {
+      this.trystack.push([catchstate, catchvar]);
+    }""", start_node=AssignNode))
+    
+  node.add(js_parse("""
+    this.pop_trystack = function() {
+      this.trystack.pop(this.trystack.length-1);
+    }""", start_node=AssignNode))
+ 
+  #build next function
+  keynode = IdentNode("$__state");
+  sn = SwitchNode(keynode);
+  slist = js_parse("var $__ret = undefined; var $__state = this.state; var scope = this.scope;");
+  
+  slist2 = StatementList()
+  slist2.add(sn)
+  
+  wn = WhileNode(BinOpNode(IdentNode("$__state"), NumLitNode(len(flatframes)), "<"))
+  wn.add(slist2)
+  
+  wn[1].add(js_parse("""
+    if ($__ret != undefined) {
+      break;
+    }
+  """, start_node=IfNode));
+  
+  slist.add(wn);
+  slist.add(js_parse("""
+    if ($__ret != undefined) {
+      this.ret.value = $__ret.value;
+    } else {
+      this.ret.done = true;
+      this.ret.value = undefined;
+    }
+    
+    this.state = $__state;
+    return this.ret;
+  """));
+  
+  next = js_parse("this._next = function() { };", start_node=AssignNode)
+ 
+  next[1].add(slist)
+  
+  node.add(next)
+  
+  sn.line = slist.line = node.line
+  sn.lexpos = slist.lexpos = node.lexpos
+  
+  #find leaves
+  for f in flatframes:
+    if len(f) > 0:
+      f.leaf = True
+      
+      for c in f:
+        if type(c) == Frame: 
+          f.leaf = False
+          break
+  
+  #move control frame of dowhile statements to
+  #after their statement body frames.
+  visit = set()
+  for i in range(len(flatframes)):
+    if i in visit: continue
+    
+    f = flatframes[i]
+    
+    if f.leaf or type(f.node) != DoWhileNode: continue
+    
+    f2 = f_first(f)
+    if f2 == None: continue
+    
+    last = f2.label
+    while (f2 != f_next(f) and f2 != f):
+      last = f2.label
+      f2 = f_next(f2)
+    
+    last = ((last-1) if last > i else last) + 1
+    
+    flatframes.pop(i);
+    flatframes.insert(last, f);
+    visit.add(last)
+    
+  for i, f in enumerate(flatframes):
+    f.label = i
+  
+  #set up case statements
+  for f in flatframes:
+    n2 = CaseNode(NumLitNode(f.label))
+    sl = StatementList()
+    
+    if debug_gen:
+      sl.add(js_parse("console.log(\"in frame $s\");", [f.label]));
+      
+    #set line/lexpos data
+    if f.node != None:
+      n2.line = f.node.line
+      n2.lexpos = f.node.lexpos
+      sl.line = f.node.line
+      sl.lexpos = f.node.lexpos
+      
+    f.case_sl = sl
+    
+    n2.add(sl)
+    
+    #add to switch statement
+    sn.add(n2)
+   
+  def set_linepos(n, line, lexpos):
+    n.line = line
+    n.lexpos = lexpos
+    for c in n:
+      set_linepos(c, line, lexpos)
+  
+  for f in flatframes:
+    if f.leaf:
+      for c in f:
+        c.frame = f
+    else:
+      f.node.frame = f
+    
+  #handle loop breaks/continues
+  visit = set()
+  def visit_breaks(n):
+    wn = n
+    
+    if n in visit: return
+    visit.add(n)
+    
+    while type(wn) not in [WhileNode, DoWhileNode, ForLoopNode]:
+      if type(wn) == SwitchNode:
+        typespace.error("Switches in generators not supported yet.", wn);
+      wn = wn.parent
+    
+    if not wn:
+      typespace.error("Invalid break statement.", n);
+    
+    if "frame" not in wn.__dict__:
+      return
+      
+    f = wn.frame
+    i = n.parent.index(n)
+    
+    n2 = js_parse("$s=$s;", ("$__state", f_next(f).label))
+    
+    if "frame" in n.__dict__:
+      n.frame.insert(n.frame.index(n), n2)
+    else:
+      n.parent.insert(i, n2)
+ 
+  def visit_continues(n):
+    if n in visit: return
+    visit.add(n)
+    
+    wn = n
+    while wn != None and (type(wn) not in [WhileNode, DoWhileNode, ForLoopNode]):
+      wn = wn.parent
+    
+    if wn == None:
+      typespace.error("Invalid continue statement.", n);
+    
+    if "frame" not in wn.__dict__:
+      return
+      
+    f = wn.frame
+    i = n.parent.index(n)
+    n2 = js_parse("$s=$s;", ("$__state", f.label));
+    
+    n3 = BreakNode();
+    visit.add(n3)
+    
+    n.parent.remove(n)
+    n.frame.replace(n, n2)
+    n.frame.insert(n.frame.index(n2)+1, n3)
+  
+  def handle_yields(node):
+    slist = js_parse("""$__ret = this.ret;""");
+    
+    is_empty = type(node[0]) == ExprNode and len(node[0]) == 0
+    
+    if is_empty:
+      slist.add(js_parse("""$s.value = undefined;""", ["$__ret"], start_node=AssignNode));
+    else:
+      slist.add(js_parse("""$s.value = $n;""", ["$__ret", node[0]], start_node=AssignNode))
+    
+    slen = len(slist)
+    print(slist)
+    
+    if node in node.parent:
+      i = node.parent.index(node)
+      
+      node.parent.remove(node)
+      for j in range(slen):
+        node.parent.insert(i, slist[slen-j-1])
+    
+    i = node.frame.index(node)
+    node.frame.remove(node)
+    for j in range(slen):
+      node.frame.insert(i, slist[slen-j-1])
+    
+  #handle loop breaks
+  for f in flatframes:
+    if not f.leaf: continue;
+    for c in f:
+      traverse(c, BreakNode, visit_breaks, exclude=FunctionNode)
+      pass
+  #handle loop continues
+  for f in flatframes:
+    if not f.leaf: continue;
+    for c in f:
+      traverse(c, ContinueNode, visit_continues, exclude=FunctionNode)
+      pass
+      
+  #handle yields
+  for f in flatframes:
+    if not f.leaf: continue
+    for c in f:
+      traverse(c, YieldNode, handle_yields, exclude=FunctionNode);
+  
+  def has_common_parent(n1, n2, p):
+    while n1 != p and n1 != None:
+      n1 = n1.parent
+      
+    while n2 != p and n2 != None:
+      n2 = n2.parent
+    
+    if n1 == n2 and n1 == p: return True
+    else: return False
+    
+  #build control code
+  for f in flatframes:
+    if f.leaf: continue
+    n = f.node
+    sl = f.case_sl
+    
+    if type(n) == IfNode:
+      f2 = f_first(f)
+      
+      if len(n) > 2:
+        f3 = n[2].frame
+      else:
+        f3 = f_next(f)
+      
+      f.paths += [f2, f3]
+      
+      n2 = js_parse("""
+        $s = ($n) ? $s : $s;
+      """, ["$__state", n[0], f2.label, f3.label]);
+      
+      set_linepos(n2, n.line, n.lexpos);
+      sl.add(n2)
+    elif type(n) == ElseNode:
+      f2 = f_first(f)
+      f.paths += [f2]
+      
+      n2 = js_parse(";$s = $s;", ("$__state", str(f2.label)))
+      
+      set_linepos(n2, n.line, n.lexpos);
+      sl.add(n2)
+    elif type(n) == WhileNode:
+      f.paths += [f_first(f), f_next(f, True)]
+      
+      n2 = js_parse("""
+        $s = ($n) ? $s : $s;
+      """, ("$__state", n[0], f_first(f).label, f_next(f, True).label));
+      
+      set_linepos(n2, n.line, n.lexpos);
+      sl.add(n2)
+    elif type(n) == ForLoopNode:
+      f.paths += [f_first(f), f_next(f, True)]
+      
+      if type(n[0]) == ForCNode:
+        n2 = js_parse("""
+          $s = ($n) ? $s : $s;
+        """, ("$__state", n[0][1], f_first(f).label, f_next(f, True).label));
+        
+        set_linepos(n2, n.line, n.lexpos);
+        sl.add(n2)
+      else:
+        typespace.error("process_generators expects unpacked iterator for loops")
+    elif type(n) == DoWhileNode:
+      f.paths += [f_first(f), f_next(f, True)]
+      
+      n2 = js_parse("""
+        $s = ($n) ? $s : $s;
+      """, ("$__state", n[0], f_first(f).label, f_next(f, True).label), start_node=AssignNode)
+      
+      set_linepos(n2, n.line, n.lexpos)
+      sl.add(n2)
+    elif type(n) == TryNode:
+      f.paths += [f_first(f)]
+      
+      cn = f_raw_next(f).node
+      if type(cn) != CatchNode:
+        typespace.error("Missing catch block", f.node)
+      
+      ident = cn[0].gen_js(0).replace("scope.", "")
+      
+      n2 = js_parse("$s = $s;", ("$__state", f_first(f).label), start_node=AssignNode)
+      n3 = js_parse("this.push_trystack($s, \"$s\");", [f_raw_next(f).label, ident])
+      
+      set_linepos(n2, n.line, n.lexpos)
+      set_linepos(n3, n.line, n.lexpos)
+      sl.add(n2)
+      sl.add(n3)
+    elif type(n) == CatchNode:
+      f.paths += [f_first(f)]
+      
+      n2 = js_parse("$s = $s;", ("$__state", f_first(f).label), start_node=AssignNode)
+      set_linepos(n2, n.line, n.lexpos)
+      sl.add(n2)
+    
+  #build leaf code
+  for f in flatframes:
+    if not f.leaf: continue
+    sl = f.case_sl
+    
+    for n in f:
+      sl.add(n)
+    
+    f2 = f_next(f)
+    sl.add(js_parse(";$s=$s;", ("$__state", str(f2.label))))
+    f.paths += [f2]
+    
+  #add in pop_trystack calls
+  for f in flatframes:
+    if type(f.node) != TryNode: continue
+    f2 = f_last(f)
+    
+    ps = find_exit_points(f)
+    for f2 in ps:
+      f2.case_sl.add(js_parse("this.pop_trystack();"))
+    
+  #add case breaks
+  for f in flatframes:
+    bn = BreakNode()
+    bn.line = f.case_sl.line
+    bn.lexpos = f.case_sl.lexpos
+    f.case_sl.add(bn);
+  
+  #add final state case
+  cn = CaseNode(NumLitNode(len(flatframes)))
+  sl2 = StatementList()
+  sl2.add(BreakNode())
+  cn.add(sl2)
+  sn.add(cn)
+  
+  #default case
+  df = DefaultCaseNode()
+  df.add(js_parse("console.log(\"Generator state error\"); console.trace();"))
+  df[0].add(BreakNode())
+  sn.add(df)
+  
+def bleh():
   for frames in flatframes:
     fname = f_name(frames)
     n = js_parse("""
@@ -492,61 +967,8 @@ def visit_generators(node):
       
       sl = StatementList()
       f.node[f.node._startcur] = sl
-      
-      #n.add(f.node)#XXX debug subnode
-      #n = sl#XXX debug subnode
-      
-    def f_raw_next(f):
-      if f.parent == None: 
-         f = Frame()
-         f.label = len(flatframes)
-         return f
-        
-      while f.parent != None:
-          i = f.parent.index(f)+1
-          while i < len(f.parent):
-            if type(f.parent[i]) == Frame:
-              return f.parent[i]
-            i += 1
-            
-          f = f.parent
-          
-      f = Frame()
-      f.label = len(flatframes)
-      return f
-    
-    def f_next(f, ignore_loops=False):
-      if f.parent == None: 
-        f = Frame()
-        f.label = len(flatframes)
-        return f
-        
-      while f.parent != None:
-        i = f.parent.index(f)+1
-        while i < len(f.parent):
-          if type(f.parent[i]) == Frame:
-            if type(f.parent[i].node) not in [CatchNode, ElseNode]:
-              return f.parent[i]
-          i += 1
-          
-        f = f.parent
-        
-        if not ignore_loops and f.parent != None and \
-           type(f.parent.node) in \
-           [WhileNode, DoWhileNode, ForLoopNode]:
-          return f.parent
-      
-      f = Frame()
-      f.label = len(flatframes)
-      return f
-      
-    def f_first(f):
-      for f2 in f:
-        if type(f2) == Frame:
-          return f2
         
     frames.funcnode = func
-    #frames.subnode = n #XXX debug subnode
     frames.subnode = frames.funcnode
     
     local_frames = "["
@@ -572,8 +994,6 @@ def visit_generators(node):
       frames.subnode.add(js_parse("return [$i, undefined];", [f2], start_node=ReturnNode));
 
     local_frames = "%s_frames = "%f_ref(frames) + local_frames + "];"
-    #if frames.label == 0:
-    #  local_frames = local_frames.replace("gen.", "this.")
       
     frames.frames = js_parse(local_frames)
     frames.totframes = totframes
@@ -717,7 +1137,6 @@ def visit_generators(node):
   """)[0])
   for f in flatframes:
     build_next(f, f.parent)
-    #node2.insert(1, js_parse("this.frame_%d_frames = 0;" % f.label)[0])
   
   #process returns from within try nodes
   for f in flatframes:
@@ -732,28 +1151,7 @@ def visit_generators(node):
           n2.parent.insert(ni, n3)
         
       traverse(f.subnode, ReturnNode, visit_rets1, copy_children=True);
-  
-  #[what is this for?] process returns from within loop bodies
-  """
-  for f in flatframes:
-    f2 = f.parent
-    if f2 == None or f2.parent == None: continue
-    
-    while f2 != None:
-      if type(f2.node) in [WhileNode, DoWhileNode, ForLoopNode]: break
-      f2 = f2.parent
-    
-    if f2 == None: continue
-    
-    def visit_rets2(n2):
-      target = n2[0][0][0].val
-      isyield = n2[0][0][1].val
-      
-      if target >= f_next(f2, ignore_loops=True).label:
-        n2[0][0][0].val = f2.label;
-    traverse(f.subnode, ReturnNode, visit_rets2, copy_children=True);
-  #"""
-  
+
   #process yields
   for f in flatframes:
     f2 = f.parent
@@ -793,21 +1191,11 @@ def visit_generators(node):
         p = p.parent
         
       if p != f.subnode and not null_node(p): return #break corresponds to a loop internal to this frame
-      
       p = find_parent_frame(f, [WhileNode, DoWhileNode, ForLoopNode], True)
         
       if p == None:
         typespace.error("Invalid break statement (switches within generators aren't supported yet)", n2)
       
-      #XXX
-      #what is this code for?
-      #why seek out the loop's parent frame?
-      #XXX
-      
-      #p2 = find_parent_frame(p, [WhileNode, DoWhileNode, ForLoopNode], False)
-      #if 0: #p2 != None:
-      #  f2 = f_next(p2)
-      #else:
       
       f2 = f_next(p)
         
@@ -862,7 +1250,6 @@ def visit_generators(node):
   for f in flatframes:
     scope.update(f.scope)
   
-    
   s = "{"
   j2 = 0
   for j, v in enumerate(scope.keys()):

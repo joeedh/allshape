@@ -45,51 +45,63 @@ function DataRem(dst, field) {
   refname, rem_func are optional, and default to 
   fieldname, DataRem(block, fieldname), respectively.
 */
-function _Lib_GetBlock_us(dataref, block, fieldname, add_user, refname, rem_func) {
-  if (rem_func == undefined)
-    rem_func = DataRem(block, fieldname);
+function wrap_getblock_us(datalib) {
+  return function(dataref, block, fieldname, add_user, refname, rem_func) {
+    if (dataref == undefined) return;
     
-  if (refname == undefined)
-    refname = fieldname;
-  
-  var id = dataref[0];
-  //var lib_id = dataref[1];
-  
-  if (id == -1) {
-    return undefined;
-  } else {
-    var b = g_app_state.datalib.get(id);
+    if (rem_func == undefined)
+      rem_func = DataRem(block, fieldname);
+      
+    if (refname == undefined)
+      refname = fieldname;
     
-    if (b != undefined) {
-      if (add_user)
-        b.lib_adduser(block, refname, rem_func);
+    var id = dataref[0];
+    //var lib_id = dataref[1];
+    
+    if (id == -1) {
+      return undefined;
     } else {
-      console.log("WARNING WARNING WARNING saved block reference isn't in database!!!");
-    }
-    
-    return b;
-  }  
+      var b = datalib.get(id);
+      
+      if (b != undefined) {
+        if (add_user)
+          b.lib_adduser(block, refname, rem_func);
+      } else {
+        console.log("WARNING WARNING WARNING saved block reference isn't in database!!!");
+        console.log("  dataref: ", dataref);
+        console.trace();
+      }
+      
+      return b;
+    }  
+  };
 }
 
-function _Lib_GetBlock(dataref) {;
-  var id = dataref[0];
-  //var lib_id = dataref[1];
-  
-  if (id == -1) {
-    return undefined;
-  } else {
-    var b = g_app_state.datalib.get(id);
+function wrap_getblock(datalib) {
+  return function(dataref) {
+    if (dataref == undefined) return;
     
-    if (b != undefined) {
+    var id = dataref[0];
+    //var lib_id = dataref[1];
+    
+    if (id == -1) {
+      return undefined;
     } else {
-      console.log("WARNING WARNING WARNING saved block reference isn't in database!!!");
+      var b = datalib.get(id);
+      
+      if (b != undefined) {
+      } else {
+        console.log("WARNING WARNING WARNING saved block reference isn't in database!!!");
+        console.log("  dataref: ", dataref);
+        console.trace();
+      }
+      
+      return b;
     }
-    
-    return b;
-  }  
+  }
 }
 
-/* 'DataBlock List.                     *
+/* 'DataBlock List.                         *
  *  A generic container list for datablocks */
 function DBList(type) {
   GArray.call(this);
@@ -111,7 +123,6 @@ DBList.STRUCT = """
     selected : array(dataref(DataBlock));
     arrdata : array(dataref(DataBlock)) | obj;
     active : dataref(DataBlock);
-    length : int;
   }
 """;
 
@@ -121,17 +132,19 @@ DBList.fromSTRUCT = function(unpacker) {
   unpacker(dblist);
   
   var arr = dblist.arrdata;
-  
-  //get rid of temp varable we used to store the actual
-  //array data
-  delete dblist.arrdata;
+  dblist.length = 0;
   
   //note that array data is still in dataref form
   //at this point
   for (var i=0; i<arr.length; i++) {
-    GArray.prototype.push.call(this, arr[i]);
+    GArray.prototype.push.call(dblist, arr[i]);
   }
+  
   dblist.selected = new GArray(dblist.selected);
+
+  //get rid of temp varable we used to store the actual
+  //array data
+  delete dblist.arrdata;
   
   return dblist;
 }

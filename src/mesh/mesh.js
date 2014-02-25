@@ -57,11 +57,9 @@ function Mesh() {
 }
 inherit(Mesh, DataBlock);
 
-Mesh.STRUCT = """
-  Mesh {
+Mesh.STRUCT = STRUCT.inherit(Mesh, DataBlock) + """
     idgen : EIDGen;
     _id : int;
-    name : string;
     verts : iter(Vertex);
     edges : iter(Edge);
     faces : iter(Face);
@@ -69,9 +67,15 @@ Mesh.STRUCT = """
 """;
 
 Mesh.fromSTRUCT = function(unpacker) {
+  global gl;
   var m = new Mesh()
   
   unpacker(m);
+  
+  m.render = new render();
+  m.render.drawprogram = gl.program; 
+  m.render.vertprogram = gl.program2;
+  m.regen_render();
   
   console.log(m);
   

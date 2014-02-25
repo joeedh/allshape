@@ -96,17 +96,21 @@ Area.prototype.on_area_active = function()
 {
 }
 
-function ScreenArea(area, ctx, pos, size)
+function ScreenArea(area, ctx, pos, size, add_area)
 {
   UIFrame.call(this, ctx, undefined, undefined, pos, size);
   
-  this.screens = {}
-  this.screens[area.constructor.name] = area;
+  if (add_area == undefined)
+    add_area = true;
+  
+  this.editors = {}
+  this.editors[area.constructor.name] = area;
   
   this.area = area;
   area.pos[0] = 0; area.pos[1] = 0;
   
-  this.add(area);
+  if (add_area)
+    this.add(area);
 }
 inherit(ScreenArea, UIFrame);
 
@@ -115,16 +119,46 @@ ScreenArea.STRUCT = """
     pos : vec2;
     size : vec2;
     type : string;
-    screens : iter(k, abstract(Area)) | obj.screens[k];
-    active : string | obj.area.constructor.name;
+    editors : iter(k, abstract(Area)) | obj.editors[k];
+    area : string | obj.area.constructor.name;
   }
 """
 
 ScreenArea.fromSTRUCT = function(reader) {
-  var ob = {};
+  var ob = Object.create(ScreenArea.prototype);
+  
   reader(ob);
   
+  var editarr = new GArray(ob.editors);
+  ob.area = editarr[0];
+  
+  var screens2 = {}
+  for (var scr in editarr) {
+    if (scr.constructor.name == ob.area) {
+      ob.area = scr;
+    }
+    
+    screens2[scr.constructor.name] = scr;
+  }
+  
+  ScreenArea.call(ob, ob.area, new Context(ob.area), ob.pos, ob.size, false);
+  ob.editors = screens2;
+  
   return ob;
+}
+
+ScreenArea.prototype.data_link = function(block, getblock, getblock_us) {
+  this.ctx = new Context(this.area);
+  this.area.ctx = new Context(this.area);
+  
+  for (var k in this.editors) {
+    var area = this.editors[k];
+    
+    area.data_link(block, getblock, getblock_us);
+    area.set_context(this.ctx);
+  }
+  
+  this.add(this.area);
 }
 
 ScreenArea.prototype.on_add = function(parent)
@@ -148,8 +182,8 @@ ScreenArea.prototype.toJSON = function()
   var active = 0;
   
   var i = 0;
-  for (var k in this.screens) {
-    var a = this.screens[k];
+  for (var k in this.editors) {
+    var a = this.editors[k];
     
     areas.push(a.toJSON());
     if (a == this.area)
@@ -202,13 +236,13 @@ ScreenArea.prototype.area_duplicate = function()
 {
   var screens = {}
   
-  for (var k in this.screens) {
-    var area = this.screens[k];
+  for (var k in this.editors) {
+    var area = this.editors[k];
     screens[k] = area.area_duplicate();
   }
   
   var scr = new ScreenArea(screens[this.area.constructor.name], this.ctx, new Vector2(this.pos), new Vector2(this.size));
-  scr.screens = screens;
+  scr.editors = screens;
   
   return scr;
 }
@@ -915,7 +949,7 @@ ScreenBorder.prototype.build_draw = function(UICanvas canvas, Boolean isVertical
 }
 
 function Screen(WebGLRenderingContext gl, 
-                View3DHandler view3d, int width, 
+                unused, int width, 
                 int height)
 {
   UIFrame.call(this, undefined);
@@ -971,10 +1005,15 @@ Screen.STRUCT = """
 """
 
 Screen.fromSTRUCT = function(reader) {
-  var ob = {};
+  var ob = new Screen(gl, 0, 512, 512);
+  
   reader(ob);
   
-  this.children = new GArray(this.children);
+  ob.areas = new GArray(ob.areas);
+  
+  for (var c in ob.areas) {
+    c.parent = ob;
+  }
   
   return ob;
 }
@@ -1393,8 +1432,8 @@ Screen.prototype.add = function(UIElement child, packflag) { //packflag is optio
   if (child instanceof ScreenArea) {
     this.areas.push(child);
     
-    for (var k in child.screens) {
-      var area = child.screens[k];
+    for (var k in child.editors) {
+      var area = child.editors[k];
       if (area instanceof View3DHandler)
         view3d = area;
     }
@@ -1405,8 +1444,8 @@ Screen.prototype.add = function(UIElement child, packflag) { //packflag is optio
       if (!(c instanceof ScreenArea))
         continue;
       
-      if (View3DHandler.constructor.name in c.screens) {
-        view3d = c.screens[View3DHandler.constructor.name];
+      if (View3DHandler.constructor.name in c.editors) {
+        view3d = c.editors[View3DHandler.constructor.name];
         break;
       }
     }
@@ -1415,8 +1454,8 @@ Screen.prototype.add = function(UIElement child, packflag) { //packflag is optio
   if (child instanceof ScreenArea) {
     var canvas = new UICanvas(view3d);
     
-    for (var k in child.screens) {
-      child.screens[k].canvas  = canvas;
+    for (var k in child.editors) {
+      child.editors[k].canvas  = canvas;
     }
   } else if (child.canvas != undefined) {
     child.canvas = this.canvas;
@@ -1450,6 +1489,23 @@ Screen.prototype.toJSON = function() {
   }
   
   return ret;
+}
+
+Screen.prototype.data_link = function(block, getblock, getblock_us)
+{
+  //have got to decouple context from View3DHandler
+  this.ctx = new Context(this.view3d);
+  
+  for (var c in this.areas) {
+    c.data_link(block, getblock, getblock_us);
+  }
+  
+  var areas = this.areas;
+  this.areas = new GArray()
+  
+  for (var a in areas) {
+    this.add(a);
+  }
 }
 
 function load_screen(Screen scr, json_obj)

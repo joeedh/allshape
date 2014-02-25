@@ -1390,7 +1390,7 @@ def p_for_var_decl(p):
     if p[0].type == None:
       p[0].type = UnknownTypeNode
     
-    p[0].modifiers = parsescope[p[1]]
+    p[0].modifiers = set(parsescope[p[1]])
     p[0].modifiers.add("local")
     p[0].local = True
     p[0].add(p[0].type)

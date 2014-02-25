@@ -68,6 +68,9 @@ UIElement.prototype.__hash__ = function() : String {
   return this.constructor.name[2] + this.constructor.name[3] + this.constructor.name[4] + this._id;
 }
 
+UIFrame.prototype.set_context = function(ctx) {
+  this.ctx = ctx;
+}
 
 UIElement.prototype.inc_flash_timer = function(color) {
   if (this.status_timer == undefined) return false;
@@ -1575,6 +1578,14 @@ var _static_mat = new Matrix4();
 var _ufbd_v1 = new Vector3();
 //hack for spreading updates across frames
 var _canvas_threshold = 1.0;
+
+UIFrame.prototype.set_context = function(ctx)
+{
+  this.ctx = ctx;
+  for (var c in this.children) {
+    c.set_context(ctx);
+  }
+}
 
 UIFrame.prototype.build_draw = function(canvas, skip_box) { //skip_box is optional
   var mat = _static_mat;

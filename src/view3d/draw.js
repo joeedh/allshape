@@ -802,7 +802,7 @@ DrawMats.STRUCT = """
 """
 
 DrawMats.fromSTRUCT = function(reader) {
-  var ret = new DrawMats();
+  var ret = Object.create(DrawMats.prototype);
   
   reader(ret);
   

@@ -256,7 +256,7 @@ function KeyHandler(key, modifiers, uiname, menunum, ignore_charmap_error) { //m
       this.ctrl = true;
     } else {
       console.trace()
-      console.log("Warning: invalid modifier in KeyHandler")
+      console.log("Warning: invalid modifier " + modifiers[i] + " in KeyHandler")
     }
   }
 }

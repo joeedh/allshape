@@ -8,6 +8,7 @@ glob_cmd_help_override = {
 "g_line" : "Most recently parsed line",
 "g_lexpos" : "Most recently parsed lexical position",
 "g_gen_log_code" : "Generate type logging code",
+"g_harmony_iterators" : "expansion of es6 harmony for-loops; Python's StopIteration style will be used instead."
 }
 glob_cmd_short_override = {}
 

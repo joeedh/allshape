@@ -44,6 +44,9 @@ def traverse(n, ntype, func, use_depth=False,
   if scope == None: scope = {}
   scope = handle_scope(n, scope)
   
+  if type(exclude) != list and type(exclude) != tuple and issubclass(exclude, Node):
+    exclude = [exclude]
+  
   if type(n) in exclude and depth != 0:
     return
 
@@ -276,14 +279,14 @@ def flatten_statementlists(node, typespace):
   def visit_slists(n):
     if not null_node(n.parent) and type(n.parent) in [FunctionNode, StatementList]:
       p = n.parent
-      i = p.children.index(n)
-      p.children.remove(n)
+      i = p.index(n)
       
-      for c in n.children:
+      p.remove(n)
+      
+      for c in n:
         p.insert(i, c)
         i += 1
   
-  c = node.gen_js(0)
   traverse(node, StatementList, visit_slists, copy_children=True)  
   """
   if node.gen_js(0) != c:

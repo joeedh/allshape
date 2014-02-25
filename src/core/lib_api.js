@@ -74,7 +74,6 @@ DataLib.prototype.gen_name = function(block, name) {
     name = DataNames[block.lib_type];
   }
   
-  console.log(block, name);
   if (!this.datalists.has(block.lib_type)) {
     this.datalists.set(block.lib_type, new DataList(block.lib_type));
   }
@@ -262,6 +261,10 @@ DataBlock.unpack = function(data, uctx) {
 
 //getblock fetchs a datablock from a reference, but doesn't
 //make add user references.
+//
+//the block parameter is there so block substructs
+//can know which block they belong too.
+///
 //getblock_us does add a user reference automatically.
 //see _Lib_GetBlock and _Lib_GetBlock_us in lib_utils.js.
 DataBlock.prototype.data_link = function(block, getblock, getblock_us) {
