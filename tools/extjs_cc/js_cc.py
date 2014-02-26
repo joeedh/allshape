@@ -1152,11 +1152,16 @@ def main():
     
     doloops = not glob.g_emit_code and glob.g_expand_iterators
     
-    if glob.g_gen_log_code:
+    if glob.g_refactor_mode:
+      from js_refactor import refactor
+      buf, node = refactor(data)
+      if args.outfile == "":
+        print(buf)
+    elif glob.g_gen_log_code:
       buf, node = parse(data, expand_loops=doloops, create_logger=True)
     else:
       buf, node = parse(data, expand_loops=doloops)
-    
+        
     if glob.g_emit_code:
       import js_type_emit
       js_type_emit.emit(node)

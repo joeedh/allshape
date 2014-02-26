@@ -1112,7 +1112,9 @@ class FunctionNode (StatementList):
     
     return n2
     
-  def __init__(self, name, lineno):
+  #NEED TO GET RID OF THIS LINENO PARAMETER!
+  #(and member; both have been replaced by node.line/node.lexpos)
+  def __init__(self, name, lineno=0):
     super(FunctionNode, self).__init__()
     self.name = name
     self.origname = name

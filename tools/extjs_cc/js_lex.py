@@ -20,7 +20,8 @@ res = [
 'with', 'switch', 'case', 'default', 'yield', 'struct',
 'float', 'int', 'const', 'short', 'double', 'char',
 'unsigned', 'signed', 'variable', 'template', 'byte',
-'global', 'inferred', 'native'
+'global', 'inferred', 'native', 'class', 'extends',
+'static'
 ]
 
 reserved = {}

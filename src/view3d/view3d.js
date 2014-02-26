@@ -181,7 +181,6 @@ function View3DHandler(WebGLRenderingContext gl, Mesh mesh, ShaderProgram vprogr
   this.use_subsurf = false;
   
   this.user_pref = new View3DUserState()
-  this.toolstack = g_app_state.toolstack;
   
   /*if (localStorage.user_pref != undefined) {
     var state
@@ -577,15 +576,15 @@ View3DHandler.prototype.on_mousedown = function(event) {
   
   if (is_middle && this.shift) {
     console.log("Panning");
-    this.toolstack.exec_tool(new ViewPanOp());
+    g_app_state.toolstack.exec_tool(new ViewPanOp());
   } else if (is_middle) { //middle mouse
-    this.toolstack.exec_tool(new ViewRotateOp());
+    g_app_state.toolstack.exec_tool(new ViewRotateOp());
   //need to add mouse keymaps to properly handle this next one
   } else if ((this.editor instanceof MeshEditor) && event.button == 0 && g_app_state.screen.ctrl) {
     console.log("Click Extrude");
     var op = new ClickExtrude();
     
-    this.toolstack.exec_tool(op);
+    g_app_state.toolstack.exec_tool(op);
     op.on_mousedown(event);
   } else if (event.button == 0 && event.altKey) {
     this._mstart = new Vector2(this.mpos);
@@ -617,7 +616,7 @@ View3DHandler.prototype.on_mousemove = function(MouseEvent event) {
   
     /*handle drag translate*/
     if (vec.vectorLength() > 10) {
-      this.toolstack.exec_tool(new TranslateOp());
+      g_app_state.toolstack.exec_tool(new TranslateOp());
       this._mstart = null;
       return;
     }

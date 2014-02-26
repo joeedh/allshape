@@ -258,6 +258,8 @@ ScreenArea.prototype.build_draw = function(canvas, isVertical)
 
 ScreenArea.prototype.on_draw = function(WebGLRenderingContext gl)
 {
+  g_app_state.size = new Vector2(this.size);
+  
   this.area.pos[0] = 0; this.area.pos[1] = 0;
   this.area.size[0] = this.size[0];
   this.area.size[1] = this.size[1];
@@ -1317,6 +1319,11 @@ Screen.prototype.on_tick = function()
 
 Screen.prototype.on_resize = function(Array<int> newsize, Array<int> oldsize) 
 {
+  g_app_state.size = new Vector2(newsize);
+  
+  if (oldsize == undefined)
+    oldsize = [this.size[0], this.size[1]];
+  
   var ratio = (new Vector2(newsize)).divide(oldsize);
   
   this.size = [newsize[0], newsize[1]];

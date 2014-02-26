@@ -148,7 +148,7 @@ function AppState(screen, mesh, gl) {
   this.filepath = ""
   this.version = g_app_version;
   this.gl = gl;
-  this.size = [512, 512];
+  this.size = screen != undefined ? screen.size : [512, 512];
   this.raster = new RasterState(gl, screen != undefined ? screen.size : [512, 512]);
   
   this.datalib = new DataLib();
@@ -433,10 +433,14 @@ AppState.prototype.load_user_file_new = function(DataView data, unpack_ctx uctx)
     
     if (screen == undefined) {
       //generate default UI layout
+      var size =  new Vector2(this2.size);
       gen_default_file(this2.size);
+      this2.size = size;
       this2.datalib = datalib;
     } else {
+      var size =  new Vector2(this2.size);
       this2.reset_state(screen, undefined);
+      this2.size = size;
       this2.datalib = datalib;
     }
     
@@ -463,7 +467,10 @@ AppState.prototype.load_user_file_new = function(DataView data, unpack_ctx uctx)
       this2.screen.canvas = new UICanvas(this2.active_view3d, [new Vector2(this2.screen.pos), new Vector2(this2.screen.size)])
     }
     
-    //this2.screen.on_resize(this2.size, new Vector2(this2.screen.size));
+    console.log("-------------------------->", this2.size, this2.screen.size);
+    
+    this2.screen.on_resize(this2.size);
+    this2.screen.size = this2.size;
     
     var ctx = new Context();
   }

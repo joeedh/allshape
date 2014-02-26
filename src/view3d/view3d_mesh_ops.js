@@ -371,9 +371,9 @@ MeshEditor.prototype.do_select = function(event, mpos, view3d) {
   }
   
   if (macro.tools.length == 1) 
-    view3d.toolstack.exec_tool(macro.tools[0]);
+    g_app_state.toolstack.exec_tool(macro.tools[0]);
   else
-    view3d.toolstack.exec_tool(macro);
+    g_app_state.toolstack.exec_tool(macro);
   
   return 1;
 }
@@ -520,9 +520,9 @@ MeshEditor.prototype.do_alt_select = function(event, mpos, view3d) {
   macro.add_tool(op);
   
   if (macro.tools.length == 1) 
-    view3d.toolstack.exec_tool(macro.tools[0]);
+    g_app_state.toolstack.exec_tool(macro.tools[0]);
   else
-    view3d.toolstack.exec_tool(macro);
+    g_app_state.toolstack.exec_tool(macro);
     
   return true;
 }

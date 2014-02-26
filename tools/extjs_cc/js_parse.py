@@ -9,6 +9,11 @@ from js_ast import *
 from js_lex import tokens, StringLit, HexInt
 from ply.lex import LexToken, Lexer
 
+#AST nodes that are used in intermediate stages of parsing,
+#but are NEVER EVER in the final AST tree.
+from js_parser_only_ast import *
+from js_process_ast_parser_only import *
+
 precedence = (
   ("left", "COMMA"),
   ("left", "ASSIGN", "ASSIGNPLUS", "ASSIGNMINUS", "ASSIGNDIVIDE", "ASSIGNTIMES", "ASSIGNBOR", "ASSIGNBAND", "ASSIGNBXOR"),
@@ -304,6 +309,7 @@ def p_assign_statement(p):
     
 def p_statement(p):
   ''' statement : function
+                | class
                 | if
                 | else
                 | while
@@ -867,6 +873,142 @@ def p_exprlist(p):
   elif len(p) == 6:
     p[0] = p[1]
     p[0].add(AssignNode(p[3], p[5]))
+
+#the class->function/prototype transformation
+#HAPPENS AT PARSE TIME
+
+#page 239 of january2014 draft harmony spec (page 257 as chrome sees it)
+def p_class(p):
+  '''class : CLASS ID class_tail'''
+  
+  tail = p[3]
+  heritage = tail[0]
+  cls = ClassNode(p[2], heritage)
+  
+  for n in tail[1]:
+    cls.add(n)
+  
+  print(p[3])
+  
+  p[0] = expand_harmony_class(cls)
+  
+def p_exprclass(p):
+  '''exprclass : CLASS id_opt class_tail'''
+  
+  tail = p[3]
+  heritage = tail[0]
+  
+  if p[2] == None:
+    p[2] = "(anonymous)"
+    
+  cls = ClassNode(p[2], heritage)
+  
+  for n in tail[1]:
+    cls.add(n)
+  
+  p[0] = expand_harmony_class(cls)
+
+def p_class_tail(p):
+  '''class_tail : class_heritage_opt LBRACKET class_body_opt RBRACKET'''
+  
+  p[0] = [p[1], p[3]]
+  
+  for i in range(2):
+    if p[0][i] == None:
+      p[0][i] = []
+  
+#just do single inheritance for now
+def p_class_heritage(p):
+  '''class_heritage : EXTENDS ID'''
+  
+  p[0] = [p[2]]
+
+def p_class_heritage_opt(p):
+  '''class_heritage_opt : class_heritage
+                        | 
+  '''
+  if len(p) == 2:
+    p[0] = p[1]
+  
+def p_class_body_opt(p):
+  '''class_body_opt : class_element_list
+                    |
+  '''
+ 
+  p[0] = p[1]
+  if p[0] == None: p[0] = []
+
+def p_class_element_list(p):
+  '''class_element_list : class_element
+                        | class_element_list class_element
+  '''
+  
+  if len(p) == 2:
+    p[0] = [p[1]]
+  else:
+    p[0] = p[1]
+    p[0].append(p[2])
+  
+def p_class_element(p):
+  '''class_element : method_def
+                   | STATIC method_def
+  '''
+  
+  if len(p) == 2:
+    p[0] = p[1]
+  else:
+    p[0] = p[2]
+    p[0].is_static = True
+
+def p_method(p):
+  '''method : ID LPAREN funcdeflist RPAREN LBRACKET statementlist_opt RBRACKET'''
+  
+  name = p[1]
+  params = p[3]
+  statementlist = p[6]
+  
+  if statementlist == None:
+    statementlist = StatementList()
+  
+  p[0] = MethodNode(name)
+  p[0].add(params)  
+  p[0].add(statementlist)
+  
+def p_method_def(p):
+  #I don't want to make get/set exclusive parse tokens,
+  #so I'm going to enforce that here in the production function.
+  
+  '''method_def : method
+                | ID ID LPAREN RPAREN LBRACKET statementlist_opt RBRACKET
+                | ID ID LPAREN setter_param_list RPAREN LBRACKET statementlist_opt RBRACKET
+  '''
+  
+  if len(p) == 2:
+    p[0] = p[1]
+  elif p[1] == "get" and len(p) == 8:
+    name = p[2]
+    p[0] = MethodGetter(name)
+    if p[6] == None: p[6] = StatementList()
+    p[0].add(p[6])
+  elif p[1] == "set" and len(p) == 9:
+    name = p[2]
+    p[0] = MethodSetter(name)
+    p[0].add(p[4])
+    if p[7] == None: p[7] = StatementList()
+    p[0].add(p[7])
+  else:
+    glob.g_error = True
+    glob.g_error_pre = p
+    print_err(p, True)
+    raise SyntaxError("Expected 'get' or 'set'");
+  
+def p_setter_param_list(p):
+  '''
+    setter_param_list : ID
+  '''
+  
+  p[0] = p[1]
+  return
 
 def p_template_ref_opt(p):
   '''template_ref_opt : template_ref
@@ -1694,6 +1836,9 @@ def get_cur_pos(p):
   
   if type(p) == LexToken:
     lexpos, line = p.lexpos, p.lineno
+  elif p != None and type(p.lineno) != int:
+    lexpos = p.lexpos(0)
+    line = p.lineno(0)
   elif p != None and p.lexer.prev != None:
     lexpos = p.lexer.prev.lexpos
     line = p.lexer.lexer.lineno
