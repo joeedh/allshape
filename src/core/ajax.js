@@ -845,7 +845,7 @@ function upload_file(job, args) {
     
     var url = "/api/files/upload?accessToken="+token+"&uploadToken="+upload_token;
     
-    var size = i == ilen-1 ? len%(csize+1) : csize;
+    var size = i == ilen-1 ? len%(csize) : csize;
       
     console.log(i*csize, size, data);
     

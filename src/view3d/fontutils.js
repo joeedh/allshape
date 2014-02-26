@@ -15,11 +15,11 @@ for (var i=0; i<32; i++) {
 
 var _cs_cur_rt = 0;
 
-function Font(WebGLRenderingContext gl, View3DHandler view3d) {
+function Font(WebGLRenderingContext gl, RasterState raster) {
   this.finfo = font_info;
   
   this.tex = gl.createTexture();
-  this.view3d = view3d;
+  this.raster = raster;
   
   this.destroy = function(WebGLRenderingContext gl) {
     if (this.tex != null) {
@@ -190,7 +190,7 @@ function Font(WebGLRenderingContext gl, View3DHandler view3d) {
       arr.push(x2); arr.push(y1);
     }
     
-    var view3d = this.view3d;
+    var raster = this.raster;
     var finfo = this.finfo;
     
     var v3 = new Vector3();
@@ -202,8 +202,8 @@ function Font(WebGLRenderingContext gl, View3DHandler view3d) {
           verts[i*2] = v3[0];
           verts[i*2+1] = v3[1];
         }
-        verts[i*2] = (verts[i*2]/view3d.size[0])*2.0 - 1.0;
-        verts[i*2+1] = (verts[i*2+1]/view3d.size[1])*2.0 - 1.0;
+        verts[i*2] = (verts[i*2]/raster.size[0])*2.0 - 1.0;
+        verts[i*2+1] = (verts[i*2+1]/raster.size[1])*2.0 - 1.0;
       }
     }
     
@@ -328,7 +328,7 @@ function Font(WebGLRenderingContext gl, View3DHandler view3d) {
       arr.push(x2); arr.push(y1);
     }
     
-    var view3d = this.view3d;
+    var raster = this.raster;
     var finfo = this.finfo;
     
     var v3 = new Vector3();

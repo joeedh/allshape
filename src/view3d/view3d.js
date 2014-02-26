@@ -5,49 +5,49 @@ var ibuf_idgen = new EIDGen();
 
 ibuf_idgen.gen_id();
 
-function ObjectEditor(name, type, lib_type, keymap) {
+function View3DEditor(name, type, lib_type, keymap) {
   this.name = name;
   this.type = type;
   this.lib_type = lib_type;
   this.keymap = keymap;
 }
-create_prototype(ObjectEditor);
+create_prototype(View3DEditor);
 
-ObjectEditor.STRUCT = """
-  ObjectEditor {
+View3DEditor.STRUCT = """
+  View3DEditor {
   }
 """;
 
 //objecteditor is an abstract class,
 //but struct system does require the presence
 //of fromSTRUCT.  need to review that.
-ObjectEditor.fromSTRUCT = function(reader) {
+View3DEditor.fromSTRUCT = function(reader) {
   var obj = {};
   reader(obj);
   
   return obj;
 }
 
-ObjectEditor.prototype.on_area_inactive = function(view3d) {}
+View3DEditor.prototype.on_area_inactive = function(view3d) {}
 
 //returns new copy
-ObjectEditor.prototype.editor_duplicate = function(view3d) {}
-ObjectEditor.prototype.render_selbuf = function(gl, view3d, typemask) {}
-ObjectEditor.prototype.selbuf_changed = function(typemask) {}
-ObjectEditor.prototype.reset_selbuf_changed = function(typemask) {}
-ObjectEditor.prototype.add_menu = function(view3d, mpos) {}
-ObjectEditor.prototype.draw_object = function(gl, view3d, object, is_active) {}
-ObjectEditor.prototype.build_sidebar1 = function(view3d) {}
-ObjectEditor.prototype.build_bottombar = function(view3d) {}
-ObjectEditor.prototype.set_selectmode = function(int mode) {}
+View3DEditor.prototype.editor_duplicate = function(view3d) {}
+View3DEditor.prototype.render_selbuf = function(gl, view3d, typemask) {}
+View3DEditor.prototype.selbuf_changed = function(typemask) {}
+View3DEditor.prototype.reset_selbuf_changed = function(typemask) {}
+View3DEditor.prototype.add_menu = function(view3d, mpos) {}
+View3DEditor.prototype.draw_object = function(gl, view3d, object, is_active) {}
+View3DEditor.prototype.build_sidebar1 = function(view3d) {}
+View3DEditor.prototype.build_bottombar = function(view3d) {}
+View3DEditor.prototype.set_selectmode = function(int mode) {}
 
 //returns number of selected items
-ObjectEditor.prototype.do_select = function(event, mpos, view3d) {}
-ObjectEditor.prototype.tools_menu = function(event, view3d) {}
-ObjectEditor.prototype.rightclick_menu = function(event, view3d) {}
-ObjectEditor.prototype.on_mousemove = function(event) {}
-ObjectEditor.prototype.do_alt_select = function(event, mpos, view3d) {}
-ObjectEditor.prototype.delete_menu = function(event) {}
+View3DEditor.prototype.do_select = function(event, mpos, view3d) {}
+View3DEditor.prototype.tools_menu = function(event, view3d) {}
+View3DEditor.prototype.rightclick_menu = function(event, view3d) {}
+View3DEditor.prototype.on_mousemove = function(event) {}
+View3DEditor.prototype.do_alt_select = function(event, mpos, view3d) {}
+View3DEditor.prototype.delete_menu = function(event) {}
 
 function drawline(co1, co2) {
   this.v1 = co1;
@@ -156,6 +156,7 @@ function View3DHandler(WebGLRenderingContext gl, Mesh mesh, ShaderProgram vprogr
                        int height, int znear, int zfar) 
 {
   this.drawmats = drawmats;
+  this.transmat = new Mat4Stack();
   
   this.mesh = mesh;
   
@@ -255,7 +256,7 @@ function View3DHandler(WebGLRenderingContext gl, Mesh mesh, ShaderProgram vprogr
   
   this.line_2d_shader = new ShaderProgram(gl, "2d_line_vshader", "2d_line_fshader", ["vPosition", "vNormal", "vColor"]);
   
-  Area.call(this, View3DHandler.name, new Context(this), this.pos, this.size);
+  Area.call(this, View3DHandler.name, new Context(), this.pos, this.size);
   
   this.keymap = new KeyMap()
   this.define_keymap();
@@ -276,7 +277,7 @@ View3DHandler.STRUCT = STRUCT.inherit(View3DHandler, Area) + """
     selectmode : int;
     zoom_wheelrange : array(float);
     zoom_range : array(float);
-    editors : array(abstract(ObjectEditor));
+    editors : array(abstract(View3DEditor));
     editor : int | obj.editors.indexOf(obj.editor);
   }
 """
@@ -312,7 +313,7 @@ View3DHandler.prototype.data_link = function(block, getblock, getblock_us) {
     this.mesh.regen_render();
   }
   
-  this.ctx = new Context(this);
+  this.ctx = new Context();
   this.ctx.mesh = this.mesh;
   
   for (var e in this.editors) {
@@ -325,7 +326,7 @@ View3DHandler.prototype.data_link = function(block, getblock, getblock_us) {
   }
   
   this.mesh = mesh; 
-  this.ctx = new Context(this);
+  this.ctx = new Context();
 }
 
 View3DHandler.framebuffer = undefined;
@@ -716,14 +717,33 @@ View3DHandler.prototype.on_tick = function() {
 }
 var _v3d_static_mat = new Matrix4()
 
+var bleh_bleh = 0;
 View3DHandler.prototype.on_draw = function(WebGLRenderingContext gl, test) {
-  this.ctx = new Context(this);
+  g_app_state.active_view3d = this;
+  
+  this.ctx = new Context();
   this.mesh = this.ctx.mesh;
   
   gl.getExtension("OES_TEXTURE_FLOAT");
   
+  var this2 = this;
+  var updatefunc = function() {
+    this2.gen_rendermats();
+  }
+  
+  //set up matrix transformation stack
+  var cameramat_backup = new Matrix4(this.drawmats.cameramat);
+  this.transmat.set_internal_matrix(this.drawmats.cameramat, updatefunc);
+  
+  //set up canvas box
   this.set_canvasbox();
+  
+  //draw object
   this.editor.draw_object(gl, this, this.ctx.object, true);
+  
+  //clean up transformation stack
+  this.transmat.reset(cameramat_backup);
+  this.drawmats.cameramat.load(cameramat_backup);
   
   this.draw_lines(gl);
   Area.prototype.on_draw.call(this, gl)
@@ -800,7 +820,7 @@ View3DHandler.prototype._on_keyup = function(KeyboardEvent event) {
 
 View3DHandler.prototype.on_keyup = function(KeyboardEvent event) {
 
-  var ctx = new Context(this);
+  var ctx = new Context();
   var ret = this.keymap.process_event(ctx, event);
   
   if (ret == undefined)
@@ -851,7 +871,7 @@ View3DHandler.prototype.area_duplicate = function()
   cpy.zoomfac = this.zoomfac;
   cpy.zoomwheel = this.zoomwheel;
   cpy.drawmats = this.drawmats.copy();
-  cpy.ctx = new Context(cpy);
+  cpy.ctx = new Context();
   
   cpy.editors = new GArray();
   cpy.editor = undefined;
@@ -894,13 +914,13 @@ View3DHandler.prototype.build_bottombar = function() {
 }
 
 View3DHandler.prototype.build_sidebar1 = function() {
-  this.ctx = new Context(this);
+  this.ctx = new Context();
   this.editor.build_sidebar1(this);
 }
 
 View3DHandler.prototype.build_topbar = function()
 {
-  this.ctx = new Context(this);
+  this.ctx = new Context();
   
   var col = new ColumnFrame(this.ctx, undefined, PackFlags.ALIGN_LEFT);
   col.packflag |= PackFlags.IGNORE_LIMIT;

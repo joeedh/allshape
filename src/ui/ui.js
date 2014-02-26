@@ -540,7 +540,7 @@ function TriList(View3DHandler view3d, UICanvas canvas) {
     
     if (this.ssize != undefined) {
       gl.enable(gl.SCISSOR_TEST);
-      push_scissor(gl, this.spos, this.ssize);
+      g_app_state.raster.push_scissor(this.spos, this.ssize);
     }
     
     gl.disable(gl.DEPTH_TEST);
@@ -585,7 +585,7 @@ function TriList(View3DHandler view3d, UICanvas canvas) {
     gl.enable(gl.DEPTH_TEST);
     
     if (this.ssize != undefined) {
-      pop_scissor(gl);
+      g_app_state.raster.pop_scissor();
     }
   }
 }
@@ -621,13 +621,13 @@ function TextDraw(pos, text, color, view3d, mat, spos, ssize, viewport, size) {
         spos = new Vector3([this.spos[0], this.spos[1], 0]);
         ssize = new Vector3([this.ssize[0], this.ssize[1], 0]);
         
-        push_scissor(gl, spos, ssize);
+        g_app_state.raster.push_scissor(spos, ssize);
     }
     
     this.tdrawbuf.on_draw(gl);
     
     if (this.ssize != undefined) {
-      pop_scissor(gl);
+      g_app_state.raster.pop_scissor();
     }
   }
 }
@@ -1654,8 +1654,12 @@ UIFrame.prototype.build_draw = function(canvas, skip_box) { //skip_box is option
     this.do_recalc();
 }
 
-UIFrame.prototype.on_tick = function() {
+//pre_func is optional, and is called before each child's on_tick is executed
+UIFrame.prototype.on_tick = function(pre_func) {
   for (var c in this.children) {
+    if (pre_func != undefined)
+      pre_func(c);
+    
     c.on_tick();
     
     if (c.status_timer != undefined) {

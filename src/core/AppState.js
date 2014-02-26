@@ -137,7 +137,7 @@ function gen_default_file(size) {
   gen_screen(gl, view3d, size[0], size[1]);
     
   g.set_mesh(mesh);
-  view3d.ctx = new Context(view3d);
+  view3d.ctx = new Context();
 }
 
 function AppState(screen, mesh, gl) {
@@ -149,6 +149,7 @@ function AppState(screen, mesh, gl) {
   this.version = g_app_version;
   this.gl = gl;
   this.size = [512, 512];
+  this.raster = new RasterState(gl, screen != undefined ? screen.size : [512, 512]);
   
   this.datalib = new DataLib();
   
@@ -324,7 +325,8 @@ AppState.prototype.load_user_file_new = function(DataView data, unpack_ctx uctx)
   
   var s = unpack_static_string(data, uctx, 4);
   if (s != "ALSH") {
-    console.log(s, s.length)
+    console.log(s, s.length);
+    console.log(data);
     throw new Error("Could not load file.");
   }
   
@@ -447,7 +449,7 @@ AppState.prototype.load_user_file_new = function(DataView data, unpack_ctx uctx)
       }
     }
     
-    var ctx = new Context(this2.active_view3d);
+    var ctx = new Context();
     this2.mesh = ctx.mesh;
     
     if (screen != undefined) {
@@ -463,13 +465,13 @@ AppState.prototype.load_user_file_new = function(DataView data, unpack_ctx uctx)
     
     //this2.screen.on_resize(this2.size, new Vector2(this2.screen.size));
     
-    var ctx = new Context(this2.active_view3d);
+    var ctx = new Context();
   }
   
   load_state();
 }
 
-AppState.prototype.create_user_file = function(Mesh different_mesh) : ArrayBuffer {
+AppState.prototype.create_user_file_old = function(Mesh different_mesh) : ArrayBuffer {
   //we save a json part and a binary part
   var obj = {}
   
@@ -490,7 +492,7 @@ AppState.prototype.create_user_file = function(Mesh different_mesh) : ArrayBuffe
   return new DataView(data);
 }
 
-AppState.prototype.load_user_file = function(data) : ArrayBuffer {
+AppState.prototype.load_user_file_old = function(data) : ArrayBuffer {
   //we save a json part and a binary part
   
   var uctx = new unpack_ctx();
@@ -520,9 +522,9 @@ AppState.prototype.load_user_file = function(data) : ArrayBuffer {
   }*/
 }
 
-function Context(view3d) {
-  this.view3d = view3d;
-  this.font = view3d.font
+function Context() {
+  this.view3d = g_app_state.active_view3d;
+  this.font = g_app_state.raster.font
   this.api = g_app_state.api;
   this.screen = g_app_state.screen;
   
@@ -600,7 +602,7 @@ ToolStack.prototype.undo_push = function(ToolOp tool) {
 ToolStack.prototype.undo = function() {
   if (this.undocur > 0) {
     this.undocur--;
-    this.undostack[this.undocur].undo(new Context(this.appstate.active_view3d));
+    this.undostack[this.undocur].undo(new Context());
     
     this.appstate.jobs.kill_owner_jobs(this.appstate.mesh);
   }
@@ -609,14 +611,14 @@ ToolStack.prototype.undo = function() {
 ToolStack.prototype.redo = function() {
   if (this.undocur < this.undostack.length) {
     var tool = this.undostack[this.undocur];
-    var ctx = new Context(this.appstate.active_view3d);
+    var ctx = new Context();
     
     tool.is_modal = false;
     
     if (!(tool.undoflag & UndoFlags.IGNORE_UNDO)) {
       tool.undo_pre(ctx);
     }    
-    tool.exec(new Context(this.appstate.active_view3d));
+    tool.exec(new Context());
     this.undocur++;
 
     this.appstate.jobs.kill_owner_jobs(this.appstate.mesh);
@@ -683,7 +685,7 @@ ToolStack.prototype.exec_tool = function(ToolOp tool) {
     }
   }
   
-  var ctx = new Context(this.appstate.active_view3d);
+  var ctx = new Context();
   
   console.log(tool);
   if (tool.can_call(ctx) == false) {

@@ -57,8 +57,7 @@ Area.prototype.on_resize = function(Array<int> newsize, Array<int> oldsize)
   this.size = newsize;
   
   /*recalculate root scissor box*/
-  pop_scissor(this.gl);
-  push_scissor(this.gl, [0, 0], newsize);
+  g_app_state.raster.reset_scissor_stack();
   
   for (var c in this.rows) {
     if (c.pos[1] > 30)
@@ -141,15 +140,15 @@ ScreenArea.fromSTRUCT = function(reader) {
     screens2[scr.constructor.name] = scr;
   }
   
-  ScreenArea.call(ob, ob.area, new Context(ob.area), ob.pos, ob.size, false);
+  ScreenArea.call(ob, ob.area, new Context(), ob.pos, ob.size, false);
   ob.editors = screens2;
   
   return ob;
 }
 
 ScreenArea.prototype.data_link = function(block, getblock, getblock_us) {
-  this.ctx = new Context(this.area);
-  this.area.ctx = new Context(this.area);
+  this.ctx = new Context();
+  this.area.ctx = new Context();
   
   for (var k in this.editors) {
     var area = this.editors[k];
@@ -263,7 +262,9 @@ ScreenArea.prototype.on_draw = function(WebGLRenderingContext gl)
   this.area.size[0] = this.size[0];
   this.area.size[1] = this.size[1];
   
+  g_app_state.raster.push_viewport(this.area.pos, this.area.size);
   this.area.on_draw(gl);
+  g_app_state.raster.pop_viewport();
   
   //prior(this, ScreenArea).on_draw.call(this, gl);
 }
@@ -1059,8 +1060,26 @@ Screen.prototype._on_mousemove = function(MouseEvent e)
   }
 }
 
+Screen.prototype.get_active_view3d = function() {
+  var view3d = undefined;
+  
+  if (this.active != undefined && this.active instanceof ScreenArea) {
+    if (this.active.area instanceof View3DHandler) {
+      view3d = this.active.area;
+    }
+  }
+  
+  return view3d;
+}
+
+Screen.prototype.handle_active_view3d = function() {
+  g_app_state.active_view3d = this.get_active_view3d();
+}
+
 Screen.prototype._on_mousedown = function(MouseEvent e)
 {
+  this.handle_active_view3d();
+  
   console.log("mdown", [e.x, e.y], e.button)
   this.mpos = [e.x, e.y];  
   for (var c in this.children) {
@@ -1074,6 +1093,8 @@ Screen.prototype._on_mousedown = function(MouseEvent e)
 
 Screen.prototype._on_mouseup = function(MouseEvent e)
 {
+  this.handle_active_view3d();
+  
   //console.log("mup", [e.x, e.y], e.button)
   this.mpos = [e.x, e.y];
   for (var c in this.children) {
@@ -1087,6 +1108,8 @@ Screen.prototype._on_mouseup = function(MouseEvent e)
 
 Screen.prototype._on_mousewheel = function(MouseEvent e, float delta)
 {
+  this.handle_active_view3d();
+  
   this.mpos = [e.x, e.y];
   for (var c in this.children) {
     c.mpos = new Vector2([e.x-c.pos[0], e.y-c.pos[1]])
@@ -1133,6 +1156,8 @@ Screen.prototype.handle_event_modifiers = function(KeyboardEvent event) {
 }
 
 Screen.prototype._on_keyup = function(KeyboardEvent event) {
+  this.handle_active_view3d();
+  
   switch (event.keyCode) {
     case charmap["Shift"]:
     case charmap["Alt"]:
@@ -1155,6 +1180,8 @@ Screen.prototype._on_keyup = function(KeyboardEvent event) {
 
 
 Screen.prototype._on_keydown = function(KeyboardEvent event) {
+  this.handle_active_view3d();
+  
   event = this.handle_event_modifiers(event);
   
   this.shift = event.shiftKey;
@@ -1165,7 +1192,9 @@ Screen.prototype._on_keydown = function(KeyboardEvent event) {
 }
 
 Screen.prototype.on_keyup = function(KeyboardEvent event) {
-  var ctx = new Context(g_app_state.active_view3d);
+  this.handle_active_view3d();
+  
+  var ctx = new Context();
   var ret = this.keymap.process_event(ctx, event);
   
   if (ret != undefined) {
@@ -1177,12 +1206,11 @@ Screen.prototype.on_keyup = function(KeyboardEvent event) {
 
 Screen.prototype.on_draw = function(WebGLRenderingContext gl)
 {
+  g_app_state.gl = gl;
+  g_app_state.raster.begin_draw(gl, this.pos, this.size);
+  
   //deal with delayed modifier key events
   var mod_delay = 60;
-  
-  if (this.active instanceof View3DHandler) {
-    g_app_state.active_view3d = this.active;
-  }
   
   for (var s in list(this.modup_time_ms)) {
     if (time_ms() - s[0] > mod_delay) {
@@ -1218,8 +1246,8 @@ Screen.prototype.on_draw = function(WebGLRenderingContext gl)
   /*recalculate root scissor box*/
   gl.enable(gl.SCISSOR_TEST);
   
-  reset_scissor_stack(this.gl);
-  push_scissor(this.gl, [0, 0], this.size);
+  g_app_state.raster.reset_scissor_stack();
+  g_app_state.raster.push_scissor([0, 0], this.size);
   
   if ((this.active instanceof ScreenArea) && this.active.area instanceof
       View3DHandler) 
@@ -1233,14 +1261,14 @@ Screen.prototype.on_draw = function(WebGLRenderingContext gl)
   }
   
   for (var c in this.children) {
-    push_scissor(gl, c.pos, c.size);
+    g_app_state.raster.push_scissor(c.pos, c.size);
     
     //only call draw for screenarea children
     if (c instanceof ScreenArea) {
       this.recalc_child_borders(c);
       c.on_draw(gl);
     }
-    pop_scissor(gl);
+    g_app_state.raster.pop_scissor();
   }
   
   if (time_ms() - this.last_tick > 200) { //(IsMobile ? 500 : 150)) {
@@ -1258,7 +1286,7 @@ Screen.prototype.on_draw = function(WebGLRenderingContext gl)
     this.modalhandler.on_draw(gl);
   }
   
-  pop_scissor(gl);
+  g_app_state.raster.pop_scissor();
   gl.disable(gl.SCISSOR_TEST);
 }
 
@@ -1272,7 +1300,7 @@ Screen.prototype.on_tick = function()
   if (this.modalhandler == null && 
       !g_app_state.session.is_logged_in) 
   {
-    login_dialog(new Context(g_app_state.active_view3d));
+    login_dialog(new Context());
   }
   
   if (this.session_timer.ready() && g_app_state.session.is_logged_in) 
@@ -1280,7 +1308,11 @@ Screen.prototype.on_tick = function()
     g_app_state.session.validate_session();
   }
   
-  prior(this, Screen).on_tick.call(this);
+  prior(this, Screen).on_tick.call(this, function(c) {
+    if (c instanceof ScreenArea && c.area instanceof View3DHandler) {
+      g_app_state.active_view3d = c.area;
+    }
+  });
 }
 
 Screen.prototype.on_resize = function(Array<int> newsize, Array<int> oldsize) 
@@ -1308,6 +1340,9 @@ Screen.prototype.on_resize = function(Array<int> newsize, Array<int> oldsize)
   this.snap_areas();
   
   for (var c in this.children) {
+    if (c instanceof ScreenArea && c.area instanceof View3DHandler)
+      g_app_state.active_view3d = c.area;
+    
     c.on_resize(newsize, oldsize);
   }
 }
@@ -1494,7 +1529,7 @@ Screen.prototype.toJSON = function() {
 Screen.prototype.data_link = function(block, getblock, getblock_us)
 {
   //have got to decouple context from View3DHandler
-  this.ctx = new Context(this.view3d);
+  this.ctx = new Context();
   
   for (var c in this.areas) {
     c.data_link(block, getblock, getblock_us);
@@ -1556,7 +1591,7 @@ function gen_screen(WebGLRenderingContext gl, View3DHandler view3d, int width, i
     view3d.size = [width, height]
     view3d.pos = [0, 0];
     
-    scr.ctx = new Context(view3d);
+    scr.ctx = new Context();
     scr.canvas = new UICanvas(view3d, [[0, 0], [width, height]]);
     
     scr.add(new ScreenArea(view3d, scr.ctx, view3d.pos, view3d.size));

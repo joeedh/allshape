@@ -2,7 +2,7 @@
 
 function MeshEditor(view3d) {
   var keymap = new KeyMap();
-  ObjectEditor.call(this, "Geometry", EditModes.GEOMETRY, DataTypes.MESH, keymap);
+  View3DEditor.call(this, "Geometry", EditModes.GEOMETRY, DataTypes.MESH, keymap);
   
   this.selectmode = MeshTypes.VERT;
   this.last_selectmode = 0;
@@ -26,7 +26,7 @@ function MeshEditor(view3d) {
   
   this.define_keymap();
 }
-inherit(MeshEditor, ObjectEditor);
+inherit(MeshEditor, View3DEditor);
 
 MeshEditor.prototype.on_area_inactive = function(view3d) {
   this.mesh.remove_callback(view3d);
@@ -57,7 +57,7 @@ MeshEditor.fromSTRUCT = function(reader) {
 }
 
 MeshEditor.prototype.data_link = function(block, getblock, getblock_us) {
-  this.ctx = new Context(this.view3d);
+  this.ctx = new Context();
   this.mesh = this.ctx.mesh;
   this.drawmats == this.view3d.drawmats;
   
@@ -106,7 +106,7 @@ MeshEditor.prototype.check_subsurf = function(Context ctx) {
 }
 
 MeshEditor.prototype.add_menu = function(view3d, mpos) {
-  this.ctx = new Context(view3d);
+  this.ctx = new Context();
   
   console.log("Add menu")
    
@@ -126,7 +126,7 @@ MeshEditor.prototype.draw_object = function(gl, view3d, object, is_active)
 {
   this.drawmats = view3d.drawmats;
   
-  this.ctx = new Context(view3d);
+  this.ctx = new Context();
   this.mesh = object.data;
   this.object = object;
   
@@ -186,7 +186,7 @@ MeshEditor.prototype.draw_object = function(gl, view3d, object, is_active)
 
 MeshEditor.prototype.build_sidebar1 = function(view3d)
 {
-  var ctx = new Context(view3d);
+  var ctx = new Context();
   var row = new RowFrame(ctx);
   
   row.size = [115, view3d.size[1]-50]
@@ -223,7 +223,7 @@ MeshEditor.prototype.build_sidebar1 = function(view3d)
 
 MeshEditor.prototype.build_bottombar = function(view3d)
 {
-  var ctx = new Context(view3d);
+  var ctx = new Context();
   var col = new ColumnFrame(ctx);
   
   col.draw_background = true;
@@ -398,7 +398,7 @@ MeshEditor.prototype.rightclick_common_ops = function() {
 
 MeshEditor.prototype.rightclick_menu_vert = function(event, view3d) {
   var ops = this.rightclick_common_ops();
-  var ctx = new Context(view3d);
+  var ctx = new Context();
   
   ops = ops.concat([
     "mesh.split_edges(edges=mesh_selected(e))",
@@ -414,7 +414,7 @@ MeshEditor.prototype.rightclick_menu_vert = function(event, view3d) {
 
 MeshEditor.prototype.rightclick_menu_edge = function(event, view3d) {
   var ops = this.rightclick_common_ops();
-  var ctx = new Context(view3d);
+  var ctx = new Context();
   
   ops = ops.concat([
     "mesh.split_edges(edges=mesh_selected(e))"
@@ -429,7 +429,7 @@ MeshEditor.prototype.rightclick_menu_edge = function(event, view3d) {
 
 MeshEditor.prototype.rightclick_menu_face = function(event, view3d) {
   var ops = this.rightclick_common_ops();
-  var ctx = new Context(view3d);
+  var ctx = new Context();
   
   ops = ops.concat(
   ["mesh.flip_normals(faces=mesh_selected(f))",
@@ -769,7 +769,7 @@ MeshEditor.prototype.findnearestface = function(Vector2 mpos) {
 
 MeshEditor.prototype.delete_menu = function(event) {
   var view3d = this.view3d;
-  var ctx = new Context(view3d);
+  var ctx = new Context();
   
   var selstr;
   if (this.selectmode == MeshTypes.VERT) selstr = "vert"

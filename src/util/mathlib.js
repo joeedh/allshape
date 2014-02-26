@@ -1009,3 +1009,64 @@ function mesh_find_tangent(mesh, viewvec, offvec, projmat, verts) //verts is opt
   
   return tanav;
 }
+
+function Mat4Stack() {
+  this.stack = []
+  this.matrix = new Matrix4();
+  this.matrix.makeIdentity();
+  this.update_func = undefined;
+}
+create_prototype(Mat4Stack);
+
+Mat4Stack.prototype.set_internal_matrix = function(Matrix4 mat, update_func) {
+  this.update_func = update_func;
+  this.matrix = mat;
+}
+
+Mat4Stack.prototype.reset = function(Matrix4 mat) {
+  this.matrix.load(mat);
+  this.stack = [];
+  
+  if (this.update_func != undefined)
+    this.update_func();
+}
+
+Mat4Stack.prototype.load = function(Matrix4 mat) {
+  this.matrix.load(mat);
+  if (this.update_func != undefined)
+    this.update_func();
+}
+
+Mat4Stack.prototype.multiply = function(Matrix4 mat) {
+  this.matrix.multiply(mat);
+  if (this.update_func != undefined)
+    this.update_func();
+}
+
+Mat4Stack.prototype.identity = function() {
+  this.matrix.loadIdentity();
+  if (this.update_func != undefined)
+    this.update_func();
+}
+
+//mat2 is optional
+Mat4Stack.prototype.push = function(mat2) {
+  this.stack.push(new Matrix4(this.matrix));
+  
+  if (mat2 != undefined) {
+    this.matrix.load(mat2);
+    
+    if (this.update_func != undefined)
+      this.update_func();
+  }
+}
+
+Mat4Stack.prototype.pop = function() {
+  var mat = this.stack.pop(this.stack.length-1);
+  this.matrix.load(mat);
+  
+  if (this.update_func != undefined)
+    this.update_func();
+  
+  return mat;
+}

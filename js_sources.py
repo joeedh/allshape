@@ -15,6 +15,7 @@ js_sources = [
 	"src/core/jobs.js",
 	"src/ui/font_out.js",
 	"src/core/ajax.js",
+  "src/core/raster.js",
 	"src/core/AppState.js",
 	"src/core/units.js",
 	"src/core/data_api.js",

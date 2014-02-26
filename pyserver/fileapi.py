@@ -582,7 +582,12 @@ class FileAPI_UploadChunk:
       status.file.close()
     #"""
     
-    status.file = open(status.realpath, "wb");
+    if r[0] == 0:
+      mode = "wb"
+    else:
+      mode = "ab"
+    
+    status.file = open(status.realpath, mode);
     status.file.seek(r[0]);
     status.file.write(buf);
     status.file.flush()

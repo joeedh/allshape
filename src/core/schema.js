@@ -358,9 +358,9 @@ STRUCT.prototype.parse_structs = function(buf) {
     //if struct does not exist anymore, load it into a dummy object
     if (!(stt.name in clsmap)) {
       console.log("WARNING: struct " + stt.name + " no longer exists.  will try to convert.");
-      var dummy = Object.create();
-      dummy.prototype = Object.create(Object.prototype());
-      dummy.STRUCT = this.fmt_struct(stt);
+      var dummy = Object.create(Object.prototype);
+      dummy.prototype = Object.create(Object.prototype);
+      dummy.STRUCT = STRUCT.fmt_struct(stt);
       dummy.fromSTRUCT = function(reader) {
         var obj = {};
         reader(obj);

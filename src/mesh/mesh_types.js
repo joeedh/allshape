@@ -33,16 +33,16 @@ Element.prototype.pack = function(Array<byte> data, StructPackFunc dopack) {
   pack_int(data, this.type);
   pack_int(data, this.eid);
   pack_int(data, this.flag);
-  pack_int(data, this.index);
+//  pack_int(data, this.index);
   this.gdata.pack(data);
 }
 
 Element.prototype.unpack = function(Array<byte> data, unpack_ctx uctx) {
   this.type = unpack_int(data, uctx);
   this.eid = unpack_int(data, uctx);
-  this.gdata.unpack(data, uctx);
+//  this.gdata.unpack(data, uctx);
   this.flag = unpack_int(data, uctx);
-  this.index = unpack_int(data, uctx);
+//  this.index = unpack_int(data, uctx);
 }
 
 //#$().String
@@ -113,7 +113,7 @@ Vertex.prototype.pack = function(Array<byte> data, StructPackFunc dopack) {
     pack_int(data, e.eid);
   }
   
-  pack_vec3(data, this.mapco);
+  //pack_vec3(data, this.mapco);
 }
 
 Vertex.prototype.unpack = function(ArrayBuffer data, unpack_ctx uctx) {
@@ -130,7 +130,7 @@ Vertex.prototype.unpack = function(ArrayBuffer data, unpack_ctx uctx) {
     this.edges.push(unpack_int(data, uctx));
   }
   
-  this.mapco = unpack_vec3(data, uctx);
+  //this.mapco = unpack_vec3(data, uctx);
 }
   
 Vertex.prototype.recalc_normal = function(Boolean redo_face_normals) {
@@ -451,7 +451,7 @@ Face.prototype.pack = function(Array<byte> data, StructPackFunc dopack) {
   pack_int(data, this.totvert);
   pack_vec3(data, this.no);
   pack_vec3(data, this.center);
-  pack_vec3(data, this.mapcenter);
+  //pack_vec3(data, this.mapcenter);
 
   pack_int(data, this.looplists.length);
   for (var lst in this.looplists) {
@@ -472,7 +472,7 @@ Face.prototype.unpack = function(ArrayBuffer data, unpack_ctx uctx) {
   this.totvert = unpack_int(data, uctx);
   this.no = unpack_vec3(data, uctx);
   this.center = unpack_vec3(data, uctx);
-  this.mapcenter = unpack_vec3(data, uctx);
+  //this.mapcenter = unpack_vec3(data, uctx);
   
   var lstlen = unpack_int(data, uctx);
   this.looplists = new GArray();
