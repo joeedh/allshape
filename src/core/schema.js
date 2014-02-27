@@ -1,5 +1,9 @@
 "use strict";
 
+//stupid statics
+var _static_envcode_null = ""
+var _tote=0, _cace=0, _compe=0;
+
 /*
 
 Okay.  The serialization system needs to do three things:
@@ -90,6 +94,15 @@ var SchemaTypes = Object.create({
 var SchemaTypeMap = {}
 for (var k in SchemaTypes) {
   SchemaTypeMap[SchemaTypes[k]] = k;
+}
+
+function gen_tabstr(t) {
+  var s = "";
+  for (var i=0; i<t; i++) {
+    s += "  ";
+  }
+  
+  return s;
 }
 
 function SchemaParser() {
@@ -332,221 +345,6 @@ function SchemaParser() {
 
 var schema_parse = SchemaParser();
 
-function STRUCT()
-{
-  this.idgen = new EIDGen();
-  
-  this.structs = {};
-  this.struct_cls = {};
-  this.struct_ids = {};
-  this.compiled_code = {};
-}
-create_prototype(STRUCT);
-
-STRUCT.prototype.parse_structs = function(buf) {
-  global defined_classes;
-  var clsmap = {}
-  
-  for (var i=0; i<defined_classes.length; i++) {
-    clsmap[defined_classes[i].name] = defined_classes[i];
-  }
-  
-  schema_parse.input(buf);
-  while (!schema_parse.at_end()) {
-    var stt = schema_parse.parse(undefined, false);
-    
-    //if struct does not exist anymore, load it into a dummy object
-    if (!(stt.name in clsmap)) {
-      console.log("WARNING: struct " + stt.name + " no longer exists.  will try to convert.");
-      var dummy = Object.create(Object.prototype);
-      dummy.prototype = Object.create(Object.prototype);
-      dummy.STRUCT = STRUCT.fmt_struct(stt);
-      dummy.fromSTRUCT = function(reader) {
-        var obj = {};
-        reader(obj);
-        
-        return obj;
-      }
-      dummy.name = stt.name;
-      dummy.prototype.name = dummy.name;
-      dummy.prototype.constructor = dummy;
-      
-      this.struct_cls[dummy.name] = dummy;
-      this.struct_cls[dummy.name] = stt;
-      
-      if (stt.id != -1)
-        this.struct_ids[stt.id] = stt;
-    } else {
-      this.struct_cls[stt.name] = clsmap[stt.name];
-      this.structs[stt.name] = stt;
-      if (stt.id != -1)
-        this.struct_ids[stt.id] = stt;
-    }
-    
-    var tok = schema_parse.peek()
-    while (tok != undefined && tok.value == "\n") {
-      tok = schema_parse.peek();
-    }
-  }  
-}
-
-STRUCT.prototype.add_struct = function(cls) {
-  var stt = schema_parse.parse(cls.STRUCT);
-  
-  if (stt.id == -1)
-    stt.id = this.idgen.gen_id();
-  
-  this.structs[cls.name] = stt;
-  this.struct_cls[cls.name] = cls;
-  this.struct_ids[stt.id] = stt;
-}
-
-STRUCT.prototype.get_struct_id = function(id) {
-  return this.struct_ids[id];
-}
-
-STRUCT.prototype.get_struct = function(name) {
-  if (!(name in this.structs)) {
-    console.trace();
-    throw new Error("Unknown struct " + name);
-  }
-  return this.structs[name];
-}
-
-STRUCT.prototype.get_struct_cls = function(name) {
-  if (!(name in this.struct_cls)) {
-    console.trace();
-    throw new Error("Unknown struct " + name);
-  }
-  
-  return this.struct_cls[name];
-}
-
-STRUCT.inherit = function(child, parent) {
-  var stt = schema_parse.parse(parent.STRUCT);
-  var code = child.name + "{\n" 
-  code += STRUCT.fmt_struct(stt, true);
-  
-  return code;
-}
-
-STRUCT.fmt_struct = function(stt, internal_only, no_helper_js) {
-  //var stt = schema_parse.parse(cls.STRUCT);
-  
-  if (internal_only == undefined)
-    internal_only = false;
-  if (no_helper_js == undefined)
-    no_helper_js = false;
-  
-  var s = ""
-  
-  if (!internal_only) {
-    s += stt.name
-    if (stt.id != -1)
-      s += " id=" + stt.id;
-    s += " {\n";
-  }
-  
-  var tab = "  ";
-  
-  function fmt_type(type) {
-    if (type.type == T_ARRAY || type.type == T_ITER) {
-      if (type.data.iname != "" && type.data.iname != undefined) {
-        return "array(" + type.data.iname + ", " + fmt_type(type.data.type) + ")";
-      } else {
-        return "array(" + fmt_type(type.data.type) + ")";
-      }
-    } else if (type.type == T_DATAREF) {
-      return "dataref(" + type.data + ")";
-    } else if (type.type == T_STATIC_STRING) {
-      return "static_string[" + type.data.maxlength + "]";
-    } else if (type.type == T_STRUCT) {
-      return type.data;
-    } else if (type.type == T_TSTRUCT) {
-      return "abstract(" + type.data + ")";
-    } else {
-      return SchemaTypeMap[type.type];
-    }
-  }
-  
-  var fields = stt.fields;
-  for (var i=0; i<fields.length; i++) {
-    var f = fields[i];
-    
-    s += tab + f.name + " : " + fmt_type(f.type);
-    if (!no_helper_js && f.get != undefined) {
-      s += " | " + f.get.trim();
-    }
-    s += ";\n";
-  }
-  
-  if (!internal_only)
-    s += "}";
-  return s;
-}
-
-var _static_envcode_null = ""
-var _tote=0, _cace=0, _compe=0;
-STRUCT.prototype._env_call = function(code, obj, env) {
-  var envcode = _static_envcode_null;
-  
-  _tote++;
-  
-  if (env != undefined) {
-    envcode = "";
-    
-    for (var i=0; i<env.length; i++) {
-      envcode = "var " + env[i][0] + " = env[" + i.toString() + "][1];\n" + envcode;
-    }
-  }
-  
-  var fullcode = ""
-  
-  if (envcode !== _static_envcode_null)
-    fullcode = envcode + code;
-  else
-    fullcode = code;
-  var func;
-  
-  if (!(fullcode in this.compiled_code)) {
-      var code2 = "func = function(obj, env) { " + envcode + "return " + code + "}";
-      
-      try {
-        eval(code2);
-      } catch (err) {
-        console.log(code2);
-        console.log(" ");
-        print_stack(err);
-        throw err;
-      }
-      
-      this.compiled_code[fullcode] = func;
-      _compe++;
-  } else {
-    func = this.compiled_code[fullcode];
-    _cace++;
-  }
-  
-  try {
-    return func(obj, env);
-  } catch (err) {
-      var code2 = "func = function(obj, env) { " + envcode + "return " + code + "}";
-      console.log(code2);
-      console.log(" ");
-      print_stack(err);
-      throw err;
-  }
-}
-
-function gen_tabstr(t) {
-  var s = "";
-  for (var i=0; i<t; i++) {
-    s += "  ";
-  }
-  
-  return s;
-}
-
 var _packdebug_tlvl = 0;
 var _do_packdebug = false;
 
@@ -734,140 +532,345 @@ function _st_pack_type(data, val, obj, thestruct, field, type) {
   _st_packers[field.type.type](data, val, obj, thestruct, field, type);
 }
 
-STRUCT.prototype.write_struct = function(data, obj, stt) {
-  function use_helper_js(field) {
-    if (field.type.type == T_ARRAY || field.type.type == T_ITER) {
-      return field.type.data.iname == undefined || field.type.data.iname == "";
-    }
-    return true;
-  }
-  
-  var fields = stt.fields;
-  var thestruct = this;
-  
-  for (var i=0; i<fields.length; i++) {
-    var f = fields[i];
-    var t1 = f.type;
-    var t2 = t1.type;
+class STRUCT {
+  constructor()
+  {
+    this.idgen = new EIDGen();
     
-    if (use_helper_js(f)) {
-      var val;
-      var type = t2;
+    this.structs = {};
+    this.struct_cls = {};
+    this.struct_ids = {};
+    this.compiled_code = {};
+  }
+
+  parse_structs(buf) {
+    global defined_classes;
+    var clsmap = {}
+    
+    for (var i=0; i<defined_classes.length; i++) {
+      clsmap[defined_classes[i].name] = defined_classes[i];
+    }
+    
+    schema_parse.input(buf);
+    while (!schema_parse.at_end()) {
+      var stt = schema_parse.parse(undefined, false);
       
-      if (f.get != undefined) {
-        val = thestruct._env_call(f.get, obj);
+      //if struct does not exist anymore, load it into a dummy object
+      if (!(stt.name in clsmap)) {
+        console.log("WARNING: struct " + stt.name + " no longer exists.  will try to convert.");
+        var dummy = Object.create(Object.prototype);
+        dummy.prototype = Object.create(Object.prototype);
+        dummy.STRUCT = STRUCT.fmt_struct(stt);
+        dummy.fromSTRUCT = function(reader) {
+          var obj = {};
+          reader(obj);
+          
+          return obj;
+        }
+        dummy.name = stt.name;
+        dummy.prototype.name = dummy.name;
+        dummy.prototype.constructor = dummy;
+        
+        this.struct_cls[dummy.name] = dummy;
+        this.struct_cls[dummy.name] = stt;
+        
+        if (stt.id != -1)
+          this.struct_ids[stt.id] = stt;
       } else {
-        val = obj[f.name];
+        this.struct_cls[stt.name] = clsmap[stt.name];
+        this.structs[stt.name] = stt;
+        if (stt.id != -1)
+          this.struct_ids[stt.id] = stt;
       }
       
-      _st_pack_type(data, val, obj, thestruct, f, t1);
-    } else { //if (t2 == T_ARRAY || t2 == T_ITER) {
-      var val = obj[f.name];
-      _st_pack_type(data, val, obj, thestruct, f, t1);
-    }
+      var tok = schema_parse.peek()
+      while (tok != undefined && tok.value == "\n") {
+        tok = schema_parse.peek();
+      }
+    }  
   }
-}
 
-STRUCT.prototype.write_object = function(data, obj) {
-  var cls = obj.constructor.name;
-  var stt = this.get_struct(cls);
-  this.write_struct(data, obj, stt);  
-}
-
-//uctx is a private, optional parameter
-STRUCT.prototype.read_object = function(data, cls, unpack_ctx uctx) {
-  var stt = this.structs[cls.name];
-  if (uctx == undefined)
-    uctx = new unpack_ctx();
+  add_struct(cls) {
+    var stt = schema_parse.parse(cls.STRUCT);
     
-  var thestruct = this;
-  
-  var unpack_funcs = {
-    T_INT : function(type) {
-      return unpack_int(data, uctx);
-    },
-    T_FLOAT : function(type) {
-      return unpack_float(data, uctx);
-    },
-    T_STRING : function(type) {
-      return unpack_string(data, uctx);
-    },
-    T_STATIC_STRING : function(type) {
-      return unpack_static_string(data, uctx, type.data.maxlength);
-    },
-    T_VEC2 : function(type) {
-      return unpack_vec2(data, uctx);
-    },
-    T_VEC3 : function(type) {
-      return unpack_vec3(data, uctx);
-    },
-    T_VEC4 : function(type) {
-      return unpack_vec4(data, uctx);
-    },
-    T_MAT4 : function(type) {
-      return unpack_mat4(data, uctx);
-    },
-    T_ARRAY : function(type) {
-      var len = unpack_int(data, uctx);
-      var arr = new Array(len);
-      
-      for (var i=0; i<len; i++) {
-        arr[i] = unpack_field(type.data.type);
-      }
-      
-      return arr;
-    },
-    T_ITER : function(type) {
-      var len = unpack_int(data, uctx);
-      var arr = new Array(len);
-      
-      for (var i=0; i<len; i++) {
-        arr[i] = unpack_field(type.data.type);
-      }
-      
-      return arr;
-    },
-    T_STRUCT : function(type) {
-      var cls2 = thestruct.get_struct_cls(type.data);
-      
-      return thestruct.read_object(data, cls2, uctx);
-    },
-    T_TSTRUCT : function(type) {
-      var id = unpack_int(data, uctx);
-      
-      if (!(id in thestruct.struct_ids)) {
-        console.trace();
-        console.log(thestruct.struct_ids);
-        throw new Error("Unknown struct type " + id + ".");
-      }
-      
-      var cls2 = thestruct.get_struct_id(id);
-      cls2 = thestruct.struct_cls[cls2.name];
-
-      return thestruct.read_object(data, cls2, uctx);
-    },
-    T_DATAREF : function(type) {
-      return unpack_dataref(data, uctx);
-    }
-  };
-  
-  function unpack_field(type) {
-    return unpack_funcs[type.type](type);
+    if (stt.id == -1)
+      stt.id = this.idgen.gen_id();
+    
+    this.structs[cls.name] = stt;
+    this.struct_cls[cls.name] = cls;
+    this.struct_ids[stt.id] = stt;
   }
-  
-  function load(obj) {
+
+  get_struct_id(id) {
+    return this.struct_ids[id];
+  }
+
+  get_struct(name) {
+    if (!(name in this.structs)) {
+      console.trace();
+      throw new Error("Unknown struct " + name);
+    }
+    return this.structs[name];
+  }
+
+  get_struct_cls(name) {
+    if (!(name in this.struct_cls)) {
+      console.trace();
+      throw new Error("Unknown struct " + name);
+    }
+    
+    return this.struct_cls[name];
+  }
+
+  static inherit(child, parent) {
+    var stt = schema_parse.parse(parent.STRUCT);
+    var code = child.name + "{\n" 
+    code += STRUCT.fmt_struct(stt, true);
+    
+    return code;
+  }
+
+  static fmt_struct(stt, internal_only, no_helper_js) {
+    //var stt = schema_parse.parse(cls.STRUCT);
+    
+    if (internal_only == undefined)
+      internal_only = false;
+    if (no_helper_js == undefined)
+      no_helper_js = false;
+    
+    var s = ""
+    
+    if (!internal_only) {
+      s += stt.name
+      if (stt.id != -1)
+        s += " id=" + stt.id;
+      s += " {\n";
+    }
+    
+    var tab = "  ";
+    
+    function fmt_type(type) {
+      if (type.type == T_ARRAY || type.type == T_ITER) {
+        if (type.data.iname != "" && type.data.iname != undefined) {
+          return "array(" + type.data.iname + ", " + fmt_type(type.data.type) + ")";
+        } else {
+          return "array(" + fmt_type(type.data.type) + ")";
+        }
+      } else if (type.type == T_DATAREF) {
+        return "dataref(" + type.data + ")";
+      } else if (type.type == T_STATIC_STRING) {
+        return "static_string[" + type.data.maxlength + "]";
+      } else if (type.type == T_STRUCT) {
+        return type.data;
+      } else if (type.type == T_TSTRUCT) {
+        return "abstract(" + type.data + ")";
+      } else {
+        return SchemaTypeMap[type.type];
+      }
+    }
+    
     var fields = stt.fields;
-    var flen = fields.length;
-    
-    for (var i=0; i<flen; i++) {
+    for (var i=0; i<fields.length; i++) {
       var f = fields[i];
-      var  val = unpack_field(f.type);
       
-      obj[f.name] = val;
+      s += tab + f.name + " : " + fmt_type(f.type);
+      if (!no_helper_js && f.get != undefined) {
+        s += " | " + f.get.trim();
+      }
+      s += ";\n";
+    }
+    
+    if (!internal_only)
+      s += "}";
+    return s;
+  }
+
+  _env_call(code, obj, env) {
+    var envcode = _static_envcode_null;
+    
+    _tote++;
+    
+    if (env != undefined) {
+      envcode = "";
+      
+      for (var i=0; i<env.length; i++) {
+        envcode = "var " + env[i][0] + " = env[" + i.toString() + "][1];\n" + envcode;
+      }
+    }
+    
+    var fullcode = ""
+    
+    if (envcode !== _static_envcode_null)
+      fullcode = envcode + code;
+    else
+      fullcode = code;
+    var func;
+    
+    if (!(fullcode in this.compiled_code)) {
+        var code2 = "func = function(obj, env) { " + envcode + "return " + code + "}";
+        
+        try {
+          eval(code2);
+        } catch (err) {
+          console.log(code2);
+          console.log(" ");
+          print_stack(err);
+          throw err;
+        }
+        
+        this.compiled_code[fullcode] = func;
+        _compe++;
+    } else {
+      func = this.compiled_code[fullcode];
+      _cace++;
+    }
+    
+    try {
+      return func(obj, env);
+    } catch (err) {
+        var code2 = "func = function(obj, env) { " + envcode + "return " + code + "}";
+        console.log(code2);
+        console.log(" ");
+        print_stack(err);
+        throw err;
     }
   }
-  
-  return cls.fromSTRUCT(load);
+
+  write_struct(data, obj, stt) {
+    function use_helper_js(field) {
+      if (field.type.type == T_ARRAY || field.type.type == T_ITER) {
+        return field.type.data.iname == undefined || field.type.data.iname == "";
+      }
+      return true;
+    }
+    
+    var fields = stt.fields;
+    var thestruct = this;
+    
+    for (var i=0; i<fields.length; i++) {
+      var f = fields[i];
+      var t1 = f.type;
+      var t2 = t1.type;
+      
+      if (use_helper_js(f)) {
+        var val;
+        var type = t2;
+        
+        if (f.get != undefined) {
+          val = thestruct._env_call(f.get, obj);
+        } else {
+          val = obj[f.name];
+        }
+        
+        _st_pack_type(data, val, obj, thestruct, f, t1);
+      } else { //if (t2 == T_ARRAY || t2 == T_ITER) {
+        var val = obj[f.name];
+        _st_pack_type(data, val, obj, thestruct, f, t1);
+      }
+    }
+  }
+
+  write_object(data, obj) {
+    var cls = obj.constructor.name;
+    var stt = this.get_struct(cls);
+    this.write_struct(data, obj, stt);  
+  }
+
+  //uctx is a private, optional parameter
+  read_object(data, cls, unpack_ctx uctx) {
+    var stt = this.structs[cls.name];
+    if (uctx == undefined)
+      uctx = new unpack_ctx();
+      
+    var thestruct = this;
+    
+    var unpack_funcs = {
+      T_INT : function(type) {
+        return unpack_int(data, uctx);
+      },
+      T_FLOAT : function(type) {
+        return unpack_float(data, uctx);
+      },
+      T_STRING : function(type) {
+        return unpack_string(data, uctx);
+      },
+      T_STATIC_STRING : function(type) {
+        return unpack_static_string(data, uctx, type.data.maxlength);
+      },
+      T_VEC2 : function(type) {
+        return unpack_vec2(data, uctx);
+      },
+      T_VEC3 : function(type) {
+        return unpack_vec3(data, uctx);
+      },
+      T_VEC4 : function(type) {
+        return unpack_vec4(data, uctx);
+      },
+      T_MAT4 : function(type) {
+        return unpack_mat4(data, uctx);
+      },
+      T_ARRAY : function(type) {
+        var len = unpack_int(data, uctx);
+        var arr = new Array(len);
+        
+        for (var i=0; i<len; i++) {
+          arr[i] = unpack_field(type.data.type);
+        }
+        
+        return arr;
+      },
+      T_ITER : function(type) {
+        var len = unpack_int(data, uctx);
+        var arr = new Array(len);
+        
+        for (var i=0; i<len; i++) {
+          arr[i] = unpack_field(type.data.type);
+        }
+        
+        return arr;
+      },
+      T_STRUCT : function(type) {
+        var cls2 = thestruct.get_struct_cls(type.data);
+        
+        return thestruct.read_object(data, cls2, uctx);
+      },
+      T_TSTRUCT : function(type) {
+        var id = unpack_int(data, uctx);
+        
+        if (!(id in thestruct.struct_ids)) {
+          console.trace();
+          console.log(thestruct.struct_ids);
+          throw new Error("Unknown struct type " + id + ".");
+        }
+        
+        var cls2 = thestruct.get_struct_id(id);
+        cls2 = thestruct.struct_cls[cls2.name];
+
+        return thestruct.read_object(data, cls2, uctx);
+      },
+      T_DATAREF : function(type) {
+        return unpack_dataref(data, uctx);
+      }
+    };
+    
+    function unpack_field(type) {
+      return unpack_funcs[type.type](type);
+    }
+    
+    function load(obj) {
+      var fields = stt.fields;
+      var flen = fields.length;
+      
+      for (var i=0; i<flen; i++) {
+        var f = fields[i];
+        var  val = unpack_field(f.type);
+        
+        obj[f.name] = val;
+      }
+    }
+    
+    return cls.fromSTRUCT(load);
+  }
 }
 
 var istruct = new STRUCT();

@@ -226,6 +226,7 @@ def do_rebuild(abspath):
   
   if abspath in db_depend:
     del db_depend[abspath]
+
     build_depend(abspath)
     
     if abspath not in db_depend:
@@ -233,8 +234,10 @@ def do_rebuild(abspath):
     
     for path2 in db_depend[abspath]:
       if path2 in db and safe_stat(path2) != db[path2]:
+        print("bla3")
         return True
       elif path2 not in db:
+        print("bla2", path2)
         return True
     
   return False
@@ -322,6 +325,7 @@ def main():
         if failed_ret(ret): #ret in [-1, 65280]:
           failed_files.append(p[1])
     procs = newprocs
+    time.sleep(0.25)
     
   if len(failed_files) > 0:
     print("build failure\n\n")
@@ -377,8 +381,7 @@ def aggregate(outpath="build/app.js"):
   "file" : "app.js",
   "sections" : [
   """
-  
-  si = 0
+
   for f in files:
     if not f[0].endswith(".js"): continue
     
@@ -390,24 +393,29 @@ def aggregate(outpath="build/app.js"):
     outfile.write(buf)
     outfile.write("\n")
     f2.close()
-    
-    smap = f[1] + ".map"
-    if si > 0:
-      sbuf += ",\n"
+  
+  if do_smaps:
+    si = 0
+    for f in files:
+      if not f[0].endswith(".js"): continue
+      
+      smap = f[1] + ".map"
+      if si > 0:
+        sbuf += ",\n"
 
-    line = si
-    col = 0
-    url = "/content/" + os.path.split(smap)[1]
+      line = si
+      col = 0
+      url = "/content/" + os.path.split(smap)[1]
 
-    f2 = open(smap, "r")
-    map = f2.read()
-    f2.close()
+      f2 = open(smap, "r")
+      map = f2.read()
+      f2.close()
 
-    sbuf += "{\"offset\": {\"line\":%d, \"column\":%d}, \"map\": %s}" % \
-          (line, col, map)
-    si += 1
+      sbuf += "{\"offset\": {\"line\":%d, \"column\":%d}, \"map\": %s}" % \
+            (line, col, map)
+      si += 1
 
-  sbuf += "]}\n"
+    sbuf += "]}\n"
   
   if do_smaps:
     outfile.write("//# sourceMappingURL=/content/app.js.map\n")

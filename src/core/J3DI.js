@@ -32,8 +32,9 @@ function initWebGL(String canvasName, ShaderProgram vshader,
                    ShaderProgram fshader, Array<String>attribs, 
                    Array<float>clearColor, float clearDepth) : WebGLRenderingContext
 {
-    var canvas = document.getElementById(canvasName);
-    attrs = {antialias: false};
+  global gl;
+  var canvas = document.getElementById(canvasName);
+  var attrs = {antialias: false};
     
     return gl = WebGLUtils.setupWebGL(canvas, attrs);
 }
@@ -189,6 +190,14 @@ function makeBoxMesh(WebGLRenderingContext ctx) : Mesh
     
     for (var v in mesh.verts) {
       mesh.verts.select(v, true);
+    }
+    
+    for (var e in mesh.edges) {
+      mesh.edges.select(e, true);
+    }
+    
+    for (var f in mesh.faces) {
+      mesh.faces.select(f, true);
     }
     
     mesh.api.consistent_windings();
@@ -418,10 +427,10 @@ function processLoadObj(req)
 
 function doLoadObj(obj, text)
 {
-    vertexArray = [ ];
-    normalArray = [ ];
-    textureArray = [ ];
-    indexArray = [ ];
+    var vertexArray = [ ];
+    var normalArray = [ ];
+    var textureArray = [ ];
+    var indexArray = [ ];
 
     var vertex = [ ];
     var normal = [ ];
@@ -624,7 +633,7 @@ function Framerate(id)
 
     this.renderTime = -1;
     this.framerates = [ ];
-    self = this;
+    var self = this;
     var fr = function() { self.updateFramerate() }
     setInterval(fr, this.framerateUpdateInterval);
     

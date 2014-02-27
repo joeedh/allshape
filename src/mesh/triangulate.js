@@ -1882,4 +1882,17 @@ function tris_to_quads(m, ts)
   
   return ret;
 }
+
+#ifdef WORKER_THREAD
+#include "src/util/workerutils.js"
+
+var tri_workers = {
+  "poly_fill" : function(data) {
+    return "yay";
+  }
+};
+
+var onmessage = define_worker_interface(tri_workers);
+#endif
+
 #endif

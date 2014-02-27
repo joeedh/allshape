@@ -382,7 +382,9 @@ def add_func_opt_code(result, typespace):
           }
         """, (name, p[0]));
         codelist.append(code)
-    
+      
+        p.parent.replace(p, IdentNode(p.val))
+        
     codelist.reverse()
     for code in codelist:
         node[1].prepend(code)

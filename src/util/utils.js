@@ -1,50 +1,9 @@
+"use strict";
+
 #ifndef EXPORT
 #define EXPORT
 #define EXPORT_FUNC(func)
 #endif
-
-//this actually ends up being a GArray
-var defined_classes = new Array();
-var defined_tests = new Array();
-
-function create_test(obj) {
-  defined_tests.push(obj);
-}
-
-var int _prototype_id_gen = 1
-function inherit(obj, parent) {
-  defined_classes.push(obj);
-  
-  obj.prototype = Object.create(parent.prototype);
-  obj.prototype.prior = parent.prototype;
-  obj.prototype.constructor = obj;
-  obj.prototype.__prototypeid__ = _prototype_id_gen++;
-  obj.prototype.__class__ = obj.name;
-  obj.prototype.prototype = obj.prototype;
-}
-EXPORT_FUNC(inherit)
-
-function create_prototype(obj) {
-  defined_classes.push(obj);
-  
-  obj.prototype.constructor = obj;
-  obj.prototype.prototype = obj.prototype;
-  obj.prototype.__prototypeid__ = _prototype_id_gen++;
-  obj.prototype.__class__ = obj.name;
-}
-EXPORT_FUNC(create_prototype)
-
-function prior(thisproto, obj) {
-  proto = obj.prototype;
-  thisproto = thisproto.prototype;
-  
-  while (proto.__prototypeid__ != thisproto.__prototypeid__) {
-    proto = proto.prior;
-  }
-  
-  return proto.prior;
-}
-EXPORT_FUNC(prior)
 
 function Iter() {
 }
@@ -58,7 +17,7 @@ create_prototype(Iter);
 CanIter.prototype.iterator = function() : Iter {
 }
 
-debug_int_1 = 0;
+var debug_int_1 = 0;
 function GArray<T>(Array<T> input) {
   Array<T>.call(this)
   
@@ -135,7 +94,7 @@ GArray.prototype.replace = function(T olditem, T newitem) { //ignore_existence d
 }
 
 //turn defined_classes into a GArray
-defined_classes = new GArray(defined_classes);
+var defined_classes = new GArray(defined_classes);
 
 /*
 this.pop = function() {
@@ -213,7 +172,7 @@ function list<T>(Iterator<T> iter) : GArray<T> {
 }
 EXPORT_FUNC(list)
 
-g_list = list;
+var g_list = list;
 
 function eid_list(GeoArrayIter<Element> iter) {
   GArray.call(this);
@@ -391,7 +350,7 @@ set.prototype.__iterator__ = function() : Iterator {
 }
 
 set.prototype.union = function(set<T> b) {
-  newset = new set<T>(this);
+  var newset = new set<T>(this);
   
   for (var T item in b) {
     newset.add(item);

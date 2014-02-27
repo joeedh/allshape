@@ -927,9 +927,6 @@ def parse_intern(data, create_logger=False, expand_loops=True, expand_generators
       traverse(result, ForInNode, expand_mozilla_forloops, use_scope=True)
     #combine_try_nodes(result);
   
-  if glob.g_add_opt_initializers:
-    add_func_opt_code(result, typespace)
-    
   #combine_try_nodes may have nested statementlists again, so better reflatten
   flatten_statementlists(result, typespace)
   
@@ -940,6 +937,9 @@ def parse_intern(data, create_logger=False, expand_loops=True, expand_generators
     flatten_statementlists(result, typespace)
     process_generators(result, typespace);
     flatten_statementlists(result, typespace)
+  
+  if glob.g_add_opt_initializers:
+    add_func_opt_code(result, typespace)
     
   debug_forloop_expansion = False
   if debug_forloop_expansion:

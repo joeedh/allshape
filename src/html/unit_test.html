@@ -605,29 +605,6 @@ function delattr(obj, attr) {
   delete obj[attr];
 }
 
-function __get_iter(obj)
-{
-  if (obj == undefined) {
-    console.trace();
-    print_stack();
-    throw new Error("Invalid iteration over undefined value")
-  }
-  
-  if (obj.__proto__.hasOwnProperty("__iterator__") || obj.hasOwnProperty("__iterator__")) {
-    return obj.__iterator__();
-  } else {
-    if (__use_Iterator) {
-      return Iterator(obj);
-    } else {
-      keys = []
-      for (var k in obj) {
-        keys.push(k)
-      }
-      return new arr_iter(keys);
-    }
-  }
-}
-
 function __get_iter2(obj)
 {
   if (obj.__proto__.hasOwnProperty("__iterator__") || obj.hasOwnProperty("__iterator__")) {
@@ -639,13 +616,6 @@ function __get_iter2(obj)
     }
     return new arr_iter(keys);
   }
-}
-
-try {
-  _tst = Iterator({});
-} catch (Error) {
-  __use_Iterator = false;
-  Iterator = __get_iter2;
 }
 
 /*
@@ -1143,7 +1113,7 @@ function toJSON_intern (ob, tlevel) {
     
     gl = {program : undefined, program2 : undefined};
     
-    g_app_state = new AppState(undefined, makeBoxMesh(), gl);
+    g_app_state = {}; //new AppState(undefined, makeBoxMesh(), gl);
     
     init_struct_packer();
     //do_unit_tests();

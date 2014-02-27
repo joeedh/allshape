@@ -410,9 +410,11 @@ class View3DHandler extends Area {
   do_select(event, mpos, view3d) {
     return this.editor.do_select(event, mpos, view3d);
   }
+  
   do_alt_select(event, mpos, view3d) {
     return this.editor.do_alt_select(event, mpos, view3d);
   }
+  
   tools_menu(event) {
     this.editor.tools_menu(event, this);
   }
@@ -591,6 +593,10 @@ class View3DHandler extends Area {
   }
 
   on_draw(WebGLRenderingContext gl, test) {
+    this.editor.shift = this.shift;
+    this.editor.alt = this.alt;
+    this.editor.ctrl = this.ctrl;
+    
     g_app_state.active_view3d = this;
     
     this.ctx = new Context();
@@ -687,9 +693,9 @@ class View3DHandler extends Area {
   }
 
   _on_keyup(KeyboardEvent event) {
-    this.shift = event.shiftKey;
-    this.alt = event.altKey;
-    this.ctrl = event.ctrlKey;
+    this.shift = this.editor.shift = event.shiftKey;
+    this.alt = this.editor.alt = event.altKey;
+    this.ctrl = this.editor.ctrl = event.ctrlKey;
     
     prior(View3DHandler, this)._on_keyup.call(this, event);
   }

@@ -16,7 +16,9 @@ from js_process_ast_parser_only import *
 
 precedence = (
   ("left", "COMMA"),
-  ("left", "ASSIGN", "ASSIGNPLUS", "ASSIGNMINUS", "ASSIGNDIVIDE", "ASSIGNTIMES", "ASSIGNBOR", "ASSIGNBAND", "ASSIGNBXOR"),
+  ("left", "ASSIGN", "ASSIGNLSHIFT", "ASSIGNRSHIFT", "ASSIGNPLUS",
+           "ASSIGNMINUS", "ASSIGNDIVIDE", "ASSIGNTIMES", "ASSIGNBOR",
+           "ASSIGNBAND", "ASSIGNBXOR"),
   ("left", "QEST", "COLON"),
   ("left", "BNEGATE"),
   ("left", "LAND", "LOR"),
@@ -820,6 +822,10 @@ def p_cmplx_assign(p):
                   | ASSIGNBOR 
                   | ASSIGNBAND 
                   | ASSIGNBXOR 
+                  | ASSIGNLSHIFT
+                  | ASSIGNRSHIFT
+                  | ASSIGNRRSHIFT
+                  | ASSIGNLLSHIFT
                   | ASSIGN
   '''
   set_parse_globals(p) 

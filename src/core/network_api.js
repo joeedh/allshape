@@ -150,3 +150,4 @@ NetState.prototype.on_active = function() {
 function NormalState() {
   NetState.call(this, NetStates.NORMAL);
 }
+

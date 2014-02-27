@@ -29,7 +29,7 @@ glob_cmd_short_override["g_expand_iterators"] = "nei"
 glob_cmd_short_override["g_harmony_iterators"] = "nhi"
 glob_cmd_short_override["g_refactor_mode"] = "rm"
 glob_cmd_short_override["g_refactor_classes"] = "rc"
-
+glob_cmd_short_override["g_add_opt_initializers"] = "nao"
 
 def argv_to_argline():
   s = ""

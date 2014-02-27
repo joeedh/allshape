@@ -6,44 +6,113 @@ function JobDestroyFunc(Joblet job);
 function JobStartFunc(Joblet job);
 function JobFinishFunc(Joblet job);
 
-function Joblet(Object owner, Iterator iter, 
+class ThreadIterator {  
+  constructor(worker) {
+    this.queue = [];
+    this.worker = worker;
+    this.iter = {value : undefined, done : false};
+    this.data = undefined;
+    
+    var this2 = this;
+    worker.onerror = function(event) {
+      console.log("worker error; event: ", event);
+      this2.iter.done = true;
+    }
+    
+    var this2 = this;
+    worker.onmessage = function(event) {
+      var data = event.data.evaluated()
+      
+      console.log(data);
+      
+      if (data == "{{terminate}}") {
+        this2.kill();
+        return;
+      }
+      
+      this2.queue.push(data);
+    }
+  }
+  
+  next() {
+    if (this.iter.done && this.poll()) {
+      this.data = this.get();
+    }
+    
+    return this.iter;
+  }
+  
+  send(msg) {
+    this.worker.postMessage(data);
+  }
+  
+  poll() {
+    return this.queue.length;
+  }
+  
+  get() {
+    if (this.queue.length === 0) 
+      return undefined;
+      
+    var msg = this.queue[0];
+    this.queue.shift();
+    
+    return msg;
+  }
+  
+  kill() {
+    this.iter.done = true;
+    this.worker.terminate();
+  }
+  
+} ThreadIterator;
+
+function worker_joblet(url, method, data) {
+  var worker = new Worker(url);
+  
+  worker.postMessage({method : method, data : data});
+  
+  var iter = new ThreadIterator(worker);  
+}
+
+class Joblet {
+  constructor(Object owner, Iterator iter, 
                JobDestroyFunc destroyer, int ival, 
                JobStartFunc start, JobFinishFunc finish)
-{ //ival is optional
-  if (ival == 0) {
-    ival = default_job_interval;
+  { //if ival is 0 or undefined, it use default_job_interval
+    if (ival == 0 || ival == undefined) {
+      ival = default_job_interval;
+    }
+    
+    if (destroyer == undefined) {
+      destroyer = function(job) { };
+    }
+    
+    this.start = start; //function, start(job)
+    this.finish = finish;
+    this.ival = ival;
+    this._kill = destroyer; //function, destroyer(job)
+    this.dead = false;
+    this.removed = false;
+    this.type = get_type_name(iter);
+    this.iter = iter;
+    this.owner = owner;
+    this.last_ms = time_ms(10);
+    this.time_mean = new movavg();
+    this._id = 0;
+    this.queued = false;
+  }
+
+  kill() {
+    this._kill(this);
   }
   
-  if (destroyer == undefined) {
-    destroyer = function(job) { };
+  start() {
+    this.iter = new this.type;
   }
-  
-  this.start = start; //function, start(job)
-  this.finish = finish;
-  this.ival = ival;
-  this._kill = destroyer; //function, destroyer(job)
-  this.dead = false;
-  this.removed = false;
-  this.type = get_type_name(iter);
-  this.iter = iter;
-  this.owner = owner;
-  this.last_ms = time_ms(10);
-  this.time_mean = new movavg();
-  this._id = 0;
-  this.queued = false;
-}
-create_prototype(Joblet);
-
-Joblet.prototype.kill = function() {
-  this._kill(this);
-}
-
-Joblet.prototype.start = function() {
-  this.iter = new this.type;
-}
-
-Joblet.prototype.__hash__ = function() : String {
-  return get_type_name(this) + this._id;
+  __hash__() : String {
+    return get_type_name(this) + this._id;
+  }
 }
 
 function JobManager() {

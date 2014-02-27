@@ -1042,12 +1042,7 @@ function Vector3(Array<float> vec)
   this[1] = vec[1];
   this[2] = vec[2];
 }
-
-//inherit function is defined in utils.js, which depends on this file
-Vector3.prototype = Object.create(Array<float>.prototype);
-Vector3.prototype.prior = Array.prototype
-Vector3.prototype.constructor = Vector3.prototype
-Vector3.prototype.constructor.name = "Vector3"
+inherit(Vector3, Array);
 
 Vector3.prototype.toJSON = function() {
   var arr = new Array(this.length);
@@ -1510,11 +1505,7 @@ function Vector2(Array<float> vec) {
   
   this.length = 2;
 }
-
-Vector2.prototype = Object.create(Array<float>.prototype);
-Vector2.prototype.constructor = Vector2.prototype
-Vector2.prototype.constructor.name = "Vector2"
-Vector2.prototype.prior = Array<float>.prototype;
+inherit(Vector2, Array);
 
 Vector2.prototype.toJSON = function() {
   var arr = new Array(this.length);
@@ -1695,6 +1686,7 @@ function Vector4(float x, float y, float z, float w)
     this.length = 4;
     this.load(x,y,z,w);
 }
+inherit(Vector4, Array);
 
 Vector4.prototype.toJSON = function() {
   var arr = new Array(this.length);
@@ -1870,10 +1862,7 @@ function Quat(float x, float y, float z, float w)
 {
   Vector4.call(this, x, y, z, w);
 }
-
-Quat.prototype = Object.create(Vector4.prototype);
-Quat.prototype.constructor = Quat.prototype;
-Quat.prototype.constructor.name = "Quat"
+inherit(Quat, Vector4);
 
 Quat.prototype.load = function(x,y,z,w)
 {

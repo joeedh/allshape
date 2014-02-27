@@ -258,7 +258,7 @@ AppState.prototype.set_mesh = function(Mesh m2) {
   data (of length data_length-4)
   
 */
-AppState.prototype.create_user_file_new = function(different_mesh) : ArrayBuffer {
+AppState.prototype.create_user_file_new = function(different_mesh, gen_dataview=true) : ArrayBuffer {
   var mesh = different_mesh != undefined ? different_mesh : this.mesh;
   
   function bheader(data, type, subtype) {
@@ -311,7 +311,10 @@ AppState.prototype.create_user_file_new = function(different_mesh) : ArrayBuffer
     }   
   }
   
-  return new DataView(new Uint8Array(data).buffer);
+  if (gen_dataview)
+    return new DataView(new Uint8Array(data).buffer);
+  else
+    return data;
 }
 
 AppState.prototype.do_versions = function(datalib, blocks, version)
