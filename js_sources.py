@@ -41,8 +41,8 @@ js_sources = [
 	"src/mesh/meshtools_loop.js",
 	"src/mesh/meshtools_create.js",
 
-	"src/view3d/trans_ops_special.js",
 	"src/view3d/trans_ops.js",
+	"src/view3d/trans_ops_special.js",
 	"src/view3d/fontutils.js",
 	"src/view3d/grid.js",
 	"src/view3d/draw.js",

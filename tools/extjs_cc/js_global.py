@@ -234,5 +234,6 @@ class Glob(AbstractGlob):
     g_harmony_iterators = True
     g_refactor_mode = False
     g_refactor_classes = False
+    g_add_opt_initializers = True
           
 glob = Glob()

@@ -1,70 +1,71 @@
 __td_last_startcos = [new Vector3()];
 
-function TransData(Context ctx) {
-  this.projmat = new Matrix4(ctx.view3d.drawmats.rendermat);
-  this.iprojmat = new Matrix4(this.projmat);
-  this.iprojmat.invert();
-  
-  this.mesh = ctx.mesh;
-  this.center = new Vector3([0, 0, 0]);
-  this.verts = new GArray<Vertex>();
-  this.startcos = new GArray<Vector3>();
-  this.ctx = ctx;
-  this.start_mpos = new Vector2(ctx.view3d.mpos);
-  this.faces = new set<Face>();
-  this.loops = new set<Face>();
-  
-  this.start_mpos[0] = this.start_mpos[0]/(ctx.view3d.size[0]/2) - 1.0;
-  this.start_mpos[1] = this.start_mpos[1]/(ctx.view3d.size[1]/2) - 1.0;
-  
-  var faces = this.faces;
-  var loops = this.loops;
-  
-  var i = 0;
-  this.startcos = __td_last_startcos;
-  var scos = this.startcos;
-  var is_static = false;
-  for (var v in this.mesh.verts.selected) {
-    v.td_sco.load(v.co);
+class TransData {
+  constructor(Context ctx) {
+    this.projmat = new Matrix4(ctx.view3d.drawmats.rendermat);
+    this.iprojmat = new Matrix4(this.projmat);
+    this.iprojmat.invert();
     
-    if ((v.flag & Flags.SELECT) == 0) continue;
-    this.center.add(v.co);
-    this.verts.push(v);
+    this.mesh = ctx.mesh;
+    this.center = new Vector3([0, 0, 0]);
+    this.verts = new GArray<Vertex>();
+    this.startcos = new GArray<Vector3>();
+    this.ctx = ctx;
+    this.start_mpos = new Vector2(ctx.view3d.mpos);
+    this.faces = new set<Face>();
+    this.loops = new set<Face>();
     
-    if (i < __td_last_startcos.length) {
-      scos[i].load(v.co);
-    } else {
-      scos.push(new Vector3(v.co));
+    this.start_mpos[0] = this.start_mpos[0]/(ctx.view3d.size[0]/2) - 1.0;
+    this.start_mpos[1] = this.start_mpos[1]/(ctx.view3d.size[1]/2) - 1.0;
+    
+    var faces = this.faces;
+    var loops = this.loops;
+    
+    var i = 0;
+    this.startcos = __td_last_startcos;
+    var scos = this.startcos;
+    var is_static = false;
+    for (var v in this.mesh.verts.selected) {
+      v.td_sco.load(v.co);
+      
+      if ((v.flag & Flags.SELECT) == 0) continue;
+      this.center.add(v.co);
+      this.verts.push(v);
+      
+      if (i < __td_last_startcos.length) {
+        scos[i].load(v.co);
+      } else {
+        scos.push(new Vector3(v.co));
+      }
+      
+      for (var l in v.loops) {
+        faces.add(l.f);
+        loops.add(l);
+      }
+      i++;
     }
     
-    for (var l in v.loops) {
-      faces.add(l.f);
-      loops.add(l);
-    }
-    i++;
+    this.loops = g_list<Loop>(this.loops);
+    
+    this.center.divideScalar(this.verts.length);
+    
+    this.scenter = new Vector3(this.center);
+    this.scenter.multVecMatrix(this.projmat);
+    
+    this.min = undefined : Vector3;
+    this.max = undefined : Vector3;
   }
-  
-  this.loops = g_list<Loop>(this.loops);
-  
-  this.center.divideScalar(this.verts.length);
-  
-  this.scenter = new Vector3(this.center);
-  this.scenter.multVecMatrix(this.projmat);
-  
-  this.min = undefined : Vector3;
-  this.max = undefined : Vector3;
-}
-create_prototype(TransData);
 
-TransData.prototype.calc_aabb = function() {
-  var mm = new MinMax(3);
-  
-  for (var v in this.verts) {
-    mm.minmax(v.co);
+  calc_aabb() {
+    var mm = new MinMax(3);
+    
+    for (var v in this.verts) {
+      mm.minmax(v.co);
+    }
+    
+    this.min = new Vector3(mm.min);
+    this.max = new Vector3(mm.max);
   }
-  
-  this.min = new Vector3(mm.min);
-  this.max = new Vector3(mm.max);
 }
 
 function TransformOp() {

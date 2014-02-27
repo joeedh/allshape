@@ -603,6 +603,7 @@ function TextDraw(pos, text, color, view3d, mat, spos, ssize, viewport, size) {
   this.size = size;
   this.transmat.translate(pos[0], pos[1], 0.0);
   this.transmat.scale(size, size, size);
+  this.raster = g_app_state.raster;
   
   this.destroy = function() {
     if (this.tdrawbuf != undefined)
@@ -613,7 +614,7 @@ function TextDraw(pos, text, color, view3d, mat, spos, ssize, viewport, size) {
   this.on_draw = function(gl) {
     gl.disableVertexAttribArray(4);
     if (this.tdrawbuf == undefined)
-      this.tdrawbuf = this.view3d.font.gen_text_buffers(gl, 0, 0, this.text, this.color, this.transmat, this.viewport);
+      this.tdrawbuf = this.raster.font.gen_text_buffers(gl, 0, 0, this.text, this.color, this.transmat, this.viewport);
     
     var spos, ssize;
     
@@ -639,7 +640,9 @@ function UICanvas(view3d, viewport) {
     this.viewport = [view3d.pos, view3d.size];
   else
     this.viewport = viewport;
-    
+  
+  this.raster = g_app_state.raster;
+  
   this.trilist = new TriList(view3d, this)
   this.view3d = view3d;
   this.trilist.view3d = view3d
@@ -758,7 +761,7 @@ UICanvas.prototype.textsize = function(text, size) {
   if (size == undefined)
     size = default_ui_font_size;
   
-  var box = this.view3d.font.calcsize(text);
+  var box = this.raster.font.calcsize(text);
   return [box[0]*size, box[1]*size];
 }
 

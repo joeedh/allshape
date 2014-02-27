@@ -340,10 +340,56 @@ def kill_bad_globals(node, typespace):
   
   sc = {}
   recurse(node, sc, sc, 0);
+
   
 from js_cc import js_parse
 from js_ast_match import ast_match
 
+def add_func_opt_code(result, typespace):
+  def visit_func(node):
+    if len(node) < 2:
+      #should we still insert opt initialization code
+      #in empty functions?  like if people want to write
+      #evil, hackish code like function(i=do_something()) {},
+      #which would turn into function(i) { if (i == undefined) do_something();}
+      #
+      #yeek.
+      
+      #print("Warning: function defined without any statements")
+      node.add(StatementList())
+    
+    #ensure we have a proper statement list
+    if type(node[1]) != StatementList:
+      sl = StatementList()
+      sl.add(node[1])
+      node.replace(node[1], sl)
+      
+    was_opt = False
+    codelist = []
+    
+    for p in node[0]:
+      is_opt = p[0].gen_js(0).strip() != "";
+      
+      if not is_opt and was_opt:
+        typespace.error("Cannot have required parameter after an optional one", node)
+        
+      name = p.val
+      if is_opt: 
+        was_opt = True
+        code = js_parse("""
+          if ($s1 == undefined) {
+            $s1 = $n2;
+          }
+        """, (name, p[0]));
+        codelist.append(code)
+    
+    codelist.reverse()
+    for code in codelist:
+        node[1].prepend(code)
+  
+  traverse(result, FunctionNode, visit_func)
+  flatten_statementlists(result, typespace)
+  
 typespace = None
 
 def traverse_files(ntype, func, use_depth=False, exclude=[], copy_children=False):
@@ -1032,5 +1078,3 @@ for k in js_ast.__dict__:
   except TypeError:
     continue
   node_types.add(k)
-
-  

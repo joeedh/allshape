@@ -58,15 +58,16 @@ ViewRotateOp.prototype.exec = function(ctx) {
   vec.sub(v1);
   
   perp = new Vector3([-vec[1], vec[0], 0.0]);
-  var q = new Quat()
-  q.axisAngleToQuat(perp, vec.vectorLength()*2)
+  var q = new Quat();
+  q.axisAngleToQuat(perp, vec.vectorLength()*2);
   mat = q.toMatrix();
   
-  newmat = new Matrix4(mat)
+  newmat = new Matrix4(mat);
   newmat.multiply(this.start_mat);
   
-  ctx.view3d.drawmats.cameramat = newmat
-  ctx.view3d.gen_rendermats()
+  ctx.view3d.drawmats.cameramat = newmat;
+  ctx.view3d.gen_rendermats();
+  ctx.view3d.on_view_change();
 }
 
 ViewRotateOp.prototype.on_mouseup = function(event) {
@@ -171,8 +172,9 @@ ViewPanOp.prototype.exec = function(ctx) {
     
   newmat.translate(vec);
   
-  ctx.view3d.drawmats.cameramat = newmat
-  ctx.view3d.gen_rendermats()
+  ctx.view3d.drawmats.cameramat = newmat;
+  ctx.view3d.gen_rendermats();
+  ctx.view3d.on_view_change();
 }
 
 ViewPanOp.prototype.on_mouseup = function(event) {

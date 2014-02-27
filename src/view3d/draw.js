@@ -735,52 +735,61 @@ function gen_mesh_render(WebGLRenderingContext ctx, Mesh mesh, ShaderProgram dra
   mesh.render.recalc = 0;
 }
 
-function ShaderProgram(WebGLRenderingContext gl, ShaderProgram vshader, 
-                       ShaderProgram fshader, Array<String> attribs) 
-{
- // create our shaders
-    var vertexShader = loadShader(gl, vshader);
-    var fragmentShader = loadShader(gl, fshader);
+class ShaderProgram {
+  constructor (WebGLRenderingContext gl, ShaderProgram vshader, 
+               ShaderProgram fshader, Array<String> attribs) 
+  {
+   // create our shaders
+      var vertexShader = loadShader(gl, vshader);
+      var fragmentShader = loadShader(gl, fshader);
+      this.uniforms = {}
+      
+      // Create the program object
+      var program = gl.createProgram();
 
-    // Create the program object
-    var program = gl.createProgram();
+      // Attach our two shaders to the program
+      gl.attachShader (program, vertexShader);
+      gl.attachShader (program, fragmentShader);
 
-    // Attach our two shaders to the program
-    gl.attachShader (program, vertexShader);
-    gl.attachShader (program, fragmentShader);
+      // Bind attributes
+      for (var i = 0; i < attribs.length; ++i)
+          gl.bindAttribLocation (program, i, attribs[i]);
 
-    // Bind attributes
-    for (var i = 0; i < attribs.length; ++i)
-        gl.bindAttribLocation (program, i, attribs[i]);
+      // Link the program
+      gl.linkProgram(program);
 
-    // Link the program
-    gl.linkProgram(program);
+      // Check the link status
+      var linked = gl.getProgramParameter(program, gl.LINK_STATUS);
+      if (!linked && !gl.isContextLost()) {
+          // something went wrong with the link
+          var error = gl.getProgramInfoLog (program);
+          log("Error in program linking:"+error);
 
-    // Check the link status
-    var linked = gl.getProgramParameter(program, gl.LINK_STATUS);
-    if (!linked && !gl.isContextLost()) {
-        // something went wrong with the link
-        var error = gl.getProgramInfoLog (program);
-        log("Error in program linking:"+error);
+          gl.deleteProgram(program);
+          gl.deleteProgram(fragmentShader);
+          gl.deleteProgram(vertexShader);
 
-        gl.deleteProgram(program);
-        gl.deleteProgram(fragmentShader);
-        gl.deleteProgram(vertexShader);
+          return null;
+      }
 
-        return null;
+      this.program = program;
+      this.normalmat = null;
+      
+      this.u_normalMatrixLoc = gl.getUniformLocation(program, "u_normalMatrix");
+      this.u_modelViewProjMatrixLoc =
+                  gl.getUniformLocation(program, "u_modelViewProjMatrix");
+
+      this.u_cameraMatrixLoc = gl.getUniformLocation(program, "u_cameraMatrix");
+  }
+  
+  uniformloc(gl, name) {
+    if (!(name in this.uniforms)) {
+      this.uniforms[name] = gl.getUniformLocation(this.program, name); 
     }
-
-    this.program = program;
-    this.normalmat = null;
     
-    this.u_normalMatrixLoc = gl.getUniformLocation(program, "u_normalMatrix");
-    this.u_modelViewProjMatrixLoc =
-                gl.getUniformLocation(program, "u_modelViewProjMatrix");
-
-    this.u_cameraMatrixLoc = gl.getUniformLocation(program, "u_cameraMatrix");
+    return this.uniforms[name];
+  }
 }
-
-create_prototype(ShaderProgram);
 
 function DrawMats(Matrix4 normalmat, Matrix4 cameramat, Matrix4 persmat) {
   this.normalmat = new Matrix4(normalmat);

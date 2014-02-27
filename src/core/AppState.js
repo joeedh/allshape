@@ -694,7 +694,6 @@ ToolStack.prototype.exec_tool = function(ToolOp tool) {
   
   var ctx = new Context();
   
-  console.log(tool);
   if (tool.can_call(ctx) == false) {
     console.trace()
     console.log("Can not call tool '" + tool.constructor.name + "'");

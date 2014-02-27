@@ -434,7 +434,7 @@ MeshEditor.prototype.rightclick_menu_face = function(event, view3d) {
   ops = ops.concat(
   ["mesh.flip_normals(faces=mesh_selected(f))",
    "mesh.dissolve_faces(faces=mesh_selected(f))",
-   "mesh.inset()"
+   "mesh.inset_transform(faces=mesh_selected(f))"
   ])
   
   /*
@@ -546,7 +546,7 @@ MeshEditor.prototype.findnearest_backbuf = function(Vector2 mpos, int type) {
   var dis = 0;
   var x, y, x2, y2;
   
-  var spiral = _get_spiral(size);
+  var spiral = get_spiral(size);
   for (var i=0; i<spiral.length; i++) {
     x = spiral[i][0];
     y = spiral[i][1];

@@ -72,10 +72,7 @@ Mesh.fromSTRUCT = function(unpacker) {
   
   unpacker(m);
   
-  m.render = new render();
-  m.render.drawprogram = gl.program; 
-  m.render.vertprogram = gl.program2;
-  
+  m.gen_render_struct();
   m.regen_render();
   
   var verts = m.verts;
@@ -93,22 +90,26 @@ Mesh.fromSTRUCT = function(unpacker) {
   var flen = faces.length;
   
   for (var i=0; i<vlen; i++) {
+    verts[i].sid = ibuf_idgen.gen_id();
     m.verts.push(verts[i], false);
   }
   
   for (var i=0; i<elen; i++) {
+    edges[i].sid = ibuf_idgen.gen_id();
     m.edges.push(edges[i], false);
   }
   
   for (var i=0; i<flen; i++) {
     var f = faces[i];
     
-    m.faces.push(f, false);
     for (var list in f.looplists) {
       for (var l in list) {
         loops[l.eid] = l;
       }
     }
+    
+    f.sid = ibuf_idgen.gen_id();
+    m.faces.push(f, false);
   }
   
   var eidmap = m.eidmap;
@@ -174,6 +175,16 @@ Mesh.prototype.__hash__ = function() : String {
 Mesh.prototype.remove_callback = function(owner)
 {
   this.event_users.remove(owner);
+}
+
+Mesh.prototype.gen_render_struct = function() {
+  var gl = g_app_state.gl;
+  this.render = new render();
+  
+  this.render.drawprogram = gl.program;
+  this.render.vertprogram = gl.program2;
+  
+  this.regen_render();
 }
 
 //callback is a function with args (owner, mesh, event),

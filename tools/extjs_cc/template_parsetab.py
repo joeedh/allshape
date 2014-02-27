@@ -5,9 +5,9 @@ _tabversion = '3.2'
 
 _lr_method = 'LALR'
 
-_lr_signature = b'V\x02\xbb\xb4\xf6\xc00\xf031\xc01f\xea\x16*'
+_lr_signature = b'\r\x15ik\x14\xc1\x00\x98\xa0\xa8\x80\x04#\nY*'
     
-_lr_action_items = {'INFERRED':([4,5,9,10,22,24,27,29,30,35,],[-65,8,8,-89,-90,8,8,-90,8,8,]),'INT':([4,5,9,10,22,24,27,29,30,35,],[-65,7,7,-89,-90,7,7,-90,7,7,]),'COMMA':([6,7,8,11,12,13,14,15,16,17,18,19,20,21,26,28,31,32,33,34,36,37,],[-80,-81,-87,-85,22,-75,-84,24,-83,-82,-48,-86,-91,-66,-79,-88,-50,-49,22,-92,-61,-51,]),'ID':([4,5,6,7,8,9,10,11,13,14,16,17,18,19,20,21,22,24,26,27,28,29,30,31,32,34,35,36,37,],[-65,13,-80,-81,-87,13,-89,-85,-75,-84,-83,-82,13,-86,13,-66,-90,13,-79,13,-88,-90,13,13,13,13,13,-61,13,]),'ASSIGN':([6,7,8,11,13,14,16,17,18,19,21,26,28,31,36,],[-80,-81,-87,-85,-75,-84,-83,-82,27,-86,-66,-79,-88,35,-61,]),'TLTHAN':([0,6,7,8,11,13,14,16,17,18,19,20,21,26,28,31,32,34,36,37,],[4,-80,-81,-87,-85,-75,-84,-83,-82,4,-86,4,-66,-79,-88,4,4,4,-61,4,]),'TYPEOF':([4,5,22,29,],[-65,10,10,10,]),'CHAR':([4,5,9,10,22,24,27,29,30,35,],[-65,11,11,-89,-90,11,11,-90,11,11,]),'DOUBLE':([4,5,9,10,22,24,27,29,30,35,],[-65,14,14,-89,-90,14,14,-90,14,14,]),'TGTHAN':([6,7,8,11,12,13,14,15,16,17,18,19,20,21,26,28,31,32,33,34,36,37,],[-80,-81,-87,-85,21,-75,-84,21,-83,-82,-48,-86,-91,-66,-79,-88,-50,-49,21,-92,-61,-51,]),'FLOAT':([4,5,9,10,22,24,27,29,30,35,],[-65,16,16,-89,-90,16,16,-90,16,16,]),'SHORT':([4,5,9,10,22,24,27,29,30,35,],[-65,17,17,-89,-90,17,17,-90,17,17,]),'BYTE':([4,5,9,10,22,24,27,29,30,35,],[-65,19,19,-89,-90,19,19,-90,19,19,]),'$end':([1,2,3,21,23,25,],[-64,0,-63,-66,-62,-52,]),}
+_lr_action_items = {'BYTE':([2,3,8,14,22,24,26,29,30,36,],[11,-65,-89,11,-90,11,-90,11,11,11,]),'DOUBLE':([2,3,8,14,22,24,26,29,30,36,],[7,-65,-89,7,-90,7,-90,7,7,7,]),'ASSIGN':([7,9,10,11,12,13,16,17,18,19,21,23,25,33,35,],[-84,-75,-83,-86,24,-80,-87,-85,-81,-82,-66,-88,-79,36,-61,]),'FLOAT':([2,3,8,14,22,24,26,29,30,36,],[10,-65,-89,10,-90,10,-90,10,10,10,]),'TGTHAN':([6,7,9,10,11,12,13,15,16,17,18,19,21,23,25,27,31,32,33,34,35,37,],[21,-84,-75,-83,-86,-48,-80,21,-87,-85,-81,-82,-66,-88,-79,-91,-49,21,-50,-92,-61,-51,]),'TYPEOF':([2,3,22,26,],[8,-65,8,8,]),'COMMA':([6,7,9,10,11,12,13,15,16,17,18,19,21,23,25,27,31,32,33,34,35,37,],[22,-84,-75,-83,-86,-48,-80,29,-87,-85,-81,-82,-66,-88,-79,-91,-49,22,-50,-92,-61,-51,]),'INFERRED':([2,3,8,14,22,24,26,29,30,36,],[16,-65,-89,16,-90,16,-90,16,16,16,]),'CHAR':([2,3,8,14,22,24,26,29,30,36,],[17,-65,-89,17,-90,17,-90,17,17,17,]),'$end':([1,4,5,20,21,28,],[0,-63,-64,-62,-66,-52,]),'ID':([2,3,7,8,9,10,11,12,13,14,16,17,18,19,21,22,23,24,25,26,27,29,30,31,33,34,35,36,37,],[9,-65,-84,-89,-75,-83,-86,9,-80,9,-87,-85,-81,-82,-66,-90,-88,9,-79,-90,9,9,9,9,9,9,-61,9,9,]),'INT':([2,3,8,14,22,24,26,29,30,36,],[18,-65,-89,18,-90,18,-90,18,18,18,]),'SHORT':([2,3,8,14,22,24,26,29,30,36,],[19,-65,-89,19,-90,19,-90,19,19,19,]),'TLTHAN':([0,7,9,10,11,12,13,16,17,18,19,21,23,25,27,31,33,34,35,37,],[3,-84,-75,-83,-86,3,-80,-87,-85,-81,-82,-66,-88,-79,3,3,3,3,-61,3,]),}
 
 _lr_action = { }
 for _k, _v in _lr_action_items.items():
@@ -16,7 +16,7 @@ for _k, _v in _lr_action_items.items():
       _lr_action[_x][_k] = _y
 del _lr_action_items
 
-_lr_goto_items = {'id_var_type':([5,9,18,20,24,27,30,31,32,34,35,37,],[6,6,26,26,6,6,6,26,26,26,6,26,]),'template_ref_validate':([0,],[1,]),'template_validate':([0,],[2,]),'templatedeflist':([5,],[15,]),'typeof_opt':([5,22,29,],[9,30,9,]),'var_type':([5,9,24,27,30,35,],[18,20,31,32,34,37,]),'template':([0,],[3,]),'gthan_restrict':([12,15,33,],[23,25,36,]),'template_ref':([18,20,31,32,34,37,],[28,28,28,28,28,28,]),'simple_templatedeflist':([5,29,],[12,33,]),'lthan_restrict':([0,18,20,31,32,34,37,],[5,29,29,29,29,29,29,]),}
+_lr_goto_items = {'gthan_restrict':([6,15,32,],[20,28,35,]),'templatedeflist':([2,],[15,]),'template_validate':([0,],[1,]),'lthan_restrict':([0,12,27,31,33,34,37,],[2,26,26,26,26,26,26,]),'simple_templatedeflist':([2,26,],[6,32,]),'template_ref':([12,27,31,33,34,37,],[23,23,23,23,23,23,]),'var_type':([2,14,24,29,30,36,],[12,27,31,33,34,37,]),'id_var_type':([2,12,14,24,27,29,30,31,33,34,36,37,],[13,25,13,13,25,13,13,25,25,25,13,25,]),'typeof_opt':([2,22,26,],[14,30,14,]),'template':([0,],[4,]),'template_ref_validate':([0,],[5,]),}
 
 _lr_goto = { }
 for _k, _v in _lr_goto_items.items():
@@ -146,10 +146,10 @@ _lr_productions = [
   ('class_element_list -> class_element_list class_element','class_element_list',2,'p_class_element_list','c:\\dev\\allshape\\tools\\extjs_cc\\js_parse.py',943),
   ('class_element -> method_def','class_element',1,'p_class_element','c:\\dev\\allshape\\tools\\extjs_cc\\js_parse.py',953),
   ('class_element -> STATIC method_def','class_element',2,'p_class_element','c:\\dev\\allshape\\tools\\extjs_cc\\js_parse.py',954),
-  ('method -> ID LPAREN funcdeflist RPAREN LBRACKET statementlist_opt RBRACKET','method',7,'p_method','c:\\dev\\allshape\\tools\\extjs_cc\\js_parse.py',964),
+  ('method -> ID LPAREN funcdeflist RPAREN func_type_opt LBRACKET statementlist_opt RBRACKET','method',8,'p_method','c:\\dev\\allshape\\tools\\extjs_cc\\js_parse.py',964),
   ('method_def -> method','method_def',1,'p_method_def','c:\\dev\\allshape\\tools\\extjs_cc\\js_parse.py',978),
-  ('method_def -> ID ID LPAREN RPAREN LBRACKET statementlist_opt RBRACKET','method_def',7,'p_method_def','c:\\dev\\allshape\\tools\\extjs_cc\\js_parse.py',979),
-  ('method_def -> ID ID LPAREN setter_param_list RPAREN LBRACKET statementlist_opt RBRACKET','method_def',8,'p_method_def','c:\\dev\\allshape\\tools\\extjs_cc\\js_parse.py',980),
+  ('method_def -> ID ID LPAREN RPAREN func_type_opt LBRACKET statementlist_opt RBRACKET','method_def',8,'p_method_def','c:\\dev\\allshape\\tools\\extjs_cc\\js_parse.py',979),
+  ('method_def -> ID ID LPAREN setter_param_list RPAREN func_type_opt LBRACKET statementlist_opt RBRACKET','method_def',9,'p_method_def','c:\\dev\\allshape\\tools\\extjs_cc\\js_parse.py',980),
   ('setter_param_list -> ID','setter_param_list',1,'p_setter_param_list','c:\\dev\\allshape\\tools\\extjs_cc\\js_parse.py',1007),
   ('template_ref_opt -> template_ref','template_ref_opt',1,'p_template_ref_opt','c:\\dev\\allshape\\tools\\extjs_cc\\js_parse.py',1014),
   ('template_ref_opt -> <empty>','template_ref_opt',0,'p_template_ref_opt','c:\\dev\\allshape\\tools\\extjs_cc\\js_parse.py',1015),

@@ -154,7 +154,10 @@ function api_define_ops() {
     },
     
     "mesh.inset": function(ctx, args) {
-      return ctx.view3d.tools_define["inset"](ctx);
+      if (!("faces" in args))
+        throw TinyParserError;
+      
+      return new MeshToolOp(new InsetRegionsOp(args["faces"]))
     },
     
     "mesh.vertsmooth": function(ctx, args) {

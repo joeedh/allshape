@@ -888,8 +888,6 @@ def p_class(p):
   for n in tail[1]:
     cls.add(n)
   
-  print(p[3])
-  
   p[0] = expand_harmony_class(cls)
   
 def p_exprclass(p):
@@ -961,11 +959,11 @@ def p_class_element(p):
     p[0].is_static = True
 
 def p_method(p):
-  '''method : ID LPAREN funcdeflist RPAREN LBRACKET statementlist_opt RBRACKET'''
+  '''method : ID LPAREN funcdeflist RPAREN func_type_opt LBRACKET statementlist_opt RBRACKET'''
   
   name = p[1]
   params = p[3]
-  statementlist = p[6]
+  statementlist = p[7]
   
   if statementlist == None:
     statementlist = StatementList()
@@ -973,29 +971,35 @@ def p_method(p):
   p[0] = MethodNode(name)
   p[0].add(params)  
   p[0].add(statementlist)
-  
+  if p[5] != None:
+    p[0].type = p[5]
+    
 def p_method_def(p):
   #I don't want to make get/set exclusive parse tokens,
   #so I'm going to enforce that here in the production function.
   
   '''method_def : method
-                | ID ID LPAREN RPAREN LBRACKET statementlist_opt RBRACKET
-                | ID ID LPAREN setter_param_list RPAREN LBRACKET statementlist_opt RBRACKET
+                | ID ID LPAREN RPAREN func_type_opt LBRACKET statementlist_opt RBRACKET
+                | ID ID LPAREN setter_param_list RPAREN func_type_opt LBRACKET statementlist_opt RBRACKET
   '''
   
   if len(p) == 2:
     p[0] = p[1]
-  elif p[1] == "get" and len(p) == 8:
+  elif p[1] == "get" and len(p) == 9:
     name = p[2]
     p[0] = MethodGetter(name)
-    if p[6] == None: p[6] = StatementList()
-    p[0].add(p[6])
-  elif p[1] == "set" and len(p) == 9:
+    if p[7] == None: p[7] = StatementList()
+    p[0].add(p[7])
+    if p[5] != None:
+      p[0].type = p[5]
+  elif p[1] == "set" and len(p) == 10:
     name = p[2]
     p[0] = MethodSetter(name)
     p[0].add(p[4])
-    if p[7] == None: p[7] = StatementList()
-    p[0].add(p[7])
+    if p[8] == None: p[8] = StatementList()
+    p[0].add(p[8])
+    if p[6] != None:
+      p[0].type = p[6]
   else:
     glob.g_error = True
     glob.g_error_pre = p

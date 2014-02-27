@@ -866,10 +866,10 @@ function subsurf_render(gl, view3d, ss_mesh, mesh, drawmats, draw_overlay)
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, ss_mesh.render.ss_tex);
     
-    gl.uniform1i(gl.getUniformLocation(ssprogram.program, "sampler2d"), 0);
-    gl.uniform1i(gl.getUniformLocation(ssprogram.program, "util_sampler2d"), 1);
-    gl.uniform1f(gl.getUniformLocation(ssprogram.program, "steps"), ss_mesh.render.ss_steps);
-    gl.uniform1f(gl.getUniformLocation(ssprogram.program, "data_size"), ss_mesh.render.ss_tex_size);
+    gl.uniform1i(ssprogram.uniformloc(gl, "sampler2d"), 0);
+    gl.uniform1i(ssprogram.uniformloc(gl, "util_sampler2d"), 1);
+    gl.uniform1f(ssprogram.uniformloc(gl,  "steps"), ss_mesh.render.ss_steps);
+    gl.uniform1f(ssprogram.uniformloc(gl, "data_size"), ss_mesh.render.ss_tex_size);
   }
   
   bind_sstext(program);
@@ -895,14 +895,13 @@ function subsurf_render(gl, view3d, ss_mesh, mesh, drawmats, draw_overlay)
 
   // Bind the index array
   var i = 0;
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ss_mesh.render.indexbuf);
+  
   for (var f in ss_mesh.faces) {
     var clr = get_element_color(f.old_face, mesh.faces.highlight, true, true);
-    gl.uniform4fv(gl.getUniformLocation(program.program, "face_color"), clr);
-    gl.uniform1f(gl.getUniformLocation(program.program, "patch1"), i);
-    
-    gl.uniform1f(gl.getUniformLocation(program.program, "patch1"), i);
+    gl.uniform4fv(program.uniformloc(gl, "face_color"), clr);
+    gl.uniform1f(program.uniformloc(gl, "patch1"), i);
       
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ss_mesh.render.indexbuf);
     gl.drawElements(gl.TRIANGLES, ss_mesh.render.numIndices, gl.UNSIGNED_SHORT, 0);
          
     i += 1;
@@ -923,7 +922,7 @@ function subsurf_render(gl, view3d, ss_mesh, mesh, drawmats, draw_overlay)
     var act = mesh.faces.highlight;
     set_highlight_uniforms(gl, act, program);
     
-    gl.uniform1f(gl.getUniformLocation(program.program, "alpha_mul"), alpha_mul);
+    gl.uniform1f(program.uniformloc(gl, "alpha_mul"), alpha_mul);
     
     /*draw curved edges*/
     i = 0;
@@ -935,8 +934,8 @@ function subsurf_render(gl, view3d, ss_mesh, mesh, drawmats, draw_overlay)
         var clr = get_element_color(f.old_edge, mesh.edges.highlight, false, true);
       }
       
-      gl.uniform4fv(gl.getUniformLocation(program.program, "face_color"), clr);
-      gl.uniform1f(gl.getUniformLocation(program.program, "patch1"), i);
+      gl.uniform4fv(program.uniformloc(gl, "face_color"), clr);
+      gl.uniform1f(program.uniformloc(gl, "patch1"), i);
         
       gl.drawArrays(gl.LINE_STRIP, 0, ss_mesh.render.ss_steps);
       i += 1;
@@ -961,8 +960,6 @@ function subsurf_render(gl, view3d, ss_mesh, mesh, drawmats, draw_overlay)
     gl.disable(gl.BLEND);
     gl.enable(gl.DEPTH_TEST);
   }
-  
-  
 }
 
 
@@ -980,10 +977,10 @@ function subsurf_selbuf_render(gl, ss_mesh, mesh, drawmats, typemask)
   gl.activeTexture(gl.TEXTURE0);
   gl.bindTexture(gl.TEXTURE_2D, ss_mesh.render.ss_tex);
   
-  gl.uniform1i(gl.getUniformLocation(program.program, "sampler2d"), 0);
-  gl.uniform1i(gl.getUniformLocation(program.program, "util_sampler2d"), 1);
-  gl.uniform1f(gl.getUniformLocation(program.program, "steps"), ss_mesh.render.ss_steps);
-  gl.uniform1f(gl.getUniformLocation(program.program, "data_size"), ss_mesh.render.ss_tex_size);
+  gl.uniform1i(program.uniformloc(gl, "sampler2d"), 0);
+  gl.uniform1i(program.uniformloc(gl, "util_sampler2d"), 1);
+  gl.uniform1f(program.uniformloc(gl, "steps"), ss_mesh.render.ss_steps);
+  gl.uniform1f(program.uniformloc(gl, "data_size"), ss_mesh.render.ss_tex_size);
   
   set_light_uniform(gl, program, drawmats);
   
@@ -1016,8 +1013,8 @@ function subsurf_selbuf_render(gl, ss_mesh, mesh, drawmats, typemask)
     for (var f in ss_mesh.faces) {
       pack_index(f.old_face.sid+1, clr, 0);
       
-      gl.uniform4fv(gl.getUniformLocation(program.program, "face_color"), clr);
-      gl.uniform1f(gl.getUniformLocation(program.program, "patch1"), i);
+      gl.uniform4fv(program.uniformloc(gl, "face_color"), clr);
+      gl.uniform1f(program.uniformloc(gl, "patch1"), i);
         
       gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ss_mesh.render.indexbuf);
       gl.drawElements(gl.TRIANGLES, ss_mesh.render.numIndices, gl.UNSIGNED_SHORT, 0);
@@ -1040,8 +1037,8 @@ function subsurf_selbuf_render(gl, ss_mesh, mesh, drawmats, typemask)
       
       pack_index(f.old_edge.sid+1, clr, 0);
       
-      gl.uniform4fv(gl.getUniformLocation(program.program, "face_color"), clr);
-      gl.uniform1f(gl.getUniformLocation(program.program, "patch1"), i);
+      gl.uniform4fv(program.uniformloc(gl, "face_color"), clr);
+      gl.uniform1f(program.uniformloc(gl, "patch1"), i);
         
       gl.drawArrays(gl.LINE_STRIP, 0, ss_mesh.render.ss_steps);
       i++;

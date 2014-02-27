@@ -121,7 +121,6 @@ DataLib.prototype.add = function(block, set_id) {
   var name = this.gen_name(block, block.name);
   block.name = name;
   
-  console.log("YAYAY");
   if (block.lib_id == -1) {
     block.lib_id = this.idgen.gen_id();
   } else {
