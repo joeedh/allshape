@@ -114,6 +114,7 @@ tokens = (
    "ASSIGNBOR",
    "ASSIGNBAND",
    "ASSIGNBXOR",
+   
    "ASSIGNLSHIFT",
    "ASSIGNRSHIFT",
    "ASSIGNRRSHIFT",

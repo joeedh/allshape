@@ -1,48 +1,67 @@
-DataPathTypes = {PROP: 0, STRUCT: 1};
+var DataPathTypes = {PROP: 0, STRUCT: 1};
+var DataFlags = {NO_CACHE : 1, RECALC_CACHE : 2};
 
-TinyParserError = {"TinyParserError":0};
+var TinyParserError = {"TinyParserError":0};
 
-function DataPath(prop, name, path, dest_is_prop, use_path) { //dest_is_prop is optional, defaults to false
-  if (dest_is_prop == undefined)
-    dest_is_prop = false;
-  if (use_path == undefined) 
-    use_path = true;
-  
-  this.dest_is_prop = dest_is_prop
-  this.type = dest_is_prop ? DataPathTypes.PROP : DataPathTypes.STRUCT;
-  
-  this.name = name
-  this.data = prop;
-  this.path = path;
-  this.update = undefined : Function;
-  
-  this.use_path = use_path;
-}
-
-create_prototype(DataPath);
-
-function DataStructIter(s) {
-  this.ret = {done : false, value : undefined};
-  this.cur = 0;
-  
-  this.strct = s;
-  this.value = undefined;
-  
-  this.__iterator__ = function() { return this; }
-  
-  this.reset = function() {
-    this.cur = 0;
-    this.ret = {done : false, value : undefined};
+class DataPath {
+  constructor(prop, name, path, dest_is_prop, use_path, flag=0) { //dest_is_prop is optional, defaults to false
+    if (dest_is_prop == undefined)
+      dest_is_prop = false;
+    if (use_path == undefined) 
+      use_path = true;
+    
+    this.flag = flag;
+    
+    this.dest_is_prop = dest_is_prop
+    this.type = dest_is_prop ? DataPathTypes.PROP : DataPathTypes.STRUCT;
+    
+    this.name = name
+    this.data = prop;
+    this.path = path;
+    this.update = undefined : Function;
+    
+    this.use_path = use_path;
+    this.parent = undefined;
   }
   
-  this.next = function() {
+  cache_good() {
+    var p = this;
+    
+    while (p != undefined) {
+      if (p.flag & DataFlags.RECALC_CACHE)
+        return false;
+      p = p.parent;
+    }
+    
+    return true;
+  }
+}
+
+class DataStructIter {
+  constructor(s) {
+    this.ret = {done : false, value : undefined}; //cached_iret();
+    this.cur = 0;
+    
+    this.strct = s;
+    this.value = undefined;
+  }
+  
+  __iterator__() { return this; }
+  
+  reset() {
+    this.cur = 0;
+    this.ret.done = false;
+    this.ret.value = undefined;
+  }
+  
+  next() {
     if (this.cur >= this.strct.paths.length) {
       var ret = this.ret;
       
       this.cur = 0;
       
       ret.done = true;
-      this.ret = {done : false, value : undefined};
+      this.ret = {done : false, value : undefined}; //cached_iret();
       
       return ret;
     }
@@ -55,59 +74,151 @@ function DataStructIter(s) {
   }
 }
 
-function DataStruct(paths) {
-  this.paths = new GArray(paths);
-  this.pathmap = {}
+class DataStruct {
+  constructor(paths) {
+    this.paths = new GArray(paths);
+    this.pathmap = {}
+    this.parent = undefined;
+    
+    this._flag = 0;
+    
+    for (var p in this.paths) {
+      this.pathmap[p.name] = p
+      if (p.type == DataPathTypes.PROP) {
+        p.data.path = p.path;
+      }
+    }
+    
+    this.type = PropTypes.STRUCT;
+  }
+
+  __iterator__() {
+    return new DataStructIter(this);
+  }
   
-  for (var p in this.paths) {
-    this.pathmap[p.name] = p
-    if (p.type == DataPathTypes.PROP) {
-      p.data.path = p.path;
+  get flag() {
+    return this._flag;
+  }
+  
+  cache_good() {
+    var p = this;
+    
+    while (p != undefined) {
+      if (p.flag & DataFlags.RECALC_CACHE)
+        return false;
+      p = p.parent;
+    }
+    
+    return true;
+  }
+  
+  set flag(val) {
+    this._flag = val;
+    
+    function recurse(p, flag) {
+      p.flag |= flag;
+      
+      if (p instanceof DataStruct) {
+        for (var p2 in p.paths) {
+          if (p2 instanceof DataStruct) {
+            //hand off to substruct;
+            //we don't want to double recurse
+            p2.flag |= flag;
+          } else {
+            recurse(p2, flag);
+          }
+        }
+      }
+    }
+    
+    if (val &  DataFlags.NO_CACHE) {
+      for (var p in this.paths) {
+        recurse(p, DataFlags.NO_CACHE);
+      }
+    }
+    if (val &  DataFlags.RECALC_CACHE) {
+      for (var p in this.paths) {
+        recurse(p, DataFlags.RECALC_CACHE);
+      }
     }
   }
   
-  this.type = PropTypes.STRUCT;
-}
-
-create_prototype(DataStruct);
-DataStruct.prototype.__iterator__ = function() {
-  return new DataStructIter(this);
-}
-
-DataStruct.prototype.add = function(p) {
-  this.pathmap[p.name] = p;
-  this.paths.push(p);
-}
-
-DataStruct.prototype.replace = function(p) {
-  for (var p2 in this.paths) {
-    if (p2.name == p.name) {
-      this.paths.remove(p2);
-      delete this.pathmap[p2.name];
-      break;
-    }
+  add(p) {
+    if (this._flag & DataFlags.NO_CACHE)
+      p._flag |= DataFlags.NO_CACHE;
+    
+    this.pathmap[p.name] = p;
+    this.paths.push(p);
+    p.parent = this;
   }
-  
-  this.add(p);
+
+  replace(p, p2) {
+    for (var p2 in this.paths) {
+      if (p2.name == p.name) {
+        this.flag |= DataFlags.RECALC_CACHE;
+        this.paths.remove(p2);
+        delete this.pathmap[p2.name];
+        break;
+      }
+    }
+    
+    this.add(p);
+  }
 }
 
+/*TinyParser is optimization to only be used with the data api.
+  DO NOT USE IT ELSEWHERE.  It can only process a limited number
+  of tokens (due to its reliance on the obj cache system), 
+  and once the limit is reached it won't warn you.
 
-function TinyParser(data) {
-  this.toks = []
-  this.split_chars = new set([",", "=", "(", ")", ".", "$", "[", "]"])
-  this.ws = new set([" ", "\n", "\t", "\r"])
-  this.data = data
+  always use parseutils.js for general-purpose parsing tasks.*/
   
-  this.cur = 0;
-  
-  this.reset = function(data) {
+_TOKEN = 0
+_WORD = 1
+_LP = "("
+_RP = ")"
+_LS = "["
+_RS = "]"
+_CM = ","
+_EQ = "="
+_DT = "."
+
+class TinyParser {
+  constructor(data) {
+    var tpl = TinyParser.ctemplates;
+    
+    this.toks = objcache.fetch(tpl.toks);
+    this.toks.length = 0;
+    
+    this.split_chars = TinyParser.split_chars; 
+    this.ws = TinyParser.ws; 
+    this.data = data
+    
     this.cur = 0;
-    this.toks = []
-    this.data = data;
-    this.lex();
   }
   
-  this.lex = function(data) {
+  reset(data) {
+    this.cur = 0;
+    this.toks.length = 0;
+    this.data = data;
+    
+    if (data != undefined && data != "")
+      this.lex();
+  }
+  
+  gen_tok(a, b) {
+    var ret = objcache.fetch(TinyParser.ctemplates.token);
+    
+    ret[0] = a;
+    ret[1] = b;
+    ret.length = 2;
+    
+    return ret;
+  }
+  
+  lex(data) {
+    var gt = this.gen_tok;
+    
     if (data == undefined)
       data = this.data;
     
@@ -118,15 +229,15 @@ function TinyParser(data) {
     while (i < data.length) {
       c = data[i];
       if (this.ws.has(c)) {
-        if (tok != undefined && tok[1] == "WORD") {
+        if (tok != undefined && tok[1] == _WORD) {
           tok = undefined;
         }
       } else if (this.split_chars.has(c)) {
-        toks.push([c, "TOKEN"]);
+        toks.push(gt(c, _TOKEN));
         tok = undefined
       } else {
         if (tok == undefined) {
-          tok = ["", "WORD"]
+          tok = gt("", _WORD)
           toks.push(tok)
         }
         tok[0] += c
@@ -136,7 +247,7 @@ function TinyParser(data) {
     }
   }
   
-  this.next = function() {
+  next() {
     this.cur++;
     if (this.cur-1 < this.toks.length) {
       return this.toks[this.cur-1]
@@ -145,7 +256,7 @@ function TinyParser(data) {
     return undefined;
   }
   
-  this.peek = function() {
+  peek() {
     if (this.cur < this.toks.length) {
       return this.toks[this.cur]
     }
@@ -153,39 +264,50 @@ function TinyParser(data) {
     return undefined;
   }
   
-  this.expect = function(type, val) {
+  expect(type, val) {
     if (this.peek()[1] != type) {
-      console.log("Unexpected token " + this.peek[0] + ", expected " + (type=="WORD"?"WORD":val));
+      console.log("Unexpected token " + this.peek[0] + ", expected " + (type==_WORD?"WORD":val));
       console.trace();
-      throw TinyParserError;
+      throw new TinyParserError();
     }
     
-    if (type == "TOKEN" && this.peek()[0] != val) {
+    if (type == _TOKEN && this.peek()[0] != val) {
       console.log("Unexpected token " + this.peek[0]);
       console.trace();
-      throw TinyParserError;
+      throw new TinyParserError();
     }
     
     return this.next()[0];
   }  
-} TinyParser;
+};
 
-function DataAPI(appstate) {
-  this.appstate = appstate;
+TinyParser.ctemplates = {
+  toks : {obj : Array(64), init : function(val) { val.length = 0; }},
+  token : {obj : ["", ""], cachesize : 512}
+};
+
+TinyParser.split_chars = new set([",", "=", "(", ")", ".", "$", "[", "]"]);
+TinyParser.ws = new set([" ", "\n", "\t", "\r"]);
+
+class DataAPI { 
+  constructor(appstate) {
+    this.appstate = appstate;
+    
+    this.ops = data_ops_list;
+    this.parser = new TinyParser();
+    
+    this.root_struct = ContextStruct;
+    this.cache = {};
+  }
   
-  this.ops = data_ops_list;
-  this.parser = new TinyParser();
-  
-  this.root_struct = ContextStruct;
-  
-  this.parse_call_line_intern = function(ctx, line) {
+  parse_call_line_intern(ctx, line) {
     p = this.parser;
     
     function parse_argval(p) {
-      var val = p.expect("WORD")
+      var val = p.expect(_WORD)
       var args;
       
-      if (p.peek()[0] == "(") {
+      if (p.peek()[0] == _LP) {
         args = parse_call(p);
       }
       
@@ -193,10 +315,10 @@ function DataAPI(appstate) {
     }
     
     function parse_arg(p) {
-      var arg = p.expect("WORD");
+      var arg = p.expect(_WORD);
       var val = undefined;
       
-      if (p.peek()[0] == "=") {
+      if (p.peek()[0] == _EQ) {
         p.next(); 
         val = parse_argval(p);  
       }
@@ -205,17 +327,17 @@ function DataAPI(appstate) {
     }
     
     function parse_call(p) {
-      p.expect("TOKEN", "(");
+      p.expect(_TOKEN, _LP);
       var args=[];
       var t = undefined
       
       while (p.peek() != undefined) {
-        if (p.peek()[1] == "WORD") {
+        if (p.peek()[1] == _WORD) {
           args.push(parse_arg(p));
-        } else if (p.peek()[0] == ",") {
+        } else if (p.peek()[0] == _CM) {
           p.next();
         } else {
-          p.expect("TOKEN", ")");
+          p.expect(_TOKEN, _RP);
           break;
         }
       }
@@ -223,20 +345,26 @@ function DataAPI(appstate) {
       return args;
     }
     
-    if (line.contains("(")==0)
+    if (line.contains(_LP)==0)
       throw TinyParserError;
-      
-    path = line.slice(0, line.find("("))
-    line = line.slice(line.find("("), line.length)
+    
+    var li = line.find(_LP);
+    
+    path = line.slice(0, li);
+    line = line.slice(li, line.length);
     
     p.reset(line);
     call = parse_call(p)
     
     path = path.trimRight().trimLeft();
-    return [path, call];
+    
+    var ret = objcache.array(2);
+    ret[0] = path; ret[1] = call;
+    
+    return ret;
   }
   
-  this.parse_call_line = function(ctx, line) {
+  parse_call_line(ctx, line) {
     try {
       var ret = this.parse_call_line_intern(ctx, line);
       return ret;
@@ -249,7 +377,7 @@ function DataAPI(appstate) {
     }
   }
   
-  this.do_mesh_selected = function(ctx, args) {
+  do_mesh_selected(ctx, args) {
     if (args == undefined || args.length == 0 || args[0].length != 2) 
     {
       console.log("Invalid arguments to do_mesh_selected()")
@@ -281,7 +409,7 @@ function DataAPI(appstate) {
     return ctx.mesh.ops.gen_select_iter(typemask);
   }
   
-  this.prepare_args = function(ctx, call) { //args is private/optional
+  prepare_args(ctx, call) { //args is private/optional
     var args = {};
     for (var i=0; i<call.length; i++) {
       var a = call[i];
@@ -301,7 +429,7 @@ function DataAPI(appstate) {
     return args;
   }
   
-  this.get_op_intern = function(ctx, str) {
+  get_op_intern(ctx, str) {
     var ret = this.parse_call_line(ctx, str);
     if (ret == undefined)
       return;
@@ -320,7 +448,7 @@ function DataAPI(appstate) {
     return op;
   }
   
-  this.get_op_keyhandler = function(ctx, str) {
+  get_op_keyhandler(ctx, str) {
     function find_hotkey_recurse(element) {
       if (element == undefined)
         return undefined;
@@ -340,7 +468,7 @@ function DataAPI(appstate) {
     return find_hotkey_recurse(ctx.screen);
   }
   
-  this.call_op = function(ctx, str) {
+  call_op(ctx, str) {
     //try {
       var op = this.get_op_intern(ctx, str);
       this.appstate.toolstack.exec_tool(op);
@@ -354,7 +482,7 @@ function DataAPI(appstate) {
     }*/
   }
   
-  this.get_op_uiname = function(ctx, str) {
+  get_op_uiname(ctx, str) {
     try {
       var op = this.get_op_intern(ctx, str);
       return op.uiname;
@@ -368,7 +496,7 @@ function DataAPI(appstate) {
     }
   }
   
-  this.get_op = function(ctx, str) {
+  get_op(ctx, str) {
     try {
       var op = this.get_op_intern(ctx, str);
       return op;
@@ -382,25 +510,26 @@ function DataAPI(appstate) {
     }
   }
   
-  this.resolve_path_intern = function(ctx, str) {
+  resolve_path_intern(ctx, str) {
     var p = this.parser
     p.reset(str)
     
+    var can_cache = true;
     var path = []
     var arritem = undefined;
     while (p.peek() != undefined) {
-      word = p.expect("WORD");
+      word = p.expect(_WORD);
       
-      if (p.peek() != undefined && p.peek()[0] == "[") {
-        p.expect("TOKEN", "[");
-        arritem = Number(p.expect("WORD"));
-        p.expect("TOKEN", "]");
+      if (p.peek() != undefined && p.peek()[0] == _LS) {
+        p.expect(_TOKEN, _LS);
+        arritem = Number(p.expect(_WORD));
+        p.expect(_TOKEN, _RS);
         if (p.peek() != undefined) {
           console.log("Error: expected EOF after array/obj lookup");
           throw TinyParserError;
         }
       } else if (p.peek() != undefined) {
-        p.expect("TOKEN", ".");
+        p.expect(_TOKEN, _DT);
       }
       
       path.push(word);
@@ -409,16 +538,21 @@ function DataAPI(appstate) {
     var s = this.root_struct;
     var path2 = ""
     
+    can_cache = can_cache && !(s.flag & DataFlags.NO_CACHE);
     var path3;
     for (var i=0; i<path.length; i++) {
+      
       if (i > 0) {
         if (s.type != DataPathTypes.STRUCT) {
           console.log(path)
           console.log("Invalid . lookup operator");
           throw TinyParserError;
         }
+        
         s = s.data;
       }
+      
+      can_cache = can_cache && !(s.flag & DataFlags.NO_CACHE);
       
       if (!(path[i] in s.pathmap)) {
         console.log("Invalid property/struct " + str);
@@ -426,6 +560,7 @@ function DataAPI(appstate) {
       }
       
       s = s.pathmap[path[i]];
+      can_cache = can_cache && !(s.flag & DataFlags.NO_CACHE);
       
       path3 = path2;
       if (i > 0) path2 += "."
@@ -436,15 +571,60 @@ function DataAPI(appstate) {
       path3 = path2;
       path2 = arritem;
       
-      return [s, path2, path3, true];
+      return [s, path2, path3, true, can_cache];
     }
     
-    return [s, path2, path3, false];
+    return [s, path2, path3, false, can_cache];
   }
   
-  this.resolve_path = function(ctx, str) {
+  copy_path(path) {
+    var ret = [];
+    
+    ret.push(path[0]);
+    for (var i=1; i<path.length; i++) {
+      ret.push(copy_object_deep(path[i]));
+    }
+    
+    return ret;
+  }
+  
+  resolve_path(ctx, str) {
+    // /*
+    if (str in this.cache) {
+      if (this._c == undefined)
+        this._c = 0;
+      if (this._c < 10) {
+        var r1 = this.resolve_path_intern(ctx, str);
+        var r2 = this.copy_path(this.cache[str]);
+        
+        
+        console.log("c", r2[0], r2[1], r2[2], r2[3], r2[4]);
+        console.log("o", r1[0], r1[1], r1[2], r1[3], r1[4]);
+        console.log(r1[0]==r2[0]);
+        console.log("--");
+      }
+      
+      this._c++;
+      var ret = this.cache[str];
+      
+      if (ret[0].cache_good())
+        return this.copy_path(ret);
+    }
+    // */
+    
     try {
-      return this.resolve_path_intern(ctx, str);
+      var ret = this.resolve_path_intern(ctx, str);
+      
+      if (ret == undefined || ret[0] == undefined) {
+        throw new TinyParserError();
+      }
+      
+      if (ret[4]) {
+        this.cache[str] = ret;
+        ret[0].flag &= ~DataFlags.RECALC_CACHE;
+      }
+      
+      return this.copy_path(ret);
     } catch (error) {
       if (error != TinyParserError) {
         throw error;
@@ -455,21 +635,21 @@ function DataAPI(appstate) {
     }
   }
   
-  this.get_struct = function(ctx, str) {
+  get_struct(ctx, str) {
     var ret = this.resolve_path(ctx, str)
     if (ret == undefined) return ret;
     
     return ret[0].data;
   }
   
-  this.get_prop_meta = function(ctx, str) {
+  get_prop_meta(ctx, str) {
     var ret = this.resolve_path(ctx, str)
     if (ret == undefined) return ret;
     
     return ret[0].data;
   }
   
-  this.set_prop = function(ctx, str, value) {
+  set_prop(ctx, str, value) {
     var ret = this.resolve_path(ctx, str);
 
     if (ret == undefined) 
@@ -527,7 +707,7 @@ function DataAPI(appstate) {
     }
   }
   
-  this.get_prop = function(ctx, str) {
+  get_prop(ctx, str) {
     var ret = this.resolve_path(ctx, str);
     
     if (ret == undefined) {
@@ -567,4 +747,3 @@ function DataAPI(appstate) {
     }
   }
 }
-

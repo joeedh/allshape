@@ -168,11 +168,13 @@ function element_iter_convert(iter, type) {
     if (v.done) return v;
 	
     var vset = this.vset;
-    while (!v.done && (v.value == undefined || vset.has(v.value))) {
+    while ((!v.done) && (v.value == undefined || vset.has(v.value))) {
       v = this._next();
     }
     
-    vset.add(v.value);
+    if (!v.done)
+      vset.add(v.value);
+    
     return v;
   }
   

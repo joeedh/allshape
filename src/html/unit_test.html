@@ -1115,6 +1115,10 @@ function toJSON_intern (ob, tlevel) {
     
     g_app_state = {}; //new AppState(undefined, makeBoxMesh(), gl);
     
+    console.log("initializing data api...");
+    api_define_ops();
+    api_define_context();
+    
     init_struct_packer();
     //do_unit_tests();
     

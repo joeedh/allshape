@@ -1014,69 +1014,88 @@ function copy_into(dst, src) {
 
 var __v3d_g_s = [];
 function get_spiral(size)
-  {
-    if (__v3d_g_s.length == size*size)
-      return __v3d_g_s;
+{
+  if (__v3d_g_s.length == size*size)
+    return __v3d_g_s;
+  
+  var arr = __v3d_g_s;
+  
+  var x = Math.floor((size-1)/2);
+  var y = Math.floor((size-1)/2);
+  
+  var c;
+  var i;
+  
+  if (size%2 == 0) {
+    arr.push([x, y+1]);
+    arr.push([x, y]);
+    arr.push([x+1, y]);
+    arr.push([x+1, y+1]);
+    arr.push([x+1, y+2]);
+    c = 5;
+    i = 2;
     
-    var arr = __v3d_g_s;
+    y += 2;
+    x += 1;
+  } else {
+    arr.push([x, y])
+    arr.push([x+1, y])
+    arr.push([x+1, y+1]);
+    c = 3;
+    i = 2;
+    x++; y++;
+  }  
+  
+  while (c < size*size-1) {
+    var sign = (Math.floor(i/2) % 2)==1;
+    sign = sign ? -1.0 : 1.0;
     
-    var x = Math.floor((size-1)/2);
-    var y = Math.floor((size-1)/2);
-    
-    var c;
-    var i;
-    
-    if (size%2 == 0) {
-      arr.push([x, y+1]);
-      arr.push([x, y]);
-      arr.push([x+1, y]);
-      arr.push([x+1, y+1]);
-      arr.push([x+1, y+2]);
-      c = 5;
-      i = 2;
-      
-      y += 2;
-      x += 1;
-    } else {
-      arr.push([x, y])
-      arr.push([x+1, y])
-      arr.push([x+1, y+1]);
-      c = 3;
-      i = 2;
-      x++; y++;
-    }  
-    
-    while (c < size*size-1) {
-      var sign = (Math.floor(i/2) % 2)==1;
-      sign = sign ? -1.0 : 1.0;
-      
-      for (var j=0; j<i; j++) {
-        if ((i%2==0)) {
-          if (x+sign < 0 || x+sign >= size)
-            break;
-          x += sign;
-        } else {
-          if (y+sign < 0 || y+sign >= size)
-            break;
-          y += sign;
-        }
-        
-        if (c == size*size)
+    for (var j=0; j<i; j++) {
+      if ((i%2==0)) {
+        if (x+sign < 0 || x+sign >= size)
           break;
-          
-        arr.push([x, y]);
-        c++;
+        x += sign;
+      } else {
+        if (y+sign < 0 || y+sign >= size)
+          break;
+        y += sign;
       }
       
       if (c == size*size)
         break;
-      i++;
+        
+      arr.push([x, y]);
+      c++;
     }
     
-    for (var j=0; j<arr.length; j++) {
-      arr[j][0] = Math.floor(arr[j][0]);
-      arr[j][1] = Math.floor(arr[j][1]);
-    }
-    
-    return __v3d_g_s;
+    if (c == size*size)
+      break;
+    i++;
   }
+  
+  for (var j=0; j<arr.length; j++) {
+    arr[j][0] = Math.floor(arr[j][0]);
+    arr[j][1] = Math.floor(arr[j][1]);
+  }
+  
+  return __v3d_g_s;
+}
+  
+//ltypeof function, that handles object instances of basic types
+var _bt_h = {
+  "String" : "string",
+  "Number" : "number",
+  "Function" : "function",
+  "Array" : "array"
+}
+
+function btypeof(obj) {
+  if (typeof obj == "object") {
+    if (obj.constructor.name in _bt_h)
+      return _bt_h[obj.constructor.name];
+    else
+      return "object";
+  } else {
+    return typeof obj;
+  }
+}

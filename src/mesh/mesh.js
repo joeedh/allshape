@@ -624,7 +624,6 @@ Mesh.prototype.pack = function(Array<byte> data, StructPackFunc dopack) {
 
 Mesh.prototype.unpack = function(ArrayBuffer data, unpack_ctx uctx) {
   var vlen = unpack_int(data, uctx);
-  console.log("vlen: ", vlen);
   
   var loops = {}
   var eidmap = this.eidmap;
@@ -637,7 +636,6 @@ Mesh.prototype.unpack = function(ArrayBuffer data, unpack_ctx uctx) {
   }
   
   var elen = unpack_int(data, uctx);
-  console.log("elen: ", elen);
   for (var i=0; i<elen; i++) {
     var e = new Edge();
     e.unpack(data, uctx);
@@ -651,7 +649,6 @@ Mesh.prototype.unpack = function(ArrayBuffer data, unpack_ctx uctx) {
   
   var flen = unpack_int(data, uctx);
   
-  console.log("flen: ", flen);
   for (var i=0; i<flen; i++) {
     var f = new Face([]);
     f.unpack(data, uctx);

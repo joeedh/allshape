@@ -1209,11 +1209,11 @@ function toJSON_intern (ob, tlevel) {
         canvas.width = canvas.clientWidth;
         canvas.height = canvas.clientHeight;
         
-        g_app_state = new AppState(undefined, undefined, gl);
-        
         console.log("initializing data api...");
         api_define_ops();
         api_define_context();
+        
+        g_app_state = new AppState(undefined, undefined, gl);
         
         console.log("generating start file...");
         gen_default_file([canvas.clientWidth, canvas.clientHeight]);

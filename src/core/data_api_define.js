@@ -114,7 +114,7 @@ function api_define_context() {
   ContextStruct = new DataStruct([
     new DataPath(api_define_view3d(), "view3d", "ctx.view3d", false),
     new DataPath(api_define_mesh(), "mesh", "ctx.mesh", false),
-    new DataPath(new DataStruct([]), "last_tool", "", false, false),
+    new DataPath(new DataStruct([]), "last_tool", "", false, false, DataFlags.RECALC_CACHE),
     new DataPath(api_define_appstate(), "appstate", "appstate", false, false)
   ]);
 }

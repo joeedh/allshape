@@ -676,8 +676,11 @@ ToolStack.prototype.rebuild_last_tool = function(tool) {
   else
     s = new DataStruct([]);
   
+  s.flag |= DataFlags.RECALC_CACHE;
   s.name = "last_tool"
+  
   s = new DataPath(s, "last_tool", "", false, false)
+  s.flag |= DataFlags.RECALC_CACHE;
   
   ContextStruct.replace(s);
 }

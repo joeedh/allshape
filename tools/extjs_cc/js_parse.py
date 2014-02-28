@@ -1017,7 +1017,7 @@ def p_setter_param_list(p):
     setter_param_list : ID
   '''
   
-  p[0] = p[1]
+  p[0] = ExprListNode([VarDeclNode(ExprNode([]), name=p[1])])
   return
 
 def p_template_ref_opt(p):

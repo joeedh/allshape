@@ -1021,24 +1021,6 @@ function gen_struct_str() {
   return buf;
 }
 
-//ltypeof function, that handles object instances of basic types
-var _bt_h = {
-  "String" : "string",
-  "Number" : "number",
-  "Function" : "function"
-}
-
-function btypeof(obj) {
-  if (typeof obj == "object") {
-    if (obj.constructor.name in _bt_h)
-      return _bt_h[obj.constructor.name];
-    else
-      return "object";
-  } else {
-    return typeof obj;
-  }
-}
-
 //stub type
 function JSONType() {
 };
