@@ -20,8 +20,7 @@ class Scene extends DataBlock {
     return sce;
   }
 
-  update()
-  {
+  update() {
     if (RELEASE) {
       try {
         this.graph.exec();
@@ -34,8 +33,7 @@ class Scene extends DataBlock {
     }
   }
 
-  add(ASObject ob)
-  {
+  add(ASObject ob) {
     this.objects.push(ob);
     this.graph.add(ob);
     
@@ -51,8 +49,7 @@ class Scene extends DataBlock {
     this.objects.active = ob;
   }
 
-  remove(ASObject ob)
-  {
+  remove(ASObject ob) {
     //this.objects.remove(ob);
     //this.graph.remove(ob);
     

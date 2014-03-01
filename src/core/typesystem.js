@@ -34,6 +34,190 @@ function create_test(obj) {
 }
 
 var int _prototype_id_gen = 1
+function test_inherit_multiple() {
+  function a() {
+  }
+  create_prototype(a);
+  a.prototype.test = function() {
+    console.log("a", this.constructor.name);
+  }
+  
+  function b() {
+  }
+  inherit_multiple(b, [a]);
+  b.prototype.test = function() {
+    console.log("b", this.constructor.name);
+  }
+  
+  function c() {
+  }
+  inherit_multiple(c, [a]);
+  c.prototype.test1 = function() {
+    console.log("c", this.constructor.name);
+  }
+
+  function d() {
+  }
+  inherit_multiple(d, [b, c]);
+  d.prototype.test1 = function() {
+    console.log("d", this.constructor.name);
+  }
+  
+  console.log(d.prototype, c.prototype, b.prototype, a.prototype);
+  console.log("------------")
+  console.log(new d() instanceof a, new d() instanceof b, (new d()) instanceof c);
+  
+  //new a().test();
+  //new b().test();
+  //new c().test();
+  new d().test();
+  
+  return [d, b, c, a];
+}
+
+/*
+okay. for multiple inheritance to work properly,
+we're going to have to override the instanceof operator 
+in js_cc.  that's doable, but not worth it right now.
+
+A python C3 multiple inheritance model.
+It works by creating copies of parent prototypes
+(as usual), but changes their own parent relationships
+so as to linearize the prototype chain.
+
+function inherit_multiple(obj, parents) {
+  defined_classes.push(obj);
+  
+  function merge(ps, lsts) {
+    var lst = []
+    
+    lsts.push(ps);
+    
+    for (var u=0; u<2000; u++) {
+      if (lsts.length == 0)
+        break;
+      
+      for (var i=0; i<lsts.length; i++) {
+        if (lsts[i].length == 0)
+          continue;
+        
+        var p = lsts[i][0];
+        var bad = false;
+        
+        if (0) {
+          for (var j=0; j<lst.length; j++) {
+            if (lst[j].__prototypeid__ == p.__prototypeid__) {
+              bad = true;
+              break;
+            }
+          }
+        }
+        
+        for (var j=0; !bad && j<lsts.length; j++) {
+          if (i == j) continue;
+          var l = lsts[j];
+          
+          for (var k=1; k<l.length; k++) {
+            if (l[k].prototype.__prototypeid__ == p.prototype.__prototypeid__) {
+              bad = true;
+              break;
+            }
+          }
+        }
+        
+        if (!bad) {
+          lst.push(p);
+          lsts[i].splice(lsts[i].indexOf(p), 1);
+          
+          for (var j=0; j<lsts.length; j++) {
+            var l = lsts[j];
+            
+            for (var k=0; k<l.length; k++) {
+              if (l[k].prototype.__prototypeid__ == p.prototype.__prototypeid__) {
+                l.splice(l[k], 1);
+                break;
+              }
+            }
+          }
+          
+          //don't continue looping if we have more 
+          //prototypes to process
+          if (lsts[i].length > 0) {
+            i -= 1;
+          } else {
+            lsts[i].splice(i, 1);
+            i -= 1;
+          }
+        }
+      }
+    }
+    
+    //lst = lst.reverse();
+    var tot=0;
+    for (var i=0; i<lsts.length; i++) {
+      tot += lsts[i].length;
+    }
+    
+    if (tot > 0) {
+      throw new Error("Could not resolve multiple inheritance");
+    }
+    
+    console.log("-->", lst);
+    console.log(lsts);
+    return lst;
+  }
+  
+  if (parents.length == 1) {
+    obj.__clsorder__ = [parents[0]];
+  } else {
+    var lsts = [];
+    
+    for (var i=0; i<parents.length; i++) {
+      lsts.push(parents[i].__clsorder__);
+    }
+    
+    obj.__clsorder__ = merge(parents, lsts);
+  }
+  
+  //build prototype chain
+  var root = Object.create(Object.prototype);
+  
+  var cs = obj.__clsorder__;
+  console.log(cs.length, "<==");
+  for (var i=0; i<cs.length; i++) {
+    console.log(cs[i].name);
+    var p = Object.create(cs[i].prototype);
+    p.prototype = root;
+    p.constructor = cs[i];
+    root = p;
+  }
+  
+  proto = Object.create(root);
+  proto.constructor = obj;
+  proto.prototype = root;
+  
+  console.log(proto);
+  
+  if (0) {
+    for (var i=0; i<cs.length; i++) {
+      var p = cs[i];
+      var keys = Object.keys(p.prototype);
+      
+      for (var j=0; j<keys.length; j++) {
+        proto[keys[j]] = p.prototype[keys[j]];
+      }
+    }
+  }
+  
+  proto.priors = obj.__clsorder__;
+  proto.constructor = obj;
+  proto.__prototypeid__ = _prototype_id_gen++;
+  proto.__class__ = obj.name;
+  
+  obj.prototype = proto;
+}
+*/
+
 function inherit(obj, parent) {
   defined_classes.push(obj);
   
