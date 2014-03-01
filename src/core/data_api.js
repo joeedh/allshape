@@ -594,14 +594,15 @@ class DataAPI {
       if (this._c == undefined)
         this._c = 0;
       if (this._c < 10) {
+        /*
         var r1 = this.resolve_path_intern(ctx, str);
         var r2 = this.copy_path(this.cache[str]);
-        
         
         console.log("c", r2[0], r2[1], r2[2], r2[3], r2[4]);
         console.log("o", r1[0], r1[1], r1[2], r1[3], r1[4]);
         console.log(r1[0]==r2[0]);
         console.log("--");
+        */
       }
       
       this._c++;

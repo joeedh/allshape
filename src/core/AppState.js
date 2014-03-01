@@ -1,6 +1,7 @@
 "use strict";
 
 var FileFlags = {COMPRESSED_LZJB : 1}
+var RELEASE = false;
 
 var formacad_file_ext = ".al3";
 var g_app_version = 0.02;
@@ -115,6 +116,8 @@ function gen_default_file(size) {
   
   //mesh
   object.data = mesh;
+  mesh.gen_render_struct();
+  mesh.regen_render();
   
   g.datalib.add(object);
   g.datalib.add(mesh);
@@ -537,6 +540,7 @@ function Context() {
   this.font = g_app_state.raster.font
   this.api = g_app_state.api;
   this.screen = g_app_state.screen;
+  this.datalib = g_app_state.datalib;
   
   //find active scene, object, and object data, respectively
   var sce = g_app_state.datalib.get_active(DataTypes.SCENE);

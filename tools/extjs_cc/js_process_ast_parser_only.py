@@ -110,9 +110,10 @@ def expand_harmony_class(cls):
       an = AssignNode(bn, f)
       f = an
     else:
-      bn = BinOpNode(IdentNode(cls.name), IdentNode(m.name), ".")
-      an = AssignNode(bn, f)
-      f = an
+      pn = ExprListNode([IdentNode(cls.name), StrLitNode('"'+m.name+'"'), f])
+      fc = FuncCallNode(IdentNode("define_static"))
+      fc.add(pn)
+      f = fc
     
     return f
     

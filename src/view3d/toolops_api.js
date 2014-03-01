@@ -22,6 +22,7 @@ var PropTypes = {
   ENUM: 14,
   STRUCT: 15, //internal type to data api
   FLAG: 16,
+  DATAREF: 17
 };
 
 var TPropFlags = {PRIVATE : 1, LABEL : 2};
@@ -109,6 +110,43 @@ ToolProperty.prototype.loadJSON = function(prop, json) {
   case PropTypes.VEC4:
     prop.set_data(new Vector4(json.data));
     break;
+  }
+}
+
+class DataRefProp extends ToolProperty {
+  //allowed_types can be either a datablock type,
+  //or a set of allowed datablock types.
+  constructor(DataBlock value, set<int> allowed_types, apiname, uiname, description, flag) {
+    ToolProperty.call(this, PropTypes.DATAREF, apiname, uiname, description, flag);
+    
+    if (!(allowed_types instanceof set)) {
+      allowed_types = new set([allowed_types]);
+    }
+    
+    this.types = allowed_types;
+    this.set_data(value);
+  }
+  
+  get_block(ctx) {
+    if (this.data == undefined)
+      return undefined;
+    else
+      return ctx.datalib.get(this.data[1]);
+  }
+ 
+  set_data(DataBlock value) {
+    if (value == undefined) {
+      ToolProperty.prototype.set_data.call(this, undefined);
+    } else {
+      if (!this.types.has(value.lib_type)) {
+        console.trace();
+        console.log("Invalid datablock type " + value.lib_type + " passed to DataRefProperty.set_value()");
+        return;
+      }
+      
+      value = [value.lib_lib, value.lib_id];
+      ToolProperty.prototype.set_data.call(this, value);
+    }
   }
 }
 

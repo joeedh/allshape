@@ -131,7 +131,7 @@ class MeshEditor extends View3DEditor {
     
     this.mesh.update_callback(view3d, function(view3d, mesh, event) {
       if (event == MeshEvents.RECALC) {
-        if (mesh.render.recalc & (RecalcFlags.REGEN_TESS|RecalcFlags.REGEN_COS)) 
+        if (mesh.render.recalc & (MeshRecalcFlags.REGEN_TESS|MeshRecalcFlags.REGEN_COS)) 
         {
           view3d.redo_selbuf = true;
         }
@@ -146,15 +146,15 @@ class MeshEditor extends View3DEditor {
       
       if (steps != this.last_steps) {
         this.last_steps = steps;
-        ss_recalc |= RecalcFlags.REGEN_TESS;
+        ss_recalc |= MeshRecalcFlags.REGEN_TESS;
       }
       
-      if ((ss_recalc & RecalcFlags.REGEN_TESS)==0)
-        this.mesh.render.recalc &= ~RecalcFlags.REGEN_NORS;
+      if ((ss_recalc & MeshRecalcFlags.REGEN_TESS)==0)
+        this.mesh.render.recalc &= ~MeshRecalcFlags.REGEN_NORS;
 
       if (ss_recalc != 0) {
-        if (ss_recalc != RecalcFlags.REGEN_COLORS) {
-          if (ss_recalc & RecalcFlags.REGEN_TESS) {
+        if (ss_recalc != MeshRecalcFlags.REGEN_COLORS) {
+          if (ss_recalc & MeshRecalcFlags.REGEN_TESS) {
             destroy_subsurf_mesh(gl, this.ss_mesh);
             this.ss_mesh = gpu_subsurf(gl, this.mesh, steps);
           } else {
@@ -162,7 +162,7 @@ class MeshEditor extends View3DEditor {
           }
         }
         
-        if (ss_recalc & RecalcFlags.REGEN_TESS)
+        if (ss_recalc & MeshRecalcFlags.REGEN_TESS)
           this.mesh.flag |= MeshFlags.USE_MAP_CO;
         
         gen_mesh_render(gl, this.mesh, this.mesh.render.drawprogram, this.mesh.render.vertprogram, this.mesh.render.recalc);        
@@ -240,6 +240,15 @@ class MeshEditor extends View3DEditor {
   define_keymap() {
     var k = this.keymap;
     
+    k.add_tool(new KeyHandler("C", ["CTRL"], "Loop Cut"),
+               "mesh.loopcut()");
+    k.add_tool(new KeyHandler("G", [], "Translate"), 
+               "mesh.translate()");
+    k.add_tool(new KeyHandler("S", [], "Scale"), 
+               "mesh.scale()");
+    k.add_tool(new KeyHandler("R", [], "Rotate"), 
+               "mesh.rotate()");
+    
     k.add_tool(new KeyHandler("F", [], "Create Face"),
                "mesh.context_create(verts=mesh_selected(v))");
     k.add_tool(new KeyHandler("D", ["SHIFT"], "Duplicate"), 
@@ -292,18 +301,6 @@ class MeshEditor extends View3DEditor {
         ctx.view3d.editor.ss_mesh = null;
         ctx.mesh.regen_render();
       }
-    }));
-    k.add(new KeyHandler("T", [], "Toggle Select Mode"), new FuncKeyHandler(function(ctx) {
-      var mode = ctx.view3d.editor.selectmode;
-      
-      if (mode == MeshTypes.VERT)
-        mode = MeshTypes.EDGE;
-      else if (mode == MeshTypes.EDGE)
-        mode = MeshTypes.FACE;
-      else if (mode == MeshTypes.FACE)
-        mode = MeshTypes.VERT;
-        
-      ctx.view3d.editor.set_selectmode(mode);
     }));
   }
 
@@ -418,6 +415,12 @@ class MeshEditor extends View3DEditor {
     menu.swap_mouse_button = 2;
     
     view3d.call_menu(menu, view3d, [event.x, event.y]);
+  }
+
+  on_inactive(view3d) {
+  }
+  
+  on_active(view3d) {
   }
 
   rightclick_menu_face(event, view3d) {

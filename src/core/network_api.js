@@ -1,3 +1,5 @@
+//this file may be hopelessly obsolete
+
 #define EXPORT_FUNC(func)
 
 NetStates = {NORMAL: 0, PUSHING: 1, FETCHING: 2};
@@ -7,38 +9,40 @@ StateErrors = {NOERRORSET: 0, IO : 1, PERMISSIONS: 2, NOTEXIST: 3, INVALIDARGS: 
 
 CmdTypes = {INVALID: 0, SAVE_MESH: 1, GET_DIR_INFO: 2, GET_FILE_INFO: 3, GET_FILE_META: 4}
 
-function NetMessage(String msg, NetError errobj) {
-  String.call(msg);
-  this.errobj = errobj
+class NetMessage extends String {
+  constructor(String msg, NetError errobj) {
+    String.call(msg);
+    this.errobj = errobj
+  }
 }
-inherit(NetMessage, String);
 EXPORT_FUNC(NetMessage)
 
-function NetError(code, msg) {
-  this.msg = msg;
+class NetError extends Error {
+  constructor(code, msg) {
+    this.msg = msg;
+  }
+  
+  toString() {
+    return this.constructor.name + ":" + this.code + ":" + this.msg;
+  }
 }
-inherit(NetError, Error);
-
 EXPORT_FUNC(NetError)
 
-NetError.prototype.toString = function() {
-  return this.constructor.name + ":" + this.code + ":" + this.msg
-}
+class NetCommand {
+  constructor(id) {
+    this.id = id;
+  }
 
-function NetCommand(id) {
-  this.id = id;
+  process(ctx, state) {
+  }
+
+  pack(data) {
+  }
+
+  unpack(data, unpack_ctx) {
+  }
 }
-create_prototype(NetCommand);
 EXPORT_FUNC(NetCommand)
-
-NetCommand.prototype.process = function(ctx, state) {
-}
-
-NetCommand.prototype.pack = function(data) {
-}
-
-NetCommand.prototype.unpack = function(data, unpack_ctx) {
-}
 
 function NetState(id) {
   this.id = 0;

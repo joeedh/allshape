@@ -1,8 +1,21 @@
-var mesh_selectmode_enum = new EnumProperty("FACE", {"VERT":MeshTypes.VERT, "EDGE":MeshTypes.EDGE, "FACE":MeshTypes.FACE}, "selmode", "Select Mode", "Selection mode")
-mesh_selectmode_enum.ui_value_names = {"VERT": "Vertices", "EDGE": "Edges", "FACE": "Faces"}
+var selectmode_enum = new EnumProperty("FACE", 
+  {
+    VERT : EditModes.VERT, 
+    EDGE : EditModes.EDGE,
+    FACE : EditModes.FACE,
+    OBJECT : EditModes.OBJECT
+  }, 
+  "selmode", "Select Mode", "Selection mode");
+  
+selectmode_enum.ui_value_names = {
+  VERT: "Vertices", 
+  EDGE: "Edges", 
+  FACE: "Faces",
+  OBJECT : "Object"
+ };
 
 function api_define_view3d() {
-  var selmode = mesh_selectmode_enum.copy();
+  var selmode = selectmode_enum.copy();
   
   selmode.update = function() {
     this.ctx.view3d.selectmode = this.values[this.data];
@@ -166,17 +179,17 @@ function api_define_ops() {
       
       return new MeshToolOp(new VertSmoothOp(args["verts"]));
     },
-    
+
     "mesh.translate": function(ctx, args) {
-      return new TranslateOp();
+      return new TranslateOp(EditModes.GEOMETRY);
     },
     
     "mesh.rotate": function(ctx, args) {
-      return new RotateOp();
+      return new RotateOp(EditModes.GEOMETRY);
     },
     
     "mesh.scale": function(ctx, args) {
-      return new ScaleOp();
+      return new ScaleOp(EditModes.GEOMETRY);
     },
     
     "mesh.inset_loops": function(ctx, args) {
@@ -370,6 +383,18 @@ function api_define_ops() {
     },
     "screen.area_split_tool" : function(ctx, args) {
       return new SplitAreasTool(ctx.appstate.screen);
+    },
+    
+    "object.translate": function(ctx, args) {
+      return new TranslateOp(EditModes.OBJECT);
+    },
+    
+    "object.rotate": function(ctx, args) {
+      return new RotateOp(EditModes.OBJECT);
+    },  
+    
+    "object.scale": function(ctx, args) {
+      return new ScaleOp(EditModes.OBJECT);
     }
   }
 }

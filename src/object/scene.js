@@ -22,7 +22,16 @@ class Scene extends DataBlock {
 
   update()
   {
-    this.graph.exec();
+    if (RELEASE) {
+      try {
+        this.graph.exec();
+      } catch (err) {
+        print_stack(err);
+        console.log("Error updating DAG graph!");
+      }
+    } else {
+      this.graph.exec();
+    }
   }
 
   add(ASObject ob)

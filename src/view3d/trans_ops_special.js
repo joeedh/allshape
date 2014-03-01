@@ -96,6 +96,8 @@ class InsetOp extends TransformOp {
   }
 
   modal_init(ctx) {
+    prior(InsetOp, this).modal_init.call(this, ctx);
+    
     this.transdata = new TransData(ctx);
     this.first_call = true;
     

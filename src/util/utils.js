@@ -18,122 +18,137 @@ CanIter.prototype.iterator = function() : Iter {
 }
 
 var debug_int_1 = 0;
-function GArray<T>(Array<T> input) {
-  Array<T>.call(this)
-  
-  if (input != undefined) {
-    for (var i=0; i<input.length; i++) {
-      this.push(input[i]);
+class GArray extends Array {
+  constructor(input) {
+    Array<T>.call(this)
+
+    if (input != undefined) {
+      for (var i=0; i<input.length; i++) {
+        this.push(input[i]);
+      }
     }
+  }
+
+  pack(data) {
+    pack_int(data, this.length);
+    for (var i=0; i<this.length; i++) {
+      this[i].pack(data);
+    }
+  }
+
+  __iterator__() {
+    return new GArrayIter<T>(this);
+  }
+    
+  toJSON() {
+    var arr = new Array(this.length);
+    
+    var i = 0;
+    for (var i=0; i<this.length; i++) {
+      arr[i] = this[i];
+    }
+    
+    return arr;
+  }
+
+  //inserts *before* index
+  insert(int index, T item) {
+    for (var i=this.length; i > index; i++) {
+      this[i] = this[i-1];
+    }
+    
+    this[index] = item;
+    this.length++;
+  }
+
+  prepend(T item) {
+    this.insert(0, item);
+  }
+
+  remove(T item, Boolean ignore_existence) { //ignore_existence defaults to false
+    var int idx = this.indexOf(item);
+    
+    if (ignore_existence == undefined)
+      ignore_existence = false;
+      
+    if (idx < 0 || idx == undefined) {
+      console.log("Yeek! Item " + item + " not in array");
+      console.trace();
+      
+      if (!ignore_existence) {
+        console.trace();
+        throw "Yeek! Item " + item + " not in array"
+      }
+      
+      return;
+    }
+    
+    for (var int i=idx; i<this.length-1; i++) {
+      this[i] = this[i+1];
+    }
+    
+    this.length -= 1;
+  }
+
+  replace(T olditem, T newitem) { //ignore_existence defaults to false
+    var int idx = this.indexOf(olditem);
+    
+    if (idx < 0 || idx == undefined) {
+      console.log("Yeek! Item " + olditem + " not in array");
+      console.trace();
+      
+      if (!ignore_existence)
+        throw "Yeek! Item " + olditem + " not in array"
+
+      return;
+    }
+    
+    this[idx] = newitem;
+  }
+
+  /*
+  this.pop() {
+    if (this.length == 0)
+      return undefined;
+    
+    var ret = this[this.length-1];
+    this.length--;
+    
+    return ret;
+  }
+  */
+
+  toSource() : String {
+    var s = "new GArray" + this.length + "(["
+    
+    for (var i=0; i<this.length; i++) {
+      s += this[i];
+      if (i != this.length-1)
+        s += ", ";
+    }
+    
+    s += "])";
+    
+    return s
+  }
+
+  toString() : String {
+    var s = "[GArray: "
+    for (var i=0; i<this.length; i++) {
+      s += this[i];
+      if (i != this.length-1)
+        s += ", ";
+    }
+    
+    s += "])";
+    
+    return s
   }
 }
 EXPORT_FUNC(GArray)
-inherit(GArray, Array);
 
-GArray.prototype.pack = function(data) {
-  pack_int(data, this.length);
-  for (var i=0; i<this.length; i++) {
-    this[i].pack(data);
-  }
-}
-
-GArray.prototype.__iterator__ = function() {
-  return new GArrayIter<T>(this);
-}
-  
-GArray.prototype.toJSON = function() {
-  var arr = new Array(this.length);
-  
-  var i = 0;
-  for (var i=0; i<this.length; i++) {
-    arr[i] = this[i];
-  }
-  
-  return arr;
-}
-
-GArray.prototype.remove = function(T item, Boolean ignore_existence) { //ignore_existence defaults to false
-  var int idx = this.indexOf(item);
-  
-  if (ignore_existence == undefined)
-    ignore_existence = false;
-    
-  if (idx < 0 || idx == undefined) {
-    console.log("Yeek! Item " + item + " not in array");
-    console.trace();
-    
-    if (!ignore_existence) {
-      console.trace();
-      throw "Yeek! Item " + item + " not in array"
-    }
-    
-    return;
-  }
-  
-  for (var int i=idx; i<this.length-1; i++) {
-    this[i] = this[i+1];
-  }
-  
-  this.length -= 1;
-}
-
-GArray.prototype.replace = function(T olditem, T newitem) { //ignore_existence defaults to false
-  var int idx = this.indexOf(olditem);
-  
-  if (idx < 0 || idx == undefined) {
-    console.log("Yeek! Item " + olditem + " not in array");
-    console.trace();
-    
-    if (!ignore_existence)
-      throw "Yeek! Item " + olditem + " not in array"
-
-    return;
-  }
-  
-  this[idx] = newitem;
-}
-
-//turn defined_classes into a GArray
+//turn defined_classes into a GArray, now that we've defined it
 var defined_classes = new GArray(defined_classes);
-
-/*
-this.pop = function() {
-  if (this.length == 0)
-    return undefined;
-  
-  var ret = this[this.length-1];
-  this.length--;
-  
-  return ret;
-}
-*/
-
-GArray.prototype.toSource = function() : String {
-  var s = "new GArray" + this.length + "(["
-  
-  for (var i=0; i<this.length; i++) {
-    s += this[i];
-    if (i != this.length-1)
-      s += ", ";
-  }
-  
-  s += "])";
-  
-  return s
-}
-
-GArray.prototype.toString = function() : String {
-  var s = "[GArray: "
-  for (var i=0; i<this.length; i++) {
-    s += this[i];
-    if (i != this.length-1)
-      s += ", ";
-  }
-  
-  s += "])";
-  
-  return s
-}
 
 function obj_value_iter(Object obj) {
   this.ret = {done : false, value : undefined};

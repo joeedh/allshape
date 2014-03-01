@@ -1,6 +1,7 @@
 "use strict";
 
-var EditModes = {OBJECT : 1, GEOMETRY : 2};
+//is compatible with MeshTypes
+var EditModes = {VERT : 1, EDGE : 2, FACE : 8, OBJECT : 16, GEOMETRY : 1|2|8};
 var ibuf_idgen = new EIDGen();
 
 ibuf_idgen.gen_id();
@@ -29,6 +30,9 @@ class View3DEditor {
   }
 
   on_area_inactive(view3d) {}
+  
+  on_inactive(view3d) {}
+  on_active(view3d) {}
 
   //returns new copy
   editor_duplicate(view3d) {}
@@ -173,14 +177,16 @@ class View3DHandler extends Area {
     this.use_backbuf_sel = true;
     this.last_selectmode = 0;
     
+    this._in_from_struct = false;
+    
     this.use_radial_menus = false;
     this.use_subsurf = false;
     
     this.mesh = mesh;
-    this.selectmode = MeshTypes.VERT;
+    this._selectmode = MeshTypes.VERT;
     
-    var sm = this.selectmode;
-    if (sm!= 2 && sm != 4 && sm != 8) this.selectmode = MeshTypes.VERT;
+    var sm = this._selectmode;
+    if (sm!= 2 && sm != 4 && sm != 8) this._selectmode = MeshTypes.VERT;
 
     this.mesh = mesh;
     
@@ -220,6 +226,8 @@ class View3DHandler extends Area {
     this.editors = new GArray([this.editor]);
   }
   
+  
+  //XXX need to implement this still
   get can_select() {
     return this._can_select;
   }
@@ -230,6 +238,7 @@ class View3DHandler extends Area {
   
   static fromSTRUCT(reader) {
     var v3d = new View3DHandler(g_app_state.gl)
+    v3d._in_from_struct = true;
     
     reader(v3d)
     
@@ -242,10 +251,22 @@ class View3DHandler extends Area {
     }
     
     v3d.gl = g_app_state.gl;
+    v3d._in_from_struct = false;
     
     return v3d;
   }
-
+  
+  get selectmode() {
+    return this._selectmode;
+  }
+  
+  set selectmode(val) {
+    this._selectmode = val;
+    
+    if (!this._in_from_struct)
+      this.set_selectmode(val);
+  }
+  
   data_link(block, getblock, getblock_us) {
     this.mesh = this.ctx.mesh;
     
@@ -501,11 +522,6 @@ class View3DHandler extends Area {
     this.editor.on_mousemove(event);
   }
 
-  set_selectmode(int mode) {
-    this.selectmode = mode;
-    this.editor.selectmode = mode;
-  }
-
   on_mousewheel(MouseEvent event, float delta) {
     this.change_zoom(delta)
   }
@@ -620,8 +636,14 @@ class View3DHandler extends Area {
     //set up canvas box
     this.set_canvasbox();
     
+    //update DAG
+    this.ctx.scene.update();
+    
+    this.transmat.push();
+    this.transmat.multiply(this.ctx.object.matrix);
     //draw object
     this.editor.draw_object(gl, this, this.ctx.object, true);
+    this.transmat.pop();
     
     //clean up transformation stack
     this.transmat.reset(cameramat_backup);
@@ -637,18 +659,25 @@ class View3DHandler extends Area {
 
   define_keymap() {
     var k = this.keymap;
-    
-    k.add_tool(new KeyHandler("C", ["CTRL"], "Loop Cut"),
-               "mesh.loopcut()");
-    k.add_tool(new KeyHandler("G", [], "Translate"), 
-               "mesh.translate()");
-    k.add_tool(new KeyHandler("S", [], "Scale"), 
-               "mesh.scale()");
-    k.add_tool(new KeyHandler("R", [], "Rotate"), 
-               "mesh.rotate()");
-    
-    k.add(new KeyHandler("K", [], "Test Dialog"), new FuncKeyHandler(function (ctx) {
-      g_app_state.load_user_file_new(g_app_state.create_user_file_new());
+  
+    k.add(new KeyHandler("T", [], "Toggle Select Mode"), new FuncKeyHandler(function(ctx) {
+      var mode = ctx.view3d.editor.selectmode;
+      
+      if (mode == EditModes.VERT)
+        mode = EditModes.EDGE;
+      else if (mode == EditModes.EDGE)
+        mode = EditModes.FACE;
+      else if (mode == EditModes.FACE)
+        mode = EditModes.OBJECT;
+      else if (mode == EditModes.OBJECT)
+        mode = EditModes.VERT;
+        
+      ctx.view3d.set_selectmode(mode);
+    }));
+  
+    k.add(new KeyHandler("K", [], "Debug Test"), new FuncKeyHandler(function (ctx) {
+      //g_app_state.load_user_file_new(g_app_state.create_user_file_new());
+      new Context().scene.graph.exec();
     }));
     
     k.add(new KeyHandler("Z", ["CTRL", "SHIFT"], "Redo"), new FuncKeyHandler(function(ctx) {
@@ -861,7 +890,7 @@ class View3DHandler extends Area {
     obj.zoomwheel = this.zoomwheel;
     
     obj.drawmats = this.drawmats.toJSON();
-    obj.selectmode = this.selectmode;
+    obj.selectmode = this._selectmode;
     
     obj.znear = this.znear;
     obj.zfar = this.zfar;
@@ -870,6 +899,50 @@ class View3DHandler extends Area {
     obj.use_subsurf = this.use_subsurf
     
     return obj;
+  }
+  
+  switch_editor(editortype) {
+    if (editortype == undefined) {
+      console.log("Undefined passed to switch_editor()");
+      return;
+    }
+    
+    var editor = undefined;
+    for (var e in this.editors) {
+      if (e instanceof editortype) {
+        editor = e;
+        break;
+      }
+    }
+    
+    if (editor == undefined) {
+      editor = new editortype(this);
+      this.editors.push(editor);
+    }
+    
+    this.editor.on_inactive(this);
+    this.editor = editor;
+    editor.on_active(this);
+  }
+  
+  ensure_editor(editortype) {
+    if (!(this.editor instanceof editortype))
+      this.switch_editor(editortype);
+  }
+  
+  set_selectmode(mode) {
+    this._selectmode = mode;
+    
+    if (mode & EditModes.GEOMETRY) {
+      this.ensure_editor(MeshEditor);
+    } else if (mode == EditModes.OBJECT) {
+      this.ensure_editor(ObjectEditor);
+    } else {
+      console.trace();
+      console.log("Error: invalid selection mode ", mode, " in view3d.set_selmod()");
+    }
+    
+    this.editor.selectmode = mode;
   }
 }
 

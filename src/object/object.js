@@ -1,5 +1,11 @@
 "use strict";
 
+var RecalcFlags = {
+  TRANSFORM : 1,
+  DATA_COS  : 2,
+  DATA      : 4
+};
+
 var ObFlags = {
   Display_BB: 1
 };
@@ -7,20 +13,21 @@ var ObFlags = {
 var RotTypes = {EULER: 0};
 var BBDispTypes = {BOX: 1, SPHERE: 2, CYLINDER: 3, CONE: 4, VIEWCIRCLE: 5};
 
-class ASObject extends DataBlock {
+class ASObject extends DagNode {
   constructor(data, name) {
     //name is optional
     if (name == undefined)
       name = "Object";
     
     DataBlock.call(this, DataTypes.OBJECT, name);
+    DagNode.call(this);
     
     this.scene = undefined : Scene;
+    this.recalcflag = 0;
     
-    this.dag_node = new DagNodeData()
     this.dag_node.add_sockets("i", [
       new DepSocket("parent", this),
-      new Matrix4Socket("multipliers", this, 0) //allow multiple inputs
+      new Matrix4Socket("multipliers", this) //allow multiple inputs
     ]);
 
     this.dag_node.add_sockets("o", [
@@ -30,8 +37,10 @@ class ASObject extends DataBlock {
     
     this.flag = 0;
     this.loc = new Vector3();
+    
     this.euler = new Vector3();
     this.size = new Vector3([1.0, 1.0, 1.0]);
+    this.rot_euler = new Vector3();
     
     this.rot_method = RotTypes.EULER;
     
@@ -51,7 +60,11 @@ class ASObject extends DataBlock {
     this.layermask = 0x7FFFFFFF;
     this.selbuf_id = -1; //only set when obj is added to database
   }
-
+  
+  get_aabb() {
+    return this.bb;
+  }
+  
   on_add(DataLib lib) {
     this.selbuf_id = ibuf_idgen.gen_id();
   }
@@ -65,7 +78,7 @@ class ASObject extends DataBlock {
     return ob;
   }
 
-  dag_exec() {
+  dag_execute() {
     var mat = this.matrix = this.basic_matrix();
     
     if (this.parent != undefined) {
@@ -73,7 +86,7 @@ class ASObject extends DataBlock {
       mat.multiply(this.parent.matrix);
     }
     
-    for (var ms in this.dag_node.inmap["mutipliers"].edges) {
+    for (var ms in this.dag_node.inmap["multipliers"].edges) {
       var mat2 = ms.src.get_data();
       mat.multiply(mat2);
     }
@@ -192,17 +205,21 @@ class ASObject extends DataBlock {
     scene.graph.connect(newpar, "dep", this, "parent");
     this.lib_adduser(this, "parent", DataRem(this, "parent"));
   }
-
-  recalc() {
-    if (this.scene != undefined)
-      this.dag_update(this.scene.graph);
+  
+  from_matrix(Matrix4 mat) {
+    //set loc/rot/co
+  }
+  
+  recalc(flag) {
+    this.dag_update();
+    this.recalcflag |= flag;
   }
 }
 
 ASObject.STRUCT = STRUCT.inherit(ASObject, DataBlock) + """
   matrix : mat4;
   loc : vec3;
-  rot_ruler : vec3;
+  rot_euler : vec3;
   rot_method : int;
   size : vec3;
   flag : int;

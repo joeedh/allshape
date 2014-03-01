@@ -74,7 +74,7 @@ function SelectOp(mode) {
   
   var mode_vals = ["add", "subtract"];
   
-  var selmode_enum = mesh_selectmode_enum.copy();
+  var selmode_enum = selectmode_enum.copy();
   
   this.inputs = {eid_vs: new ElementBufProperty([], "verts", "Vertices", "Vertices"),
                  eid_es: new ElementBufProperty([], "edges", "Edges", "Edges"),
@@ -96,7 +96,7 @@ function ToggleSelectAllOp(mode) { //mode is optional, defaults to "auto"
   this.uiname = "Toggle Select"
   
   this.is_modal = false;
-  var selmode_enum = mesh_selectmode_enum.copy();
+  var selmode_enum = selectmode_enum.copy();
   selmode_enum.flag |= PackFlags.UI_DATAPATH_IGNORE;
   
   var mode_vals = ["select", "deselect", "auto"];
@@ -187,7 +187,7 @@ function EdgeLoopOp(mode) {
   this.is_modal = false;
   this.flag = ToolFlags.HIDE_TITLE_IN_LAST_BUTTONS;
   
-  var selmode_enum = mesh_selectmode_enum.copy();
+  var selmode_enum = selectmode_enum.copy();
   
   var mode_vals = ["add", "subtract"];
   this.inputs = {eid_es: new ElementBufProperty([], "edges", "Start Edges", "Start Edges"),
@@ -269,7 +269,7 @@ function FaceLoopOp(mode) {
   this.is_modal = false;
   this.flag = ToolFlags.HIDE_TITLE_IN_LAST_BUTTONS;
   
-  var selmode_enum = mesh_selectmode_enum.copy();
+  var selmode_enum = selectmode_enum.copy();
   
   var mode_vals = ["add", "subtract"];
   this.inputs = {eid_es: new ElementBufProperty([], "edges", "Start Edges", "Start Edges"),
@@ -350,7 +350,7 @@ function CircleSelectOp() {
   this.selset = new set();
   this.unselset = new set();
   
-  var selmode_enum = mesh_selectmode_enum.copy();
+  var selmode_enum = selectmode_enum.copy();
   
   var mode_vals = ["add", "subtract"];
   this.inputs = {sel_eids: new ElementBufProperty([], "sel_geometry", "SelGeometry", "Geometry to select"),

@@ -3,6 +3,28 @@
 #define EXPORT_FUNC(func)
 #endif
 
+/*Object model:
+  
+  A basic single-inheritance object model,
+  with static methods.  Multiple inheritance may
+  be implemented later.
+  
+  All defined object types are stored in the global variable 
+  defined_classes (which is a GArray).
+  
+  Each constructor function has the following properties:
+    prototype                 : The prototype; if inherited is created 
+                                with Object.create(parent.prototype)
+    prototype.prior           : the parent prototype, if one exists
+    prototype.constructor     : the constructor function
+    prototype.__prototypeid__ : a private, runtime-generated unique id number
+    prototype.__class__       : constructor.name
+    prototype.prototype       : a self-reference so instanced objects get .prototype.
+                                This should be removed; can use __proto__ instead.
+    __statics__               : a list of static methods or variables declared with
+                                define_static()
+*/
+
 //this actually ends up being a GArray
 var defined_classes = new Array();
 var defined_tests = new Array();
@@ -21,7 +43,26 @@ function inherit(obj, parent) {
   obj.prototype.__prototypeid__ = _prototype_id_gen++;
   obj.prototype.__class__ = obj.name;
   obj.prototype.prototype = obj.prototype;
+  
+  var slist;
+  if (parent.__statics__ != undefined) {
+    slist = new Array(parent.__statics__.length);
+    for (var i=0; i<slist.length; i++) {
+      slist[i] = parent.__statics__[i];
+    }
+  } else {
+    slist = [];
+  }
+  
+  obj.__statics__ = slist;
+ 
+  for (var i=0; i<slist.length; i++) {
+    var st = slist[i];
+    
+    obj[st] = parent[st];
+  }
 }
+
 EXPORT_FUNC(inherit)
 
 function create_prototype(obj) {
@@ -31,8 +72,14 @@ function create_prototype(obj) {
   obj.prototype.prototype = obj.prototype;
   obj.prototype.__prototypeid__ = _prototype_id_gen++;
   obj.prototype.__class__ = obj.name;
+  obj.__statics__ = [];
 }
 EXPORT_FUNC(create_prototype)
+
+function define_static(obj, name, val) {
+  obj[name] = val;
+  obj.__statics__.push(name);
+}
 
 function prior(thisproto, obj) {
   var proto = obj.prototype;
@@ -77,7 +124,7 @@ function __get_iter(obj)
     throw new Error("Invalid iteration over undefined value")
   }
   
-  if (obj.__proto__.hasOwnProperty("__iterator__") || obj.hasOwnProperty("__iterator__")) {
+  if ("__iterator__" in obj) {
     return obj.__iterator__();
   } else {
     var keys = []
@@ -144,7 +191,7 @@ class _KeyValIterator {
 }
 
 var Iterator = function(obj) {
-  if (obj.__proto__.hasOwnProperty("__iterator__") || obj.hasOwnProperty("__iterator__")) {
+  if ("__iterator__" in obj) {
     return obj.__iterator__();
   } else {
     return new _KeyValIterator(obj);

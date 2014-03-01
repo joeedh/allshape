@@ -65,6 +65,7 @@ js_sources = [
 	"src/view3d/view3d.js",
 	"src/view3d/view3d_ops.js",
 	"src/view3d/select_ops.js",
+  "src/view3d/view3d_object_ops.js",
 	"src/view3d/view3d_mesh_ops.js",
 	"src/object/object.js",
 	"src/object/scenegraph.js",

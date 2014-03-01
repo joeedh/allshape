@@ -1,6 +1,6 @@
 "use strict"
 
-var RecalcFlags = {REGEN_TESS: 1, REGEN_COLORS: 2, REGEN_COS: 4, REGEN_NORS: 8};
+var MeshRecalcFlags = {REGEN_TESS: 1, REGEN_COLORS: 2, REGEN_COS: 4, REGEN_NORS: 8};
 
 var sel_color = [0.9, 0.6, 0.2, 1.0];
 var highlight_color = [0.9, 0.4, 0.7, 1.0];
@@ -170,7 +170,7 @@ function render() {
   this.facecolors = 0 : WebGLBuffer;
   this.totface = 0 : WebGLBuffer;
   
-  this.recalc = RecalcFlags.REGEN_TESS | RecalcFlags.REGEN_COLORS | RecalcFlags.REGEN_COS;
+  this.recalc = MeshRecalcFlags.REGEN_TESS | MeshRecalcFlags.REGEN_COLORS | MeshRecalcFlags.REGEN_COS;
   
   this.copy_programs = function(render ren) {
     this.vertprogram = ren.vertprogram;
@@ -335,7 +335,7 @@ function gen_mesh_selbufs(gl, mesh)
 
 /*this function clears any dirty flags in the elements*/
 function gen_mesh_render(WebGLRenderingContext ctx, Mesh mesh, ShaderProgram drawprogram, 
-                         ShaderProgram vertprogram, Boolean recalcflags) 
+                         ShaderProgram vertprogram, int recalcflags) 
 {
   function tess_finish(job) {
     mesh.flag |= MeshFlags.TESS_JOB_FINISHED;
@@ -346,11 +346,11 @@ function gen_mesh_render(WebGLRenderingContext ctx, Mesh mesh, ShaderProgram dra
     mesh.regen_render();
   }
   
-  //if (recalcflags & RecalcFlags.REGEN_COS)
-  //  recalcflags |= RecalcFlags.REGEN_TESS;
+  //if (recalcflags & MeshRecalcFlags.REGEN_COS)
+  //  recalcflags |= MeshRecalcFlags.REGEN_TESS;
     
-  if ((recalcflags & RecalcFlags.REGEN_TESS) != 0) {
-    recalcflags |= RecalcFlags.REGEN_NORS | RecalcFlags.REGEN_COS | RecalcFlags.REGEN_COLORS;
+  if ((recalcflags & MeshRecalcFlags.REGEN_TESS) != 0) {
+    recalcflags |= MeshRecalcFlags.REGEN_NORS | MeshRecalcFlags.REGEN_COS | MeshRecalcFlags.REGEN_COLORS;
     
     gen_tris(mesh);
     
@@ -366,9 +366,9 @@ function gen_mesh_render(WebGLRenderingContext ctx, Mesh mesh, ShaderProgram dra
       }
     }
     // */
-  } else if (recalcflags & RecalcFlags.REGEN_COS) {
+  } else if (recalcflags & MeshRecalcFlags.REGEN_COS) {
     if (mesh.flag & MeshFlags.TESS_JOB_FINISHED) {
-      recalcflags |= RecalcFlags.REGEN_NORS | RecalcFlags.REGEN_COS | RecalcFlags.REGEN_COLORS | RecalcFlags.REGEN_TESS;
+      recalcflags |= MeshRecalcFlags.REGEN_NORS | MeshRecalcFlags.REGEN_COS | MeshRecalcFlags.REGEN_COLORS | MeshRecalcFlags.REGEN_TESS;
       
       mesh.flag &= ~MeshFlags.TESS_JOB_FINISHED;
     } else {
@@ -382,7 +382,7 @@ function gen_mesh_render(WebGLRenderingContext ctx, Mesh mesh, ShaderProgram dra
       g_app_state.jobs.queue_replace(job);
       
       /*
-      recalcflags |= RecalcFlags.REGEN_NORS | RecalcFlags.REGEN_COS | RecalcFlags.REGEN_COLORS | RecalcFlags.REGEN_TESS;
+      recalcflags |= MeshRecalcFlags.REGEN_NORS | MeshRecalcFlags.REGEN_COS | MeshRecalcFlags.REGEN_COLORS | MeshRecalcFlags.REGEN_TESS;
       for (var iter in job) {
         i++;
         if (i > 10000) {
@@ -418,13 +418,13 @@ function gen_mesh_render(WebGLRenderingContext ctx, Mesh mesh, ShaderProgram dra
     
     v.flag &= ~Flags.DIRTY;
     
-    if (recalcflags & RecalcFlags.REGEN_NORS) {
+    if (recalcflags & MeshRecalcFlags.REGEN_NORS) {
       normals.push(no[0]);
       normals.push(no[1]);
       normals.push(no[2]);
     }
     
-    if ((recalcflags & RecalcFlags.REGEN_COLORS) != 0) {
+    if ((recalcflags & MeshRecalcFlags.REGEN_COLORS) != 0) {
       var color = get_element_color(v, mesh.verts.highlight);
       colors.push(color[0]);
       colors.push(color[1]);
@@ -433,7 +433,7 @@ function gen_mesh_render(WebGLRenderingContext ctx, Mesh mesh, ShaderProgram dra
     }
   }
   
-  if (recalcflags & RecalcFlags.REGEN_NORS) {
+  if (recalcflags & MeshRecalcFlags.REGEN_NORS) {
     normals = new Float32Array(normals);
   }
   
@@ -460,7 +460,7 @@ function gen_mesh_render(WebGLRenderingContext ctx, Mesh mesh, ShaderProgram dra
   }
   verts = new Float32Array(verts);
 
-  if (recalcflags & RecalcFlags.REGEN_NORS) {
+  if (recalcflags & MeshRecalcFlags.REGEN_NORS) {
     mesh.render.kill_buf("norbuf");
     mesh.render.norbuf = ctx.createBuffer();
     ctx.bindBuffer(ctx.ARRAY_BUFFER, mesh.render.norbuf);
@@ -472,7 +472,7 @@ function gen_mesh_render(WebGLRenderingContext ctx, Mesh mesh, ShaderProgram dra
   ctx.bindBuffer(ctx.ARRAY_BUFFER, mesh.render.vertbuf);
   ctx.bufferData(ctx.ARRAY_BUFFER, verts, ctx.STATIC_DRAW);
   
-  if ((recalcflags & RecalcFlags.REGEN_COLORS) != 0) {
+  if ((recalcflags & MeshRecalcFlags.REGEN_COLORS) != 0) {
     mesh.render.kill_buf("vcolorbuf");
     mesh.render.vcolorbuf = ctx.createBuffer();
     ctx.bindBuffer(ctx.ARRAY_BUFFER, mesh.render.vcolorbuf);
@@ -485,7 +485,7 @@ function gen_mesh_render(WebGLRenderingContext ctx, Mesh mesh, ShaderProgram dra
   var ls = mesh.looptris;
   
   /*
-  if (recalcflags & RecalcFlags.REGEN_TESS) {
+  if (recalcflags & MeshRecalcFlags.REGEN_TESS) {
     for (var i=0; i<Math.floor(ls.length/3); i++) {
       ls[i*3].f.flag &= ~Flags.DIRTY;
      
@@ -551,7 +551,7 @@ function gen_mesh_render(WebGLRenderingContext ctx, Mesh mesh, ShaderProgram dra
   
   var ecolorbuf = new Array<float>();
   for (var e in mesh.edges) {
-    if ((recalcflags & RecalcFlags.REGEN_COLORS) != 0) {
+    if ((recalcflags & MeshRecalcFlags.REGEN_COLORS) != 0) {
       var color = get_element_color(e, mesh.edges.highlight);
       for (i=0; i<2; i++) {
           ecolorbuf.push(color[0]);
@@ -568,7 +568,7 @@ function gen_mesh_render(WebGLRenderingContext ctx, Mesh mesh, ShaderProgram dra
   ctx.bindBuffer(ctx.ARRAY_BUFFER, mesh.render.edgebuf);
   ctx.bufferData(ctx.ARRAY_BUFFER, edgebuf, ctx.STATIC_DRAW);
 
-  if (recalcflags & RecalcFlags.REGEN_COLORS) {
+  if (recalcflags & MeshRecalcFlags.REGEN_COLORS) {
     mesh.render.kill_buf("ecolorbuf");
     mesh.render.ecolorbuf = ctx.createBuffer();
     ctx.bindBuffer(ctx.ARRAY_BUFFER, mesh.render.ecolorbuf);
@@ -605,7 +605,7 @@ function gen_mesh_render(WebGLRenderingContext ctx, Mesh mesh, ShaderProgram dra
       continue;
     }
       
-    if (recalcflags & RecalcFlags.REGEN_NORS) {
+    if (recalcflags & MeshRecalcFlags.REGEN_NORS) {
       if (ls[i].f.flags & Flags.SHADE_SMOOTH) {
         tri_nbuff.push(ls[i].v.no[0]);
         tri_nbuff.push(ls[i].v.no[1]);
@@ -619,7 +619,7 @@ function gen_mesh_render(WebGLRenderingContext ctx, Mesh mesh, ShaderProgram dra
   }
   
   tri_vbuff = new Float32Array(tri_vbuff);
-  if (recalcflags & RecalcFlags.REGEN_NORS) {
+  if (recalcflags & MeshRecalcFlags.REGEN_NORS) {
     tri_nbuff = new Float32Array(tri_nbuff);
   }
   
@@ -635,7 +635,7 @@ function gen_mesh_render(WebGLRenderingContext ctx, Mesh mesh, ShaderProgram dra
     
     var f = ls[i].f;
    
-    if ((recalcflags & RecalcFlags.REGEN_COLORS) != 0) {
+    if ((recalcflags & MeshRecalcFlags.REGEN_COLORS) != 0) {
       var color = get_element_color(f, mesh.faces.highlight, true);
       
       tri_cbuff.push(color[0]);
@@ -659,7 +659,7 @@ function gen_mesh_render(WebGLRenderingContext ctx, Mesh mesh, ShaderProgram dra
     faceverts.push(center[1]);
     faceverts.push(center[2]);
     
-    if ((recalcflags & RecalcFlags.REGEN_COLORS) != 0) {
+    if ((recalcflags & MeshRecalcFlags.REGEN_COLORS) != 0) {
       var color = get_element_color(f, mesh.faces.highlight, false);
       
       facecolors.push(color[0]);
@@ -678,7 +678,7 @@ function gen_mesh_render(WebGLRenderingContext ctx, Mesh mesh, ShaderProgram dra
   ctx.bindBuffer(ctx.ARRAY_BUFFER, mesh.render.faceverts);
   ctx.bufferData(ctx.ARRAY_BUFFER, faceverts, ctx.STATIC_DRAW);
 
-  if ((recalcflags & RecalcFlags.REGEN_COLORS) != 0) {
+  if ((recalcflags & MeshRecalcFlags.REGEN_COLORS) != 0) {
     mesh.render.kill_buf("facecolors");
     mesh.render.facecolors = ctx.createBuffer();
     ctx.bindBuffer(ctx.ARRAY_BUFFER, mesh.render.facecolors);
@@ -690,14 +690,14 @@ function gen_mesh_render(WebGLRenderingContext ctx, Mesh mesh, ShaderProgram dra
   ctx.bindBuffer(ctx.ARRAY_BUFFER, mesh.render.tri_vbuff);
   ctx.bufferData(ctx.ARRAY_BUFFER, tri_vbuff, ctx.STATIC_DRAW);
 
-  if ((recalcflags & RecalcFlags.REGEN_COLORS) != 0) {
+  if ((recalcflags & MeshRecalcFlags.REGEN_COLORS) != 0) {
     mesh.render.kill_buf("tri_cbuff");
     mesh.render.tri_cbuff = ctx.createBuffer();
     ctx.bindBuffer(ctx.ARRAY_BUFFER, mesh.render.tri_cbuff);
     ctx.bufferData(ctx.ARRAY_BUFFER, tri_cbuff, ctx.STATIC_DRAW);
   }
   
-  if (recalcflags & RecalcFlags.REGEN_NORS) {
+  if (recalcflags & MeshRecalcFlags.REGEN_NORS) {
     mesh.render.kill_buf("tri_nbuff");
     mesh.render.tri_nbuff = ctx.createBuffer();
     ctx.bindBuffer(ctx.ARRAY_BUFFER, mesh.render.tri_nbuff);
@@ -729,7 +729,7 @@ function gen_mesh_render(WebGLRenderingContext ctx, Mesh mesh, ShaderProgram dra
   /*ctx.bindBuffer(gl.ARRAY_BUFFER, mesh.render.texbuf);
   ctx.vertexAttribPointer(3, 2, gl.FLOAT, false, 0, 0);*/
   
-  if ((recalcflags & RecalcFlags.REGEN_COLORS) || (recalcflags & RecalcFlags.REGEN_TESS))
+  if ((recalcflags & MeshRecalcFlags.REGEN_COLORS) || (recalcflags & MeshRecalcFlags.REGEN_TESS))
     gen_mesh_selbufs(ctx, mesh);
   
   mesh.render.recalc = 0;
@@ -1014,6 +1014,9 @@ function render_mesh_selbuf(WebGLRenderingContext gl,
                             Mesh mesh, DrawMats drawmats, int typemask)
 {
   if (mesh.render.recalc != 0) {
+    if (mesh.render.tri_vbuff == 0)
+      mesh.regen_render()
+    
     gen_mesh_render(gl, mesh, mesh.render.drawprogram, mesh.render.vertprogram, mesh.render.recalc);
   }
   
@@ -1032,6 +1035,8 @@ function render_mesh_selbuf(WebGLRenderingContext gl,
   set_program(gl, gl.selbuf, drawmats);
   
   if (typemask & MeshTypes.FACE) {
+    console.log(mesh.render.tri_vbuff);
+    console.log(mesh.render);
     gl.polygonOffset(1, 1);
     gl.bindBuffer(gl.ARRAY_BUFFER, mesh.render.tri_vbuff);
     gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
@@ -1070,7 +1075,9 @@ function render_mesh_selbuf(WebGLRenderingContext gl,
 function render_mesh_intern(WebGLRenderingContext gl, View3DHandler view3d, 
                             Mesh mesh, DrawMats drawmats, Boolean draw_overlay) 
 {
-  if (mesh.render.recalc != 0) {
+  if (mesh.render.recalc != 0 || mesh.render.tri_vbuff == 0) {
+    if (mesh.render.tri_vbuff == 0) 
+      mesh.regen_render();
     gen_mesh_render(gl, mesh, mesh.render.drawprogram, mesh.render.vertprogram, mesh.render.recalc);
   }
   
@@ -1147,6 +1154,33 @@ function render_mesh_intern(WebGLRenderingContext gl, View3DHandler view3d,
   //gl.useProgram(mesh.render.drawprogram);
 }
 
+function render_mesh_object(WebGLRenderingContext gl, View3DHandler view3d, 
+                            Mesh mesh, DrawMats drawmats) 
+{
+  if (mesh.render.recalc != 0) {
+    gen_mesh_render(gl, mesh, mesh.render.drawprogram, mesh.render.vertprogram, mesh.render.recalc);
+  }
+  
+  
+  gl.enable(gl.DEPTH_TEST);
+  gl.enable(gl.POLYGON_OFFSET_FILL);
+  
+  // Set shaders and draw solid pass
+  set_program(gl, mesh.render.drawprogram, drawmats);
+  
+  //triangles
+  if (mesh.render.tri_totvert > 0) {
+    gl.polygonOffset(1, 1);
+    
+    _set_buffer_solid(gl, mesh);
+    
+    gl.disableVertexAttribArray(4);
+    
+    gl.uniform1f(gl.getUniformLocation(mesh.render.drawprogram.program, "alpha_mul"), 1.0);
+    gl.drawArrays(gl.TRIANGLES, 0, mesh.render.tri_totvert);
+  }  
+}
+
 function render_points(WebGLRenderingContext gl, Float32Array floatbuf, 
                       int totpoints, View3DHandler view3d, DrawMats drawmats) 
 {
@@ -1187,7 +1221,7 @@ function render_mesh(WebGLRenderingContext gl, View3DHandler view3d, Mesh mesh1,
   mesh2.render = new render();
   mesh2.render.vertprogram = mesh1.render.vertprogram;
   mesh2.render.drawprogram = mesh1.render.drawprogram;
-  mesh2.render.recalc = RecalcFlags.REGEN_TESS|RecalcFlags.REGEN_COLORS|RecalcFlags.REGEN_NORS|RecalcFlags.REGEN_COS;
+  mesh2.render.recalc = MeshRecalcFlags.REGEN_TESS|MeshRecalcFlags.REGEN_COLORS|MeshRecalcFlags.REGEN_NORS|MeshRecalcFlags.REGEN_COS;
   mesh2.api.recalc_normals();
   mesh1 = mesh2
   // */

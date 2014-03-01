@@ -1,9 +1,9 @@
 //if field is not undefined, use the data
 //contained in owner.[field].  otherwise, use
 //own data.
-function Matrix4Socket(field, owner, name, flag) {
+function Matrix4Socket(name, owner, field, flag) {
   //flag is optional
-  DagSocket.call(this, owner, name, flag);
+  DagSocket.call(this, name, owner, flag);
   
   this.matrix = new Matrix4();
   this.field = field;
@@ -16,8 +16,7 @@ Matrix4Socket.prototype.get_data = function(edge) {
   else return this.matrix;
 }
 
-function DepSocket(owner, name, flag) {
-  DagSocket.call(this, owner, name, flag);
-  
+function DepSocket(name, owner, flag) {
+  DagSocket.call(this, name, owner, flag);
 };
 inherit(DepSocket, DagSocket);

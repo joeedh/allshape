@@ -939,8 +939,13 @@ def p_class_body_opt(p):
                     |
   '''
  
-  p[0] = p[1]
-  if p[0] == None: p[0] = []
+  if len(p) == 1:
+    p[0] = []
+  else:
+    p[0] = p[1]
+    
+  if p[0] == None: 
+    p[0] = []
 
 def p_class_element_list(p):
   '''class_element_list : class_element
@@ -1959,7 +1964,12 @@ def p_error(p):
       yacc.errok()
       glob.g_error = False
       if glob.g_production_debug or glob.g_semi_debug:
-        sys.stdout.write("handled semicolon error : %d\n" % p.lexpos)
+        linestr, colstr = err_find_line(p.lexer, p.lexpos);
+        lineno = p.lineno if type(p.lineno) == int else p.lineno(0)
+        
+        sys.stdout.write("handled semicolon error : %d\n" % lineno)
+        sys.stdout.write(linestr+"\n")
+        sys.stdout.write(colstr+"\n")
       return
     else:      
       glob.g_error = True

@@ -531,13 +531,13 @@ Mesh.prototype.load_partial = function(part) {
 }
 
 Mesh.prototype.regen_positions = function() {
-  this.render.recalc |= RecalcFlags.REGEN_COS;
+  this.render.recalc |= MeshRecalcFlags.REGEN_COS;
   
   this.do_callbacks(MeshEvents.RECALC);
 }
 
 Mesh.prototype.regen_normals = function() {
-  this.render.recalc |= RecalcFlags.REGEN_NORS;
+  this.render.recalc |= MeshRecalcFlags.REGEN_NORS;
   
   this.do_callbacks(MeshEvents.RECALC);
 }
@@ -549,7 +549,7 @@ Mesh.prototype.do_callbacks = function(event) {
 }
 
 Mesh.prototype.regen_render = function() {
-  this.render.recalc |= RecalcFlags.REGEN_NORS | RecalcFlags.REGEN_TESS | RecalcFlags.REGEN_COS | RecalcFlags.REGEN_COLORS;
+  this.render.recalc |= MeshRecalcFlags.REGEN_NORS | MeshRecalcFlags.REGEN_TESS | MeshRecalcFlags.REGEN_COS | MeshRecalcFlags.REGEN_COLORS;
   for (var f in this.faces) {
     f.flag |= Flags.DIRTY;
   }
@@ -558,7 +558,7 @@ Mesh.prototype.regen_render = function() {
 }
 
 Mesh.prototype.regen_colors = function() {
-  this.render.recalc |= RecalcFlags.REGEN_COLORS;
+  this.render.recalc |= MeshRecalcFlags.REGEN_COLORS;
   
   this.do_callbacks(MeshEvents.RECALC);
 }
