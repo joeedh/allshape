@@ -104,7 +104,6 @@ Dialog.prototype.on_draw = function(gl) {
 }
 
 Dialog.prototype.build_draw = function(canvas, isVertical) {
-  canvas.begin(this);
   canvas.push_scissor([0, 0], this.size);
   
   /*
@@ -142,7 +141,6 @@ Dialog.prototype.build_draw = function(canvas, isVertical) {
   UIFrame.prototype.build_draw.call(this, canvas, isVertical);
   
   canvas.pop_scissor();
-  canvas.end(this);
 }
 
 Dialog.prototype.on_keydown = function(event)

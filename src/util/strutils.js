@@ -9,7 +9,7 @@ for (var i=0; i<64; i++) {
 _b64_map["="] = 65;
 
 var _b64_arr = [0, 1, 2, 3];
-function b64encode(arr, add_newlines=false, collimit=80) {
+function b64encode(arr, add_newlines=false, collimit=76) {
   global _b64str;
   var s = "";
   var is_str = btypeof(arr) == "string";
@@ -36,13 +36,13 @@ function b64encode(arr, add_newlines=false, collimit=80) {
   
     _b64_arr[0] = b1; _b64_arr[1] = b2; _b64_arr[2] = b3; _b64_arr[3] = b4;
     for (var j=0; j<4; j++) {
-      s += _b64str.charAt(_b64_arr[j]);
-      ci++;
-      
-      if (ci > collimit && add_newlines) {
+      if (ci >= collimit && add_newlines) {
         ci = 0;
         s += "\n";
       }
+      
+      s += _b64str.charAt(_b64_arr[j]);
+      ci++;
     }
   }
   

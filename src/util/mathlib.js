@@ -252,6 +252,12 @@ function winding(a, b, c) {
 //this specifically returns true in the case where two rectangles
 //share common borders
 function inrect_2d(p, pos, size) {
+  if (p == undefined || pos == undefined || size == undefined) {
+    console.trace();
+    console.log("Bad paramters to inrect_2d()")
+    console.log("p: ", o, ", pos: ", pos, ", size: ", size);
+    return false;
+  }
   return p[0] >= pos[0] && p[0] <= pos[0]+size[0] && p[1] >= pos[1] && p[1] <= pos[1]+size[1];
 }
 

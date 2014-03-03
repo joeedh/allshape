@@ -945,9 +945,7 @@ ScreenBorder.prototype.on_inactive = function() {
 ScreenBorder.prototype.build_draw = function(UICanvas canvas, Boolean isVertical)
 {
   canvas.begin(this);
-  
   canvas.line(this.pos, new Vector2(this.pos).add([100, 100]), undefined, undefined, 20.0);
-  
   canvas.end(this);
 }
 
@@ -1300,7 +1298,7 @@ Screen.prototype.on_draw = function(WebGLRenderingContext gl)
 Screen.prototype.on_tick = function()
 {
   if (time_ms() - this.last_sync > 700) {
-    localStorage.screen = JSON.stringify(this);
+    //localStorage.screen = JSON.stringify(this);
     this.last_sync = time_ms();
   }
   

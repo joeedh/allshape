@@ -15,7 +15,8 @@ var DEBUG = {
   touch : false,
   mousemove : false,
   ui_datapaths : false,
-  ui_menus : false
+  ui_menus : false,
+  ui_canvas : false
 };
 
 var SELECT = 1;

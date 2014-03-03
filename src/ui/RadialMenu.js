@@ -791,11 +791,13 @@ UIRadialMenu.prototype.angle_line = function(angle, cent)
 
 UIRadialMenu.prototype.build_draw = function(canvas, isVertical) 
 {
-  canvas.begin(this);
   if (!this.packed) {
     this.packmenu(canvas);
     this.packed = true;
   }
+  
+  UIFrame.prototype.build_draw.call(this, canvas, true);
+  canvas.begin(this);
   
   if (this.closed) {
     this._have_rebuilt = true;
@@ -829,7 +831,6 @@ UIRadialMenu.prototype.build_draw = function(canvas, isVertical)
     }
   }
   
-  UIFrame.prototype.build_draw.call(this, canvas, true);
   var v1 = this.off_mpos(this.mpos);
   v1.normalize()
   v1.mulScalar(100.0);

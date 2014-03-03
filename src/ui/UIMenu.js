@@ -213,17 +213,16 @@ UIMenu.prototype.on_mousemove = function(event)
 
 UIMenu.prototype.build_draw = function(canvas, isvertical) 
 {
-  canvas.begin(this);
-  
   if (!this.packed) {
     this.packmenu(canvas);
     this.packed = true;
   }
   
+  UIFrame.prototype.build_draw.call(this, canvas, true);
+  
+  canvas.begin(this);
   canvas.simple_box([0, 0], this.size, uicolors["MenuBox"][0], 35.0);
   canvas.text([24, this.size[1]-22], this.name, uicolors["BoxText"])
-  
-  UIFrame.prototype.build_draw.call(this, canvas, true);
   
   var clr = uicolors["MenuSep"]
   var ehgt = this.ehgt

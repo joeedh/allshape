@@ -1,65 +1,65 @@
 "use strict";
 
 //buttons only take executable (function) paths as arguments
-function UIButton(ctx, text, pos, size, path, callback) {
-  UIElement.call(this, ctx, path);
-  
-  this.clicked = false;
-  this.text = text;
-  this.pos = pos;
-  this.size = size;
-  this.callback = callback;
-}
-inherit(UIButton, UIElement);
-
-UIButton.prototype.on_mousedown = function(MouseEvent event) {
-  if (event.button == 0 && !this.clicked) {
-    this.push_modal();
+class UIButton extends UIElement {
+  constructor(ctx, text, pos, size, path, callback) {
+    UIElement.call(this, ctx, path);
     
-    this.clicked = true;
-    this.do_recalc();
-  }  
-}
-
-UIButton.prototype.on_mouseup = function(MouseEvent event) {
-  if (event.button == 0) {
-    this.pop_modal();
     this.clicked = false;
-    this.do_recalc();
-    
-    if (inrect_2d([event.x, event.y], [0,0], this.size)) {
-      console.log("clicked")
-      if (this.callback != undefined) {
-        this.callback(this);
-      }
+    this.text = text;
+    this.pos = pos;
+    this.size = size;
+    this.callback = callback;
+  }
+
+  on_mousedown(MouseEvent event) {
+    if (event.button == 0 && !this.clicked) {
+      this.push_modal();
       
-      if (this.state & UIFlags.USE_PATH) {
-        this.ctx.api.call_op(this.ctx, this.data_path);
+      this.clicked = true;
+      this.do_recalc();
+    }  
+  }
+
+  on_mouseup(MouseEvent event) {
+    if (event.button == 0) {
+      this.pop_modal();
+      this.clicked = false;
+      this.do_recalc();
+      
+      if (inrect_2d([event.x, event.y], [0,0], this.size)) {
+        if (this.callback != undefined) {
+          this.callback(this);
+        }
+        
+        if (this.state & UIFlags.USE_PATH) {
+          this.ctx.api.call_op(this.ctx, this.data_path);
+        }
       }
-    }
-  }  
-}
+    }  
+  }
 
-UIButton.prototype.build_draw = function(UICanvas canvas) {
-  canvas.begin(this);
+  build_draw(UICanvas canvas) {
+    canvas.begin(this);
 
-  if (this.clicked) 
-    canvas.invbox([0, 0], this.size);
-  else if (this.state & UIFlags.HIGHLIGHT)
-    canvas.hlightbox([0, 0], this.size)
-  else 
-    canvas.box([0, 0], this.size);
-  
-  var tsize = canvas.textsize(this.text);
-  
-  canvas.text([(this.size[0]-tsize[0])*0.5, (this.size[1]-tsize[1])*0.45], this.text, uicolors["BoxText"]);
-  
-  canvas.end(this);
-}
+    if (this.clicked) 
+      canvas.invbox([0, 0], this.size);
+    else if (this.state & UIFlags.HIGHLIGHT)
+      canvas.hlightbox([0, 0], this.size)
+    else 
+      canvas.box([0, 0], this.size);
+    
+    var tsize = canvas.textsize(this.text);
+    
+    canvas.text([(this.size[0]-tsize[0])*0.5, (this.size[1]-tsize[1])*0.45], this.text, uicolors["BoxText"]);
+    
+    canvas.end(this);
+  }
 
-UIButton.prototype.get_min_size = function(UICanvas canvas, Boolean isvertical)
-{
-  return [canvas.textsize(this.text)[0]+12, 26]
+  get_min_size(UICanvas canvas, Boolean isvertical)
+  {
+    return [canvas.textsize(this.text)[0]+12, 26]
+  }
 }
 
 function UIMenuButton(ctx, menu, pos, size, path) {//menu can be undefined, if path is defined
@@ -617,14 +617,16 @@ UIMenuLabel.prototype.on_tick = function() {
   e.g. that a user is hovering over a label, and the menu should switch
   to that one.*/
 function _HiddenMenuElement(Context ctx, UIMenuLabel src_menu_label, UIMenuLabel dst_menu_label) {
-  UIElement.call(ctx);
+  UIElement.call(this, ctx);
+  
   this.src_menu_label = src_menu_label;
   this.dst_menu_label = dst_menu_label
 }
 
 inherit(_HiddenMenuElement, UIElement);
 _HiddenMenuElement.prototype.on_mousemove = function(MouseEvent event) {
-  console.log("Yay!");
+  if (DEBUG.ui_menus)
+    console.log("In _HiddenMenuElement.on_mousemove()");
   
   this.src_menu_label.menu.end_menu()
   this.src_menu_label.clicked = false;
@@ -636,7 +638,9 @@ _HiddenMenuElement.prototype.on_mousemove = function(MouseEvent event) {
 }
 
 _HiddenMenuElement.prototype.build_draw = function(UICanvas canvas, Boolean isvertical) {
-  canvas.simple_box([0,0], this.size);
+  //canvas.begin(this);
+  //canvas.simple_box([0,0], this.size);
+  //canvas.end(this);
 }
 
 /*menu labels use hidden elements to pass signals between each other,
@@ -1410,16 +1414,12 @@ ScrollButton.prototype.on_mouseup = function(MouseEvent event) {
 }
 
 ScrollButton.prototype.build_draw = function(UICanvas canvas) {
-  canvas.begin(this);
-
   if (this.clicked) 
     canvas.invbox([0, 0], this.size);
   else if (this.state & UIFlags.HIGHLIGHT)
     canvas.hlightbox([0, 0], this.size)
   else 
     canvas.box([0, 0], this.size);
-  
-  canvas.end(this);
 }
 
 ScrollButton.prototype.get_min_size = function(UICanvas canvas, Boolean isvertical)
