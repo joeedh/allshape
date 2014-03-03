@@ -1,10 +1,14 @@
 "use strict";
 
 class ObjectEditor extends View3DEditor {
-  constructor(view3d) {
+  constructor(view3d=undefined) {
     var keymap = new KeyMap();
     this.view3d = view3d;
-    this.ctx = new Context();
+    
+    if (view3d != undefined)
+      this.ctx = new Context();
+    else
+      this.ctx = undefined;
     
     View3DEditor.call(this, "Object", EditModes.OBJECT, DataTypes.OBJECT, keymap);
     this.define_keymap()
@@ -18,10 +22,12 @@ class ObjectEditor extends View3DEditor {
                "object.scale()");
     k.add_tool(new KeyHandler("R", [], "Rotate"), 
                "object.rotate()");
+    k.add_tool(new KeyHandler("D", ["SHIFT"], "Duplicate"),
+               "object.duplicate()");
   }
   
   static fromSTRUCT(reader) {
-    var obj = {};
+    var obj = new ObjectEditor();
     reader(obj);
     
     return obj;
@@ -49,14 +55,31 @@ class ObjectEditor extends View3DEditor {
   }
   
   draw_object(gl, view3d, object, is_active) {
-    if (object.data instanceof Mesh) {
-      render_mesh_object(gl, view3d, object.data, view3d.drawmats);
-    }
+    view3d.draw_object_basic(gl, object, is_active);
   }
   
   build_sidebar1(view3d) {
   }
   build_bottombar(view3d) {
+    var ctx = new Context();
+    var col = new ColumnFrame(ctx);
+    
+    col.draw_background = true;
+    col.rcorner = 100.0
+    col.pos = [0,0]
+    col.size = [view3d.size[0], 30];
+    
+    col.prop("object.use_subsurf");
+    
+    //col.add(new UIMenuLabel(this.ctx, "File", undefined, gen_file_menu));
+    col.label("  |  Select Mode:  ");
+    col.prop("view3d.selectmode");
+    col.prop("view3d.use_backbuf_sel");
+    col.label("  |   ");
+    col.prop("view3d.zoomfac");
+    
+    view3d.rows.push(col);
+    view3d.add(col);
   }
   set_selectmode(int mode) {
   }

@@ -256,7 +256,7 @@ class IdentNode (ValueNode):
     return self.val
     
   def extra_str(self):
-    return self.val + " " + str(self.local)    
+    return str(self.val) + " " + str(self.local)    
   
   def __setval__(self):
     return self.val
@@ -891,27 +891,7 @@ class NegateNode(Node):
     self.copy_children(n2)
     
     return n2
-    
-class InstanceofNode(Node):
-  def __init__(self, expr):
-    super(InstanceofNode, self).__init__()
-    self.add(expr)   
-    
-  def extra_str(self):
-    return ""
-  
-  def gen_js(self, tlevel):
-    s = self.s("instanceof ")
-    
-    return s + self.children[0].gen_js(tlevel)
-    
-  def copy(self):
-    n2 = InstanceofNode(self[0])
-    self.copy_basic(n2)
-    self.copy_children(n2)
-    
-    return n2
-    
+
 class TypeofNode(Node):
   def __init__(self, expr):
     super(TypeofNode, self).__init__()
@@ -1802,7 +1782,23 @@ class BreakNode (Node):
     self.copy_children(n2)
     
     return n2
+
+class ClassMember (IdentNode):
+  def __init__(self, name):
+    IdentNode.__init__(self, name)
+    self.modifiers = set()
+    self.type = None;
     
+  def gen_js(self, tlevel):
+    s = ""
+    for m in self.modifiers:
+      s += self.s(m + " ")
+    s += self.s(self.val)
+    
+    if len(self) > 0:
+      s += self.s(" = ") + self[0].gen_js(0)
+    return s
+  
 def node_is_class(node):
   if type(node) != FunctionNode:
     return False

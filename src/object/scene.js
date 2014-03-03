@@ -11,7 +11,23 @@ class Scene extends DataBlock {
     this.objects = new DBList();
     this.graph = new SceneGraph();
   }
-
+  
+  copy() {
+    var sce = new Scene(this.name)
+    sce.objects = new DBList();
+    
+    for (var o in this.objects) {
+      sce.objects.push(o);
+    }
+    
+    for (var o in this.objects.selected) {
+      sce.objects.select(o);
+    }
+    
+    sce.active = this.active;
+    return sce;
+  }
+  
   static fromSTRUCT(unpacker) {
     var sce = new Scene();
     unpacker(sce);
@@ -47,6 +63,7 @@ class Scene extends DataBlock {
 
   set_active(ASObject ob) {
     this.objects.active = ob;
+    this.objects.select(ob);
   }
 
   remove(ASObject ob) {

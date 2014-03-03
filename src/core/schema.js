@@ -28,9 +28,7 @@ StructName {
 
 where:
 
-member-name = any valid identifier, or 'this' 
-              (needed for if a struct is subtyping Array or Iter;
-               e.g. SomeArraySubClass {this : array(int); bleh : int;})
+member-name = any valid identifier
 data-type : int float double vec2 vec3 vec4 mat4
 
             static_string(max-length) 
@@ -44,6 +42,7 @@ data-type : int float double vec2 vec3 vec4 mat4
             NameOfAStruct
             
             abstract(StructName) //write type info for reading child classes
+            
 helper-js-code : an expression to get a value.  a local variable 'obj'
                  is the equivalent of 'this'.
                  note that this code is not saved when serializing files.
@@ -302,7 +301,7 @@ function SchemaParser() {
       field.set = tok.value;
       p.next();
     }
-    
+
     p.expect("SEMI");
     
     return field;
@@ -980,6 +979,7 @@ function init_struct_packer() {
       }
     } catch (err) {
       if (err instanceof PUTLParseError) {
+        console.log("cls.name: ", cls.name)
         print_stack(err);
         console.log("Error parsing struct: " + err.message);
       } else {

@@ -412,7 +412,7 @@ function unpack_dataref(DataView data, unpack_ctx uctx) : int
   var block_id = unpack_int(data, uctx);
   var lib_id = unpack_int(data, uctx);
   
-  return [block_id, lib_id];
+  return new DataRef(block_id, lib_id);
 }
 
 function unpack_byte(DataView data, unpack_ctx uctx) : byte
@@ -899,7 +899,7 @@ BJSON.stringify = function(obj) {
     if (ob == undefined)
       return undefined;
     
-    if (ob.hasOwnProperty("toJSON") || (ob.prototype != undefined && ob.prototype.hasOwnProperty("toJSON"))) {
+    if (ob.hasOwnProperty("toJSON")) {// || (ob.prototype != undefined && ob.prototype.hasOwnProperty("toJSON"))) {
       return clean(ob.toJSON());
     }
     

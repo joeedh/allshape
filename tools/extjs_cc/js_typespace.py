@@ -104,7 +104,7 @@ class JSTypeSpace:
     self.logrec = []
     self.logmap = {}
     self.builtin_typenames = builtin_types
-    self.func_excludes = set(["inherit", "create_prototype", "prior"])
+    self.func_excludes = set(["inherit", "inherit_multiple", "define_static", "create_prototype", "prior"])
     
     self.functions["inherit"] = js_parse("function inherit(Object a, Object b) : void { };", start_node=FunctionNode)
     

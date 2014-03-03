@@ -851,7 +851,7 @@ function gpu_subsurf(gl, in_mesh2, steps, ss_mesh) {
   return themesh;
 }
 
-function subsurf_render(gl, view3d, ss_mesh, mesh, drawmats, draw_overlay)
+function subsurf_render(gl, view3d, ss_mesh, mesh, drawmats, draw_overlay, draw_elements)
 {
   gl.enable(gl.DEPTH_TEST);
   gl.enable(gl.POLYGON_OFFSET_FILL);
@@ -897,8 +897,11 @@ function subsurf_render(gl, view3d, ss_mesh, mesh, drawmats, draw_overlay)
   var i = 0;
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ss_mesh.render.indexbuf);
   
+  var clr = (view3d.ctx.object.flag & SELECT) ? face_sel_color : face_unsel_color;
   for (var f in ss_mesh.faces) {
-    var clr = get_element_color(f.old_face, mesh.faces.highlight, true, true);
+    if (draw_elements)
+      clr = get_element_color(f.old_face, mesh.faces.highlight, true, true);
+    
     gl.uniform4fv(program.uniformloc(gl, "face_color"), clr);
     gl.uniform1f(program.uniformloc(gl, "patch1"), i);
       
@@ -941,6 +944,9 @@ function subsurf_render(gl, view3d, ss_mesh, mesh, drawmats, draw_overlay)
       i += 1;
     }
   }
+  
+  if (!draw_elements)
+    return;
   
   draw_ss_edges(1.0);
   

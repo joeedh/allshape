@@ -1064,6 +1064,33 @@ def infer_types(ts):
   
   set_const_types()
 
+def replace_instanceof(result, typespace):
+  def visiti(node):
+    name = glob.g_instanceof_func
+    
+    #make sure we're not inside g_instanceof_func (__instance_of) itself.
+    p = node
+    while p != None and type(p) != FunctionNode:
+      p = p.parent
+    
+    if p != None and type(p) == FunctionNode and p.name == name:
+      print("ignoring %s implementation in instaneof replacement"%name);
+      return
+      
+    if node.op != "instanceof": return
+    
+    fn = FuncCallNode(IdentNode(name))
+    params = ExprListNode([node[0], node[1]])
+    params.line = node.line; params.lexpos = node.lexpos
+    fn.add(params)
+    fn.line = node.line; fn.lexpos = node.lexpos;
+    
+    node.parent.replace(node, fn);
+    
+  traverse(result, BinOpNode, visiti)
+  
+  print("\n")
+  
 from js_global import glob
 from js_typespace import *
 from js_ast import *

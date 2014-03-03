@@ -7,7 +7,9 @@ var RecalcFlags = {
 };
 
 var ObFlags = {
-  Display_BB: 1
+  //1 is reserved for BlockFlags.SELECT 
+  SUBSURF: 2,
+  DISP_BB: 4
 };
 
 var RotTypes = {EULER: 0};
@@ -36,11 +38,13 @@ class ASObject extends DagNode {
     ]);
     
     this.flag = 0;
-    this.loc = new Vector3();
+    this.ss_mesh = undefined;
+    this.ss_steps = 24;
+    this.last_ss_steps = 24;
     
-    this.euler = new Vector3();
-    this.size = new Vector3([1.0, 1.0, 1.0]);
+    this.loc = new Vector3();
     this.rot_euler = new Vector3();
+    this.size = new Vector3([1.0, 1.0, 1.0]);
     
     this.rot_method = RotTypes.EULER;
     
@@ -61,6 +65,25 @@ class ASObject extends DagNode {
     this.selbuf_id = -1; //only set when obj is added to database
   }
   
+  copy() : ASObject {
+    var ob = new ASObject(this.data, this.name);
+    ob.loc = new Vector3(this.loc);
+    ob.rot_euler = new Vector3(this.rot_euler);
+    ob.size = new Vector3(this.size);
+    ob.rot_method = this.rot_method;
+    ob.parent = this.parent;
+    ob.layermask = this.layermask;
+    ob.scene = this.scene;
+    ob.bb = [new Vector3(ob.bb[0]), new Vector3(ob.bb[1])];
+    ob.bb_display = this.bb_display;
+    ob.matrix = new Matrix4(this.matrix);
+    ob.parentinv = new Matrix4(this.parentinv);
+    ob.flag = this.flag;
+    ob.ss_steps = this.ss_steps;
+    
+    return ob;
+  }
+  
   get_aabb() {
     return this.bb;
   }
@@ -77,7 +100,25 @@ class ASObject extends DagNode {
     
     return ob;
   }
+  
+  calc_ss_steps() : int {
+    var steps = Math.floor(this.ss_steps / Math.log(this.data.faces.length))+1.0;
+    steps = Math.max(steps, 3.0);
+    
+    return steps;
+  }
 
+  get subsurf() {
+    return !!(this.flag & ObFlags.SUBSURF);
+  }
+  
+  set subsurf(val) {
+    if (val)
+      this.flag |= ObFlags.SUBSURF;
+    else 
+      this.flag &= ~ObFlags.SUBSURF;
+  }
+  
   dag_execute() {
     var mat = this.matrix = this.basic_matrix();
     
@@ -228,5 +269,6 @@ ASObject.STRUCT = STRUCT.inherit(ASObject, DataBlock) + """
   bb : array(vec3);
   bb_display : int;
   scene : dataref(Scene);
+  ss_steps : int;
 }
 """;

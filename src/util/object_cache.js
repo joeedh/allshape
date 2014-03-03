@@ -32,9 +32,9 @@ function _cache_copy_object(obj) {
   //copy over any prototypical methods
   //not sure if non-prototypical methods are going to work
   //. . .
-  if (obj.prototype) {
+  if (obj.constructor && obj.constructor.prototype) {
     function F() {};
-    F.prototype = obj.prototype;
+    F.prototype = obj.constructor.prototype;
     F.constructor = obj.constructor;
     
     ob2 = new F();

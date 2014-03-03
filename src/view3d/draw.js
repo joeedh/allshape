@@ -1035,8 +1035,6 @@ function render_mesh_selbuf(WebGLRenderingContext gl,
   set_program(gl, gl.selbuf, drawmats);
   
   if (typemask & MeshTypes.FACE) {
-    console.log(mesh.render.tri_vbuff);
-    console.log(mesh.render);
     gl.polygonOffset(1, 1);
     gl.bindBuffer(gl.ARRAY_BUFFER, mesh.render.tri_vbuff);
     gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);

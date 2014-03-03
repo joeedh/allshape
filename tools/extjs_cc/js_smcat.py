@@ -5,6 +5,10 @@ import argparse, base64, json
 from js_global import AbstractGlob
 from js_cc import concat_smaps
 
+#source map concatenator, for
+#browsers that don't support
+#index maps
+
 class LocalGlob(AbstractGlob):
   g_file = ""
   g_outfile = ""
@@ -28,7 +32,7 @@ def main():
     glob.g_file = args.infile
     
     if args.infile == None:
-        print("js_cc.py: no input files")
+        print("js_smcat.py: no input files")
         return -1
     
     f = open(args.infile, "r")

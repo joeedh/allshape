@@ -71,8 +71,8 @@ ViewRotateOp.prototype.exec = function(ctx) {
 }
 
 ViewRotateOp.prototype.on_mouseup = function(event) {
-  console.log("modal end");
-  
+  if (DEBUG.modal)
+    console.log("modal end");
   this.end_modal();
 }
 
@@ -104,7 +104,7 @@ ViewPanOp.prototype.modal_init = function(ctx) {
   this.center = new Vector3();
   
   var i = 0;
-  for (var v in ctx.view3d.mesh.verts) {
+  for (var v in ctx.mesh.verts) {
     if (isNaN(v.co[0]) || isNaN(v.co[1]) || isNaN(v.co[2]))
       continue;
     
@@ -178,7 +178,8 @@ ViewPanOp.prototype.exec = function(ctx) {
 }
 
 ViewPanOp.prototype.on_mouseup = function(event) {
-  console.log("modal end");
+  if (DEBUG.modal)
+    console.log("modal end");
   
   this.end_modal();
 }
@@ -317,10 +318,10 @@ MeshToolOp.prototype.exec = function(ctx) {
   
   ctx.appstate.jobs.kill_owner_jobs(ctx.mesh);
   
-  ctx.view3d.mesh.ops.call_op(this.meshop);
+  ctx.mesh.ops.call_op(this.meshop);
   
   mprop_to_tprop(this.meshop.outputs, this.outputs);
-  ctx.view3d.mesh.regen_render();
+  ctx.mesh.regen_render();
 }
 
 function ClickExtrude(mode) {
@@ -342,7 +343,7 @@ ClickExtrude.prototype.on_mousedown = function(event) {
   var mpos = new Vector3([ctx.view3d.mpos[0], ctx.view3d.mpos[1], 0.0]);
   var cent = new Vector3();
   var totsel = 0;
-  var mesh = ctx.view3d.mesh;
+  var mesh = ctx.mesh;
   
   var meshop = new ExtrudeAllOp(mesh.ops.gen_flag_iter(MeshTypes.FACE|MeshTypes.VERT|MeshTypes.EDGE, Flags.SELECT));
   
@@ -467,10 +468,8 @@ ClickExtrude.prototype.can_call = function(ctx) {
 }
 
 ClickExtrude.prototype.exec = function(ctx) {
-  
-  ctx.view3d.mesh.regen_positions();
+  ctx.mesh.regen_positions();
 }
-
 
 function ToggleSubSurfOp() {
   ToolOp.call(this);

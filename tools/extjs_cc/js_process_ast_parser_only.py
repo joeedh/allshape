@@ -32,17 +32,9 @@ def expand_harmony_class(cls):
     
     params = ExprListNode([])
     slist = StatementList()
-    if parent != None:
-      bn = BinOpNode(IdentNode(parent), "apply", ".")
-      args = ExprListNode([IdentNode("this"), IdentNode("arguments")])
-      fn = FuncCallNode(bn)
-      fn.add(args)
-      slist.add(fn)
-      
+    
     m.add(params)
     m.add(slist)
-    
-    #cls.add(m)
     
   #do getters/setters
   gets = {}
@@ -121,6 +113,20 @@ def expand_harmony_class(cls):
     n = gen_prop_define(p, gets, sets)
     slist.prepend(n)
     
+
+  if found_con == False:
+    #call parents hackishly
+    lst = list(cls.parents)
+    lst.reverse()
+    for p in lst:
+      if type(p) == str: p = IdentNode(p)
+      
+      bn = BinOpNode(p, "apply", ".")
+      args = ExprListNode([IdentNode("this"), IdentNode("arguments")])
+      fn = FuncCallNode(bn)
+      fn.add(args)
+      slist.prepend(fn)
+
   node.add(params)
   node.add(slist)
   
@@ -131,11 +137,15 @@ def expand_harmony_class(cls):
   
   if len(cls.parents) != 0:
     #XXX for now, we're just doing single inheritance
-    p = cls.parents[0]
+    ps = cls.parents
+    ps2 = []
+    for p in ps:
+      ps2.append(p)
+    ps2 = ArrayLitNode(ExprListNode(ps2))
     
     #inherit(childcls, parentcls);
-    fn = FuncCallNode(IdentNode("inherit"))
-    fn.add(ExprListNode([IdentNode(cls.name), IdentNode(p)]))
+    fn = FuncCallNode(IdentNode("inherit_multiple"))
+    fn.add(ExprListNode([IdentNode(cls.name), ps2]))
     slist.add(fn)
   else:
     fn = FuncCallNode(IdentNode("create_prototype"))

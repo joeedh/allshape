@@ -966,6 +966,9 @@ def parse_intern(data, create_logger=False, expand_loops=True, expand_generators
     print("nodes: ", result)
     pass
   
+  if glob.g_replace_instanceof:
+    replace_instanceof(result, typespace)
+    
   if glob.g_gen_source_map:
     smap = SourceMap()
     def set_smap(node, smap):

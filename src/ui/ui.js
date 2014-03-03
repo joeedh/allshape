@@ -1818,7 +1818,8 @@ UIPackFrame.prototype.prop = function(path, packflag) {
     }
   }
   else {
-    console.log("warning: unimplemented property type for path " + path + " in user interface code");
+    if (DEBUG.ui_datapaths)
+      console.log("warning: unimplemented property type for path " + path + " in user interface code");
   }
 }
 

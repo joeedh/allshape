@@ -33,7 +33,9 @@ class View3DEditor {
   
   on_inactive(view3d) {}
   on_active(view3d) {}
-
+  
+  data_link(block, getblock, getblock_us) {}
+  
   //returns new copy
   editor_duplicate(view3d) {}
   render_selbuf(gl, view3d, typemask) {}
@@ -180,7 +182,6 @@ class View3DHandler extends Area {
     this._in_from_struct = false;
     
     this.use_radial_menus = false;
-    this.use_subsurf = false;
     
     this.mesh = mesh;
     this._selectmode = MeshTypes.VERT;
@@ -226,6 +227,31 @@ class View3DHandler extends Area {
     this.editors = new GArray([this.editor]);
   }
   
+  check_subsurf(Context ctx, ob) {
+    if (!(ob.data instanceof Mesh))
+      return;
+    
+    if (ob.subsurf && ob.ss_mesh)
+      return;
+    
+    if (!ob.subsurf && ob.ss_mesh == null)
+      return;
+      
+    if (ob.subsurf) {
+        if (!ob.ss_mesh) {
+          ctx.mesh.regen_render();
+          
+          ob.ss_mesh = gpu_subsurf(this.gl, ob.data, ob.calc_ss_steps());
+        }
+      } else {
+        if (ob.ss_mesh) {
+          destroy_subsurf_mesh(this.gl, ob.ss_mesh);
+          
+          ob.ss_mesh = null;
+          ob.data.regen_render();
+        }
+      }  
+  }
   
   //XXX need to implement this still
   get can_select() {
@@ -283,7 +309,9 @@ class View3DHandler extends Area {
     this.ctx = new Context();
     this.ctx.mesh = this.mesh;
     
+    console.log(this.editors);
     for (var e in this.editors) {
+      console.log(e);
       e.view3d = this;
       e.mesh = this.mesh;
       e.ctx = this.ctx;
@@ -370,7 +398,9 @@ class View3DHandler extends Area {
   }
 
   project(Vector3 co, Matrix4 pmat) {
+    pmat.isPersp = true;
     co.multVecMatrix(pmat);
+    
     co[0] = (co[0]+1.0)*0.5*this.size[0];
     co[1] = (co[1]+1.0)*0.5*this.size[1];
     co[2] = 0.0;
@@ -385,7 +415,8 @@ class View3DHandler extends Area {
     redo_selbuf |= this.editor.selbuf_changed(typemask);
     
     if (redo_selbuf) {
-      console.log("render selbuf");
+      if (DEBUG.selbuf)
+        console.log("render selbuf");
       fbuf.bind()
       
       gl.colorMask(true, true, true, true);
@@ -615,7 +646,7 @@ class View3DHandler extends Area {
     
     g_app_state.active_view3d = this;
     
-    this.ctx = new Context();
+    var ctx = this.ctx = new Context();
     this.mesh = this.ctx.mesh;
     
     if (this.mesh.render == 0 || this.mesh.render == undefined) {
@@ -639,11 +670,22 @@ class View3DHandler extends Area {
     //update DAG
     this.ctx.scene.update();
     
-    this.transmat.push();
-    this.transmat.multiply(this.ctx.object.matrix);
-    //draw object
-    this.editor.draw_object(gl, this, this.ctx.object, true);
-    this.transmat.pop();
+    var scene = ctx.scene;
+    var objects = scene.objects;
+    
+    for (var ob in objects) {
+      this.transmat.push();
+      this.transmat.multiply(ob.matrix);
+      
+      //draw object
+      if (ob == ctx.object) {
+        this.editor.draw_object(gl, this, ob, true);
+      } else {
+        this.draw_object_basic(gl, ob, false);
+      }
+      
+      this.transmat.pop();
+    }
     
     //clean up transformation stack
     this.transmat.reset(cameramat_backup);
@@ -661,7 +703,7 @@ class View3DHandler extends Area {
     var k = this.keymap;
   
     k.add(new KeyHandler("T", [], "Toggle Select Mode"), new FuncKeyHandler(function(ctx) {
-      var mode = ctx.view3d.editor.selectmode;
+      var mode = ctx.view3d.selectmode;
       
       if (mode == EditModes.VERT)
         mode = EditModes.EDGE;
@@ -676,8 +718,10 @@ class View3DHandler extends Area {
     }));
   
     k.add(new KeyHandler("K", [], "Debug Test"), new FuncKeyHandler(function (ctx) {
-      //g_app_state.load_user_file_new(g_app_state.create_user_file_new());
-      new Context().scene.graph.exec();
+      //test compression
+      console.log("file compression test");
+      g_app_state.load_user_file_new(g_app_state.create_user_file_new(undefined, true, true));
+      //new Context().scene.graph.exec();
     }));
     
     k.add(new KeyHandler("Z", ["CTRL", "SHIFT"], "Redo"), new FuncKeyHandler(function(ctx) {
@@ -730,7 +774,6 @@ class View3DHandler extends Area {
   }
 
   on_keyup(KeyboardEvent event) {
-
     var ctx = new Context();
     var ret = this.keymap.process_event(ctx, event);
     
@@ -868,7 +911,6 @@ class View3DHandler extends Area {
     
     view3d.zoomfac = obj.zoomfac;
     view3d.zoomwheel = obj.zoomwheel;
-    view3d.use_subsurf = obj.use_subsurf
     
     view3d.gen_persmat();
     view3d.gen_rendermats();
@@ -882,7 +924,7 @@ class View3DHandler extends Area {
   }
 
   toJSON() {
-    var obj = prior(this, View3DHandler).toJSON.call(this);
+    var obj = prior(View3DHandler, this).toJSON.call(this);
     
     obj.type = View3DHandler.name;
     
@@ -896,7 +938,6 @@ class View3DHandler extends Area {
     obj.zfar = this.zfar;
     
     obj.use_backbuf_sel = this.use_backbuf_sel;
-    obj.use_subsurf = this.use_subsurf
     
     return obj;
   }
@@ -943,6 +984,19 @@ class View3DHandler extends Area {
     }
     
     this.editor.selectmode = mode;
+  }
+  
+  draw_object_basic(gl, object, is_active) {
+    if (object.data instanceof Mesh) {
+      this.check_subsurf(this.ctx, object);
+      
+      if (object.subsurf) {
+        subsurf_render(gl, this, object.ss_mesh, object.data, 
+                      this.drawmats, !this.use_backbuf_sel, false);
+      } else {
+        render_mesh_object(gl, this, object.data, this.drawmats);
+      }
+    }
   }
 }
 

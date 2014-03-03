@@ -48,40 +48,12 @@ function api_define_view3d() {
   
   var test_flagprop = new FlagProperty(1, {FLAG_1 : 1, FLAG_2 : 2, FLAG_3 : 4, FLAG_4 : 3}, undefined, "flagprop", "Flag Property", "");
   
-  var subsurf_prop = new BoolProperty(false, "use_subsurf", "Subsurf", "Enable subdivision surfaces");
-  
-  subsurf_prop.update = function() {
-    var ctx = this.ctx
-    
-    if (this.data) {
-      if (!ctx.view3d.editor.ss_mesh) {
-        ctx.mesh.flag |= MeshFlags.USE_MAP_CO;
-        
-        ctx.view3d.editor.ss_mesh = gpu_subsurf(ctx.view3d.gl, ctx.mesh, ctx.view3d.editor.get_ss_steps());
-        
-        ctx.mesh.regen_render();
-        ctx.view3d.editor.use_subsurf = true;
-      }
-    } else {
-      if (ctx.view3d.editor.ss_mesh) {
-        ctx.mesh.flag &= ~MeshFlags.USE_MAP_CO;
-        
-        destroy_subsurf_mesh(ctx.view3d.gl, ctx.view3d.editor.ss_mesh);
-        
-        ctx.view3d.editor.ss_mesh = null;
-        ctx.mesh.regen_render();
-        ctx.view3d.editor.use_subsurf = false;
-      }
-    }    
-  }
-  
   View3DStruct = new DataStruct([
     new DataPath(selmode, "selectmode", "selectmode", true),
     new DataPath(zoomfac, "zoomfac", "zoomfac", true),
     new DataPath(framerate_prop, "framerate", "framerate", true),
     new DataPath(use_backbuf_sel, "use_backbuf_sel", "use_backbuf_sel", 
-    true),
-    new DataPath(subsurf_prop, "use_subsurf", "use_subsurf", true)
+    true)
   ])
   
   return View3DStruct;
@@ -89,29 +61,53 @@ function api_define_view3d() {
 
 function api_define_mesh() {
 
-  var totvert_prop = new IntProperty(0, "totvert", "Verts", 
+  var totvert = new IntProperty(0, "totvert", "Verts", 
                                             "Number of vertices in this mesh", 
                                             [0, 60000000], [0, 60000000]);
 
-  var totedge_prop = new IntProperty(0, "totedge", "Edges", 
+  var totedge = new IntProperty(0, "totedge", "Edges", 
                                             "Number of edges in this mesh", 
                                             [0, 60000000], [0, 60000000]);
 
-  var totface_prop = new IntProperty(0, "totface", "Faces", 
+  var totface = new IntProperty(0, "totface", "Faces", 
                                             "Number of faces in this mesh", 
                                             [0, 60000000], [0, 60000000]);
-  var tottri_prop = new IntProperty(0, "tottri", "Tris", 
+  var tottri = new IntProperty(0, "tottri", "Tris", 
                                             "Number of triangles in this mesh", 
                                             [0, 60000000], [0, 60000000]);
 
   MeshStruct = new DataStruct([
-    new DataPath(totvert_prop, "totvert", "verts.length", true),
-    new DataPath(totedge_prop, "totedge", "edges.length", true),
-    new DataPath(totface_prop, "totface", "faces.length", true),
-    new DataPath(tottri_prop, "tottri", "looptris.length", true)
-  ])
+    new DataPath(totvert, "totvert", "verts.length", true),
+    new DataPath(totedge, "totedge", "edges.length", true),
+    new DataPath(totface, "totface", "faces.length", true),
+    new DataPath(tottri, "tottri", "looptris.length", true)
+  ]);
   
   return MeshStruct;
+}
+
+var SceneStruct = undefined;
+function api_define_scene() {
+  var name = new StringProperty("", "name", "name", "Name", TPropFlags.LABEL);
+  var SceneStruct = new DataStruct([
+    new DataPath(name, "name", "name", true)
+  ]);
+  
+  return SceneStruct;
+}
+
+var ObjectStruct = undefined;
+function api_define_object() {
+  
+  var name = new StringProperty("", "name", "name", "Name", TPropFlags.LABEL);
+  var use_subsurf = new BoolProperty(false, "use_subsurf", "Use Subsurf");
+  
+  var ObjectStruct = new DataStruct([
+    new DataPath(name, "name", "name", true),
+    new DataPath(use_subsurf, "use_subsurf", "subsurf", true)
+  ]);
+  
+  return ObjectStruct;
 }
 
 var AppStateStruct = undefined;
@@ -127,6 +123,8 @@ function api_define_context() {
   ContextStruct = new DataStruct([
     new DataPath(api_define_view3d(), "view3d", "ctx.view3d", false),
     new DataPath(api_define_mesh(), "mesh", "ctx.mesh", false),
+    new DataPath(api_define_object(), "object", "ctx.object", false),
+    new DataPath(api_define_scene(), "scene", "ctx.scene", false),
     new DataPath(new DataStruct([]), "last_tool", "", false, false, DataFlags.RECALC_CACHE),
     new DataPath(api_define_appstate(), "appstate", "appstate", false, false)
   ]);
@@ -181,15 +179,15 @@ function api_define_ops() {
     },
 
     "mesh.translate": function(ctx, args) {
-      return new TranslateOp(EditModes.GEOMETRY);
+      return new TranslateOp(EditModes.GEOMETRY, ctx.object);
     },
     
     "mesh.rotate": function(ctx, args) {
-      return new RotateOp(EditModes.GEOMETRY);
+      return new RotateOp(EditModes.GEOMETRY, ctx.object);
     },
     
     "mesh.scale": function(ctx, args) {
-      return new ScaleOp(EditModes.GEOMETRY);
+      return new ScaleOp(EditModes.GEOMETRY, ctx.object);
     },
     
     "mesh.inset_loops": function(ctx, args) {
@@ -370,7 +368,7 @@ function api_define_ops() {
       return new MeshToolOp(new BridgeOp(args["edges"]));
     },
     "view3d.circle_select" : function(ctx, args) {
-      return new CircleSelectOp();
+      return new CircleSelectOp(ctx.view3d.selectmode);
     },
     "appstate.open" : function(ctx, args) {
       return new FileOpenOp();
@@ -395,6 +393,11 @@ function api_define_ops() {
     
     "object.scale": function(ctx, args) {
       return new ScaleOp(EditModes.OBJECT);
+    },
+    
+    "object.duplicate": function(ctx, args) {
+      //XXX someday, will need to support passing in a list of objects too
+      return new ObjectDuplicateOp(ctx.scene.objects.selected);
     }
   }
 }

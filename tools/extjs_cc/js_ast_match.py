@@ -173,7 +173,7 @@ class AstMatcher:
     
     return n.lexpos == ref.lexpos
   
-  __class_code__ = """${$class, $class<x>, $class<x,x>, $class<x,x,x,x>, $class.prior}$"""
+  __class_code__ = """${$class, $class<x>, $class<x,x>, $class<x,x,x,x>, $class.prototype}$"""
   
   
   def do_class(self, n, ref):

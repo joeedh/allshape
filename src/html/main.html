@@ -140,8 +140,11 @@
   
   vec4 normal(float f, float u, float v)
   {
-    float du = 0.005;
-    float dv = 0.005;
+    u = clamp(u, 0.01, 0.99);
+    v = clamp(v, 0.01, 0.99);
+    
+    float du = 0.01;
+    float dv = 0.01;
     
     if (u > 0.5) du = -du;
     if (v > 0.5) dv = -dv;
@@ -154,8 +157,8 @@
       p1 = -p1;
     if (v > 0.5)
       p2 = -p2;
-      
-    vec3 n = cross(p1, p2);
+    
+    vec3 n = normalize(cross(p1, p2));
     
     return vec4(n[0], n[1], n[2], 1.0);
   }
@@ -582,7 +585,8 @@ body, html {
         vec4 color = g_Color; //vec4(0.6, 0.6, 0.6, 1.0); //texture2D(sampler2d, texCoord);
         
         vec4 c1 = vec4(color.xyz*v_Dot, color.a);
-        vec4 c2 = color*(1.0-v_Dot);
+        vec4 c2 = vec4(color.xyz*(1.0-v_Dot), color.a);
+        
         c1 = interp4(c1, c2, 0.1);
         
         vec3 refl = v_Normal*dot(v_Normal, lightDir1) - lightDir1*0.5;
@@ -593,8 +597,9 @@ body, html {
         c2 = vec4(p, p, p, 1.0);
         if (alpha_mul != 0.0)
           c1[3] *= alpha_mul;
-          
-        gl_FragColor = c1;//+c2;
+        
+        float f = dot(v_Normal, lightDir1);
+        gl_FragColor = vec4(color[0]*f, color[1]*f, color[2]*f, 1.0);
     }
 </script>
 
@@ -1179,7 +1184,8 @@ function toJSON_intern (ob, tlevel) {
         gl.enable(gl.BLEND);
         gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
     
-        console.log(gl.getSupportedExtensions().toString()) ;//gl.getExtension("GL_OES_element_index_uint"), "yay");
+        if (DEBUG.glext)
+          console.log(gl.getSupportedExtensions().toString()) ;//gl.getExtension("GL_OES_element_index_uint"), "yay");
         
         // Set some uniform variables for the shaders
         var l1 = new Vector3([0, 0.5, 1])
@@ -1406,7 +1412,8 @@ function toJSON_intern (ob, tlevel) {
           
           var x, y;
           
-          console.log(e);
+          if (DEBUG.touch)
+            console.log(e);
           var t = e.changedTouches[0];
           if (t == undefined) {
             x = e.pageX;
@@ -1416,7 +1423,8 @@ function toJSON_intern (ob, tlevel) {
             y = t.pageY;
           }
           
-          console.log("touch cancel", x, y);
+          if (DEBUG.touch)
+            console.log("touch cancel", x, y);
           if (g_app_state.screen != undefined) {
             var e2 = new MyMouseEvent(x, g_app_state.screen.size[1] - y, 0, MyMouseEvent.MOUSEUP);
             
@@ -1433,7 +1441,8 @@ function toJSON_intern (ob, tlevel) {
             
             var x, y;
             
-            console.log(e);
+            if (DEBUG.touch)
+              console.log(e);
             var t = e.targetTouches[0];
             if (t == undefined) {
               x = e.pageX;
@@ -1458,8 +1467,9 @@ function toJSON_intern (ob, tlevel) {
           stop_event_propegation(e);
           
           var x, y;
-            
-          console.log(e);
+          
+          if (DEBUG.touch)
+            console.log(e);
           var t = e.targetTouches[0];
           if (t == undefined) {
             x = e.pageX;

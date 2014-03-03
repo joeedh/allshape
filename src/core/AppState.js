@@ -1,10 +1,24 @@
 "use strict";
 
-var FileFlags = {COMPRESSED_LZJB : 1}
-var RELEASE = false;
-
+var FileFlags = {COMPRESSED_LZSTRING : 1}
 var formacad_file_ext = ".al3";
-var g_app_version = 0.02;
+var g_app_version = 0.03;
+
+var RELEASE = false;
+var DEBUG = {
+  modal : false, 
+  datalib : false, 
+  glext : false, //prints gl extensions to console on startup
+  selbuf : false,
+  transform : false,
+  mouse : false,
+  touch : false,
+  mousemove : false,
+  ui_datapaths : false,
+  ui_menus : false
+};
+
+var SELECT = 1;
 
 function AppSettings() {
   this.unit_scheme = "imperial";
@@ -23,7 +37,6 @@ AppSettings.fromJSON = function(obj) {
   
   return as;
 };
-
 
 function UserSession() {
   this.tokens = {} : ObjectMap;
@@ -261,7 +274,7 @@ AppState.prototype.set_mesh = function(Mesh m2) {
   data (of length data_length-4)
   
 */
-AppState.prototype.create_user_file_new = function(different_mesh, gen_dataview=true) : ArrayBuffer {
+AppState.prototype.create_user_file_new = function(different_mesh, gen_dataview=true, compress=false) : ArrayBuffer {
   var mesh = different_mesh != undefined ? different_mesh : this.mesh;
   
   function bheader(data, type, subtype) {
@@ -275,7 +288,8 @@ AppState.prototype.create_user_file_new = function(different_mesh, gen_dataview=
   pack_static_string(data, "ALSH", 4);
   
   //general file flags, e.g. compression
-  pack_int(data, 0);
+  var flag = compress ? FileFlags.COMPRESSED_LZSTRING : 0;
+  pack_int(data, flag);
   
   //version
   var major = Math.floor(g_app_version);
@@ -283,6 +297,11 @@ AppState.prototype.create_user_file_new = function(different_mesh, gen_dataview=
   
   pack_int(data, major);
   pack_int(data, minor);
+  
+  var headerdata = data;
+  if (compress) {
+    data = [];
+  }
   
   //the schema struct definitions used to save
   //the non-JSON parts of this file.
@@ -314,14 +333,70 @@ AppState.prototype.create_user_file_new = function(different_mesh, gen_dataview=
     }   
   }
   
-  if (gen_dataview)
-    return new DataView(new Uint8Array(data).buffer);
-  else
-    return data;
+  if (compress) {
+    data = LZString.compress(new Uint8Array(data));
+    
+    var d = new Uint16Array(data.length);
+    for (var i=0; i<data.length; i++) {
+      d[i] = data.charCodeAt(i);
+    }
+    
+    d = new Uint8Array(d.buffer);
+    console.log("-----1------>", d.length);
+    
+    data = new Uint8Array(d.length + headerdata.length)
+    for (var i=0; i<headerdata.length; i++) {
+      data[i] = headerdata[i];
+    }
+    for (var i=0; i<d.length; i++) {
+      data[i+headerdata.length] = d[i];
+    }
+    
+    if (gen_dataview)
+      return new DataView(data.buffer);
+    else
+      return data;
+  } else {
+    if (gen_dataview)
+      return new DataView(new Uint8Array(data).buffer);
+    else
+      return data;
+  }
 }
 
+//version patching happens *before* block linking
 AppState.prototype.do_versions = function(datalib, blocks, version)
 {
+  if (version <= 0.02) {
+    //subsurf flag moved from view3d.editor to object
+    console.log("---doing version 0.02->0.03 changes---");
+    for (var b in blocks) {
+      if (b.type != "SCRN") continue;
+      
+      var screen = b.data;
+      for (var scr in screen.areas) {
+        console.log("-------->", scr);
+        if (!(scr.area instanceof View3DHandler)) continue;
+        console.log(scr.area.use_subsurf);
+        if (!scr.area.use_subsurf && !scr.area.editor.use_subsurf) continue;
+        
+        if (scr.area.use_subsurf)
+          delete scr.area.use_subsurf;
+        if (scr.area.editor.use_subsurf)
+          delete scr.area.editor.use_subsurf;
+         
+        var sce = datalib.get_active(DataTypes.SCENE);
+        var ob = sce.objects.active;
+        
+        if (ob == undefined && sce.objects.length > 0) {
+          ob = sce.objects[0];
+        }
+        
+        ob = datalib.get(ob[0]);
+        ob.subsurf = true;
+      }
+    }
+  }
 }
 
 AppState.prototype.load_user_file_new = function(DataView data, unpack_ctx uctx) {
@@ -337,14 +412,34 @@ AppState.prototype.load_user_file_new = function(DataView data, unpack_ctx uctx)
   }
   
   var file_flag = unpack_int(data, uctx);
-  //XXX need to write code to handle compressed files
   
   var version_major = unpack_int(data, uctx);
   var version_minor = unpack_int(data, uctx)/100.0;
   
   var version = version_major + version_minor;
   
-  var blocks = [];
+  if (file_flag & FileFlags.COMPRESSED_LZSTRING) {
+    console.log("decompressing. . .");
+    
+    data = new Uint16Array(data.buffer.slice(uctx.i, data.byteLength));
+    var s = ""
+    for (var i=0; i<data.length; i++) {
+      s += String.fromCharCode(data[i]);
+    }
+    data = LZString.decompress(s)
+    
+    var data2 = new Uint8Array(data.length);
+    console.log("uncompressed length: ", data.length);
+    
+    for (var i=0; i<data.length; i++) {
+      data2[i] = data.charCodeAt(i);
+    }
+    
+    data = new DataView(data2.buffer);
+    uctx.i = 0;
+  }
+  
+  var blocks = new GArray();
   var fstructs = new STRUCT();
   var datalib = new DataLib();
   
@@ -550,9 +645,11 @@ function Context() {
   
   if (sce != undefined) {
     if (sce.active == undefined && sce.objects.length > 0) {
-      console.log("WARNING: sce.objects (a DBList) had an undefined .active");
-      console.log("in the prescence of objects.  This should be impossible.");
-      console.log("Correcting.");
+      if (DEBUG.datalib) {
+        console.log("WARNING: sce.objects (a DBList) had an undefined .active");
+        console.log("in the prescence of objects.  This should be impossible.");
+        console.log("Correcting.");
+      }
       
       sce.active = sce.objects[0];
     }

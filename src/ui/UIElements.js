@@ -1427,7 +1427,7 @@ ScrollButton.prototype.get_min_size = function(UICanvas canvas, Boolean isvertic
   return [26, 26]
 }
 
-function UIVScroll(ctx, range, pos, size, callback) {
+function UIVScroll(ctx, range, pos=[0,0], size=[0,0], callback=undefined) {
   UIFrame.call(this, ctx);
   
   this.packflag |= PackFlags.INHERIT_HEIGHT;

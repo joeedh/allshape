@@ -53,7 +53,7 @@ class GArray extends Array {
 
   //inserts *before* index
   insert(int index, T item) {
-    for (var i=this.length; i > index; i++) {
+    for (var i=this.length; i > index; i--) {
       this[i] = this[i-1];
     }
     

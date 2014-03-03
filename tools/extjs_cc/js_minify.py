@@ -37,12 +37,6 @@ class MinOutVisit (NodeVisit):
   def endst(self):
     return self.buf.endswith(";") #or self.buf.endswith("}")
   
-  def InstanceofNode(self, node, scope, t, tlevel):
-    o = self.out
-    
-    o(node, "instanceof ")
-    t(node[0]);
-
   def PreDec(self, node, scope, t, tlevel):
     o = self.out
     

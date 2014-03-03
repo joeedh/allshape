@@ -169,6 +169,7 @@ function Matrix4(Array<float> m)
     }
     this.makeIdentity();
 }
+create_prototype(Matrix4);
 
 Matrix4.prototype.load = function()
 {
@@ -235,14 +236,16 @@ Matrix4.prototype.toJSON = function() {
   return {isPersp: this.isPersp, items: this.getAsArray()};
 }
 
-Matrix4.fromJSON = function(json) {
+define_static(Matrix4, "fromJSON", function(json) {
+//Matrix4.fromJSON = function(json) {
   var mat = new Matrix4()
   
   mat.load(json.items)
   mat.isPersp = json.isPersp
   
   return mat;
-}
+});
+//}
 
 Matrix4.prototype.getAsArray = function() : Array<float>
 {

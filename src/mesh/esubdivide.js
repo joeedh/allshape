@@ -10,28 +10,28 @@ var ES_FillFlags = {
 
 //this op is actually an edge-directed pattern-based subdivision
 // algorithm; calling it "edge subdivide" may be a bit misleading.
-function ESubdivideOp(Iterator edgeiter, int count) {
-  this.prototype = Object.create(MeshOp.prototype);
-  MeshOp.call(this);
-  this.name = "EdgeSubdivide";
-  this.uiname = "Split Edges"
-  
-  this.flag &= ~MeshOpFlags.USE_PARTIAL_UNDO;
-  
-  this.inputs = {
-    count : new MeshIntProperty("count", 1, undefined, [1, 25]), 
-    edges : new ElementBufferProperty("edges", MeshTypes.EDGE),
-    fillmode : new FlagProperty(ES_FillFlags.EDGE_PATH, ES_FillFlags, undefined, "fillmode", "Fill Mode", "Method of connecting split edges")
+class ESubdivideOp extends MeshOp {
+  constructor(Iterator edgeiter, int count) {
+    MeshOp.call(this);
+    
+    this.name = "EdgeSubdivide";
+    this.uiname = "Split Edges"
+    
+    this.flag &= ~MeshOpFlags.USE_PARTIAL_UNDO;
+    
+    this.inputs = {
+      count : new MeshIntProperty("count", 1, undefined, [1, 25]), 
+      edges : new ElementBufferProperty("edges", MeshTypes.EDGE),
+      fillmode : new FlagProperty(ES_FillFlags.EDGE_PATH, ES_FillFlags, undefined, "fillmode", "Fill Mode", "Method of connecting split edges")
+    }
+    
+    this.inputs.fillmode.data |= ES_FillFlags.QUAD_CORNER;
+    
+    this.inputs.edges.load_iterator(edgeiter);
+    this.inputs.count.data = count;
   }
   
-  this.inputs.fillmode.data |= ES_FillFlags.QUAD_CORNER;
-  
-  this.inputs.edges.load_iterator(edgeiter);
-  this.inputs.count.data = count;
-  
-  /*this function works by finding clusters of vertices, then creating a new mesh with
-    them welded together*/
-  this.exec = function(MeshOp op, Mesh mesh) {
+  exec(MeshOp op, Mesh mesh) {
     _edge_subdivide(mesh, this.inputs.edges, this.inputs.count.data, this.inputs.fillmode.data);
     mesh.api.recalc_normals();
   }

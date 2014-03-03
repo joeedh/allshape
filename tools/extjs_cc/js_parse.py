@@ -569,13 +569,6 @@ def p_var_decl_no_list(p):
     p[0] = p[1]    
     p[1].replace(p[1][0], p[3])
 
-"""    
-def p_var_decl(p):
-  ''' var_decl : type_modifier var_type
-          
-  '''
-"""
-
 def p_var_decl(p):
   '''var_decl : type_modifiers var_type
               | var_decl ASSIGN expr
@@ -885,9 +878,10 @@ def p_exprlist(p):
 
 #page 239 of january2014 draft harmony spec (page 257 as chrome sees it)
 def p_class(p):
-  '''class : CLASS ID class_tail'''
-  
-  tail = p[3]
+  '''class : CLASS ID template_opt class_tail'''
+  set_parse_globals(p)
+   
+  tail = p[4]
   heritage = tail[0]
   cls = ClassNode(p[2], heritage)
   
@@ -895,9 +889,12 @@ def p_class(p):
     cls.add(n)
   
   p[0] = expand_harmony_class(cls)
+  if p[3] != None:
+    p[0].template = p[3]
   
 def p_exprclass(p):
   '''exprclass : CLASS id_opt class_tail'''
+  set_parse_globals(p)
   
   tail = p[3]
   heritage = tail[0]
@@ -914,6 +911,7 @@ def p_exprclass(p):
 
 def p_class_tail(p):
   '''class_tail : class_heritage_opt LBRACKET class_body_opt RBRACKET'''
+  set_parse_globals(p)
   
   p[0] = [p[1], p[3]]
   
@@ -921,16 +919,32 @@ def p_class_tail(p):
     if p[0][i] == None:
       p[0][i] = []
   
-#just do single inheritance for now
-def p_class_heritage(p):
-  '''class_heritage : EXTENDS ID'''
+def p_class_list(p):
+  '''class_list : var_type
+                | class_list COMMA var_type
+  '''
+  set_parse_globals(p)
   
-  p[0] = [p[2]]
+  if len(p) == 2:
+    p[0] = [p[1]];
+  else:
+    p[0] = p[1];
+    if type(p[0]) != list:
+      p[0] = [p[0]]
+    p[0].append(p[3])
+    
+def p_class_heritage(p):
+  '''class_heritage : EXTENDS class_list'''
+  set_parse_globals(p)
+  
+  p[0] = p[2]
 
 def p_class_heritage_opt(p):
   '''class_heritage_opt : class_heritage
                         | 
   '''
+  set_parse_globals(p)
+  
   if len(p) == 2:
     p[0] = p[1]
   
@@ -938,6 +952,7 @@ def p_class_body_opt(p):
   '''class_body_opt : class_element_list
                     |
   '''
+  set_parse_globals(p)
  
   if len(p) == 1:
     p[0] = []
@@ -951,6 +966,7 @@ def p_class_element_list(p):
   '''class_element_list : class_element
                         | class_element_list class_element
   '''
+  set_parse_globals(p)
   
   if len(p) == 2:
     p[0] = [p[1]]
@@ -962,6 +978,7 @@ def p_class_element(p):
   '''class_element : method_def
                    | STATIC method_def
   '''
+  set_parse_globals(p)
   
   if len(p) == 2:
     p[0] = p[1]
@@ -971,6 +988,7 @@ def p_class_element(p):
 
 def p_method(p):
   '''method : ID LPAREN funcdeflist RPAREN func_type_opt LBRACKET statementlist_opt RBRACKET'''
+  set_parse_globals(p)
   
   name = p[1]
   params = p[3]
@@ -993,6 +1011,7 @@ def p_method_def(p):
                 | ID ID LPAREN RPAREN func_type_opt LBRACKET statementlist_opt RBRACKET
                 | ID ID LPAREN setter_param_list RPAREN func_type_opt LBRACKET statementlist_opt RBRACKET
   '''
+  set_parse_globals(p)
   
   if len(p) == 2:
     p[0] = p[1]
@@ -1021,6 +1040,7 @@ def p_setter_param_list(p):
   '''
     setter_param_list : ID
   '''
+  set_parse_globals(p)
   
   p[0] = ExprListNode([VarDeclNode(ExprNode([]), name=p[1])])
   return
@@ -1464,7 +1484,7 @@ def p_expr(p):
         p[0] = TypeRefNode(p[1])
         p[0].template = p[2]
     elif len(p) == 2:
-      if type(p[1]) in [RegExprNode, StrLitNode, InstanceofNode, TypeofNode, 
+      if type(p[1]) in [RegExprNode, StrLitNode, TypeofNode, 
                         BitInvNode, LogicalNotNode, NegateNode, 
                         ArrayLitNode, ObjLitNode, FunctionNode, 
                         KeywordNew, PreInc, PostInc, PreDec, PostDec,
@@ -2029,7 +2049,7 @@ class Parser:
       
     return ret
 
-_parser = yacc.yacc()
+_parser = yacc.yacc(tabmodule="perfstatic_parsetab")
 parser = Parser(_parser);
 
 

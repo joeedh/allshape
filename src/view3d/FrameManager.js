@@ -252,7 +252,7 @@ ScreenArea.prototype.build_draw = function(canvas, isVertical)
   mat.translate(this.pos[0], this.pos[1], 0.0);
   
   //canvas.push_transform(mat);
-  prior(this, ScreenArea).build_draw.call(this, canvas, isVertical);
+  prior(ScreenArea, this).build_draw.call(this, canvas, isVertical);
   //canvas.pop_transform();
 }
 
@@ -268,7 +268,7 @@ ScreenArea.prototype.on_draw = function(WebGLRenderingContext gl)
   this.area.on_draw(gl);
   g_app_state.raster.pop_viewport();
   
-  //prior(this, ScreenArea).on_draw.call(this, gl);
+  //prior(ScreenArea, this).on_draw.call(this, gl);
 }
 
 ScreenArea.prototype.add = function(child, packflag) {
@@ -993,7 +993,7 @@ function Screen(WebGLRenderingContext gl,
              "appstate.open()");
   k.add_tool(new KeyHandler("S", ["CTRL", "ALT"], "Open File"),
              "appstate.save_as()");
-  k.add_tool(new KeyHandler("S", ["CTRL", "S"], "Open File"),
+  k.add_tool(new KeyHandler("S", ["CTRL"], "Open File"),
              "appstate.save()");
   k.add_func(new KeyHandler("V", [], "Split Areas"), handle_split_areas)
 }
@@ -1047,7 +1047,9 @@ Screen.prototype.split_areas = function() {
 
 Screen.prototype._on_mousemove = function(MouseEvent e)
 {
-  //console.log("mmove", [e.x, e.y])
+  if (DEBUG.mousemove)
+    console.log("mmove", [e.x, e.y])
+  
   this.mpos = [e.x, e.y];
   for (var c in this.children) {
     c.mpos = new Vector2([e.x-c.pos[0], e.y-c.pos[1]])
@@ -1082,7 +1084,9 @@ Screen.prototype._on_mousedown = function(MouseEvent e)
 {
   this.handle_active_view3d();
   
-  console.log("mdown", [e.x, e.y], e.button)
+  if (DEBUG.mouse)
+    console.log("mdown", [e.x, e.y], e.button)
+  
   this.mpos = [e.x, e.y];  
   for (var c in this.children) {
     c.mpos = new Vector2([e.x-c.pos[0], e.y-c.pos[1]])
@@ -1097,7 +1101,8 @@ Screen.prototype._on_mouseup = function(MouseEvent e)
 {
   this.handle_active_view3d();
   
-  //console.log("mup", [e.x, e.y], e.button)
+  if (DEBUG.mouse)
+    console.log("mouseup", [e.x, e.y], e.button)
   this.mpos = [e.x, e.y];
   for (var c in this.children) {
     c.mpos = new Vector2([e.x-c.pos[0], e.y-c.pos[1]])
@@ -1202,7 +1207,7 @@ Screen.prototype.on_keyup = function(KeyboardEvent event) {
   if (ret != undefined) {
     ret.handle(ctx);
   } else {
-    prior(this, Screen).on_keyup.call(this, event);
+    prior(Screen, this).on_keyup.call(this, event);
   }
 }
 
@@ -1310,7 +1315,7 @@ Screen.prototype.on_tick = function()
     g_app_state.session.validate_session();
   }
   
-  prior(this, Screen).on_tick.call(this, function(c) {
+  prior(Screen, this).on_tick.call(this, function(c) {
     if (c instanceof ScreenArea && c.area instanceof View3DHandler) {
       g_app_state.active_view3d = c.area;
     }

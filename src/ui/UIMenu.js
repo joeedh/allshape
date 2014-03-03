@@ -319,8 +319,9 @@ function toolop_menu(ctx, name, oplist) {
     
     if (ctx.screen == null)
       ctx.screen = ctx.screen;
-      
-    console.log("---------", hotkey, opstr, ctx.screen)
+    
+    if (DEBUG.ui_menus)
+      console.log("---------", hotkey, opstr, ctx.screen)
     
     if (hotkey != undefined)
       hotkey = hotkey.build_str(true);

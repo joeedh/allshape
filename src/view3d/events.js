@@ -1,28 +1,32 @@
 "use strict";
 
-function MyMouseEvent(int x, int y, short button, short type) {
-  this.x = x; this.y = y;
-  this.button = button;
-  this.type = type;
-  
-  /*enumeration values for this.type*/
-  this.MOUSEMOVE = 0;
-  this.MOUSEDOWN = 1;
-  this.MOUSEUP = 2;
-  this.LEFT = 0;
-  this.RIGHT = 1;
+class MyMouseEvent {
+  constructor(int x, int y, short button, short type) {
+    this.x = x; this.y = y;
+    this.button = button;
+    this.type = type;
+    
+    /*enumeration values for this.type*/
+    this.MOUSEMOVE = 0;
+    this.MOUSEDOWN = 1;
+    this.MOUSEUP = 2;
+    this.LEFT = 0;
+    this.RIGHT = 1;
+  }
 }
 
 /*going to use DOM event structure for this one*/
-/*function KeyEvent(key, keyascii, type) {
-  this.key = key;
-  this.keyascii = keyascii;
-  this.type = type;
-  
-  //enumeration values for this.type
-  this.KEYDOWN = 0;
-  this.KEYUP = 1;
-  this.KEYREPEAT = 2;
+/*class KeyEvent {
+  constructor(key, keyascii, type) {
+    this.key = key;
+    this.keyascii = keyascii;
+    this.type = type;
+
+    //enumeration values for this.type
+    this.KEYDOWN = 0;
+    this.KEYUP = 1;
+    this.KEYREPEAT = 2;
+  }
 }*/
 
 //used to keep right click menus from cancelling certain tools
@@ -40,133 +44,133 @@ function ignore_next_mouseup_event(button) {
   _ignore_next_mouseup_button = button;
 }
 
-function EventHandler() {
-  this.modalstack = new Array<EventHandler>();
-  this.modalhandler = null;
-  this.keymap = null;
-}
-
-create_prototype(EventHandler);
-
-EventHandler.prototype.on_keydown = function(KeyboardEvent event) { };
-EventHandler.prototype.on_charcode = function(KeyboardEvent event) { };
-EventHandler.prototype.on_keyinput = function(KeyboardEvent event) { };
-EventHandler.prototype.on_keyup = function(KeyboardEvent event) { };
-EventHandler.prototype.on_mousemove = function(MouseEvent event) { };
-EventHandler.prototype.on_mousedown = function(MouseEvent event) { };
-EventHandler.prototype.on_mousewheel = function(MouseEvent event) { };
-EventHandler.prototype.on_mouseup = function(MouseEvent event) { };
-EventHandler.prototype.on_resize = function(Array<int> newsize) { };
-EventHandler.prototype.on_contextchange = function(Object event) { };
-EventHandler.prototype.on_draw = function(WebGLRenderingContext gl) { };
-
-EventHandler.prototype.has_modal = function() {
-    return this.modalhandler != null;
-}
-
-EventHandler.prototype.push_modal = function(EventHandler handler) 
-{
-  if (this.modalhandler != null) {
-    this.modalstack.push(this.modalhandler);
-  }
-  this.modalhandler = handler;
-  
-  //console.log("Pushing modal handler", handler.constructor.name, this.modalstack.length);
-}
-
-EventHandler.prototype.pop_modal = function() 
-{
-  if (this.modalhandler != null) {
-    //console.log("Popping modal handler", this.modalhandler.constructor.name, this.modalstack.length);
-  }
-  
-  if (this.modalstack.length > 0) {
-    this.modalhandler = this.modalstack.pop();
-  } else {
+class EventHandler {
+  constructor() {
+    this.modalstack = new Array<EventHandler>();
     this.modalhandler = null;
+    this.keymap = null;
+  }
+
+  on_keydown(KeyboardEvent event) { }
+  on_charcode(KeyboardEvent event) { }
+  on_keyinput(KeyboardEvent event) { }
+  on_keyup(KeyboardEvent event) { }
+  on_mousemove(MouseEvent event) { }
+  on_mousedown(MouseEvent event) { }
+  on_mousewheel(MouseEvent event) { }
+  on_mouseup(MouseEvent event) { }
+  on_resize(Array<int> newsize) { }
+  on_contextchange(Object event) { }
+  on_draw(WebGLRenderingContext gl) { }
+
+  has_modal() {
+      return this.modalhandler != null;
+  }
+
+  push_modal(EventHandler handler) 
+  {
+    if (this.modalhandler != null) {
+      this.modalstack.push(this.modalhandler);
+    }
+    this.modalhandler = handler;
+    
+    //console.log("Pushing modal handler", handler.constructor.name, this.modalstack.length);
+  }
+
+  pop_modal() 
+  {
+    if (this.modalhandler != null) {
+      //console.log("Popping modal handler", this.modalhandler.constructor.name, this.modalstack.length);
+    }
+    
+    if (this.modalstack.length > 0) {
+      this.modalhandler = this.modalstack.pop();
+    } else {
+      this.modalhandler = null;
+    }
+  }
+
+  //resize events aren't modal
+  _on_resize(Array<int> newsize) 
+  { 
+    this.on_resize(event);
+  }
+
+  _on_keydown(KeyboardEvent event) 
+  { 
+    if (this.modalhandler != null)
+      this.modalhandler.on_keydown(event);
+    else
+      this.on_keydown(event);
+  }
+
+  _on_charcode(KeyboardEvent event) 
+  { 
+    if (this.modalhandler != null)
+      this.modalhandler.on_charcode(event);
+    else
+      this.on_charcode(event);
+  }
+
+  _on_keyinput(InputEvent event) 
+  { 
+    if (this.modalhandler != null)
+      this.modalhandler.on_keyinput(event);
+    else
+      this.on_keyinput(event);
+  }
+
+  _on_keyup(KeyboardEvent event) 
+  { 
+    if (this.modalhandler != null)
+      this.modalhandler.on_keyup(event);
+    else
+      this.on_keyup(event);
+  }
+
+  _on_mousemove(MouseEvent event)
+  { 
+    if (this.modalhandler != null)
+      this.modalhandler.on_mousemove(event);
+    else
+      this.on_mousemove(event);
+  }
+
+  _on_mousedown(MouseEvent event)
+  { 
+    if (this.modalhandler != null)
+      this.modalhandler.on_mousedown(event);
+    else
+      this.on_mousedown(event);
+  }
+    
+  _on_mouseup(MouseEvent event)
+  { 
+    if (_swap_next_mouseup && event.button == _swap_next_mouseup_button) {
+      event.button = _swap_next_mouseup_button==2 ? 0 : 2;
+      _swap_next_mouseup = false;
+    }
+    
+    if (_ignore_next_mouseup && event.button == _ignore_next_mouseup_button) {
+      _ignore_next_mouseup = false;
+      return;
+    }
+    
+    if (this.modalhandler != null)
+      this.modalhandler.on_mouseup(event);
+    else
+      this.on_mouseup(event);
+  }
+
+  //# $(DomMouseEvent, Number).void
+  _on_mousewheel(MouseEvent event, float delta)
+  { 
+    if (this.modalhandler != null)
+      this.modalhandler.on_mousewheel(event, delta);
+    else
+      this.on_mousewheel(event, delta);
   }
 }
-
-//resize events aren't modal
-EventHandler.prototype._on_resize = function(Array<int> newsize) 
-{ 
-  this.on_resize(event);
-};
-
-EventHandler.prototype._on_keydown = function(KeyboardEvent event) 
-{ 
-  if (this.modalhandler != null)
-    this.modalhandler.on_keydown(event);
-  else
-    this.on_keydown(event);
-};
-
-EventHandler.prototype._on_charcode = function(KeyboardEvent event) 
-{ 
-  if (this.modalhandler != null)
-    this.modalhandler.on_charcode(event);
-  else
-    this.on_charcode(event);
-};
-
-EventHandler.prototype._on_keyinput = function(InputEvent event) 
-{ 
-  if (this.modalhandler != null)
-    this.modalhandler.on_keyinput(event);
-  else
-    this.on_keyinput(event);
-};
-
-EventHandler.prototype._on_keyup = function(KeyboardEvent event) 
-{ 
-  if (this.modalhandler != null)
-    this.modalhandler.on_keyup(event);
-  else
-    this.on_keyup(event);
-};
-
-EventHandler.prototype._on_mousemove = function(MouseEvent event)
-{ 
-  if (this.modalhandler != null)
-    this.modalhandler.on_mousemove(event);
-  else
-    this.on_mousemove(event);
-};
-
-EventHandler.prototype._on_mousedown = function(MouseEvent event)
-{ 
-  if (this.modalhandler != null)
-    this.modalhandler.on_mousedown(event);
-  else
-    this.on_mousedown(event);
-};
-  
-EventHandler.prototype._on_mouseup = function(MouseEvent event)
-{ 
-  if (_swap_next_mouseup && event.button == _swap_next_mouseup_button) {
-    event.button = _swap_next_mouseup_button==2 ? 0 : 2;
-    _swap_next_mouseup = false;
-  }
-  
-  if (_ignore_next_mouseup && event.button == _ignore_next_mouseup_button) {
-    _ignore_next_mouseup = false;
-    return;
-  }
-  
-  if (this.modalhandler != null)
-    this.modalhandler.on_mouseup(event);
-  else
-    this.on_mouseup(event);
-};
-
-//# $(DomMouseEvent, Number).void
-EventHandler.prototype._on_mousewheel = function(MouseEvent event, float delta)
-{ 
-  if (this.modalhandler != null)
-    this.modalhandler.on_mousewheel(event, delta);
-  else
-    this.on_mousewheel(event, delta);
-};
 
 var valid_modifiers = {"SHIFT": 1, "CTRL": 2, "ALT": 4}
 

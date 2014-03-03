@@ -11,6 +11,78 @@ var _cross_vec2 = new Vector3();
 var FLOAT_MIN = -1e21;
 var FLOAT_MAX = 1e22
 
+/*a UI-friendly Matrix4 wrapper, that 
+  likes to pretend it's a simple collection
+  of [location, rotation-euler, size] 
+  parameters*/
+
+var Matrix4UI = Matrix4
+
+class Matrix4UI extends Matrix4 {
+  constructor(loc, rot=undefined, size=undefined) {
+    if (loc instanceof Matrix4) {
+      this.load(loc);
+      return;
+    }
+    
+    if (rot == undefined)
+      rot = [0, 0, 0];
+      
+    if (size == undefined)
+      size = [1.0, 1.0, 1.0];
+    
+    this.makeIdentity();
+    this.calc(loc, rot, size);
+  }
+  
+  calc(loc, rot, size) {
+    this.rotate(rot[0], rot[1], rot[2]);
+    this.scale(size[0], size[1], size[2]);
+    this.translate(loc[0], loc[1], loc[2]);
+  }
+  
+  get loc() {
+    var t = new Vector3();
+    this.decompose(t);
+    
+    return t;
+  }
+  
+  set loc(loc) {
+    var l = new Vector3(), r = new Vector3(), s = new Vector3();
+    
+    this.decompose(l, r, s);
+    this.calc(loc, r, s);
+  }
+  
+  get rot() {
+    var t = new Vector3();
+    this.decompose(undefined, t);
+    return t;
+  }
+  
+  set rot(rot) {
+    var l = new Vector3(), r = new Vector3(), s = new Vector3();
+    
+    this.decompose(l, r, s);
+    this.calc(l, rot, s);
+  }
+  
+  get size() {
+    var t = new Vector3()
+    this.decompose(undefined, undefined, t);
+    
+    return t;
+  }
+  
+  set size(size) {
+    var l = new Vector3(), r = new Vector3(), s = new Vector3();
+    
+    this.decompose(l, r, s);
+    this.calc(l, r, size);
+  }
+}
+
 //check if we're on a 16-bit floating point system,
 //which is thoeretically possible with mobile
 //devices.  note: this is untested

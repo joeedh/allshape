@@ -14,16 +14,14 @@ class MeshEditor extends View3DEditor {
     this.view3d = view3d;
     
     if (view3d != undefined) {
-      this.mesh = view3d.mesh : Mesh;
+      this.mesh = view3d.ctx.mesh : Mesh;
     } else {
       this.mesh = undefined;
     }
     
-    this.use_subsurf = 0 : Boolean;
     this.ss_mesh = undefined : Mesh;
     this.ctx = undefined : Context;
     this.gl = undefined : WebGLRenderingContext;
-    this.drawmats = undefined : DrawMats;
     
     this.define_keymap();
   }
@@ -37,7 +35,6 @@ class MeshEditor extends View3DEditor {
     
     m.selectmode = this.selectmode;
     m.keymap = this.keymap;
-    m.use_subsurf = this.use_subsurf;
     
     return m;
   }
@@ -52,7 +49,6 @@ class MeshEditor extends View3DEditor {
   data_link(block, getblock, getblock_us) {
     this.ctx = new Context();
     this.mesh = this.ctx.mesh;
-    this.drawmats == this.view3d.drawmats;
     
     if (this.mesh != undefined) {
       this.mesh.regen_render();
@@ -61,10 +57,10 @@ class MeshEditor extends View3DEditor {
 
   render_selbuf(gl, view3d, typemask) {
       if (this.ss_mesh) 
-        subsurf_selbuf_render(this.gl, this.ss_mesh, this.mesh, this.drawmats, 
+        subsurf_selbuf_render(this.gl, this.ss_mesh, this.mesh, view3d.drawmats, 
                               (this.selectmode|MeshTypes.FACE|typemask));
       else
-        render_mesh_selbuf(this.gl, this.mesh, this.drawmats, 
+        render_mesh_selbuf(this.gl, this.mesh, view3d.drawmats, 
                          (this.selectmode|MeshTypes.FACE|typemask));
   }
 
@@ -74,28 +70,6 @@ class MeshEditor extends View3DEditor {
 
   reset_selbuf_changed(typemask) {
     this.last_selectmode = this.selectmode|typemask;
-  }
-
-  check_subsurf(Context ctx) {
-    if (this.use_subsurf && this.ss_mesh)
-      return;
-    if (!this.use_subsurf && this.ss_mesh == null)
-      return;
-      
-    if (this.use_subsurf) {
-        if (!this.ss_mesh) {
-          ctx.mesh.regen_render();
-          
-          this.ss_mesh = gpu_subsurf(this.gl, ctx.mesh, this.get_ss_steps());
-        }
-      } else {
-        if (ctx.view3d.editor.ss_mesh) {
-          destroy_subsurf_mesh(this.gl, this.ss_mesh);
-          
-          this.ss_mesh = null;
-          ctx.mesh.regen_render();
-        }
-      }  
   }
 
   add_menu(view3d, mpos) {
@@ -108,17 +82,8 @@ class MeshEditor extends View3DEditor {
     view3d.call_menu(menu, view3d, mpos);
   }
 
-  get_ss_steps() : int {
-    var steps = Math.floor(this.ss_steps / Math.log(this.mesh.faces.length))+1.0;
-    steps = Math.max(steps, 3.0);
-    
-    return steps;
-  }
-
   draw_object(gl, view3d, object, is_active)
   {
-    this.drawmats = view3d.drawmats;
-    
     this.ctx = new Context();
     this.mesh = object.data;
     this.object = object;
@@ -126,8 +91,7 @@ class MeshEditor extends View3DEditor {
     this.gl = gl;
     this.selectmode = view3d.selectmode;
     
-    this.check_subsurf(this.ctx);
-    this.ss_steps = 24;
+    view3d.check_subsurf(this.ctx, object);
     
     this.mesh.update_callback(view3d, function(view3d, mesh, event) {
       if (event == MeshEvents.RECALC) {
@@ -139,41 +103,41 @@ class MeshEditor extends View3DEditor {
     });
     
     this.gl = gl;
-    if (this.ss_mesh != null) {
+    if (object.ss_mesh != null) {
       //console.log("face length: ", this.ss_mesh.faces.length);
-      var steps = this.get_ss_steps();
-      var ss_recalc = this.mesh.render.recalc;
+      var steps = object.calc_ss_steps();
+      var ss_recalc = object.data.render.recalc;
       
-      if (steps != this.last_steps) {
-        this.last_steps = steps;
+      if (steps != object.last_ss_steps) {
+        object.last_ss_steps = steps;
         ss_recalc |= MeshRecalcFlags.REGEN_TESS;
       }
       
       if ((ss_recalc & MeshRecalcFlags.REGEN_TESS)==0)
-        this.mesh.render.recalc &= ~MeshRecalcFlags.REGEN_NORS;
+        object.data.render.recalc &= ~MeshRecalcFlags.REGEN_NORS;
 
       if (ss_recalc != 0) {
         if (ss_recalc != MeshRecalcFlags.REGEN_COLORS) {
           if (ss_recalc & MeshRecalcFlags.REGEN_TESS) {
-            destroy_subsurf_mesh(gl, this.ss_mesh);
-            this.ss_mesh = gpu_subsurf(gl, this.mesh, steps);
+            destroy_subsurf_mesh(gl, object.ss_mesh);
+            object.ss_mesh = gpu_subsurf(gl, object.data, steps);
           } else {
-            this.ss_mesh = gpu_subsurf(gl, this.mesh, steps, this.ss_mesh);
+            object.ss_mesh = gpu_subsurf(gl, object.data, steps, object.ss_mesh);
           }
         }
         
         if (ss_recalc & MeshRecalcFlags.REGEN_TESS)
-          this.mesh.flag |= MeshFlags.USE_MAP_CO;
+          object.data.flag |= MeshFlags.USE_MAP_CO;
         
-        gen_mesh_render(gl, this.mesh, this.mesh.render.drawprogram, this.mesh.render.vertprogram, this.mesh.render.recalc);        
+        gen_mesh_render(gl, object.data, object.data.render.drawprogram, object.data.render.vertprogram, object.data.render.recalc);        
       }
       
-      this.mesh.flag |= MeshFlags.USE_MAP_CO;
-      subsurf_render(gl, view3d, this.ss_mesh, this.mesh, 
-                     this.drawmats, !view3d.use_backbuf_sel);
+      object.data.flag |= MeshFlags.USE_MAP_CO;
+      subsurf_render(gl, view3d, object.ss_mesh, object.data, 
+                     view3d.drawmats, !view3d.use_backbuf_sel, true);
     } else {
       this.mesh.flag &= ~MeshFlags.USE_MAP_CO;
-      render_mesh(gl, view3d, this.mesh, this.drawmats, !view3d.use_backbuf_sel); 
+      render_mesh(gl, view3d, object.data, view3d.drawmats, !view3d.use_backbuf_sel); 
     }
   }
 
@@ -224,7 +188,7 @@ class MeshEditor extends View3DEditor {
     col.pos = [0,0]
     col.size = [view3d.size[0], 30];
     
-    col.prop("view3d.use_subsurf");
+    col.prop("object.use_subsurf");
     
     //col.add(new UIMenuLabel(this.ctx, "File", undefined, gen_file_menu));
     col.label("  |  Select Mode:  ");
@@ -293,14 +257,7 @@ class MeshEditor extends View3DEditor {
     }));
     k.add(new KeyHandler("E", ["SHIFT"], "Toggle Subsurf"), new FuncKeyHandler(function(ctx) {
       console.log("subsurf");
-      if (ctx.view3d.editor.ss_mesh == null) {
-        ctx.mesh.regen_render();
-        ctx.view3d.editor.ss_mesh = gpu_subsurf(ctx.view3d.gl, ctx.mesh, ctx.view3d.editor.get_ss_steps());
-      } else {
-        destroy_subsurf_mesh(ctx.view3d.gl, ctx.view3d.editor.ss_mesh);
-        ctx.view3d.editor.ss_mesh = null;
-        ctx.mesh.regen_render();
-      }
+      ctx.object.subsurf ^= true;
     }));
   }
 
@@ -463,11 +420,10 @@ class MeshEditor extends View3DEditor {
       
   }
 
-
   on_mousemove(event) {
     var mpos = [event.x, event.y];
     
-    this.mesh = this.view3d.mesh;
+    this.mesh = this.view3d.ctx.mesh;
     
     //don't highlight elements when selecting loops,
     //except for edge mode
@@ -524,7 +480,7 @@ class MeshEditor extends View3DEditor {
   }
 
   findnearest_backbuf(Vector2 mpos, int type) {
-    var pmat = new Matrix4(this.drawmats.rendermat);
+    var pmat = new Matrix4(this.view3d.drawmats.rendermat);
     
     var mesh = this.mesh;
     
@@ -794,6 +750,5 @@ class MeshEditor extends View3DEditor {
 MeshEditor.STRUCT = """
   MeshEditor {
     selectmode : int;
-    use_subsurf : int;
   }
 """

@@ -235,5 +235,7 @@ class Glob(AbstractGlob):
     g_refactor_mode = False
     g_refactor_classes = False
     g_add_opt_initializers = True
+    g_replace_instanceof = True
+    g_instanceof_func = "__instance_of"
           
 glob = Glob()

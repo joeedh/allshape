@@ -280,16 +280,21 @@ class TransformOp extends ToolOp {
     this._undo = {} : ObjectMap
   }
 
-  static default_slots(obj, mode) {
+  static default_slots(obj, mode, asob) {
     obj.inputs["DATAMODE"] = selectmode_enum.copy();
-    obj.inputs["OBJECT"] = new DataRefProp(undefined, DataTypes.OBJECT, "object", "Object", "Object to transform", undefined);
+    obj.inputs["OBJECT"] = new DataRefProperty(asob, DataTypes.OBJECT, "object", "Object", "Object to transform", undefined);
     
     if (mode != 0)
       obj.inputs.DATAMODE.set_data(mode);
   }
   
   gen_transdata(ctx) {
-     return new TransData(ctx, this.inputs.OBJECT.get_block(ctx), 
+    if (DEBUG.transform) {
+      console.log("1-", ctx.object);
+      console.log("2-", this.inputs.OBJECT.data);
+      console.log("3-", this.inputs.OBJECT.get_block(ctx));
+    }
+    return new TransData(ctx, this.inputs.OBJECT.get_block(ctx), 
                           this.inputs.DATAMODE.data);
   }
  
@@ -626,7 +631,8 @@ class TransformOp extends ToolOp {
   }
 
   on_mouseup(event) {
-    console.log("modal end");
+    if (DEBUG.modal)
+      console.log("modal end");
     
     if (event.button == 0) {
       this.end_modal();
@@ -641,7 +647,7 @@ class TransformOp extends ToolOp {
 }
 
 class TranslateOp extends TransformOp {
-  constructor(mode=0) {
+  constructor(mode=0, object=undefined) {
     TransformOp.call(this);
     
     this.uiname = "Translate"
@@ -656,7 +662,12 @@ class TranslateOp extends TransformOp {
              AXIS: new Vec3Property(new Vector3(), "cons_axis", "Constraint Axis", "Axis to constrain too during transform", TPropFlags.PRIVATE)}
     this.outputs = {TRANSLATION: new Vec3Property(new Vector3(), "translation", "Translation", "Amount of translation.")}
     
-    TransformOp.default_slots(this, mode);
+    if (object == undefined)
+      object = new Context().object;
+    
+    TransformOp.default_slots(this, mode, object);
+    if (object != undefined)
+      this.inputs.OBJECT.set_data(object);
   }
 
   can_call(ctx) {
