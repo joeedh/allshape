@@ -17,19 +17,22 @@ glob_cmd_advanced = set(["g_error", "g_line", "g_file", "g_tried_semi", "g_error
 glob_cmd_exclude = set(["g_lexer", "g_error_pre", "g_outfile", "g_lines", "g_lexdata"])
 glob_long_word_shorten = {"generators": "gens", "error": "err", "warnings": "warn", "production": "prod"}
 
-glob_cmd_short_override["g_log_productions"] = "lp"
-glob_cmd_short_override["g_preprocess_code"] = "npc"
-glob_cmd_short_override["g_include_dirs"] = "I"
-glob_cmd_short_override["g_do_annote"] = "na"
-glob_cmd_short_override["g_gen_source_map"] = "gm"
-glob_cmd_short_override["g_gen_smap_orig"] = "gsr"
-glob_cmd_short_override["g_minify"] = "mn"
-glob_cmd_short_override["g_add_srcmap_ref"] = "nref"
-glob_cmd_short_override["g_expand_iterators"] = "nei"
-glob_cmd_short_override["g_harmony_iterators"] = "nhi"
-glob_cmd_short_override["g_refactor_mode"] = "rm"
-glob_cmd_short_override["g_refactor_classes"] = "rc"
-glob_cmd_short_override["g_add_opt_initializers"] = "nao"
+gcs = glob_cmd_short_override
+gcs["g_log_productions"] = "lp"
+gcs["g_preprocess_code"] = "npc"
+gcs["g_include_dirs"] = "I"
+gcs["g_do_annote"] = "na"
+gcs["g_gen_source_map"] = "gm"
+gcs["g_gen_smap_orig"] = "gsr"
+gcs["g_minify"] = "mn"
+gcs["g_add_srcmap_ref"] = "nref"
+gcs["g_expand_iterators"] = "nei"
+gcs["g_harmony_iterators"] = "nhi"
+gcs["g_refactor_mode"] = "rm"
+gcs["g_refactor_classes"] = "rc"
+gcs["g_add_opt_initializers"] = "nao"
+gcs["g_do_docstrings"] = "ds"
+gcs["g_docstring_propname"] = "dsp"
 
 def argv_to_argline():
   s = ""
@@ -237,5 +240,7 @@ class Glob(AbstractGlob):
     g_add_opt_initializers = True
     g_replace_instanceof = True
     g_instanceof_func = "__instance_of"
-          
+    g_do_docstrings = False
+    g_docstring_propname = "__doc__"
+    
 glob = Glob()

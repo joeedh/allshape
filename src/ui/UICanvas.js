@@ -475,7 +475,9 @@ class UICanvas {
     var arr = new GArray([])
     var start = this.stack.pop(this.stack.length-1);
     
-    console.log(start);
+    if (DEBUG.ui_canvas)
+      console.log(start);
+    
     for (var i=start; i<this.drawlists.length; i++) {
       arr.push(this.drawlists[i]);
     }
@@ -668,7 +670,6 @@ class UICanvas {
     var f = start;
     var df = arc / steps;
     var points = [];
-    console.log("ss", start, arc, r);
     for (var i=0; i<steps+1; i++) {
       var x = pos[0] + Math.sin(f)*r;
       var y = pos[1] + Math.cos(f)*r;

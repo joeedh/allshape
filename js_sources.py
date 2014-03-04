@@ -1,4 +1,4 @@
-js_sources = [
+js_targets = {"app.js" : [
 	"src/html/unit_test.html",
 	"src/html/main.html",
   "src/core/typesystem.js",
@@ -78,4 +78,4 @@ js_sources = [
 	"src/object/scene.js",
 	"src/object/object_ops.js",
 	"src/core/data_api_define.js"
-]
+]}

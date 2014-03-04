@@ -49,6 +49,11 @@ PUTL.lexer = function(tokdef, errfunc) {
   this.lexdata = "";
   this.lineno = 0;
   this.errfunc = errfunc;
+  this.tokints = {}
+  
+  for (var i=0; i<tokdef.length; i++) {
+    this.tokints[tokdef[i].name] = i;
+  }
   
   this.statestack = [["__main__", 0]];
   this.states = {"__main__" : [tokdef, errfunc]};
@@ -64,6 +69,10 @@ PUTL.lexer.prototype.add_state = function(name, tokdef, errfunc) {
   }
   
   this.states[name] = [tokdef, errfunc];
+}
+
+PUTL.lexer.prototype.tok_int = function(name) {
+  
 }
 
 //statedata is optional.
@@ -352,6 +361,7 @@ function test_parser() {
       t.value = js;
       return t;
     }),
+    
     tk("LPARAM", /\(/),
     tk("RPARAM", /\)/),
     tk("COMMA", /,/),

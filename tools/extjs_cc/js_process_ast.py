@@ -1090,7 +1090,101 @@ def replace_instanceof(result, typespace):
   traverse(result, BinOpNode, visiti)
   
   print("\n")
+
+def process_docstrings(result, typespace):
+  dprop = glob.g_docstring_propname
+  vset = set()
   
+  def case1(node, dstr):
+    #simple case; the node's parent is a statementlist
+    if type(node.parent) != StatementList: return False
+    if node.name == "(anonymous)": return False
+    
+    node.remove(dstr)
+    n = BinOpNode(IdentNode(node.name), IdentNode(dprop), ".")
+    n = AssignNode(n, dstr)
+    
+    node.parent.insert(node.parent.index(node)+1, n)
+    return True
+  
+  #a = func() {}, where a is part of a statementlist
+  def case2(node, dstr):
+    def count_funcs(n2):
+      ret = 0
+      if type(n2) == FunctionNode: 
+        ret += 1
+        if n2 == node: return ret
+      
+      for c in n2:
+        ret += count_funcs(c)
+      return ret
+    
+    
+    #make sure we're part of a valid assignnode
+    n = node
+    lastn = n;
+    while n != None:
+      lastn = n
+      n = n.parent
+      if type(n) not in [BinOpNode, IdentNode, AssignNode]: break
+      
+    if type(n) not in [StatementList, FunctionNode]: return False
+    if type(lastn) != AssignNode: return False
+    
+    an = lastn;
+    if count_funcs(an) != 1: return False
+    
+    dstr.parent.remove(dstr);
+    
+    dn = dstr
+    node.parent.replace(node, dn);
+    n2 = js_parse(an.gen_js(0), start_node=AssignNode)
+    node.parent.replace(dn, node)
+    
+    n2.replace(n2[0], BinOpNode(n2[0], IdentNode(dprop), "."))
+    an.parent.insert(an.parent.index(an)+1, n2)
+    return True
+    
+  cases = [case1, case2]
+  def visit(node):
+    if node in vset:
+      return
+    vset.add(node)
+    
+    if len(node) == 1: return
+    n = node[1]
+    while len(n) > 0 and type(n) == StatementList:
+      n = n[0]
+    
+    if type(n) != StrLitNode: return
+    dstr = n
+    
+    tfound = 0
+    for c in cases:
+      if c(node, dstr):
+        if len(node) == 1:
+          node.add(StatementList())
+        tfound = True
+        break
+        
+    if not tfound:
+      p = node.parent
+      i = node.parent.index(node)
+      if node in node.parent:
+        node.parent.remove(node)
+      node.remove(dstr)
+      
+      sys.stderr.write("%s(%i): Warning: could not statically compile docstring for function\n  \"%s\"." % (node.file, node.line, node.name))
+      sys.stderr.write("  Docstring will be set at runtime instead\n\n");
+      
+      bn = ExprListNode([node, dstr])
+      cn = FuncCallNode("define_docstring")
+      cn.add(bn)
+      p.insert(i, cn)
+      
+  traverse(result, FunctionNode, visit);
+  
+
 from js_global import glob
 from js_typespace import *
 from js_ast import *

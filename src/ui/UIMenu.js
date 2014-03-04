@@ -218,9 +218,6 @@ UIMenu.prototype.build_draw = function(canvas, isvertical)
     this.packed = true;
   }
   
-  UIFrame.prototype.build_draw.call(this, canvas, true);
-  
-  canvas.begin(this);
   canvas.simple_box([0, 0], this.size, uicolors["MenuBox"][0], 35.0);
   canvas.text([24, this.size[1]-22], this.name, uicolors["BoxText"])
   
@@ -242,16 +239,16 @@ UIMenu.prototype.build_draw = function(canvas, isvertical)
     y += ehgt;
   }
   
+  UIFrame.prototype.build_draw.call(this, canvas, true);
+   
   y += 10;
   
   if (this.name != undefined && this.name != "")
     canvas.line([0, y, 0], [this.size[0], y, 0], clr, clr, 1);
   
-  canvas.line([20, 0, 0], [20, this.size[1], 0], uicolors["MenuSep"], undefined, 1);
-  if (this.hkey_line_pos != 0)
-    canvas.line([this.hkey_line_pos, 0, 0], [this.hkey_line_pos, this.size[1], 0], uicolors["MenuSep"], undefined, 1);
-  
-  canvas.end(this);
+  //canvas.line([20, 0, 0], [20, this.size[1], 0], uicolors["MenuSep"], undefined, 1);
+  //if (this.hkey_line_pos != 0)
+  //  canvas.line([this.hkey_line_pos, 0, 0], [this.hkey_line_pos, this.size[1], 0], uicolors["MenuSep"], undefined, 1);
 }
 
 //is_menu_open is defined in RadialMenu.js

@@ -493,7 +493,7 @@ class View3DHandler extends Area {
   }
 
   on_mousedown(event) {
-    if (UIFrame.prototype.on_mousedown.call(this, event))
+    if (prior(View3DHandler, this).on_mousedown.call(this, event))
       return;
     
     var selfound = false;
@@ -527,7 +527,7 @@ class View3DHandler extends Area {
   on_mouseup(MouseEvent event) {
     this._mstart = null;
     
-    if (UIFrame.prototype.on_mouseup.call(this, event))
+    if (prior(View3DHandler, this).on_mouseup.call(this, event))
       return;
   }
 
@@ -547,7 +547,7 @@ class View3DHandler extends Area {
       }
     }
     
-    if (UIFrame.prototype.on_mousemove.call(this, event))
+    if (prior(View3DHandler, this).on_mousemove.call(this, event))
       return;
     
     this.editor.on_mousemove(event);
@@ -632,7 +632,7 @@ class View3DHandler extends Area {
   }
 
   on_tick() {
-    UIFrame.prototype.on_tick.call(this);
+    prior(View3DHandler, this).on_tick.call(this);
   }
 
   on_view_change() {

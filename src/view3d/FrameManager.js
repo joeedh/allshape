@@ -13,14 +13,6 @@ function Area(type, ctx, pos, size)
 }
 inherit(Area, UIFrame);
 
-Area.STRUCT = """
-  Area { 
-    pos : vec2;
-    size : vec2;
-    type : string;
-  }
-"""
-
 Area.fromSTRUCT = function(reader) {
   var ob = {};
   reader(ob);
@@ -94,6 +86,14 @@ Area.prototype.on_area_inactive = function()
 Area.prototype.on_area_active = function()
 {
 }
+
+Area.STRUCT = """
+  Area { 
+    pos : vec2;
+    size : vec2;
+    type : string;
+  }
+"""
 
 function ScreenArea(area, ctx, pos, size, add_area)
 {
@@ -201,15 +201,13 @@ ScreenArea.fromJSON = function(scrarea)
   for (var i=0; i<scrarea.areas.length; i++) {
     var a = scrarea.areas[i];
     
-    if (0) { //!(a.type in Area_Types)) {
+    if (0) { // !(a.type in Area_Types)) {
       console.log("Error: bad area type " + a.type + " in ScreenArea.fromJSON()")
       console.trace();
       continue;
     }
     
     var area;
-    //XXX: remember to add new area types to this stupid switch
-    //idiot Chrome JS
     if (1) { //a.type == View3DHandler.name)
       area = View3DHandler.fromJSON(a);
     } else {
@@ -248,8 +246,8 @@ ScreenArea.prototype.area_duplicate = function()
 
 ScreenArea.prototype.build_draw = function(canvas, isVertical)
 {
-  var mat = new Matrix4();
-  mat.translate(this.pos[0], this.pos[1], 0.0);
+  //var mat = new Matrix4();
+  //mat.translate(this.pos[0], this.pos[1], 0.0);
   
   //canvas.push_transform(mat);
   prior(ScreenArea, this).build_draw.call(this, canvas, isVertical);
@@ -336,8 +334,6 @@ SplitAreasTool.prototype.on_mousemove = function(event)
     p = p.parent;
   }
   
-  //console.log(this.parent, p, this.mpos);
-  
   var mpos = this.mpos;
   var active = undefined;
   for (var c in this.screen.children) {
@@ -416,7 +412,6 @@ SplitAreasTool.prototype.finish = function(event)
   var oldsize = [area.size[0], area.size[1]];
   
   var area2 = area.area_duplicate();
-  //console.log(i)
   if (i == 0 || i == 2) {
     //horizontal
     area2.size[0] = area.size[0];
@@ -745,7 +740,6 @@ ScreenBorder.prototype.at_screen_border = function(event) {
     ret = ret2 & ret;
   }
   
-  //console.log("ret: ", ret);
   return ret;
 }
 
@@ -867,8 +861,6 @@ ScreenBorder.prototype.on_mousemove = function(event) {
   var areas = this.areas;
   
   var delta = mpos[axis] - start[axis];
-  
-  //this.start_mpos = new Vector2(start);
   
   for (var p in areas) {
     var a = p[0];
@@ -1276,7 +1268,7 @@ Screen.prototype.on_draw = function(WebGLRenderingContext gl)
     g_app_state.raster.pop_scissor();
   }
   
-  if (time_ms() - this.last_tick > 200) { //(IsMobile ? 500 : 150)) {
+  if (time_ms() - this.last_tick > 100) { //(IsMobile ? 500 : 150)) {
     this.on_tick();
     this.last_tick = time_ms();
   }
@@ -1285,7 +1277,7 @@ Screen.prototype.on_draw = function(WebGLRenderingContext gl)
   gl_blend_func(gl);
   
   gl.viewport(0, 0, this.size[0], this.size[1]);
-  UIFrame.prototype.on_draw.call(this, gl);
+  prior(Screen, this).on_draw.call(this, gl);
   
   if (this.modalhandler != null && !(this.modalhandler instanceof ScreenArea)) {
     this.modalhandler.on_draw(gl);
@@ -1534,6 +1526,10 @@ Screen.prototype.toJSON = function() {
   }
   
   return ret;
+}
+
+Screen.prototype.build_draw = function(canvas, isVertical) {
+  prior(Screen, this).build_draw.call(this, canvas, isVertical);
 }
 
 Screen.prototype.data_link = function(block, getblock, getblock_us)

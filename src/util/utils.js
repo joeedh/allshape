@@ -292,94 +292,94 @@ function SetIter<T>(set) {
 }
 EXPORT_FUNC(SetIter)
 
-function set<T>(T input) {
-  this.items = {}
-  this.length = 0;
-  
-  if (input != undefined) {
-    if (input instanceof Array || input instanceof String) {
-      for (var i=0; i<input.length; i++) {
-        this.add(input[i]);
-      }
-    } else {
-      for (var item in input) {
-        this.add(item);
+class set {
+  constructor(input) {
+    this.items = {}
+    this.length = 0;
+    
+    if (input != undefined) {
+      if (input instanceof Array || input instanceof String) {
+        for (var i=0; i<input.length; i++) {
+          this.add(input[i]);
+        }
+      } else {
+        for (var item in input) {
+          this.add(item);
+        }
       }
     }
   }
+
+  pack(data) {
+    pack_int(data, this.length);
+    
+    for (var item in this) {
+      item.pack(data);
+    }
+  }
+
+  toJSON() {
+    var arr = new Array(this.length);
+    
+    var i = 0;
+    for (var item in this.items) {
+      arr[i] = this.items[item];
+      i += 1
+    }
+    
+    return arr;
+  }
+
+  toSource() : String {
+    return "new set(" + list(this).toSource() + ")";
+  }
+
+  toString() : String {
+    return "new set(" + list(this).toString() + ")";
+  }
+
+  add(T item) {
+    /*if (item == undefined || item == null) {
+      console.trace(item);
+    }*/
+    
+    if (!(item.__hash__() in this.items)) { //!this.items.hasOwnProperty(item.__hash__())) {
+      this.length += 1;
+      this.items[item.__hash__()] = item;
+    }
+  }
+
+  remove(T item) {
+    delete this.items[item.__hash__()];
+    this.length -= 1;
+  }
+
+  safe_iter() : Iterator {
+    return new SafeSetIter<T>(this);
+  }
+
+  __iterator__() : Iterator {
+    return new SetIter<T>(this);
+  }
+
+  union(set<T> b) {
+    var newset = new set<T>(this);
+    
+    for (var T item in b) {
+      newset.add(item);
+    }
+    
+    return newset;
+  }
+
+  has(T item) {
+    if (item == undefined) {
+      console.trace();
+    }
+    return this.items.hasOwnProperty(item.__hash__());
+  }
 }
 EXPORT_FUNC(set)
-
-create_prototype(set)
-
-set.prototype.pack = function(data) {
-  pack_int(data, this.length);
-  
-  for (var item in this) {
-    item.pack(data);
-  }
-}
-
-set.prototype.toJSON = function() {
-  var arr = new Array(this.length);
-  
-  var i = 0;
-  for (var item in this.items) {
-    arr[i] = this.items[item];
-    i += 1
-  }
-  
-  return arr;
-}
-
-set.prototype.toSource = function() : String {
-  return "new set(" + list(this).toSource() + ")";
-}
-
-set.prototype.toString = function() : String {
-  return "new set(" + list(this).toString() + ")";
-}
-
-set.prototype.add = function(T item) {
-  /*if (item == undefined || item == null) {
-    console.trace(item);
-  }*/
-  
-  if (!(item.__hash__() in this.items)) { //!this.items.hasOwnProperty(item.__hash__())) {
-    this.length += 1;
-    this.items[item.__hash__()] = item;
-  }
-}
-
-set.prototype.remove = function(T item) {
-  delete this.items[item.__hash__()];
-  this.length -= 1;
-}
-
-set.prototype.safe_iter =  function() : Iterator {
-  return new SafeSetIter<T>(this);
-}
-
-set.prototype.__iterator__ = function() : Iterator {
-  return new SetIter<T>(this);
-}
-
-set.prototype.union = function(set<T> b) {
-  var newset = new set<T>(this);
-  
-  for (var T item in b) {
-    newset.add(item);
-  }
-  
-  return newset;
-}
-
-set.prototype.has = function(T item) {
-  if (item == undefined) {
-    console.trace();
-  }
-  return this.items.hasOwnProperty(item.__hash__());
-}
 
 function GArrayIter<T>(GArray<T> arr) {
   this.ret = {done : false, value : undefined};
@@ -1099,9 +1099,12 @@ function get_spiral(size)
 //ltypeof function, that handles object instances of basic types
 var _bt_h = {
   "String" : "string",
+  "RegExp" : "regexp",
   "Number" : "number",
   "Function" : "function",
-  "Array" : "array"
+  "Array" : "array",
+  "Boolean" : "boolean",
+  "Error" : "error"
 }
 
 function btypeof(obj) {

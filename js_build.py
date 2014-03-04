@@ -3,12 +3,27 @@
 import os, sys, os.path, time, random, math
 import shelve, struct, io, imp, ctypes, re
 import subprocess, shlex
+import imp, runpy
+
+REBUILD = 1
+WASBUILT = 2
+
+sep = os.path.sep
+def modimport(name):
+  cwd = os.path.abspath(os.path.normpath(os.getcwd()))
+  path = cwd + sep + name + ".py"
+  
+  mfile = open(path, "r")
+  mod = imp.load_module(name, mfile, path, ('.py', 'r', imp.PY_SOURCE)) #runpy.run_path(cwd + sep + path + ".py")
+  
+  return mod
 
 try:
-  import jsbuild_config_local as config
+  config = modimport("build_local")
   config_dict = config.__dict__
-except IOError:
+except (IOError, FileNotFoundError):
   config_dict = {}
+  print("warning, missing local_build.py")
 
 def validate_cfg(val, vtype):
   if vtype == "bool":
@@ -19,6 +34,9 @@ def validate_cfg(val, vtype):
     else: return val in [True, False]
   elif vtype == "int":
     return type(val) in [int, float] and floor(val) == val
+  elif vtype == "path":
+    return os.path.exists(val)
+  
   else: return True
 
 localcfg = {}
@@ -37,7 +55,8 @@ num_cores = getcfg("num_cores", 5, "int")
 do_minify = getcfg("do_minify", True, "bool")
 do_smaps = getcfg("do_smaps", True, "bool")
 do_smap_roots = getcfg("do_smap_roots", False, "bool")
-aggregate_smaps = getcfg("aggregate_smaps", True, "bool")
+aggregate_smaps = getcfg("aggregate_smaps", do_smaps, "bool")
+
 if len(localcfg) > 0:
   print("build config:")
   keys = list(localcfg.keys())
@@ -54,7 +73,34 @@ def np(path):
 
 sp = os.path.sep
 
-from js_sources import js_sources
+class Source:
+  def __init__(self, f):
+    self.source = f
+    self.target = ""
+    self.build = False
+    
+  def __str__(self):
+    return self.source + ":" + self.target
+    
+  def __repr__(self):
+    return str(self)
+  
+class Target (list):
+  def __init__(self, target):
+    list.__init__(self)
+    self.target = target
+  
+  def replace(self, a, b):
+    self[self.index(a)] = b
+    
+srcmod = modimport("js_sources")
+targets2 = srcmod.js_targets
+targets = []
+for k in targets2:
+  targets.append(Target(k))
+  for s in targets2[k]:
+    targets[-1].append(Source(s))
+    
 db = None
 db_depend = None
 
@@ -76,26 +122,36 @@ if build_cmd == "clean": build_cmd = "cleanbuild"
 if not os.path.exists("build"):
   os.mkdir("build")
 
+for t1 in targets:
+  for t2 in targets:
+    if t1 == t2: continue
+    
+    for f1 in t1:
+      for f2 in t2:
+        if np(f1.source) == np(f2.source):
+          t2.replace(f2, f1)
+
 #read sources
-files = []
-for f in js_sources: 
-  if sp in f or "/" in f:
-    f2 = os.path.split(f)[1]
-  else:
-    f2 = f
-  files.append([f, "build/"+f2])
+for t in targets:
+  for f in t:
+    if sp in f.source or "/" in f.source:
+      f2 = os.path.split(f.source)[1]
+    else:
+      f2 = f.source
+    f.target = "build/" + f2;
 
 win32 = sys.platform == "win32"
 PYBIN = sys.executable
-print(PYBIN)
 if PYBIN == "":
   sys.stderr.write("Warning: could not find python binary, reverting to default\n")
   PYBIN = "python3.2"
 
 PYBIN += " "
 
-JCC = np("tools/extjs_cc/js_cc.py")
-TCC = np("tools/tinygpu/tinygpu.py")
+PYBIN = getcfg("PYBIN", PYBIN, "path") + " "
+JCC = getcfg("JCC", np("tools/extjs_cc/js_cc.py"), "path")
+TCC = getcfg("TCC", np("tools/extjs_cc/js_cc.py"), "path")
+print("using python executable \"" + PYBIN.strip() + "\"")
 
 #minified, concatenated build
 JFLAGS = ""
@@ -110,13 +166,9 @@ if do_smaps:
   JFLAGS += " -gm"
   if do_smap_roots:
     JFLAGS += " -gsr"
-  
-try:
-  JFLAGS += " " + jsbuild_config_local.JFLAGS
-except:
-  pass
-  
-TFLAGS = ""
+
+JFLAGS += getcfg("JFLAGS", "", "string")
+TFLAGS = getcfg("TFLAGS", "", "string")
 
 def cp_handler(file, target):
   if win32:
@@ -138,15 +190,14 @@ class Handler (object):
 handlers = {
   r'.*\.js\b' : Handler(jcc_handler),
   r'.*\.html\.in\b' : Handler(tcc_handler),
-  r'.*\.html\b' : Handler(cp_handler, can_popen=False)
+  r'.*\.html\b' : Handler(cp_handler, can_popen=False),
+  r'.*\.js_' : Handler(cp_handler, can_popen=False)
 }
 
 def iter_files(files):
-  for f, target in files:
-    if "[Conflict]" in f: continue
-    
-    abspath = os.path.abspath(os.path.normpath(f))
-    yield [f, target, abspath]
+  for f in files:
+    abspath = os.path.abspath(os.path.normpath(f.source))
+    yield [f.source, f.target, abspath, f.build]
     
 #dest depends on src
 def add_depend(dest, src):
@@ -245,7 +296,35 @@ def do_rebuild(abspath):
 def failed_ret(ret):
   return ret != 0
 
-def main():
+def filter_srcs(files):
+  global db, db_depend
+  
+  procs = []
+  
+  db = shelve.open("jbuild.db".replace("/", sp))
+  db_depend = shelve.open("jbuild_dependencies.db".replace("/", sp))
+  
+  if build_cmd == "cleanbuild":  
+    for k in db:
+      db[k] = 0;
+    db.sync();
+  
+  i = 0;
+  for f, target, abspath, rebuild in iter_files(files):
+    fname = os.path.split(abspath)[1]
+    
+    if not do_rebuild(abspath):
+      i += 1
+      continue
+    
+    files[i].build = REBUILD
+    build_depend(abspath);
+    i += 1
+  
+  db.close()
+  db_depend.close()
+  
+def build_target(files):
   global db, db_depend
   
   procs = []
@@ -261,13 +340,18 @@ def main():
   built_files = []
   failed_files = []
   fi = 0
-  for f, target, abspath in iter_files(files):
+  
+  build_final = False
+  for f, target, abspath, rebuild in iter_files(files):
     fname = os.path.split(abspath)[1]
+    sf = files[fi]
     fi += 1
     
-    if not do_rebuild(abspath): continue
+    build_final |= rebuild in [REBUILD, WASBUILT]
+    if rebuild != REBUILD: continue
     
-    build_depend(abspath);
+    sf.build = WASBUILT
+    
     built_files.append([abspath, os.stat(abspath).st_mtime, f])
     
     re_size = 0
@@ -278,7 +362,7 @@ def main():
         use_popen = handlers[k].use_popen
         re_size = len(k)
     
-    perc = int((float(fi) / len(files))*100.0)
+    perc = int((float(fi) / len(target))*100.0)
     print("[%i%%] " % perc, cmd)
     
     #execute build command
@@ -296,8 +380,7 @@ def main():
       time.sleep(0.25)
     
     if len(failed_files) > 0: continue
-    
-    print(cmd)
+   
     if use_popen:
       #shlex doesn't like backslashes
       if win32:
@@ -358,16 +441,16 @@ def main():
   db_depend.close()
   
   #write aggregate, minified file
-  if len(built_files) > 0:
-    print("\n\nwriting app.js...")
+  if build_final:
+    print("\n\nwriting %s..." % files.target)
     sys.stdout.flush()
-    aggregate()
+    aggregate(files, 'build/'+files.target)
     print("done.")
     
   if build_cmd != "loop":
     print("build finished")
 
-def aggregate(outpath="build/app.js"):
+def aggregate(files, outpath="build/app.js"):
   outfile = open(outpath, "w")
   
   if aggregate_smaps:
@@ -383,9 +466,9 @@ def aggregate(outpath="build/app.js"):
   """
 
   for f in files:
-    if not f[0].endswith(".js"): continue
+    if not f.source.endswith(".js") and not f.source.endswith(".js_"): continue
     
-    f2 = open(f[1], "r")
+    f2 = open(f.target, "r")
     buf = f2.read()
     if "-mn" in JFLAGS and "\n" in buf:
       print("EEK!!", f)
@@ -397,9 +480,9 @@ def aggregate(outpath="build/app.js"):
   if do_smaps:
     si = 0
     for f in files:
-      if not f[0].endswith(".js"): continue
+      if not f.source.endswith(".js"): continue
       
-      smap = f[1] + ".map"
+      smap = f.target + ".map"
       if si > 0:
         sbuf += ",\n"
 
@@ -422,15 +505,25 @@ def aggregate(outpath="build/app.js"):
   
   outfile.close()
   
-  mapfile = open(outpath+".map", "w")
-  mapfile.write(sbuf)
-  mapfile.close()
-  
-  
-if __name__ == "__main__":
+  if aggregate_smaps:
+    mapfile = open(outpath+".map", "w")
+    mapfile.write(sbuf)
+    mapfile.close()
+
+def buildall():
+  for t in targets:
+    filter_srcs(t)
+    
+  for t in targets:
+    build_target(t)
+
+def themain():  
   if build_cmd == "loop":
     while 1:
-      main()
+      buildall()
       time.sleep(0.15);
   else:
-    main()
+    buildall()
+
+if __name__ == "__main__":
+  themain()

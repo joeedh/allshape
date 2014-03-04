@@ -14,9 +14,11 @@ class UIPackFrame extends UIFrame {
 
   on_resize(Array<int> newsize, Array<int> oldsize)
   {
-    UIFrame.prototype.on_resize.call(this);
+    prior(UIPackFrame, this).on_resize.call(this, newsize, oldsize);
     
-    this.pack(this.get_canvas());
+    //var canvas = this.get_canvas();
+    //if (canvas != undefined)
+    //  this.pack(canvas, false);
   }
 
   toolop(path, inherit_flag) {
@@ -191,7 +193,7 @@ class UIPackFrame extends UIFrame {
   _pack_recalc() 
   {
     return;
-    this.do_full_recalc();
+    //this.do_full_recalc();
     
     for (var c in this.children) {
       if (!(c instanceof UIFrame)) {
@@ -209,6 +211,12 @@ class RowFrame extends UIPackFrame {
   }
 
   get_min_size(UICanvas canvas, Boolean isvertical) {
+    if (canvas == undefined) {
+      console.trace();
+      console.log("Warning: undefined canvas in get_min_size");
+      return;
+    }
+    
     var maxwidth = 0;
     var tothgt = 0;
     
@@ -233,6 +241,12 @@ class RowFrame extends UIPackFrame {
   }
 
   pack(UICanvas canvas, Boolean is_vertical) {
+    if (canvas == undefined) {
+      console.trace();
+      console.log("Warning: undefined canvas in pack");
+      return;
+    }
+    
     this._pack_recalc();
     
     if (this.size[0] == 0 && this.size[1] == 0) {
@@ -253,7 +267,7 @@ class RowFrame extends UIPackFrame {
     else
       y = this.size[1];
     
-    for (var i=0; i<this.children.length; i++) { //i=this.children.length-1; i>=0; i--) {
+    for (var i=0; i<this.children.length; i++) {
       var c = this.children[i];
       var size;
       
@@ -300,6 +314,12 @@ class ColumnFrame extends UIPackFrame {
   }
 
   get_min_size(UICanvas canvas, Boolean isvertical) {
+    if (canvas == undefined) {
+      console.trace();
+      console.log("Warning: undefined canvas in get_min_size");
+      return;
+    }
+    
     var maxheight = 0;
     var totwid = 0;
     
@@ -323,6 +343,12 @@ class ColumnFrame extends UIPackFrame {
   }
 
   pack(UICanvas canvas, Boolean is_vertical) {
+    if (canvas == undefined) {
+      console.trace();
+      console.log("Warning: undefined canvas in pack");
+      return;
+    }
+
     this._pack_recalc();
     
     if (this.size[0] == 0 && this.size[1] == 0) {

@@ -212,13 +212,21 @@ function inherit_multiple(obj, parents) {
     obj.__clsorder__ = merge(parents, lsts);
   }
   
+  function _get_obj_keys(ob) {
+    var ks = Object.getOwnPropertyNames(ob);
+    if (ob.toString != undefined)
+      ks.push("toString");
+    return ks;
+  }
+  
   //build prototype chain
   var cs = obj.__clsorder__;
   var cs2 = [];
   for (var i=0; i<cs.length; i++) {
     cs2.push(Object.create(Object.prototype));
+    
     var p = cs[i];
-    var keys = Object.getOwnPropertyNames(p.prototype);
+    var keys = _get_obj_keys(p.prototype);
     
     for (var j=0; j<keys.length; j++) {
       var val = p.prototype[keys[j]];
@@ -230,7 +238,7 @@ function inherit_multiple(obj, parents) {
         
         if (p2.__prototypeid__ == p.__prototypeid__) continue;
         
-        var keys2 = Object.getOwnPropertyNames(p2.prototype);
+        var keys2 = _get_obj_keys(p2.prototype);
         for (var l=0; !bad && l<keys2.length; l++) {
           if (p2.prototype[keys2[l]] == val) {
             bad = true;
@@ -250,28 +258,37 @@ function inherit_multiple(obj, parents) {
     eset[exclude[i]] = exclude[i];
   }
   exclude = eset;
+  delete exclude["toString"];
+  
+  function excluded(k) {
+    return exclude.hasOwnProperty(k) && k != "toString";
+  }
   
   proto = Object.create(Object.prototype);
+  delete proto.toString;
+  
   for (var i=0; i<cs2.length; i++) {
     cs2[i].__prototypeid__ = cs[i].__prototypeid__;
     cs2[i].constructor = cs[i];
     cs2[i].__class__ = cs[i].name;
     
     var p = cs2[i];
-    var keys = Object.getOwnPropertyNames(p);
+    var keys = _get_obj_keys(p);
     
     for (var j=0; j<keys.length; j++) {      
-      if (keys[j] in exclude)
+      if (excluded(keys[j]))
+        continue;
+      if (p[keys[j]] == Object.prototype.toString)
         continue;
       
       proto[keys[j]] = p[keys[j]];
     }
     
     if (i > 0) {
-      var keys2 = Object.getOwnPropertyNames(cs2[i-1]);
+      var keys2 = _get_obj_keys(cs2[i-1]);
       
       for (var j=0; j<keys2.length; j++) {
-        if (keys2[j] in exclude) continue;
+        if (excluded(keys2[j])) continue;
         if (cs2[i][keys2[j]] != undefined) continue;
         
         cs2[i][keys2[j]] = cs2[i-1][keys2[j]];
@@ -313,231 +330,11 @@ function inherit_multiple(obj, parents) {
   //add inherited statics
   for (var i=0; i<cs.length; i++) {
     if (!("__statics__" in cs[i])) continue;
-    var keys = Object.keys(cs[i].__statics__);
+    var keys = _get_obj_keys(cs[i].__statics__);
     
     for (var j=0; j<keys.length; j++) {
       var k = keys[j];
-      if (k == "__proto__" || k in exclude)
-        continue;
-      
-      obj.__statics__[k] = k;
-      obj[k] = cs[i][k];
-    }
-  }
-}
-
-function inherit_multiple2(obj, parents) {
-  defined_classes.push(obj);
-  
-  parents.reverse();
-  function merge(ps, lsts) {
-    var lst = []
-    
-    lsts.push(ps);
-    
-    for (var u=0; u<20; u++) {
-      if (lsts.length == 0)
-        break;
-      
-      for (var i=0; i<lsts.length; i++) {
-        if (lsts[i].length == 0)
-          continue;
-        
-        var p = lsts[i][0];
-        var bad = false;
-        
-        if (0) {
-          for (var j=0; j<lst.length; j++) {
-            if (lst[j].__prototypeid__ == p.__prototypeid__) {
-              bad = true;
-              break;
-            }
-          }
-        }
-        
-        for (var j=0; !bad && j<lsts.length; j++) {
-          if (i == j) continue;
-          var l = lsts[j];
-          
-          for (var k=1; k<l.length; k++) {
-            if (l[k].__prototypeid__ == p.__prototypeid__) {
-              bad = true;
-              break;
-            }
-          }
-        }
-        
-        if (!bad) {
-          lst.push(p);
-          lsts[i].splice(lsts[i].indexOf(p), 1);
-          
-          for (var j=0; j<lsts.length; j++) {
-            var l = lsts[j];
-            
-            for (var k=0; k<l.length; k++) {
-              if (l[k].__prototypeid__ == p.__prototypeid__) {
-                l.splice(l[k], 1);
-                break;
-              }
-            }
-          }
-          
-          //don't continue looping if we have more 
-          //prototypes to process
-          if (lsts[i].length > 0) {
-            i -= 1;
-          } else {
-            lsts[i].splice(i, 1);
-            i -= 1;
-          }
-        }
-      }
-    }
-    
-    var tot=0;
-    for (var i=0; i<lsts.length; i++) {
-      tot += lsts[i].length;
-    }
-    
-    if (tot > 0) {
-      throw new Error("Could not resolve multiple inheritance");
-    }
-    
-    return lst;
-  }
-  
-  if (parents.length == 1) {
-    var cs = [];
-    var p = parents[0];
-    
-    if ("__clsorder__" in p) {
-      var pcs = p.__clsorder__;
-      for (var i=0; i<pcs.length; i++) {
-        cs.push(pcs[i]);
-      }
-    }
-    
-    cs.push(p);
-    obj.__clsorder__ = cs;
-  } else {
-    var lsts = [];
-    
-    for (var i=0; i<parents.length; i++) {
-      lsts.push(parents[i].__clsorder__);
-    }
-    
-    obj.__clsorder__ = merge(parents, lsts);
-  }
-  
-  //build prototype chain
-  var cs = obj.__clsorder__;
-  var cs2 = [];
-  for (var i=0; i<cs.length; i++) {
-    cs2.push(Object.create(Object.prototype));
-    var p = cs[i];
-    var keys = Object.getOwnPropertyNames(p.prototype);
-    
-    for (var j=0; j<keys.length; j++) {
-      var val = p.prototype[keys[j]];
-      var bad = false;
-      
-      for (var k=0; !bad && k<i; k++) {
-        if (k == i) continue;
-        var p2 = cs[k];
-        
-        if (p2.__prototypeid__ == p.__prototypeid__) continue;
-        
-        var keys2 = Object.getOwnPropertyNames(p2.prototype);
-        for (var l=0; !bad && l<keys2.length; l++) {
-          if (p2.prototype[keys2[l]] == val) {
-            bad = true;
-            break;
-          }
-        }
-      }
-      
-      if (!bad)
-        cs2[i][keys[j]] = val;
-    }
-  }
-  
-  var exclude = ["__prototypeid__", "__class__", "priors", "prototype", "constructor"];
-  var eset = {};
-  for (var i=0; i<exclude.length; i++) {
-    eset[exclude[i]] = exclude[i];
-  }
-  exclude = eset;
-  
-  proto = Object.create(Object.prototype);
-  for (var i=0; i<cs2.length; i++) {
-    cs2[i].__prototypeid__ = cs[i].__prototypeid__;
-    cs2[i].constructor = cs[i];
-    cs2[i].__class__ = cs[i].name;
-    
-    console.log(cs[i].name, cs2[i]);
-    
-    var p = cs2[i];
-    var keys = Object.getOwnPropertyNames(p);
-    
-    for (var j=0; j<keys.length; j++) {      
-      if (keys[j] in exclude)
-        continue;
-      
-      console.log("  ", keys[j]);
-      proto[keys[j]] = p[keys[j]];
-    }
-    
-    if (i > 0) {
-      var keys2 = Object.getOwnPropertyNames(cs2[i-1]);
-      
-      for (var j=0; j<keys2.length; j++) {
-        if (keys2[j] in exclude) continue;
-        if (cs2[i][keys2[j]] != undefined) continue;
-        
-        cs2[i][keys2[j]] = cs2[i-1][keys2[j]];
-      }
-      cs2[i].prototype == cs2[i-1];
-    }
-  }
-  
-  if (cs2.length > 0)
-    proto.prototype = cs2[cs2.length-1];
-  
-  proto.priors = obj.__clsorder__;
-  proto.constructor = obj;
-  proto.__prototypeid__ = _prototype_id_gen++;
-  proto.__class__ = obj.name;
-  
-  obj.prototype = proto;
-  obj.__prototypeid__ = proto.__prototypeid__;
-  obj.__parents__ = parents;
-  obj.__subclass_map__ = {};
-  obj.__subclass_map__[obj.__prototypeid__] = obj
-  
-  //add to instanceof helper map
-  for (var i=0; i<cs2.length; i++) {
-    if (!("__subclass_map__" in cs[i])) {
-      if (!("__prototypeid__" in cs[i])) {
-        cs[i].__prototypeid__ = _prototype_id_gen++;
-        cs[i].prototype.__prototypeid__ = cs[i].__prototypeid__;
-      }
-      cs[i].__subclass_map__ = {};
-      cs[i].__subclass_map__[cs[i].__prototypeid__] = cs[i];
-    }
-    
-    cs[i].__subclass_map__[obj.__prototypeid__] = obj;
-  }
-  
-  obj.__statics__ = {};
-  
-  //add inherited statics
-  for (var i=0; i<cs.length; i++) {
-    if (!("__statics__" in cs[i])) continue;
-    var keys = Object.keys(cs[i].__statics__);
-    
-    for (var j=0; j<keys.length; j++) {
-      var k = keys[j];
-      if (k == "__proto__" || k in exclude)
+      if (k == "__proto__" || excluded(k))
         continue;
       
       obj.__statics__[k] = k;
@@ -550,7 +347,7 @@ function __instance_of(child, parent) {
   if (parent == undefined)
     return child == undefined;
   if (typeof child != "object")
-    return btypeof(child) == btypeof(parent);
+    return typeof child == typeof(parent); //return btypeof(child) == btypeof(parent);
   
   if ("__subclass_map__" in parent && "__prototypeid__" in child) {
     return child.__prototypeid__ in parent.__subclass_map__;
@@ -734,3 +531,10 @@ var Iterator = function(obj) {
     return new _KeyValIterator(obj);
   }
 }
+
+function define_docstring(func, docstr) {
+  func.__doc__ = docstr;
+  
+  return func;
+}
+

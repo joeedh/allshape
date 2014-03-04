@@ -281,15 +281,27 @@ class UIFrame extends UIElement {
   }
 
   on_draw(gl) {
+    function descend(n, canvas) {
+      for (var c in n.children) {
+        if (c.canvas != undefined) continue;
+        
+        c.canvas = this.canvas;
+        
+        if (c instanceof UIFrame)
+          descend(c, canvas);
+      }
+    }
+    
     if (this.recalc && this.is_canvas_root() && this.get_canvas() != undefined) {
       this.canvas = this.get_canvas();
       
-      for (var c in this.children) {
-        if (c.canvas == undefined)
-          c.canvas = this.canvas;
-      }
+      if (this.canvas != undefined)
+        descend(this, this.canvas);
       
       this.canvas.reset();
+      if (DEBUG.ui_canvas)
+        console.log("------------->Build draw called in " + this.constructor.name + ".on_draw()");
+      
       this.build_draw(this.canvas);
     }
     
@@ -343,7 +355,7 @@ class UIFrame extends UIElement {
       var do_skip = !c.recalc;
       
       if (!(c instanceof UIFrame) && this.constructor.name != UIMenu.name) {
-        do_skip = !c.recalc; //|| Math.random() > _canvas_threshold;
+        do_skip = !c.recalc || Math.random() > _canvas_threshold;
       }
       
       if (canvas.has_cache(c) && do_skip) {

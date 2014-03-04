@@ -269,7 +269,10 @@ class UIElement extends EventHandler {
   on_mouseup(MouseEvent event) { }
   on_contextchange(Object event) { }
   update_data(Context ctx) { }
-  get_min_size(UICanvas canvas, Boolean isvertical) { }
+  get_min_size(UICanvas canvas, Boolean isvertical) 
+  {
+    return [1, 1];
+  }
   build_draw(UICanvas canvas, Boolean isvertical) { }
   on_active() {}
   on_inactive() {}
