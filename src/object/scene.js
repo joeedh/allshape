@@ -24,7 +24,6 @@ class Scene extends DataBlock {
       sce.objects.select(o);
     }
     
-    sce.active = this.active;
     return sce;
   }
   
@@ -89,10 +88,38 @@ class Scene extends DataBlock {
     this.objects = unpack_garray(data, uctx, unpack_dataref);
     this.graph = SceneGraph.unpack(data, uctx);
   }
+  
+  recover_dag_graph(clear_existing=false) {
+    console.log("Recovering lost scenegraph relationships...");
 
+    if (clear_existing) {
+      this.graph.unlink();
+      this.graph = new Dag();
+    }
+    
+    for (var ob in this.objects) {
+      var dag_node = new ASObject().dag_node;
+      ob.dag_node = dag_node;
+      dag_node.owner = ob;
+      
+      this.graph.add(ob);
+    }
+    
+    for (var ob in this.objects) {
+      if (ob.parent != undefined) {
+        ob.parent = undefined;
+        ob.set_parent(this, ob.parent, false);
+      }
+    }
+  }
+  
   data_link(block, getblock, getblock_us) {
     this.objects.data_link(this, getblock, getblock_us);
     this.graph.data_link(this, getblock, getblock_us);
+    
+    if (this.graph.nodes.length == 0 && this.objects.length > 0) {
+      this.recover_dag_graph(false);
+    }
     
     for (var i=0; i<this.objects.length; i++) {
       this.objects[i].lib_adduser(this.sceneobj, this, "sceneobj", SceneObjRem(this, this.objects[i]));
@@ -102,5 +129,6 @@ class Scene extends DataBlock {
 
 Scene.STRUCT = STRUCT.inherit(Scene, DataBlock) + """
   objects : DBList;
+  graph : SceneGraph;
 }
 """;

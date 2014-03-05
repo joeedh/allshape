@@ -1220,6 +1220,7 @@ function toJSON_intern (ob, tlevel) {
         api_define_context();
         
         g_app_state = new AppState(undefined, undefined, gl);
+        g_app_state.size = [canvas.clientWidth, canvas.clientHeight];
         
         console.log("generating start file...");
         gen_default_file([canvas.clientWidth, canvas.clientHeight]);

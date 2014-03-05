@@ -214,22 +214,20 @@ class ASObject extends DagNode {
     this.parentinv = new Matrix4();
   }
 
-  set_parent(scene, newpar, preserve_child_space) {
+  set_parent(scene, newpar, preserve_child_space=false) {
     //preserve_child_space defaults to False
     //if true, it calculates a special pre-multiplication
     //matrix (this.parentinv) such that the object's post-parent
     //position/location/size is the same as pre-parent.
     
-    if (preserve_child_space == undefined)
-      preserve_child_space = false;
-      
     if (this.parent == newpar) {
-      console.log("parent already set.");
-      return;
+      console.log("parent already set; resetting DAG relationships. . .");
+      this.unparent(scene);
+      preserve_child_space = false;
     }
     
     if (newpar == undefined || newpar == null) {
-      console.log("Warning: unparent with obj.unparent(scene), not obj.set_parent(scene, undefiend)!");
+      console.log("Warning: unparent with obj.unparent(scene), not obj.set_parent(scene, undefined)!");
       this.unparent(scene);
       return;
     }

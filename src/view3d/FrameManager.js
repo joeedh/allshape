@@ -986,6 +986,10 @@ function Screen(WebGLRenderingContext gl,
   k.add_tool(new KeyHandler("S", ["CTRL"], "Open File"),
              "appstate.save()");
   k.add_func(new KeyHandler("V", [], "Split Areas"), handle_split_areas)
+  k.add_func(new KeyHandler("U", ["CTRL", "SHIFT"]), function() {
+    console.log("saving new startup file.");
+    g_app_state.set_startup_file();
+  });
 }
 inherit(Screen, UIFrame);
 
@@ -1229,7 +1233,8 @@ Screen.prototype.on_draw = function(WebGLRenderingContext gl)
         this.ctrl = false;
       }
       
-      console.log("delayed event");
+      if (DEBUG.modifier_keys)
+        console.log("delayed event");
       
       this.modup_time_ms.remove(s);
       prior(Screen, this)._on_keyup.call(this, s[1]);

@@ -42,9 +42,32 @@ class DagSocket {
   
   //get the data from an (output) socket.
   get_data(DagEdge edge) {
-   
+    
+  }
+  
+  data_link(block, dag, getblock, getblock_us) {
+    this.edges = new GArray(this.edges);
+    for (var e in this.edges) {
+      e.data_link(block, dag, getblock, getblock_us);
+    }
+  }
+  
+  static fromSTRUCT(reader) {
+    var s = new DagSocket();
+    reader(s);
+    
+    s.edges = new GArray(s.edges);
+    return s;
   }
 }
+
+DagSocket.STRUCT = """
+  DagSocket {
+    edges : array(DagEdge);
+    node : int | obj.node == undefined ? -1 : obj.node.dag_node.id;
+    name : static_string[64];
+  }
+"""
 
 //node connection type
 class DagEdge {
@@ -62,20 +85,48 @@ class DagEdge {
   opposite(Node src) {
     return this.src == src ? this.dst : this.src;
   }
+  
+  data_link(block, dag, getblock, getblock_us) {
+    var os = this.src, od = this.dst;
+    this.dag = dag;
+    this.src = dag.idmap[this.src];
+    this.dst = dag.idmap[this.dst];
+    
+    if (this.src == undefined || this.dst == undefined) {
+      console.trace();
+      console.log("Warning: failed to relink a node edge: ("+os+", "+ds+") ("+this.src+", "+this.dst+")");
+    }
+  }
+  
+  static fromSTRUCT(reader) {
+    var e = new DagEdge();
+    reader(e);
+    
+    return e;
+  }
 }
+
+DagEdge.STRUCT = """
+  DagEdge {
+    src : int | obj.src.dag_node.id != undefined ? obj.src.dag_node.id : -1;
+    dst : int | obj.dst.dag_node.id != undefined ? obj.dst.dag_node.id : -1;
+  }
+""";
 
 /*flag is optional, defaults to DagFlags.HAS_EXECUTE.*/
 class DagNodeData {
-  constructor(flag=DagFlags.HAS_EXECUTE) {
+  constructor(owner, flag=DagFlags.HAS_EXECUTE) {
     this.ins = new GArray<DagSocket>();
     this.outs = new GArray<DagSocket>();
+    this.owner = owner;
     
     this.inmap = {};
     this.outmap = {};
     
     this.flag = flag | DagFlags.DIRTY;
+    this.id = -1;
   }
-
+  
   //socktype can be 'i' or 'o', for input and output respectively
   add_sockets(type, socks) {
     var list, map;
@@ -93,13 +144,46 @@ class DagNodeData {
       map[socks[i].name] = socks[i];
     }
   }
+  
+  data_link(block, getblock, getblock_us) {
+  }
+  
+  static fromSTRUCT(reader) {
+    var nd = new DagNodeData();
+    reader(nd);
+    
+    var ins = nd.ins, outs = nd.outs;
+    nd.ins = new GArray(nd.ins); nd.outs = new GArray(nd.outs);
+    
+    nd.add_sockets("i", ins);
+    nd.add_sockets("o", outs);
+    
+    return nd;
+  }
 }
+
+//block is owning block reference, if there is one
+DagNodeData.STRUCT = """
+  DagNodeData {
+    id    : int;
+    owner : dataref(DataBlock);
+    flag  : int;
+    ins   : array(abstract(DagSocket));
+    outs  : array(abstract(DagSocket));
+  }
+""";
 
 class DagNode extends DataBlock {
   constructor() {
-    this.dag_node = new DagNodeData();
+    this.dag_node = new DagNodeData(this);
   }
-
+  
+  //note: subtypes may override this
+  __hash__() : String {
+    var n = this.constructor.name;
+    return "DGN" + n[0] + n[3] + n[4] + this.dag_node.id;
+  }
+  
   dag_execute() { }
   dag_update() {
     function flush(n) {
@@ -137,14 +221,20 @@ class Dag {
     //maps the data objects of nodes to the nodes themselves
     this.nodes = new GArray();
     this.sortlist = new GArray();
+    this.idmap = {};
     
     this.flag = 0;
+    this.idgen = new EIDGen();
   }
 
   data_link(block, getblock, getblock_us)
   {
   }
-
+  
+  has_node(node) {
+    return node.dag_node.id in this.idmap;
+  }
+  
   sort() {
     ddebug("in sort", this.nodes);
     
@@ -220,8 +310,33 @@ class Dag {
   }
 
   add(DagNode node) {
+    if (node instanceof DataBlock) {
+      var this2 = this;
+      function remove() {
+        this2.remove(node);
+      }
+      
+      node.lib_adduser(this, "DAG", remove);
+    }
+    
+    if (node == undefined || node == 0 || node.dag_node == undefined) {
+      console.trace();
+      console.log("WARNING: invalid node passed to dag.add()!");
+      return;
+    }
+    
+    if (node.dag_node.id != -1 && (node.dag_node.id in this.idmap)) {
+      console.trace();
+      console.log("WARNING: node ", node, " was passed twice to dag.add()!");
+      return;
+    }
+    
+    if (node.dag_node.id == -1)
+      node.dag_node.id = this.idgen.gen_id();
+      
     this.nodes.push(node);
     this.flag |= DagFlags.DIRTY;
+    this.idmap[node.dag_node.id] = node;
   }
 
   //
@@ -234,7 +349,12 @@ class Dag {
       this.socket_clear(node, s, "o");
     }
     
-    this.nodes.remove(node);
+    if (node instanceof DataBlock) {
+      node.lib_remuser(this, "DAG"); //should execute this.nodes.remove(node) itself
+    } else {
+      this.nodes.remove(node);
+    }
+    delete this.idmap[node.dag_node.id];
     this.flag |= DagFlags.DIRTY;
   }
 
@@ -296,4 +416,123 @@ class Dag {
     
     return this.socket_connect(s1, s2);
   }
+  
+  data_link(block, getblock, getblock_us) {
+    var nodes = this.nodes;
+    var nlen = nodes.length;
+    
+    console.log("in DAG data link");
+    console.log(nodes);
+    console.log(nodes.length);
+    
+    for (var i=0; i<nlen; i++) {
+      var n = nodes[i];
+      
+      //check if we're the dag_node member of a datablock
+      console.log(n);
+      if (n instanceof DagNodeData) { //as opposed to an instance of DataNode
+        var b = getblock(n.owner);
+        
+        if (b == undefined) {
+          console.trace();
+          console.log("WARNING: could not load block for node! Yeek!");
+          continue;
+        }
+        
+        //.block was a serialization member
+        //delete n.block;
+        
+        b.dag_node = n;
+        n.owner = b;
+        
+        nodes[i] = b;
+      }
+      
+      console.log("->", nodes[i]);
+      if (!(nodes[i] instanceof DataBlock)) {
+        nodes[i].dag_node.data_link(block, getblock, getblock_us);
+        nodes[i].data_link(block, getblock, getblock_us);
+      } else {
+        nodes[i].dag_node.data_link(block, getblock, getblock_us);
+      }
+    }
+    
+    this.nodes = new GArray();
+    for (var i=0; i<nlen; i++) {
+      this.add(nodes[i]);
+    }
+    
+    for (var node in this.nodes) {
+      var n = node.dag_node;
+      if (!(node instanceof DataBlock))
+        n.owner = node;
+      
+      for (var s in n.ins) {
+        s.node = n;
+        s.data_link(block, this, getblock, getblock_us);
+      }
+      
+      for (var s in n.outs) {
+        s.node = n;
+        s.data_link(block, this, getblock, getblock_us);
+      }
+    }
+    
+    function find_link(e, s) {
+      for (var e2 in s.edges) {
+        if (e2.src == e.src && e2.dst == e.dst) return e2;
+      }
+      
+      return undefined;
+    }
+    
+    function link_sock(s, type) {
+      for (var e in s.edges) {
+        var target = type=="i" ? e.src : e.dst;
+        if (!(e in e.src.edges)) {
+          var e2 = find_link(e, target);
+          if (e2 == undefined) {
+            console.log("ERROR: Couldn't find edge in e.src", e);
+            continue;
+          }
+          
+          e.src.edges.replace(e2, e);
+        }
+      }
+    }
+    
+    for (var node in this.nodes) {
+      var n = node.dag_node;
+      for (var s in n.ins) {
+        link_sock(s, "i");
+      }
+      
+      for (var s in n.outs) {
+        link_sock(s, "o");
+      }
+    }
+  }
+  
+  //XXX implement me, unlink all object references within this datatree
+  unlink() {
+  }
+  
+  static fromSTRUCT(reader) {
+    var d = new Dag();
+    reader(d);
+    
+    console.log("-------222-->", d);
+    d.flag |= DagFlags.DIRTY;
+    return d;
+  }
 }
+
+//how we serialize datablock nodes versus
+//direct data nodes is a bit hackish. . .
+Dag.STRUCT = """
+  Dag {
+    flag : int;
+    idgen : EIDGen;
+    nodes : array(e, abstract(Object)) | (instance_of(e, DataBlock) ? e.dag_node : e) ;
+  }
+""";

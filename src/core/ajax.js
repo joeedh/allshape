@@ -245,7 +245,7 @@ function pack_dataref(Array<byte> data, DataBlock b)
     if (b.lib_lib != undefined)
       pack_int(data, b.lib_lib.id);
     else
-      pack_int(data, 0);
+      pack_int(data, -1);
   } else {
     pack_int(data, -1);
     pack_int(data, -1);
@@ -282,6 +282,8 @@ function truncate_utf8(Array<byte>arr, int maxlen)
     arr.length = last_codepoint;
   else
     arr.length = last2;
+    
+  return arr;
 }
 
 var _static_sbuf_ss = new Array(32);
@@ -558,19 +560,23 @@ function unpack_static_string(DataView data, unpack_ctx uctx, int length) : Stri
     throw new Error("'length' cannot be undefined in unpack_static_string()");
   
   var arr = length < 2048 ? _static_arr_uss : new Array(length);
-  
+  arr.length = 0;
+
+  var done = false;
   for (var i=0; i<length; i++) {
     var c = unpack_byte(data, uctx);
     
     if (c == 0) {
-      break;
+      done = true;
     }
     
-    arr[i] = c;
+    if (!done && c != 0) {
+      arr[i] = c;
+      arr.length++;
+    }
   }
   
-  arr.length = i;
-  
+  truncate_utf8(arr, length);
   return decode_utf8(arr);
 }
 

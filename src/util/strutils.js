@@ -77,7 +77,7 @@ function b64encode(arr, add_newlines=false, collimit=76) {
   return s;
 }
 
-function b64decode(s, gen_str=false, gen_dataview=true) {
+function b64decode(s, gen_str=false, gen_uint8arr=true) {
   var s2 = ""
   for (var i=0; i<s.length; i++) {
     if (s[i] != "\n" && s[i] != "\r" && s[i] != " " && s[i] != "\t")
@@ -126,7 +126,7 @@ function b64decode(s, gen_str=false, gen_dataview=true) {
     }
   }
   
-  if (!gen_str && gen_dataview)
+  if (!gen_str && gen_uint8arr)
     s2 = new Uint8Array(s2);
   
   return s2;

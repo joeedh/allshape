@@ -206,7 +206,7 @@ function SceneObjRem(scene, obj) {
 
 function DataRem(dst, field) {
   function rem() {
-    src["field"] = undefined;
+    dst["field"] = undefined;
   }
   
   return rem;

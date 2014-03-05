@@ -2,6 +2,7 @@ js_targets = {"app.js" : [
 	"src/html/unit_test.html",
 	"src/html/main.html",
   "src/core/typesystem.js",
+  "src/core/const.js",
   "src/util/object_cache.js",
 	"tools/utils/crypto/sha1.js",
   "tools/utils/libs/lz-string/libs/base64-string-v1.1.0.js",

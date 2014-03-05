@@ -1,13 +1,47 @@
 "use strict";
 
-var DataTypes = {
-  OBJECT : 0,
-  CSG    : 1,
-  MESH   : 2,
-  GROUP  : 3,
-  SCRIPT : 4,
-  SCENE  : 5
-};
+/*
+ Important (auto-generated) globals:
+ 
+ 1. DataTypes, an enumeration mapping data type names (e.g. OBJECT)
+    to integer id's.
+ 2. LinkOrder, a list of data type *integers* that specifies the order
+    that data is re-linked after file load.
+ 3. DataNames, that maps datatype integer id's to UI-friendly type names
+    (e.g. Object instead of 0 or OBJECT).
+ 
+ _DataTypeRef is what's used to generate all three globals.
+ Each of its items is of the form [TYPENAME, id].
+ 
+ DO NOT EVER EVER CHANGE id;  You can, however,
+ change the order of the items to manipulate the 
+ order of datablock relinking.
+ */
+ 
+//data types, in post-fileload link order
+//each item is [type, int_id]; DO NOT CHANGE INT_ID
+var _DataTypeDef = [
+  ["CSG", 1],
+  ["MESH", 2],
+  ["OBJECT", 0],
+  ["GROUP", 3],
+  ["SCENE", 5],
+  ["SCRIPT", 4]
+];
+
+//generate globals DataTypes and LinkOrder
+var DataTypes = {};
+var LinkOrder = [];
+for (var i=0; i<_DataTypeDef.length; i++) {
+  DataTypes[_DataTypeDef[i][0]] = _DataTypeDef[i][1];
+  LinkOrder.push(_DataTypeDef[i][1]);
+}
+
+// DataNames maps integer data types to ui-friendly names, e.g. DataNames[0] == "Object"
+var DataNames = {}
+for (var k in DataTypes) {
+  DataNames[DataTypes[k]] = k.charAt(0) + k.slice(1, k.length).toLowerCase();
+}
 
 //other than SELECT, the first two bytes
 //of block.flag are reserved for exclusive
@@ -16,12 +50,6 @@ var BlockFlags = {
   SELECT : 1,
   FAKE_USER : (1<<16)
 };
-
-// DataNames maps integer data types to ui-friendly names, e.g. DataNames[0] == "Object"
-var DataNames = {}
-for (var k in DataTypes) {
-  DataNames[DataTypes[k]] = k.charAt(0) + k.slice(1, k.length).toLowerCase();
-}
 
 //this function shouldn't be manual; need to automate it
 var get_data_typemap = function() {

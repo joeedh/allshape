@@ -358,6 +358,8 @@ function __instance_of(child, parent) {
   }
 }
 
+var instance_of = __instance_of;
+
 function inherit(obj, parent) {
   inherit_multiple(obj, [parent]);
 }

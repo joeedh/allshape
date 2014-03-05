@@ -1,9 +1,5 @@
 "use strict";
 
-//stupid statics
-var _static_envcode_null = ""
-var _tote=0, _cace=0, _compe=0;
-
 /*
 
 Okay.  The serialization system needs to do three things:
@@ -52,6 +48,11 @@ of fetching list items by iterating over a numeric range,
 e.g. for (i=0; i<arr.lenght; i++), it uses the (much slower) 
 iteration API.
 */
+
+
+//stupid statics
+var _static_envcode_null = ""
+var _tote=0, _cace=0, _compe=0;
 
 #define MAX_CLSNAME 24
 
@@ -206,7 +207,7 @@ function SchemaParser() {
     p.expect("DATAREF");
     p.expect("LPARAM");
     
-    var tname = p.expect("ID").value;
+    var tname = p.expect("ID");
     p.expect("RPARAM");
     
     return {type : T_DATAREF, data : tname};
@@ -344,14 +345,22 @@ function SchemaParser() {
 
 var schema_parse = SchemaParser();
 
+//replace pack callbacks with stubs
+//if in release mode; otherwise, 
+//turn on/off with DEBUG.Struct.
+var _do_packdebug = !RELEASE;
 var _packdebug_tlvl = 0;
-var _do_packdebug = false;
 
 if (_do_packdebug) {
+  console.log("PACK DEBUG OF DOOM", DEBUG.Struct);
   var packer_debug = function(msg) {
+    if (!DEBUG.Struct) return;
+   
     if (msg != undefined) {
       var t = gen_tabstr(_packdebug_tlvl);
       console.log(t + msg);
+    } else {
+      console.log("Warning: undefined msg");
     }
   };
 
@@ -373,15 +382,15 @@ if (_do_packdebug) {
 var _ws_env = [[undefined, undefined]];
 var _st_packers = [
   function(data, val) { //int
-    packer_debug("int");
+    packer_debug("int " + val);
     pack_int(data, val);
   },
   function(data, val) { //float
-    packer_debug("float");
+    packer_debug("float " + val);
     pack_float(data, val);
   },
   function(data, val) { //double
-    packer_debug("double");
+    packer_debug("double " + val);
     pack_double(data, val);
   },
   function(data, val) { //vec2
@@ -412,6 +421,7 @@ var _st_packers = [
     if (val == undefined) val = "";
     
     packer_debug("string: " + val)
+    packer_debug("int " + val.length);
     pack_string(data, val);
   },
   function(data, val, obj, thestruct, field, type) { //static_string
@@ -421,13 +431,11 @@ var _st_packers = [
     pack_static_string(data, val, type.data.maxlength);
   },
   function(data, val, obj, thestruct, field, type) { //struct
-    packer_debug_start("struct");
+    packer_debug_start("struct " + type.data);
     thestruct.write_struct(data, val, thestruct.get_struct(type.data));
     packer_debug_end("struct");
   },  
   function(data, val, obj, thestruct, field, type) { //tstruct (struct with type)
-    packer_debug_start("tstruct " + type.data);
-    
     var cls = thestruct.get_struct_cls(type.data);
     var stt = thestruct.get_struct(type.data);
         
@@ -441,6 +449,12 @@ var _st_packers = [
       throw new Error("Bad struct " + val.constructor.name + " passed to write_struct");
     }
     
+    if (stt.id == 0) {
+      console.log("-------------------------------->", stt);
+    }
+    packer_debug_start("tstruct '" + stt.name + "'");
+    
+    packer_debug("int " + stt.id);
     pack_int(data, stt.id);
     thestruct.write_struct(data, val, stt);
     
@@ -455,10 +469,12 @@ var _st_packers = [
       console.log("Field: ", field);
       console.log("Type: ", type);
       console.log("");
+      packer_debug("int 0");
       pack_int(data, 0);
       return;
     }
     
+    packer_debug("int " + val.length);
     pack_int(data, val.length);
     
     var d = type.data;
@@ -491,6 +507,7 @@ var _st_packers = [
       console.log("Field: ", field);
       console.log("Type: ", type);
       console.log("");
+      packer_debug("int 0");
       pack_int(data, 0);
       return;
     }
@@ -500,6 +517,7 @@ var _st_packers = [
       len++;
     }
     
+    packer_debug("int " + len);
     pack_int(data, len);
     
     var d = type.data;
@@ -522,12 +540,15 @@ var _st_packers = [
   },
   function (data, val) { //dataref
     packer_debug("dataref");
+    packer_debug("int "+ (val != undefined ? val.lib_id : -1));
+    packer_debug("int "+ ((val != undefined && val.lib_lib != undefined) ? val.lib_lib.id : -1));
+    
     pack_dataref(data, val);
   }
 ];
 
 function _st_pack_type(data, val, obj, thestruct, field, type) {
-  packer_debug("pack_type call")
+  //packer_debug("pack_type call")
   _st_packers[field.type.type](data, val, obj, thestruct, field, type);
 }
 
@@ -540,6 +561,31 @@ class STRUCT {
     this.struct_cls = {};
     this.struct_ids = {};
     this.compiled_code = {};
+    this.null_natives = {};
+    
+    var this2 = this;
+    function define_null_native(name, cls) {
+      var obj = {name : name, prototype : Object.create(Object.prototype)};
+      obj.constructor = obj;
+      
+      obj.STRUCT = name + " {\n  }\n";
+      obj.fromSTRUCT = function(reader) {
+        var ob = {};
+        reader(ob);
+        
+        return ob;
+      }
+      
+      var stt = schema_parse.parse(obj.STRUCT);
+      stt.id = this2.idgen.gen_id();
+      
+      this2.structs[name] = stt;
+      this2.struct_cls[name] = cls;
+      this2.struct_ids[stt.id] = stt;
+      this2.null_natives[name] = 1;
+    }
+    
+    define_null_native("Object", Object);
   }
 
   parse_structs(buf) {
@@ -556,7 +602,9 @@ class STRUCT {
       
       //if struct does not exist anymore, load it into a dummy object
       if (!(stt.name in clsmap)) {
-        console.log("WARNING: struct " + stt.name + " no longer exists.  will try to convert.");
+        if (!(stt.name in this.null_natives))
+          console.log("WARNING: struct " + stt.name + " no longer exists.  will try to convert.");
+        
         var dummy = Object.create(Object.prototype);
         dummy.prototype = Object.create(Object.prototype);
         dummy.STRUCT = STRUCT.fmt_struct(stt);
@@ -628,7 +676,34 @@ class STRUCT {
     
     return code;
   }
-
+  
+  //boilerplate for loading 
+  //a struct that's a subclass of
+  //another struct
+  static chain_fromSTRUCT(cls, reader) {
+    var proto = cls.prototype;
+    var parent = cls.__clsorder__[cls.__clsorder__.length-1];
+    
+    /*remember that the struct reader will add members
+      whether they technically exist at the time of read
+      or not.  thus, we can chain fromSTRUCTs, it just
+      a bit of boilerplate*/
+    var obj = parent.fromSTRUCT(reader);
+    var keys = Object.keys(proto);
+    
+    for (var i=0; i<keys.length; i++) {
+      var k = keys[i];
+      if (k == "__proto__") continue;
+      
+      obj[k] = proto[k];
+    }
+    
+    if (proto.toString != Object.prototype.toString)
+      obj.toString = proto.toString;
+    
+    return obj;
+  }
+  
   static fmt_struct(stt, internal_only, no_helper_js) {
     //var stt = schema_parse.parse(cls.STRUCT);
     
@@ -785,70 +860,116 @@ class STRUCT {
     
     var unpack_funcs = {
       T_INT : function(type) {
-        return unpack_int(data, uctx);
+        var ret = unpack_int(data, uctx);
+        packer_debug("-int " + ret);
+        return ret
       },
       T_FLOAT : function(type) {
-        return unpack_float(data, uctx);
+        var ret = unpack_float(data, uctx);
+        packer_debug("-float " + ret);
+        return ret
       },
+      T_DOUBLE : function(type) {
+        var ret = unpack_double(data, uctx);
+        packer_debug("-double " + ret);
+        return ret
+      },
+      
       T_STRING : function(type) {
-        return unpack_string(data, uctx);
+        packer_debug_start("string");
+        var s =  unpack_string(data, uctx);
+        packer_debug("data: '"+s+"'");
+        packer_debug_end("static_string");
+        return s;
       },
       T_STATIC_STRING : function(type) {
-        return unpack_static_string(data, uctx, type.data.maxlength);
+        packer_debug_start("static_string");
+        var s = unpack_static_string(data, uctx, type.data.maxlength);
+        packer_debug("data: '"+s+"'");
+        packer_debug_end("static_string");
+        return s;
       },
       T_VEC2 : function(type) {
+        packer_debug("vec2");
         return unpack_vec2(data, uctx);
       },
       T_VEC3 : function(type) {
+        packer_debug("vec3");
         return unpack_vec3(data, uctx);
       },
       T_VEC4 : function(type) {
+        packer_debug("vec4");
         return unpack_vec4(data, uctx);
       },
       T_MAT4 : function(type) {
+        packer_debug("mat4");
         return unpack_mat4(data, uctx);
       },
       T_ARRAY : function(type) {
-        var len = unpack_int(data, uctx);
-        var arr = new Array(len);
+        packer_debug_start("array");
         
+        var len = unpack_int(data, uctx);
+        packer_debug("-int " + len);
+        
+        var arr = new Array(len);
         for (var i=0; i<len; i++) {
           arr[i] = unpack_field(type.data.type);
         }
         
+        packer_debug_end("array");
         return arr;
       },
       T_ITER : function(type) {
-        var len = unpack_int(data, uctx);
-        var arr = new Array(len);
+        packer_debug_start("iter");
         
+        var len = unpack_int(data, uctx);
+        packer_debug("-int " + len);
+
+        var arr = new Array(len);
         for (var i=0; i<len; i++) {
           arr[i] = unpack_field(type.data.type);
         }
         
+        packer_debug_end("iter");
         return arr;
       },
       T_STRUCT : function(type) {
+        packer_debug_start("struct " + type.data);
         var cls2 = thestruct.get_struct_cls(type.data);
-        
-        return thestruct.read_object(data, cls2, uctx);
+        var ret = thestruct.read_object(data, cls2, uctx);
+        packer_debug_end("struct");
+        return ret;
       },
       T_TSTRUCT : function(type) {
+        packer_debug_start("tstruct");
         var id = unpack_int(data, uctx);
+        packer_debug("-int " + id);
         
         if (!(id in thestruct.struct_ids)) {
+          packer_debug("struct id: " + id);
           console.trace();
+          console.log(id);
           console.log(thestruct.struct_ids);
+          packer_debug_end("tstruct");
           throw new Error("Unknown struct type " + id + ".");
         }
         
         var cls2 = thestruct.get_struct_id(id);
+        packer_debug("struct name: " + cls2.name);
+        
         cls2 = thestruct.struct_cls[cls2.name];
 
-        return thestruct.read_object(data, cls2, uctx);
+        var ret = thestruct.read_object(data, cls2, uctx);
+        packer_debug_end("tstruct");
+        
+        return ret;
       },
       T_DATAREF : function(type) {
-        return unpack_dataref(data, uctx);
+        packer_debug("-dataref");
+        var ret = unpack_dataref(data, uctx);
+        packer_debug("-dataref " + ret[0] + ", " + ret[1]);
+        
+        return ret
       }
     };
     

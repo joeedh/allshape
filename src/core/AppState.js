@@ -1,25 +1,6 @@
 "use strict";
 
 var FileFlags = {COMPRESSED_LZSTRING : 1}
-var formacad_file_ext = ".al3";
-var g_app_version = 0.03;
-
-var RELEASE = false;
-var DEBUG = {
-  modal : false, 
-  datalib : false, 
-  glext : false, //prints gl extensions to console on startup
-  selbuf : false,
-  transform : false,
-  mouse : false,
-  touch : false,
-  mousemove : false,
-  ui_datapaths : false,
-  ui_menus : false,
-  ui_canvas : false
-};
-
-var SELECT = 1;
 
 function AppSettings() {
   this.unit_scheme = "imperial";
@@ -107,6 +88,21 @@ UserSession.fromJSON = function(obj) {
 function gen_default_file(size) {
   var g = g_app_state;
   
+  if (localStorage.startup_file) {
+    try {
+      var buf = localStorage.startup_file
+      /*buf = new DataView(b64decode(buf).buffer);
+      
+      console.log("--", buf);*/
+      buf = new DataView(new Uint8Array(JSON.parse(buf)).buffer);
+      
+      g.load_user_file_new(buf, new unpack_ctx());
+      return;
+    } catch (err) {
+      print_stack(err);
+      console.log("ERROR: Could not load user-defined startup file.");
+    }
+  }
   if (size == undefined)
     var size = [512, 512];
   
@@ -251,6 +247,21 @@ AppState.prototype.set_mesh = function(Mesh m2) {
         c.editors[View3DHandler.name].mesh = m2;
     }
   }
+}
+
+AppState.prototype.set_startup_file = function() {
+  var buf = this.create_user_file_new(undefined, true, false);
+  buf = new Uint8Array(buf.buffer);
+  
+  var ar = [];
+  for (var i=0; i<buf.length; i++) {
+    ar.push(buf[i]);
+  }
+  buf = JSON.stringify(ar);
+  
+  //buf = b64encode(buf);
+  
+  localStorage.startup_file = buf;
 }
 
 /*

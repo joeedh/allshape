@@ -18,10 +18,11 @@ class ObjectEditor extends View3DEditor {
     var k = this.keymap;
     k.add_tool(new KeyHandler("G", [], "Translate"), 
                "object.translate()");
-    k.add_tool(new KeyHandler("S", [], "Scale"), 
+    /*k.add_tool(new KeyHandler("S", [], "Scale"), 
                "object.scale()");
     k.add_tool(new KeyHandler("R", [], "Rotate"), 
-               "object.rotate()");
+               "object.rotate()");*/
+    
     k.add_tool(new KeyHandler("D", ["SHIFT"], "Duplicate"),
                "object.duplicate()");
   }
@@ -58,8 +59,26 @@ class ObjectEditor extends View3DEditor {
     view3d.draw_object_basic(gl, object, is_active);
   }
   
-  build_sidebar1(view3d) {
+  build_sidebar1(view3d)
+  {
+    var ctx = new Context();
+    var row = new RowFrame(ctx);
+    
+    row.size = [115, view3d.size[1]-50]
+    row.draw_background = true
+    row.rcorner = 100.0
+    row.pos = [0, 28]
+    
+    view3d.cols.push(row);
+    view3d.add(row);
+    
+    row.toolop("screen.area_split_tool()", PackFlags.INHERIT_WIDTH);
+    row.label("");
+    
+    row.label("Last Tool:", false)
+    row.add(new ToolOpFrame(ctx, "last_tool"), PackFlags.INHERIT_WIDTH);
   }
+  
   build_bottombar(view3d) {
     var ctx = new Context();
     var col = new ColumnFrame(ctx);

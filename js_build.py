@@ -512,6 +512,10 @@ def aggregate(files, outpath="build/app.js"):
 
 def buildall():
   for t in targets:
+    for s in t:
+      s.build = False;
+  
+  for t in targets:
     filter_srcs(t)
     
   for t in targets:
