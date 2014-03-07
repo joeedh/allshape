@@ -1,0 +1,4 @@
+#!/usr/bin/env python
+
+import js_build
+js_build.themain()
