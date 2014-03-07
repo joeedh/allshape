@@ -4,6 +4,7 @@ import os, sys, os.path, time, random, math
 import shelve, struct, io, imp, ctypes, re
 import subprocess, shlex
 import imp, runpy
+from math import floor
 
 REBUILD = 1
 WASBUILT = 2
