@@ -83,18 +83,20 @@ function MeshVec3Property(String name, Vector3 value, int flag) {
 }
 
 /*note: unlike ToolOps, MeshOps can call each other and recurse.*/
-function MeshOp() {
-  this.name = undefined;
-  this.uiname = undefined;
+class MeshOp {
+  constructor() {
+    this.name = undefined;
+    this.uiname = undefined;
+    
+    this.inputs = {};
+    this.outputs = {};
+    
+    this.flag = 0;
+    this.undo_expand_lvl = 0; //for partial undo, how much to expand the partial mesh area
+  }
   
-  this.inputs = {};
-  this.outputs = {};
-  
-  this.flag = 0;
-  this.undo_expand_lvl = 0; //for partial undo, how much to expand the partial mesh area
+  exec(op, mesh) { }
 }
-create_prototype(MeshOp);
-MeshOp.prototype.exec = function(op, mesh) { };
 
 function element_filter_iter(iter, typemask) {
   this.iter = iter;
@@ -131,21 +133,23 @@ function element_filter(iter, typemask) {
   }
 }
 
-function element_iter_convert(iter, type) {
-  this.vset = new set();
-  this.iter = iter.__iterator__();
-  this.subiter = undefined;
+class element_iter_convert {
+  constructor(iter, type) {
+    this.vset = new set();
+    this.iter = iter.__iterator__();
+    this.subiter = undefined;
+    
+    if (type == MeshTypes.VERT)
+      this.type = Vertex;
+    else if (type == MeshTypes.EDGE)
+      this.type = Edge;
+    else if (type == MeshTypes.LOOP)
+      this.type = Loop;
+    else if (type == MeshTypes.FACE)
+      this.type = Face;
+  }
   
-  if (type == MeshTypes.VERT)
-    this.type = Vertex;
-  else if (type == MeshTypes.EDGE)
-    this.type = Edge;
-  else if (type == MeshTypes.LOOP)
-    this.type = Loop;
-  else if (type == MeshTypes.FACE)
-    this.type = Face;
-  
-  this.reset = function() {
+  reset() {
     if (this.iter.reset != undefined)
       this.iter.reset();
       
@@ -155,11 +159,11 @@ function element_iter_convert(iter, type) {
       this.iter.mesh = this.mesh;
   }
   
-  this.__iterator__  = function() {
+  __iterator__() {
     return this;
   }
   
-  this.next = function() {
+  next() {
     if (this.mesh != undefined)
       this.iter.mesh = this.mesh;
       
@@ -178,7 +182,7 @@ function element_iter_convert(iter, type) {
     return v;
   }
   
-  this._next = function() {
+  _next() {
     if (this.subiter == undefined) {
       var next = this.iter.next();
       
@@ -204,104 +208,107 @@ function element_iter_convert(iter, type) {
   }
 }
 
-function selectiter(mesh, typemask) {
-  this.mask = typemask;
-  this.iter = undefined;
-  this.curtype = 0;
-  this.mesh = mesh
-  
-  this.reset();
-}
-create_prototype(selectiter);
-
-selectiter.prototype.reset = function() {
-  this.iter = undefined;
-  
-  if (this.mask & MeshTypes.VERT)
-    this.curtype = MeshTypes.VERT
-  else if (this.mask & MeshTypes.EDGE)
-    this.curtype = MeshTypes.EDGE;
-  else if (this.mask & MeshTypes.FACE)
-    this.curtype = MeshTypes.FACE
-  else
-    throw "Invalid element type mask in selectiter.reset()";
-}
-
-selectiter.prototype.__iterator__ = function() {
-  return this;
-}
-
-selectiter.prototype.next = function() {
-  var mesh = this.mesh;
-  
-  function get_iter(type) {
-    if (type == MeshTypes.VERT)
-      return mesh.verts.selected;
-    else if (type == MeshTypes.EDGE)
-      return mesh.edges.selected;
-    else
-      return mesh.faces.selected;
-  }
-  
-  if (this.iter == undefined) {
-    this.iter = get_iter(this.curtype);
-  }
-  
-  var next;
-  next = this.iter.next();
-  if (next.done) {
-    var mask = this.mask;
+class selectiter {
+  constructor(mesh, typemask) {
+    this.mask = typemask;
+    this.iter = undefined;
+    this.curtype = 0;
+    this.mesh = mesh
     
-    if (this.curtype == MeshTypes.VERT) {
-      if (mask & MeshTypes.EDGE) {
-        this.curtype = MeshTypes.EDGE;
-        this.iter = get_iter(MeshTypes.EDGE);
-        return this.next();
-      } else if (mask & MeshTypes.FACE) {
-        this.curtype = MeshTypes.FACE;
-        this.iter = get_iter(MeshTypes.FACE);
-        return this.next();
-      } else {
+    this.reset();
+  }
+
+  reset() {
+    this.iter = undefined;
+    
+    if (this.mask & MeshTypes.VERT)
+      this.curtype = MeshTypes.VERT
+    else if (this.mask & MeshTypes.EDGE)
+      this.curtype = MeshTypes.EDGE;
+    else if (this.mask & MeshTypes.FACE)
+      this.curtype = MeshTypes.FACE
+    else
+      throw "Invalid element type mask in selectiter.reset()";
+  }
+
+  __iterator__() {
+    return this;
+  }
+
+  next() {
+    var mesh = this.mesh;
+    
+    function get_iter(type) {
+      if (type == MeshTypes.VERT)
+        return mesh.verts.selected;
+      else if (type == MeshTypes.EDGE)
+        return mesh.edges.selected;
+      else
+        return mesh.faces.selected;
+    }
+    
+    if (this.iter == undefined) {
+      this.iter = get_iter(this.curtype);
+    }
+    
+    var next;
+    next = this.iter.next();
+    if (next.done) {
+      var mask = this.mask;
+      
+      if (this.curtype == MeshTypes.VERT) {
+        if (mask & MeshTypes.EDGE) {
+          this.curtype = MeshTypes.EDGE;
+          this.iter = get_iter(MeshTypes.EDGE);
+          return this.next();
+        } else if (mask & MeshTypes.FACE) {
+          this.curtype = MeshTypes.FACE;
+          this.iter = get_iter(MeshTypes.FACE);
+          return this.next();
+        } else {
+          this.reset();
+          return next;
+        }
+      } else if (this.curtype == MeshTypes.EDGE) {
+        if (mask & MeshTypes.FACE) {
+          this.curtype = MeshTypes.FACE;
+          this.iter = get_iter(MeshTypes.FACE);
+          return this.next();
+        } else {
+          this.reset();
+          return next;
+        }
+      } else if (this.curtype == MeshTypes.FACE) {
         this.reset();
         return next;
       }
-    } else if (this.curtype == MeshTypes.EDGE) {
-      if (mask & MeshTypes.FACE) {
-        this.curtype = MeshTypes.FACE;
-        this.iter = get_iter(MeshTypes.FACE);
-        return this.next();
-      } else {
-        this.reset();
-        return next;
-      }
-    } else if (this.curtype == MeshTypes.FACE) {
-      this.reset();
-      return next;
+    }
+    
+    return next;
+  }
+}
+
+class flagiter {
+  constructor(mesh, typemask, flag) {
+    this.emask = typemask;
+    this.flag = flag;
+    this.cur = 0;
+    this.curtype = 0;
+    this.mesh = mesh
+  
+    if (typemask & MeshTypes.VERT) {
+      this.curtype = MeshTypes.VERT;
+      this.iter = new GeoArrayIter(mesh.verts);
+    } else if (typemask & MeshTypes.EDGE) {
+      this.curtype = MeshTypes.EDGE;
+      this.iter = new GeoArrayIter(mesh.edges);
+    } else if (typemask & MeshTypes.FACE) {
+      this.curtype = MeshTypes.FACE;
+      this.iter = new GeoArrayIter(mesh.faces);
     }
   }
   
-  return next;
-}
-
-function flagiter(mesh, typemask, flag) {
-  this.emask = typemask;
-  this.flag = flag;
-  this.cur = 0;
-  this.curtype = 0;
-  this.mesh = mesh
-  
-  if (typemask & MeshTypes.VERT) {
-    this.curtype = MeshTypes.VERT;
-    this.iter = new GeoArrayIter(mesh.verts);
-  } else if (typemask & MeshTypes.EDGE) {
-    this.curtype = MeshTypes.EDGE;
-    this.iter = new GeoArrayIter(mesh.edges);
-  } else if (typemask & MeshTypes.FACE) {
-    this.curtype = MeshTypes.FACE;
-    this.iter = new GeoArrayIter(mesh.faces);
-  }
-  
-  this.reset = function() {
+  reset() {
     this.cur = 0;
     
     if (this.emask & MeshTypes.VERT) {
@@ -316,7 +323,7 @@ function flagiter(mesh, typemask, flag) {
     }
   }
   
-  this.next = function() {
+  next() {
     if (this.cur == -1) {
       this.reset();
     }
@@ -416,13 +423,15 @@ function flagiter(mesh, typemask, flag) {
   }
 }
 
-function flagiterobj(mesh, typemask, flag) {
-  this.mesh = mesh;
-  this.typemask = typemask;
-  this.flag = flag;
-  
-  this.__iterator__ = function() {
-    return new flagiter(this.mesh, this.typemask, this.flag);
+class flagiterobj {
+  constructor(mesh, typemask, flag) {
+    this.mesh = mesh;
+    this.typemask = typemask;
+    this.flag = flag;
+    
+    this.__iterator__ = function() {
+      return new flagiter(this.mesh, this.typemask, this.flag);
+    }
   }
 }
 

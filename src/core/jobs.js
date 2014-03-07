@@ -115,7 +115,7 @@ class Joblet {
   }
 }
 
-class JogManager {
+class JobManager {
   constructor() {
     this.jobs = new GArray<Joblet>();
     this.jobmap_owners = new hashtable<Object,Joblet>();

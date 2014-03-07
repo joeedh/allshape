@@ -5,16 +5,15 @@
 #define EXPORT_FUNC(func)
 #endif
 
-function Iter() {
+//need to figure out which name to use for this
+class Iter {
+  reset() {}
+  next() {} //returns a {done : bool iteration_done, value: value} object
 }
-create_prototype(CanIter);
-Iter.prototype.next = function () {} //returns {value:int, done:bool}
-Iter.prototype.reset = function() {} //note: this is an extension to harmony draft spec
 
-function CanIter() {
-}
-create_prototype(Iter);
-CanIter.prototype.iterator = function() : Iter {
+class CanIter {
+  __iterator__() : Iter {
+  }
 }
 
 var debug_int_1 = 0;
@@ -147,7 +146,7 @@ class GArray extends Array {
 }
 EXPORT_FUNC(GArray)
 
-//turn defined_classes into a GArray, now that we've defined it
+//turn defined_classes into a GArray, now that we've defined it (garray)
 var defined_classes = new GArray(defined_classes);
 
 function obj_value_iter(Object obj) {
@@ -189,17 +188,17 @@ EXPORT_FUNC(list)
 
 var g_list = list;
 
-function eid_list(GeoArrayIter<Element> iter) {
-  GArray.call(this);
-  
-  for (var item in iter) {
-    this.push([item.type, item.eid]);
+class eid_list extends GArray {
+  constructor(GeoArrayIter<Element> iter) {
+    GArray.call(this);
+
+    for (var item in iter) {
+      this.push([item.type, item.eid]);
+    }
+
+    return lst;
   }
-  
-  return lst;
 }
-EXPORT_FUNC(eid_list)
-inherit(eid_list, GArray);
 
 Number.prototype.__hash__ = function() : String {
   return this;
@@ -220,17 +219,19 @@ Array.prototype.__hash__ = function() : String {
 
 //an iterator that allows removing elements from
 //a set during iteration
-function SafeSetIter<T>(set) {
-  this.ret = {done : false, value : undefined};
-  this.set = set
-  this.iter = new SetIter(set)
-  this.nextitem = undefined;
+class SafeSetIter {
+  constructor(set) {
+    this.ret = {done : false, value : undefined};
+    this.set = set
+    this.iter = new SetIter(set)
+    this.nextitem = undefined;
+  }
   
-  this.__iterator__ = function() : SafeSetIter<T> {
+  __iterator__() : SafeSetIter<T> {
     return this;    
   }
   
-  this.next = function() : T {
+  next() : T {
     throw new Error("Fix this before using");
     
     var reti = this.ret;
@@ -266,12 +267,14 @@ function SafeSetIter<T>(set) {
   }
 } */
 
-function SetIter<T>(set) {
-  this.ret = {done : false, value : undefined};
-  this.set = set
-  this.iter = Iterator(set.items)
-  
-  this.next = function() : T {
+class SetIter {
+  constructor(set) {
+    this.ret = {done : false, value : undefined};
+    this.set = set
+    this.iter = Iterator(set.items)
+  }
+   
+  next() : T {
     var reti = this.ret;
     var iter = this.iter
     var items = this.set.items
@@ -381,12 +384,14 @@ class set {
 }
 EXPORT_FUNC(set)
 
-function GArrayIter<T>(GArray<T> arr) {
-  this.ret = {done : false, value : undefined};
-  this.arr = arr;
-  this.cur = 0;
+class GArrayIter {
+  constructor(GArray<T> arr) {
+    this.ret = {done : false, value : undefined};
+    this.arr = arr;
+    this.cur = 0;
+  }
   
-  this.next = function() : T {
+  next() : T {
     var reti = this.ret;
     
     if (this.cur >= this.arr.length) {
@@ -401,18 +406,20 @@ function GArrayIter<T>(GArray<T> arr) {
     }
   }
   
-  this.reset = function() {
+  reset() {
     this.ret = {done : false, value : undefined};
     this.cur = 0;
   }
 }
 
-function HashKeyIter(hash) {
-  this.ret = {done : false, value : undefined};
-  this.hash = hash;
-  this.iter = Iterator(hash.items);
+class HashKeyIter {
+  constructor(hash) {
+    this.ret = {done : false, value : undefined};
+    this.hash = hash;
+    this.iter = Iterator(hash.items);
+  }
   
-  this.next = function() {
+  next() {
     var reti = this.ret;
     var iter = this.iter;
     var items = this.hash.items;
@@ -434,73 +441,72 @@ function HashKeyIter(hash) {
 }
 EXPORT_FUNC(HashKeyIter)
 
-function hashtable() {
-  this.items = {};
-  this.keymap = {};
-  this.length = 0;
-}
-EXPORT_FUNC(hashtable)
-
-create_prototype(hashtable);
-
-hashtable.prototype.add = function(key, item) {
-  if (!this.items.hasOwnProperty(key.__hash__())) 
-    this.length++;
-  
-  this.items[key.__hash__()] = item;
-  this.keymap[key.__hash__()] = key;
-}
-
-hashtable.prototype.remove = function(key) {
-  delete this.items[key.__hash__()]
-  delete this.keymap[key.__hash__()]
-  this.length -= 1;
-}
-
-hashtable.prototype.__iterator__ = function() {
-  return new HashKeyIter(this)
-}
-
-hashtable.prototype.values = function() {
-  var ret = new GArray();
-  for (var k in this) {
-    ret.push(this.items[k]);
+class hashtable {
+  constructor() {
+    this.items = {};
+    this.keymap = {};
+    this.length = 0;
   }
-  
-  return ret;
-}
 
-hashtable.prototype.keys = function() {
-  return list(this);
-}
-
-hashtable.prototype.get = function(key) {
-  return this.items[key.__hash__()];
-}
-
-hashtable.prototype.set = function(key, item) {
-  if (!this.has(key)) {
-    this.length++;
+  add(key, item) {
+    if (!this.items.hasOwnProperty(key.__hash__())) 
+      this.length++;
+    
+    this.items[key.__hash__()] = item;
+    this.keymap[key.__hash__()] = key;
   }
-  
-  this.items[key.__hash__()] = item;
-  this.keymap[key.__hash__()] = key;
-}
 
-hashtable.prototype.union = function(b) {
-  var newhash = new hashtable(this)
-  
-  for (var item in b) {
-    newhash.add(item, b.get[item])
+  remove(key) {
+    delete this.items[key.__hash__()]
+    delete this.keymap[key.__hash__()]
+    this.length -= 1;
   }
-  
-  return newhash;
-}
 
-hashtable.prototype.has = function(item) {
-  if (item == undefined)
-    console.trace();
-  return this.items.hasOwnProperty(item.__hash__())
+  __iterator__() {
+    return new HashKeyIter(this)
+  }
+
+  values() {
+    var ret = new GArray();
+    for (var k in this) {
+      ret.push(this.items[k]);
+    }
+    
+    return ret;
+  }
+
+  keys() {
+    return list(this);
+  }
+
+  get(key) {
+    return this.items[key.__hash__()];
+  }
+
+  set(key, item) {
+    if (!this.has(key)) {
+      this.length++;
+    }
+    
+    this.items[key.__hash__()] = item;
+    this.keymap[key.__hash__()] = key;
+  }
+
+  union(b) {
+    var newhash = new hashtable(this)
+    
+    for (var item in b) {
+      newhash.add(item, b.get[item])
+    }
+    
+    return newhash;
+  }
+
+  has(item) {
+    if (item == undefined)
+      console.trace();
+    return this.items.hasOwnProperty(item.__hash__())
+  }
 }
 
 function validate_mesh_intern(m) {
@@ -757,59 +763,61 @@ function time_ms() {
 }
 EXPORT_FUNC(time_ms)
 
-function movavg(length) {
-  this.len = length;
-  this.value = 0;
-  this.arr = [];
-}
-EXPORT_FUNC(movavg)
+class movavg {
+  constructor(length) {
+    this.len = length;
+    this.value = 0;
+    this.arr = [];
+  }
 
-create_prototype(movavg);
-movavg.prototype._recalc = function() {
-  if (this.arr.length == 0)
-    return;
+  _recalc() {
+    if (this.arr.length == 0)
+      return;
 
-  var avg = 0.0;
-  for (var i=0; i<this.arr.length; i++) {
-    avg += this.arr[i];
+    var avg = 0.0;
+    for (var i=0; i<this.arr.length; i++) {
+      avg += this.arr[i];
+    }
+    
+    avg /= this.arr.length;
+    this.value = avg;
   }
   
-  avg /= this.arr.length;
-  this.value = avg;
-}
-movavg.prototype.update = function(val) {
-  if (this.arr.length < this.len) {
-    this.arr.push(val);
-  } else {
-    this.arr.shift();
-    this.arr.push(val);
+  update(val) {
+    if (this.arr.length < this.len) {
+      this.arr.push(val);
+    } else {
+      this.arr.shift();
+      this.arr.push(val);
+    }
+    
+    this._recalc();
+    
+    return this.value;
   }
-  
-  this._recalc();
-  
-  return this.value;
+
+  valueOf() {
+    return this.value; //"movavg(value=" + this.value + ")";
+  }
 }
 
-movavg.prototype.valueOf = function() {
-  return this.value; //"movavg(value=" + this.value + ")";
-}
-
-function Timer(interval_ms) {
-  this.ival = interval_ms;
-  this.normval = 0.0; //elapsed time scaled by timer interval
-  this.last_ms = time_ms();
-}
-create_prototype(Timer);
-
-Timer.prototype.ready = function() {
-  this.normval = (time_ms() - this.last_ms) / this.ival;
-  
-  if (time_ms() - this.last_ms > this.ival) {
+class Timer {
+  constructor(interval_ms) {
+    this.ival = interval_ms;
+    this.normval = 0.0; //elapsed time scaled by timer interval
     this.last_ms = time_ms();
-    return true;
   }
-  
-  return false;
+
+  ready() {
+    this.normval = (time_ms() - this.last_ms) / this.ival;
+    
+    if (time_ms() - this.last_ms > this.ival) {
+      this.last_ms = time_ms();
+      return true;
+    }
+    
+    return false;
+  }
 }
 
 function other_tri_vert(e, f) {
@@ -840,19 +848,21 @@ var _sran_tab = [0.42858355099189227,0.5574386030715371,0.9436109711290556,
 0.05480018253112229,0.8345698022607818,0.26287656274013016,
 0.1025239144443526];
 
-function StupidRandom(seed) { //seed is undefined
-  if (seed == undefined)
-    seed = 0;
+class StupidRandom {
+  constructor(seed) {
+    if (seed == undefined)
+      seed = 0;
 
-  this._seed = seed+1;
-  this.i = 1;
-    
-  this.seed = function(seed) {
     this._seed = seed+1;
     this.i = 1;
   }
   
-  this.random = function() {
+  seed(seed) {
+    this._seed = seed+1;
+    this.i = 1;
+  }
+  
+  random() {
     global _sran_tab;
     
     var tab = _sran_tab;
@@ -872,7 +882,6 @@ function StupidRandom(seed) { //seed is undefined
     return r1;
   }
 }
-create_prototype(StupidRandom);
 
 var StupidRandom seedrand = new StupidRandom();
 

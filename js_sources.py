@@ -28,7 +28,6 @@ js_targets = {"app.js" : [
 	"src/core/units.js",
 	"src/core/data_api.js",
 	"src/core/schema.js",
-	"src/core/network_api.js",
 	"src/core/fileapi.js",
   
   "src/mesh/mesh_types.js",

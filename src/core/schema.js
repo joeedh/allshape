@@ -1143,9 +1143,8 @@ function gen_struct_str() {
 }
 
 //stub type
-function JSONType() {
-};
-create_prototype(JSONType);
+class JSONType {
+}
 
 function JSOB(obj) {
   obj.__proto__ = JSONType.prototype;

@@ -34,9 +34,8 @@ function create_test(obj) {
 
 var int _prototype_id_gen = 1
 function test_inherit_multiple() {
-  function z() {
+  class z {
   }
-  create_prototype(z);
   
   a = Array;
   a.prototype.test = function() {

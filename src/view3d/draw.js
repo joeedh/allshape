@@ -791,13 +791,48 @@ class ShaderProgram {
   }
 }
 
-function DrawMats(Matrix4 normalmat, Matrix4 cameramat, Matrix4 persmat) {
-  this.normalmat = new Matrix4(normalmat);
-  this.cameramat = new Matrix4(cameramat);
-  this.persmat = new Matrix4(persmat);
-  this.rendermat = new Matrix4(); //private
+class DrawMats {
+  constructor(Matrix4 normalmat, Matrix4 cameramat, Matrix4 persmat) {
+    this.normalmat = new Matrix4(normalmat);
+    this.cameramat = new Matrix4(cameramat);
+    this.persmat = new Matrix4(persmat);
+    this.rendermat = new Matrix4(); //private
+  }
+  
+  static fromSTRUCT(reader) {
+    var ret = Object.create(DrawMats.prototype);
+    reader(ret);    
+    return ret;
+  }
+
+  copy() : DrawMats {
+    var cpy = new DrawMats(this.normalmat, this.cameramat, 
+                           this.persmat);
+    cpy.rendermat = new Matrix4(this.rendermat);
+    
+    return cpy;
+  }
+
+  toJSON() {
+    return {
+      normalmat : this.normalmat.toJSON(),
+      cameramat : this.cameramat.toJSON(),
+      persmat : this.persmat.toJSON(),
+      rendermat : this.rendermat.toJSON()
+    }
+  }
+
+  static fromJSON(json) {
+    var dm = new DrawMats();
+    
+    dm.normalmat = Matrix4.fromJSON(json.normalmat);
+    dm.cameramat = Matrix4.fromJSON(json.cameramat);
+    dm.persmat = Matrix4.fromJSON(json.persmat);
+    dm.rendermat = Matrix4.fromJSON(json.rendermat);
+    
+    return dm;
+  }
 }
-create_prototype(DrawMats);
 
 DrawMats.STRUCT = """
   DrawMats {
@@ -807,42 +842,6 @@ DrawMats.STRUCT = """
     rendermat : mat4;
   }
 """
-
-DrawMats.fromSTRUCT = function(reader) {
-  var ret = Object.create(DrawMats.prototype);
-  
-  reader(ret);
-  
-  return ret;
-}
-
-DrawMats.prototype.copy = function() : DrawMats {
-  var cpy = new DrawMats(this.normalmat, this.cameramat, 
-                         this.persmat);
-  cpy.rendermat = new Matrix4(this.rendermat);
-  
-  return cpy;
-}
-
-DrawMats.prototype.toJSON = function() {
-  return {
-    normalmat : this.normalmat.toJSON(),
-    cameramat : this.cameramat.toJSON(),
-    persmat : this.persmat.toJSON(),
-    rendermat : this.rendermat.toJSON()
-  }
-}
-
-DrawMats.fromJSON = function(json) {
-  var dm = new DrawMats();
-  
-  dm.normalmat = Matrix4.fromJSON(json.normalmat);
-  dm.cameramat = Matrix4.fromJSON(json.cameramat);
-  dm.persmat = Matrix4.fromJSON(json.persmat);
-  dm.rendermat = Matrix4.fromJSON(json.rendermat);
-  
-  return dm;
-}
 
 function set_program(WebGLRenderingContext gl, ShaderProgram program, DrawMats drawmats) {
   if (program == undefined)
