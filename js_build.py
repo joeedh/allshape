@@ -456,8 +456,8 @@ def aggregate(files, outpath="build/app.js"):
   if aggregate_smaps:
     f = open("build/srclist.txt", "w")
     for p in files:
-      if not p[0].endswith(".js"): continue
-      f.write(p[1]+".map"+"\n")
+      if not p.source.endswith(".js"): continue
+      f.write(p.target+".map"+"\n")
     f.close()
     
   sbuf = """{"version" : 3,
