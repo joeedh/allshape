@@ -24,6 +24,8 @@ class ASObject extends DagNode {
     DataBlock.call(this, DataTypes.OBJECT, name);
     DagNode.call(this);
     
+    this.__hash__ = DataBlock.prototype.__hash__;
+    
     this.scene = undefined : Scene;
     this.recalcflag = 0;
     
@@ -62,11 +64,12 @@ class ASObject extends DagNode {
     this.data = data;
     
     this.layermask = 0x7FFFFFFF;
-    this.selbuf_id = -1; //only set when obj is added to database
+    this.sid = -1; //only set when obj is added to database
   }
   
   copy() : ASObject {
     var ob = new ASObject(this.data, this.name);
+    
     ob.loc = new Vector3(this.loc);
     ob.rot_euler = new Vector3(this.rot_euler);
     ob.size = new Vector3(this.size);
@@ -89,7 +92,7 @@ class ASObject extends DagNode {
   }
   
   on_add(DataLib lib) {
-    this.selbuf_id = ibuf_idgen.gen_id();
+    this.sid = ibuf_idgen.gen_id();
   }
 
   static fromSTRUCT(unpacker) {

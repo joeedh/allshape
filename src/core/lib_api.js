@@ -1,5 +1,9 @@
 "use strict";
 
+/* 
+  NOTE: be careful when you assume a given datablock reference is not undefined.
+*/
+
 /*
  Important (auto-generated) globals:
  
@@ -140,6 +144,8 @@ class DataRefList extends GArray {
   constructor(lst=undefined) {
     GArray.call(this);
     
+    this.datalib = undefined;
+    
     if (lst == undefined)
       return;
     
@@ -158,6 +164,15 @@ class DataRefList extends GArray {
   
   __iterator__() {
     return new DataRefListIter(this, new Context());
+  }
+  
+  get(i, return_block=true) {
+    if (return_block) {
+      var dl = this.datalib != undefined ? this.datalib : g_app_state.datalib;
+      return dl.get(this[i]);
+    } else {
+      return this[i];
+    }
   }
   
   push(b) {
@@ -268,6 +283,32 @@ class DataLib {
     this.idmap = {};
     this.idgen = new EIDGen();
   }
+  
+  get_datalist(typeid) {
+    var dl;
+    
+    if (!this.datalists.has(typeid)) {
+      dl = new DataLib(typeid);
+      this.datalists.add(dl);
+    } else {
+      dl = this.datalists.get(typeid);
+    }
+    
+    return dl;
+  }
+  
+  get scenes() {
+    return this.get_datalist(DataTypes.SCENE);
+  }
+  
+  get objects() {
+    return this.get_datalist(DataTypes.OBJECT);
+  }
+  
+  get meshes() {
+    return this.get_datalist(DataTypes.MESH);
+  }
+  
   search(type, prefix) {
     //this is what red-black trees are for.
     //oh well.
@@ -381,6 +422,9 @@ class DataLib {
   }
 
   get(id) {
+    if (id instanceof DataRef)
+      id = id.id;
+    
     return this.idmap[id];
   }
 

@@ -69,7 +69,26 @@ class DBList extends GArray {
     list.active = obj.active;
     list.length = obj.length;
   }
-
+  
+  clear_select() {
+    for (var block in this.selected) {
+      block.flag &= ~SELECT;
+    }
+    
+    this.selset = new set();
+    this.selected = new GArray();
+  }
+  
+  set_active(block) {
+    if (block == undefined && this.length > 0) {
+      console.trace();
+      console.log("Undefined actives are illegal for DBLists, unless the list length is zero.");
+      return;
+    }
+    
+    this.active = block;
+  }
+  
   select(block, do_select=true) {
     if (!(block instanceof DataBlock)) {
       console.trace();

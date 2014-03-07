@@ -1,3 +1,6 @@
+from random import random, seed
+import time
+
 def find_node(node, ntype, strict=False, depth=0):
   if type(node) == ntype:
     if not (depth == 0 and strict):
@@ -1183,6 +1186,135 @@ def process_docstrings(result, typespace):
       p.insert(i, cn)
       
   traverse(result, FunctionNode, visit);
+
+valid_randstr = "abcdefghijklmnopqrstuvwxyz"
+valid_randstr += valid_randstr.upper() + "0123456789_"
+def randstr(n):
+  seed(time.time())
+  s = ""
+  for i in range(n):
+    s += valid_randstr[int(random()*len(valid_randstr)*0.99999)]
+      
+  return s
+
+def gen_useful_funcname(p2):
+  def is_ok(s):
+    if len(s) == 0: return False
+    for c in s:
+      if c not in valid_randstr: return False
+    return True
+  
+  p2 = p2.parent
+  while p2 != None and type(p2) != AssignNode:
+    p2 = p2.parent
+  
+  suffix = ""
+  if p2 != None: #okay, we belong to an anonymous function with no usable name
+    #find right-most usable identnode in the lvalue's ast tree
+    n2 = p2[0]
+    while len(n2) > 0:
+      s = n2.gen_js(0).replace("prototype.", "").replace(".", "_")
+      if is_ok(s):
+        suffix = s
+        break
+      n2 = n2[-1]
+    
+    if not is_ok(suffix):
+      s = n2.gen_js(0)
+      if is_ok(s):
+        suffix = s
+  else:
+    suffix = randstr(4)
+  
+  if len(suffix) == 0: suffix = randstr(2)
+  return suffix
+  
+def process_static_vars(result, typespace):
+  def visit(node):
+    if "static" not in node.modifiers: return
+    #helper function for generating (hopefully) unique suffixes
+    #from parent nodes
+    def is_ok(s):
+      if len(s) == 0: return False
+      for c in s:
+        if c not in valid_randstr: return False
+      return True
+    
+    #we need to extract a useful name for the static
+    p = node.parent
+    while p != None and type(p) != FunctionNode:
+      p = p.parent
+    
+    if p == None:
+      return #we're already a static global variable
+    
+    suffix = randstr(2)
+    if p.name == "(anonymous)":
+      suffix = gen_useful_funcname(p)
+    else:
+      #see if we're a nested function.  if so, build a chain of suffices.
+      suffix = p.name
+      p2 = p.parent
+      while p2 != None:
+        if type(p2) == FunctionNode:
+          suffix = gen_useful_funcname(p2) + "_" + suffix
+        p2 = p2.parent
+
+    name = "$" + node.val + "_" + suffix
+    
+    scope = {}
+    scope[node.val] = name
+    
+    def replace_var(n, scope):
+      if type(n) in [IdentNode, VarDeclNode] and n.val in scope:
+        n.val = scope[n.val]
+      
+      if type(n) == BinOpNode and n.op == ".":
+        #don't traverse into the right side of . operators
+        replace_var(n[0], scope)
+        return
+        
+      if type(n) == FunctionNode:
+        #hrm, not sure how best to handle this one.
+        #avoid replacement in exprfunctions?
+        #well, for now, just convert them.
+        
+        #don't convert arguments
+        scope = dict(scope)
+        for c in n[0]:
+          p = c
+          while len(p) > 0 and type(p) not in [IdentNode, VarDeclNode]:
+            p = p[0]
+          p = p.gen_js(0).strip();
+          scope[p] = p
+        for c in n.children[1:]:
+          replace_var(c, scope)
+        
+      for c in n:
+        replace_var(c, scope)
+    
+    #find parent scope
+    p = node.parent
+    while p != None and type(p) != FunctionNode:
+      p = p.parent
+    
+    replace_var(p, scope)
+    func = p
+    
+    #now find global scope, and insert
+    lastp = node
+    p = node.parent
+    while p.parent != None:
+      lastp = p
+      p = p.parent
+    
+    node.parent.remove(node)
+    p.insert(p.index(lastp), node)
+    node.modifiers.remove("static")
+    node.modifiers.add("local")
+    
+         
+  traverse(result, VarDeclNode, visit);
   
 
 from js_global import glob
@@ -1201,3 +1333,4 @@ for k in js_ast.__dict__:
   except TypeError:
     continue
   node_types.add(k)
+  

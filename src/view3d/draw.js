@@ -1153,30 +1153,48 @@ function render_mesh_intern(WebGLRenderingContext gl, View3DHandler view3d,
 }
 
 function render_mesh_object(WebGLRenderingContext gl, View3DHandler view3d, 
-                            Mesh mesh, DrawMats drawmats) 
+                            Mesh mesh, DrawMats drawmats, use_alphamul=true, 
+                            drawprogram=undefined, drawmode=gl.TRIANGLES) 
 {
-  if (mesh.render.recalc != 0) {
-    gen_mesh_render(gl, mesh, mesh.render.drawprogram, mesh.render.vertprogram, mesh.render.recalc);
-  }
+  if (drawprogram == undefined)
+    drawprogram = mesh.render.drawprogram;
   
+  if (mesh.render.recalc != 0) {
+    gen_mesh_render(gl, mesh, drawprogram, mesh.render.vertprogram, mesh.render.recalc);
+  }
   
   gl.enable(gl.DEPTH_TEST);
   gl.enable(gl.POLYGON_OFFSET_FILL);
   
   // Set shaders and draw solid pass
-  set_program(gl, mesh.render.drawprogram, drawmats);
+  set_program(gl, drawprogram, drawmats);
   
   //triangles
-  if (mesh.render.tri_totvert > 0) {
-    gl.polygonOffset(1, 1);
-    
+  if (drawmode == gl.TRIANGLES && mesh.render.tri_totvert > 0) {
     _set_buffer_solid(gl, mesh);
     
     gl.disableVertexAttribArray(4);
     
-    gl.uniform1f(gl.getUniformLocation(mesh.render.drawprogram.program, "alpha_mul"), 1.0);
+    if (use_alphamul)
+      gl.uniform1f(drawprogram.uniformloc(gl, "alpha_mul"), 1.0);
+    
     gl.drawArrays(gl.TRIANGLES, 0, mesh.render.tri_totvert);
-  }  
+    
+  } else if (drawmode == gl.LINES) {
+    _set_buffer_solid(gl, mesh);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, mesh.render.edgebuf);
+    gl.enableVertexAttribArray(0);
+    gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
+    
+    gl.disableVertexAttribArray(1);
+    gl.disableVertexAttribArray(2);
+    gl.disableVertexAttribArray(3);
+    gl.disableVertexAttribArray(4);
+    
+    gl.lineWidth(3000.0);
+    gl.drawArrays(gl.LINES, 0, mesh.edges.length*2);  
+  }
 }
 
 function render_points(WebGLRenderingContext gl, Float32Array floatbuf, 

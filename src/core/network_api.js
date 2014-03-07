@@ -1,4 +1,4 @@
-//this file may be hopelessly obsolete
+//this file is obsolete
 
 #define EXPORT_FUNC(func)
 

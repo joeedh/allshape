@@ -1,0 +1,12 @@
+Launch code todo:
+
+1. CSG.
+2. Exporters
+3. Importers
+4. Unit tests.
+5. Serialize the tool stack.
+6. Make code more fault-tolerate.
+7. Make GUI code faster
+8. Code a bridge tool
+9. Code a very basic structure analyser.
+

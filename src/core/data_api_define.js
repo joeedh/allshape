@@ -33,7 +33,8 @@ function api_define_view3d() {
     
     view3d.zoomwheel = (-r1*r4 + r1*zf + r2*r3 - r2*zf) / (r3 - r4);
 
-    this.ctx.view3d.gen_rendermats();
+    view3d.gen_rendermats();
+    view3d.update_selbuf();
   }
   
   var use_backbuf_sel = new BoolProperty(false, "use_backbuf_sel", "Cull Select", "Cull backface geometry when selecting");
@@ -383,8 +384,12 @@ function api_define_ops() {
       return new SplitAreasTool(ctx.appstate.screen);
     },
     
+    "object.toggle_select_all" : function(ctx, args) {
+      return new ToggleSelectObjOp("auto");
+    },
+    
     "object.translate": function(ctx, args) {
-      return new TranslateOp(EditModes.OBJECT);
+      return new TranslateOp(EditModes.OBJECT, ctx.object);
     },
     
     "object.rotate": function(ctx, args) {

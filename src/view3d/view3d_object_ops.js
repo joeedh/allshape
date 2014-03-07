@@ -18,6 +18,9 @@ class ObjectEditor extends View3DEditor {
     var k = this.keymap;
     k.add_tool(new KeyHandler("G", [], "Translate"), 
                "object.translate()");
+    k.add_tool(new KeyHandler("A", [], "Select All"), 
+               "object.toggle_select_all()");
+               
     /*k.add_tool(new KeyHandler("S", [], "Scale"), 
                "object.scale()");
     k.add_tool(new KeyHandler("R", [], "Rotate"), 
@@ -41,6 +44,7 @@ class ObjectEditor extends View3DEditor {
   editor_duplicate(view3d) {
   }
   render_selbuf(gl, view3d, typemask) {
+    view3d.render_selbuf_obj(gl, view3d.ctx.object, typemask|EditModes.OBJECT);
   }
   selbuf_changed(typemask) {
   }
@@ -100,12 +104,71 @@ class ObjectEditor extends View3DEditor {
     view3d.rows.push(col);
     view3d.add(col);
   }
+  
   set_selectmode(int mode) {
   }
-
-  //returns number of selected items
-  do_select(event, mpos, view3d) {
+  
+  findnearestobj(mpos, view3d) {
+    var size = 75;
+    
+    console.log("in object select");
+    view3d.ensure_selbuf(view3d.selectmode|EditModes.OBJECT);
+    
+    var selbuf = view3d.read_selbuf([Math.floor(mpos[0]-size/2), 
+                                  Math.floor(mpos[1]-size/2)], size);
+    
+    var ret = undefined;
+    var dis = 0;
+    var x, y, x2, y2;
+    
+    //console.log(selbuf);
+    var spiral = get_spiral(size);
+    for (var i=0; i<spiral.length; i++) {
+      x = spiral[i][0];
+      y = spiral[i][1];
+      x2 = spiral[i][0] - size/2;
+      y2 = spiral[i][1] - size/2;
+      
+      var pix = [selbuf[(size*y+x)*4], selbuf[(size*y+x)*4+1], selbuf[(size*y+x)*4+2], selbuf[(size*y+x)*4+3]]
+      
+      var idx = unpack_index(pix)-1;
+      var ob = undefined;
+      if (idx > 0) {
+        var ref = view3d.sidmap[idx];
+        console.log(idx);
+        if (ref != undefined && ref instanceof DataRef) {
+          var ob = this.ctx.datalib.get(ref);
+          if (ob instanceof ASObject) {
+            console.log("found object idx:", ob.lib_id);
+            break;
+          } else {
+            ob = undefined;
+          }
+        }
+      }
+    }
+    
+    return ob;
   }
+  
+  //returns number of selected items
+  do_select(event, mpos, view3d, do_multiple=false) {
+    var ob = this.findnearestobj(mpos, view3d);
+    
+    if (ob == undefined) return;
+    console.log(ob);
+    
+    var mode = "set";
+    if (do_multiple) 
+      mode = (ob.flag & SELECT) ? "subtract" : "add";
+    
+    var tool = new SelectObjectOp(mode);
+    tool.inputs.objects.set_data([ob]);
+    
+    g_app_state.toolstack.exec_tool(tool);
+    //view3d.update_selbuf();
+  }
+  
   tools_menu(event, view3d) {
   }
   rightclick_menu(event, view3d) {

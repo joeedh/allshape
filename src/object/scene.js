@@ -93,7 +93,9 @@ class Scene extends DataBlock {
     console.log("Recovering lost scenegraph relationships...");
 
     if (clear_existing) {
-      this.graph.unlink();
+      if (this.graph != undefined)
+        this.graph.unlink();
+      
       this.graph = new Dag();
     }
     
@@ -115,9 +117,12 @@ class Scene extends DataBlock {
   
   data_link(block, getblock, getblock_us) {
     this.objects.data_link(this, getblock, getblock_us);
-    this.graph.data_link(this, getblock, getblock_us);
+    if (this.graph != undefined)
+      this.graph.data_link(this, getblock, getblock_us);
     
-    if (this.graph.nodes.length == 0 && this.objects.length > 0) {
+    if (this.graph == undefined) {
+      this.recover_dag_graph(true);
+    } else if (this.graph.nodes.length == 0 && this.objects.length > 0) {
       this.recover_dag_graph(false);
     }
     

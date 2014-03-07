@@ -1,14 +1,17 @@
 iteration prefixes: i, j, k, u, v
 
 #note: reusing prefixes is okay
-e    : edge
-f    : face
-l    : loop
-loc  : location
-ms   : matrix socket
-n    : node
-ob   : object
-par  : parent
-rot  : rotate/rotation
-sc   : scene
-v    : vert
+e        : edge
+f        : face
+l        : loop
+loc      : location
+ms       : matrix socket
+n        : node | number
+ob       : object
+p|par    : parent
+rot      : rotate/rotation
+sce      : scene
+v        : vert
+vec      : vector, sometimes coordinate
+co       : coordinate
+size     : scale

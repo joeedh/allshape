@@ -442,6 +442,7 @@ def p_type_modifiers(p):
                     | type_modifiers CONST
                     | GLOBAL
                     | VAR
+                    | STATIC
   '''
   set_parse_globals(p)
     

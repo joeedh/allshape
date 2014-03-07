@@ -136,7 +136,7 @@ class DataRefProperty extends ToolProperty {
     if (this.data == undefined)
       return undefined;
     else
-      return ctx.datalib.get(this.data[1]);
+      return ctx.datalib.get(this.data);
   }
  
   set_data(DataBlock value) {
@@ -149,7 +149,7 @@ class DataRefProperty extends ToolProperty {
         return;
       }
       
-      value = [value.lib_lib, value.lib_id];
+      value = new DataRef(value);
       ToolProperty.prototype.set_data.call(this, value);
     }
   }
@@ -169,28 +169,24 @@ class RefListProperty extends ToolProperty {
     this.set_data(value);
   }
   
-  get_block(ctx) {
-    if (this.data == undefined)
-      return undefined;
-    else
-      return ctx.datalib.get(this.data[1]);
-  }
- 
   set_data(DataBlock value) {
     if (value == undefined) {
       ToolProperty.prototype.set_data.call(this, undefined);
     } else {
       var lst = new DataRefList();
+      console.log(this.types);
       for (var i=0; i<value.length; i++) {
-        if (value[i] == undefined || !this.types.has(value[i].lib_type)) {
+        var block = value[i];
+        
+        if (block == undefined || !this.types.has(block.lib_type)) {
           console.trace();
-          if (value[i] == undefined)
+          if (block == undefined)
             console.log("Undefined datablock in list passed to RefListProperty.set_data");
           else
-            console.log("Invalid datablock type " + value.lib_type + " passed to RefListProperty.set_value()");
+            console.log("Invalid datablock type " + block.lib_type + " passed to RefListProperty.set_value()");
           continue;
         }
-        lst.push(value[i]);
+        lst.push(block);
       }
       
       value = lst;

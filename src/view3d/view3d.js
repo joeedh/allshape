@@ -160,6 +160,7 @@ class View3DHandler extends Area {
     this.transmat = new Mat4Stack();
     
     this.mesh = mesh;
+    this.sidmap = {}; //stores objects, and possibly manipulator widgets and the like
     
     this.znear = znear;
     this.zfar = zfar;
@@ -428,9 +429,30 @@ class View3DHandler extends Area {
       gl.disable(gl.SCISSOR_TEST);
       gl.disable(gl.DITHER);
       gl.enable(gl.DEPTH_TEST);
+      gl.disable(gl.BLEND); 
       
-      this.editor.render_selbuf(this.gl, this, typemask);
+      var sce = this.ctx.scene;
+      for (var ob in sce.objects) {
+        if (ob.sid == -1)
+          ob.sid = ibuf_idgen.idgen();
+        
+        this.sidmap[ob.sid] = new DataRef(ob);
+        
+        if (ob !== this.ctx.object) {
+          this.transmat.push();
+          this.transmat.multiply(ob.matrix);
+          this.render_selbuf_obj(this.gl, ob, typemask);
+          this.transmat.pop();
+        }
+      }
 
+      this.sidmap[this.ctx.object.sid] = new DataRef(this.ctx.object);
+      
+      this.transmat.push();
+      this.transmat.multiply(this.ctx.object.matrix);
+      this.editor.render_selbuf(this.gl, this, typemask);
+      this.transmat.pop();
+      
       gl.flush();
       gl.finish();
       
@@ -459,8 +481,8 @@ class View3DHandler extends Area {
     return pixels;
   }
 
-  do_select(event, mpos, view3d) {
-    return this.editor.do_select(event, mpos, view3d);
+  do_select(event, mpos, view3d, do_multiple=false) {
+    return this.editor.do_select(event, mpos, view3d, do_multiple);
   }
   
   do_alt_select(event, mpos, view3d) {
@@ -516,7 +538,7 @@ class View3DHandler extends Area {
       selfound = this.do_alt_select(event, this.mpos, this);
     } else if (event.button == 0) {
       this._mstart = new Vector2(this.mpos);
-      selfound = this.do_select(event, this.mpos, this); 
+      selfound = this.do_select(event, this.mpos, this, this.shift); 
     }
 
     if (event.button == 2 && !g_app_state.screen.shift && !g_app_state.screen.ctrl && !g_app_state.screen.alt) {
@@ -634,7 +656,11 @@ class View3DHandler extends Area {
   on_tick() {
     prior(View3DHandler, this).on_tick.call(this);
   }
-
+  
+  update_selbuf() {
+    this.redo_selbuf = true;
+  }
+  
   on_view_change() {
     this.redo_selbuf = true;
   }
@@ -986,16 +1012,96 @@ class View3DHandler extends Area {
     this.editor.selectmode = mode;
   }
   
-  draw_object_basic(gl, object, is_active) {
+  render_selbuf_obj(gl, ob, typemask) {
+    this.check_subsurf(this.ctx, ob);
+    var flip = ob == this.ctx.object;
+    
+    if (flip) {
+      //gl.depthFunc(gl.GREATER);
+    }
+    
+    if (ob.data instanceof Mesh) {
+      var color = [0, 0, 0, 1];
+      var program = ob.subsurf ? gl.ss_flat : gl.flat;
+      
+      pack_index(ob.sid+1, color, 0);
+        
+      gl.useProgram(program.program);
+      gl.uniform4fv(program.uniformloc(gl, "color"), color);
+      
+      if (ob.subsurf) {
+        subsurf_render(gl, this, ob.ss_mesh, ob.data, 
+                      this.drawmats, !this.use_backbuf_sel, false,
+                      program);
+      } else {
+        gl.useProgram(program.program);
+        gl.uniform4fv(program.uniformloc(gl, "color"), color);
+        render_mesh_object(gl, this, ob.data, this.drawmats, false, program);
+      }
+    }
+    
+    if (flip) {
+      //gl.depthFunc(gl.LESS);
+    }
+  }
+  
+  draw_object_flat(gl, object, clr) {
+    this.gl = gl;
+    
+    //this.render_selbuf_obj(gl, object, this.selectmode);
+    //return
     if (object.data instanceof Mesh) {
       this.check_subsurf(this.ctx, object);
+      var drawmode = gl.LINES;
+      
+      if (object.subsurf) {
+        var prog = gl.ss_flat;
+        gl.useProgram(prog.program);
+        gl.uniform4fv(prog.uniformloc(gl, "color"), clr);
+        
+        subsurf_render(gl, this, object.ss_mesh, object.data, 
+                      this.drawmats, !this.use_backbuf_sel, false,
+                      prog, drawmode);
+      } else {
+        var prog = gl.flat;
+        gl.useProgram(prog.program);
+        gl.uniform4fv(prog.uniformloc(gl, "color"), clr);
+        
+        render_mesh_object(gl, this, object.data, this.drawmats, false, prog, drawmode);
+        gl.useProgram(gl.program.program);
+      }
+    }
+  }
+  
+  draw_object_basic(gl, object, is_active) {
+    this.gl = gl;
+    
+    //gl.depthFunc(gl.GREATER);
+    //gl.enable(gl.BLEND);
+    //gl.blendFunc(gl.DST_ALPHA, gl.ONE_MINUS_DST_ALPHA);
+    //gl.polygonOffset(1.0, 20);
+    //gl.depthFunc(gl.LESS);
+    
+    //this.render_selbuf_obj(gl, object, this.selectmode);
+    //return
+    gl.polygonOffset(0.5, 200);
+    if (object.data instanceof Mesh) {
+      this.check_subsurf(this.ctx, object);
+      var drawmode = gl.TRIANGLES;
       
       if (object.subsurf) {
         subsurf_render(gl, this, object.ss_mesh, object.data, 
-                      this.drawmats, !this.use_backbuf_sel, false);
+                      this.drawmats, !this.use_backbuf_sel, false,
+                      undefined, drawmode);
       } else {
-        render_mesh_object(gl, this, object.data, this.drawmats);
+        render_mesh_object(gl, this, object.data, this.drawmats, false, undefined, drawmode);
       }
+    }
+    
+    if (is_active) {
+      this.draw_object_flat(gl, object, colors3d.ActiveObject);
+    } else if (object.flag & SELECT) {
+      this.draw_object_flat(gl, object, colors3d.Selection);
     }
   }
 }

@@ -358,23 +358,24 @@ function _edge_subdivide(Mesh mesh, Iterator edgeiter, int count, int fillmode)
 
 //this op is actually an edge-directed pattern-based subdivision
 // algorithm; calling it "edge subdivide" may be a bit misleading.
-function QuadSubdOp(Iterator faceiter, int count) {
-  this.prototype = Object.create(MeshOp.prototype);
-  MeshOp.call(this);
-  
-  this.uiname = "Subdivide"
-  this.name = "QuadSubdivide";
-  this.inputs = {
-    //count: new MeshIntProperty("count", 1, TPropFlags.PRIVATE), 
-    input_faces: new ElementBufferProperty("faces", MeshTypes.FACE)
+class QuadSubdOp extends MeshOp {
+  constructor(Iterator faceiter, int count) {
+    MeshOp.call(this);
+    
+    this.uiname = "Subdivide"
+    this.name = "QuadSubdivide";
+    this.inputs = {
+      //count: new MeshIntProperty("count", 1, TPropFlags.PRIVATE), 
+      input_faces: new ElementBufferProperty("faces", MeshTypes.FACE)
+    }
+    
+    this.inputs.input_faces.load_iterator(faceiter);
+    //this.inputs.count.data = count;
   }
-  
-  this.inputs.input_faces.load_iterator(faceiter);
-  //this.inputs.count.data = count;
-  
+   
   /*this function works by finding clusters of vertices, then creating a new mesh with
     them welded together*/
-  this.exec = function(op, mesh) {
+  exec(op, mesh) {
     _quad_subd(mesh, this.inputs.input_faces, 1);
     mesh.api.recalc_normals();
   }

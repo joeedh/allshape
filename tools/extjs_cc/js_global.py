@@ -33,6 +33,7 @@ gcs["g_refactor_classes"] = "rc"
 gcs["g_add_opt_initializers"] = "nao"
 gcs["g_do_docstrings"] = "ds"
 gcs["g_docstring_propname"] = "dsp"
+gcs["g_enable_static_vars"] = "esv"
 
 def argv_to_argline():
   s = ""
@@ -242,5 +243,6 @@ class Glob(AbstractGlob):
     g_instanceof_func = "__instance_of"
     g_do_docstrings = False
     g_docstring_propname = "__doc__"
+    g_enable_static_vars = True
     
 glob = Glob()

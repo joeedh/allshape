@@ -310,6 +310,8 @@ function inherit_multiple(obj, parents) {
   obj.__parents__ = parents;
   obj.__subclass_map__ = {};
   obj.__subclass_map__[obj.__prototypeid__] = obj
+  var name = obj.name;
+  obj.__hash__ = function() { return name };
   
   //add to instanceof helper map
   for (var i=0; i<cs2.length; i++) {
@@ -409,6 +411,8 @@ function create_prototype(obj) {
   obj.__parents__ = [];
   obj.__subclass_map__ = {};
   obj.__subclass_map__[obj.__prototypeid__] = obj;
+  var name = obj.name;
+  obj.__hash__ = function() { return name };
 }
 EXPORT_FUNC(create_prototype)
 

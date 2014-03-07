@@ -529,6 +529,8 @@ function decode_utf8(arr) {
       sum |= c;
     }
     
+    if (sum == 0) break;
+    
     str += String.fromCharCode(sum);
     i++;
   }
@@ -571,8 +573,8 @@ function unpack_static_string(DataView data, unpack_ctx uctx, int length) : Stri
     }
     
     if (!done && c != 0) {
-      arr[i] = c;
-      arr.length++;
+      arr.push(c);
+      //arr.length++;
     }
   }
   
@@ -596,10 +598,12 @@ function unpack_string(DataView data, unpack_ctx uctx) : String
   return decode_utf8(arr);
 }
 
-function unpack_ctx() {
-  this.i = 0;
+//container to pass an int by reference
+class unpack_ctx {
+  constructor() {
+    this.i = 0;
+  }
 }
-create_prototype(unpack_ctx);
 
 function send_mesh(Mesh mesh)
 {
@@ -624,16 +628,17 @@ function NetStatus() {
   this.status_msg = "";
 }
 
-function NetJob(owner, iter, finish, error, status) {
-  this.iter = iter;
-  this.finish = finish;
-  this.error = error;
-  this.status = status;
-  
-  this.status_data = new NetStatus();
-  this.value = undefined;
+class NetJob {
+  constructor(owner, iter, finish, error, status) {
+    this.iter = iter;
+    this.finish = finish;
+    this.error = error;
+    this.status = status;
+    
+    this.status_data = new NetStatus();
+    this.value = undefined;
+  }
 }
-create_prototype(NetJob);
 
 function parse_headers(headers) {
   var ret = {};

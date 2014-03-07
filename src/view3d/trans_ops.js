@@ -115,7 +115,8 @@ class TransObjectType {
 }
 
 class TransData {
-  constructor(Context ctx, Object obj, int datamode) {
+  //objlist is only valid for objectmode transforms
+  constructor(Context ctx, Object obj, Object objlist, int datamode) {
     this.projmat = new Matrix4(ctx.view3d.drawmats.rendermat);
     this.iprojmat = new Matrix4(this.projmat);
     this.iprojmat.invert();
@@ -128,16 +129,17 @@ class TransData {
     this.start_mpos[0] = this.start_mpos[0]/(ctx.view3d.size[0]/2) - 1.0;
     this.start_mpos[1] = this.start_mpos[1]/(ctx.view3d.size[1]/2) - 1.0;
     
-    this.object = obj;
+    this.object = obj; //current active object
     
     if (obj.data instanceof Mesh) this.mesh = obj.data;
     else this.mesh = undefined;
     
-    if (datamode & EditModes.GEOMETRY)
+    if (datamode & EditModes.GEOMETRY) {
       this.load_mesh(ctx, obj);
-    else if (datamode == EditModes.OBJECT)
-      this.load_object(ctx, obj);
-      
+    } else if (datamode == EditModes.OBJECT) {
+      this.load_objects(ctx, obj, objlist);
+    }
+    
     this.scenter = new Vector3(this.center);
     this.scenter.multVecMatrix(this.projmat);
     
@@ -148,10 +150,12 @@ class TransData {
     this.imat.invert();
   }
   
-  load_object(ctx, obj) {
+  load_objects(ctx, active_ob, objlist) {
     //load passed in obj, as well as the objects in ctx.scene.selected
     
     this.datatype = TransObjectType;
+    
+    var obj = active_ob;
     
     //passed in (active) object always goes first
     var objs = this.objects = new GArray();
@@ -161,7 +165,7 @@ class TransData {
     var ssizes = this.startsizes = new GArray();
     
     var add_obj = true;
-    for (var ob in ctx.scene.objects.selected) {
+    for (var ob in objlist) {
       var imat = new Matrix4(ob.matrix);
       imat.invert();
       
@@ -182,7 +186,7 @@ class TransData {
       }
     }
     
-    //passed in (active) object always goes first
+    //active object always goes first
     if (add_obj) {
       var imat = new Matrix4(obj.matrix);
       imat.invert();
@@ -283,6 +287,7 @@ class TransformOp extends ToolOp {
   static default_slots(obj, mode, asob) {
     obj.inputs["DATAMODE"] = selectmode_enum.copy();
     obj.inputs["OBJECT"] = new DataRefProperty(asob, DataTypes.OBJECT, "object", "Object", "Object to transform", undefined);
+    obj.inputs["OBJECTS"] = new RefListProperty([], DataTypes.OBJECT, "objects", "Objects", "Objects to transform, if applicable", undefined);
     
     if (mode != 0)
       obj.inputs.DATAMODE.set_data(mode);
@@ -295,7 +300,7 @@ class TransformOp extends ToolOp {
       console.log("3-", this.inputs.OBJECT.get_block(ctx));
     }
     return new TransData(ctx, this.inputs.OBJECT.get_block(ctx), 
-                          this.inputs.DATAMODE.data);
+                          this.inputs.OBJECTS.data, this.inputs.DATAMODE.data);
   }
  
   undo_pre(ctx) {
@@ -647,7 +652,7 @@ class TransformOp extends ToolOp {
 }
 
 class TranslateOp extends TransformOp {
-  constructor(mode=0, object=undefined) {
+  constructor(mode=0, ob_active=undefined) {
     TransformOp.call(this);
     
     this.uiname = "Translate"
@@ -662,12 +667,14 @@ class TranslateOp extends TransformOp {
              AXIS: new Vec3Property(new Vector3(), "cons_axis", "Constraint Axis", "Axis to constrain too during transform", TPropFlags.PRIVATE)}
     this.outputs = {TRANSLATION: new Vec3Property(new Vector3(), "translation", "Translation", "Amount of translation.")}
     
-    if (object == undefined)
-      object = new Context().object;
+    if (ob_active == undefined)
+      ob_active = (new Context()).object;
     
-    TransformOp.default_slots(this, mode, object);
-    if (object != undefined)
-      this.inputs.OBJECT.set_data(object);
+    console.log("--------------->", ob_active);
+    TransformOp.default_slots(this, mode, ob_active);
+    if (ob_active != undefined)
+      this.inputs.OBJECT.set_data(ob_active);
+    console.log(this.inputs.OBJECT.data, ob_active);
   }
 
   can_call(ctx) {

@@ -26,7 +26,7 @@ function open_android_keyboard() {
 }
 
 function close_android_keyboard() {
-    var  canvas = documenlt.getElementById("example")
+    var  canvas = document.getElementById("example")
     canvas.contentEditable = false
     canvas.focus()
     

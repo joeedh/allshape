@@ -276,7 +276,7 @@ class MeshEditor extends View3DEditor {
   }
 
   //returns number of selected items
-  do_select(event, mpos, view3d) {
+  do_select(event, mpos, view3d, do_multiple=false) {
     var mode;
     var macro = new ToolMacro("select_macro", "Select Macro");
     
@@ -286,7 +286,7 @@ class MeshEditor extends View3DEditor {
     if (!highlight)
       return 0;
     
-    if (!this.shift) {
+    if (!do_multiple) {
       var op = new ToggleSelectAllOp("deselect");
       op.inputs.selmode.set_data(this.selectmode);
 

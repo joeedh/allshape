@@ -969,6 +969,9 @@ def parse_intern(data, create_logger=False, expand_loops=True, expand_generators
   if glob.g_replace_instanceof:
     replace_instanceof(result, typespace)
   
+  if glob.g_enable_static_vars:
+    process_static_vars(result, typespace)
+    
   if glob.g_do_docstrings:
     process_docstrings(result, typespace)
   

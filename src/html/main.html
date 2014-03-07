@@ -603,6 +603,15 @@ body, html {
     }
 </script>
 
+<script id="fshader_flat" type="x-shader/x-fragment">
+    precision highp float;
+    uniform vec4 color;
+    
+    void main()
+    {
+        gl_FragColor = color;
+    }
+</script>
 
 <script id="fshader_simple" type="x-shader/x-fragment">
     precision highp float;
@@ -1152,7 +1161,7 @@ function toJSON_intern (ob, tlevel) {
         var ss_program = new ShaderProgram(
           gl,
           // The ids of the vertex and fragment shaders
-          "ss_vshader", "fshader",
+          "vshader", "fshader",
           // The vertex attribute names used by the shaders.
           // The order they appear here corresponds to their index
           // used later.
@@ -1168,7 +1177,28 @@ function toJSON_intern (ob, tlevel) {
           // used later.
           [ "vPosition" ]
         );
+        var ss_flat = new ShaderProgram(
+          gl,
+          // The ids of the vertex and fragment shaders
+          "ss_vshader", "fshader_flat",
+          // The vertex attribute names used by the shaders.
+          // The order they appear here corresponds to their index
+          // used later.
+          [ "vPosition" ]
+        );
         
+        var flat = new ShaderProgram(
+          gl,
+          // The ids of the vertex and fragment shaders
+          "vshader", "fshader_flat",
+          // The vertex attribute names used by the shaders.
+          // The order they appear here corresponds to their index
+          // used later.
+          [ "vPosition" ]
+        );
+        
+        gl.ss_flat = ss_flat;
+        gl.flat = flat;
         gl.ss_noshade = ss_noshade
         gl.program = program
         gl.program2 = program2

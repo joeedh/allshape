@@ -33,19 +33,21 @@ _sran_tab = [0.42858355099189227,0.5574386030715371,0.9436109711290556,
 0.05480018253112229,0.8345698022607818,0.26287656274013016,
 0.1025239144443526];
 
-function StupidRandom(seed) { //seed is optional;
-  if (seed == undefined)
-    seed = 0;
-  
-  this._seed = seed+1;
-  this.i = 1;
-  
-  this.seed = function(seed) {
+class StupidRandom {
+  constructor(int seed) {
+    if (seed == undefined)
+      seed = 0;
+    
     this._seed = seed+1;
     this.i = 1;
   }
   
-  this.random = function() : float {
+  seed(int seed) {
+    this._seed = seed+1;
+    this.i = 1;
+  }
+  
+  random() : float {
     var tab = _sran_tab;
     
     var i = this.i;
@@ -61,13 +63,12 @@ function StupidRandom(seed) { //seed is optional;
     
     this.i++;
     
-    return r1
+    return r1;
   }
 }
-create_prototype(StupidRandom);
 
 _keyrot_rnd = new StupidRandom(0);
-function key_rot(key) {
+function key_rot(Object key) {
   key = key.toString().toUpperCase();
   s2 = ""
   
@@ -106,7 +107,7 @@ function key_rot(key) {
   return s2;
 }
 
-function key_unrot(key) {
+function key_unrot(Object key) {
   key = key.toString().toUpperCase();
   s2 = ""
   
@@ -145,6 +146,7 @@ function key_unrot(key) {
   return s2;
 }
 
+//okay. . .clearly, I never implemented this.
 function SFileDB_Backend() {
 }
 
