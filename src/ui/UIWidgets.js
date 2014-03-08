@@ -1253,45 +1253,133 @@ UITextBox.prototype.get_min_size = function(UICanvas canvas, Boolean isvertical)
   return [this.min_width, 26]
 }
 
-function UIListBox(ctx, pos, size, callback)
-{
-  ColumnFrame.call(this, ctx);
-  
-  if (size != undefined && size[0]+size[1] != 0.0)
-    this.size = size;
-  else
-    this.size = [500, 350]; //default size;
-  
-  if (pos != undefined)
-    this.pos = pos;
-  
-  this.active_entry = undefined : UIListEntry;
-  this.callback = callback;
-  this.mdown = false;
-  this.listbox = new RowFrame(ctx);
-  this.add(this.listbox, PackFlags.INHERIT_WIDTH|PackFlags.ALIGN_LEFT);
-  
-  this.vscroll = new UIVScroll(ctx, [0, 0])
-  this.listbox.static_size = [this.size[0]-26, this.size[1]]
-  this.scrollx = 0;
-  this.scrolly = 0;
-  
-  var this2=this;
-  this.vscroll.callback = function(vscroll, value) {
-    this2._vscroll_callback(vscroll, value);
+class UIListBox extends ColumnFrame {
+  constructor(ctx, pos, size, callback) {
+    ColumnFrame.call(this, ctx);
+    
+    if (size != undefined && size[0]+size[1] != 0.0)
+      this.size = size;
+    else
+      this.size = [500, 350]; //default size;
+    
+    if (pos != undefined)
+      this.pos = pos;
+    
+    this.active_entry = undefined : UIListEntry;
+    this.callback = callback;
+    this.mdown = false;
+    this.listbox = new RowFrame(ctx);
+    this.add(this.listbox, PackFlags.INHERIT_WIDTH|PackFlags.ALIGN_LEFT);
+    
+    this.vscroll = new UIVScroll(ctx, [0, 0])
+    this.listbox.static_size = [this.size[0]-26, this.size[1]]
+    this.scrollx = 0;
+    this.scrolly = 0;
+    
+    var this2=this;
+    this.vscroll.callback = function(vscroll, value) {
+      this2._vscroll_callback(vscroll, value);
+    }
+    this.vscroll.step = 26;
+    this.add(this.vscroll);
+    
+    this.packflag |= PackFlags.ALIGN_LEFT;
+    this.packflag &= ~PackFlags.ALIGN_CENTER;
   }
-  this.vscroll.step = 26;
-  this.add(this.vscroll);
+
+   _vscroll_callback(vscroll, value)
+  {
+    this.scrolly = value;
+    this.listbox.do_full_recalc();
+    this.do_full_recalc();
+  }
+
+  on_mouseup(event) {
+    prior(UIListBox, this).on_mouseup.call(this, event);
+    
+    if (this.listbox.active != undefined && (this.listbox.active instanceof UIListEntry)) {
+      this.active_entry = this.listbox.active;
+      this.active_entry.do_recalc();
+      if (this.callback != undefined) {
+        this.callback(this, this.active_entry.text, this.active_entry.id);
+      }
+    }
+  }
   
-  this.packflag |= PackFlags.ALIGN_LEFT;
-  this.packflag &= ~PackFlags.ALIGN_CENTER;
-}
+  jump(int off) {
+    if (this.active_entry == undefined) return;
+    
+    var i = this.listbox.children.indexOf(this.active_entry) + off;
+    i = Math.min(Math.max(0, i), this.listbox.children.length-1);
+    
+    this.active_entry.do_recalc();
+    this.active_entry = this.listbox.children[i];
+    this.active_entry.do_recalc();
+    
+    if (this.callback != undefined) {
+      this.callback(this, this.active_entry.text, this.active_entry.id);
+    }
+  }
+  
+  on_keydown(event) {
+    console.log(event);
+    if (event.keyCode == charmap["Up"]) {
+      this.jump(-1);
+    } else if (event.keyCode == charmap["Down"]) {
+      this.jump(1);
+    }
+  }
+  
+  add_item(str, id) {
+    var entry = new UIListEntry(this.ctx, str, id);
+    
+    entry.packflag |= PackFlags.ALIGN_LEFT|PackFlags.INHERIT_WIDTH;
 
-inherit(UIListBox, ColumnFrame);
+    this.listbox.add(entry, PackFlags.ALIGN_LEFT);
+    this.do_recalc();
+  }
 
-UIListBox.prototype._vscroll_callback = function(vscroll, value)
-{
-  this.scrolly = value;
+  build_draw(UICanvas canvas, Boolean isVertical) {
+    canvas.push_scissor([0,0], this.size);
+    canvas.begin(this);
+
+    canvas.simple_box([0,0], this.size, uicolors["ListBoxBG"]);
+    prior(UIListBox, this).build_draw.call(this, canvas, isVertical);
+    
+    canvas.end(this);
+    canvas.pop_scissor();
+  }
+
+  reset()
+  {
+    this.listbox.children = new GArray();
+    this.do_recalc();
+  }
+
+  pack(UICanvas canvas, Boolean is_vertical)
+  {
+    this.listbox.min_size = [this.size[0]-26, this.size[1]]
+    
+    prior(UIListBox, this).pack.call(this, canvas, is_vertical);
+    
+    if (this.listbox.size[1] > this.size[1])
+      this.vscroll.set_range([0, this.listbox.size[1]-this.size[1]]);
+    else
+      this.vscroll.set_range([0, 50]);
+    
+    this.listbox.pos[1] = this.size[1] - this.listbox.size[1];
+    this.listbox.pos[0] += this.scrollx;
+    this.listbox.pos[1] += this.scrolly;
+  }
+
+  get_min_size(UICanvas canvas, Boolean isVertical) {
+
+    if (this.size != undefined && this.size[0]+this.size[1] != 0.0) {
+      return this.size;
+    } else {
+      return [500, 300];
+    }
+  }
 }
 
 function UIListEntry(ctx, text, id) {
@@ -1315,69 +1403,6 @@ UIListEntry.prototype.build_draw = function(UICanvas canvas, Boolean isVertical)
   canvas.text([7, (this.size[1]-tsize[1])*0.25], this.text, uicolors["ListBoxText"]);
   
   canvas.end(this);
-}
-
-UIListBox.prototype.on_mouseup = function(event) {
-  prior(UIListBox, this).on_mouseup.call(this, event);
-  
-  if (this.listbox.active != undefined && (this.listbox.active instanceof UIListEntry)) {
-    this.active_entry = this.listbox.active;
-    this.active_entry.do_recalc();
-    if (this.callback != undefined) {
-      this.callback(this, this.active_entry.text, this.active_entry.id);
-    }
-  }
-}
-
-UIListBox.prototype.add_item = function(str, id) {
-  var entry = new UIListEntry(this.ctx, str, id);
-  
-  entry.packflag |= PackFlags.ALIGN_LEFT|PackFlags.INHERIT_WIDTH;
-
-  this.listbox.add(entry, PackFlags.ALIGN_LEFT);
-  this.do_recalc();
-}
-
-UIListBox.prototype.build_draw = function(UICanvas canvas, Boolean isVertical) {
-  canvas.push_scissor([0,0], this.size);
-  canvas.begin(this);
-
-  canvas.simple_box([0,0], this.size, uicolors["ListBoxBG"]);
-  prior(UIListBox, this).build_draw.call(this, canvas, isVertical);
-  
-  canvas.end(this);
-  canvas.pop_scissor();
-}
-
-UIListBox.prototype.reset = function()
-{
-  this.listbox.children = new GArray();
-  this.do_recalc();
-}
-
-UIListBox.prototype.pack = function(UICanvas canvas, Boolean is_vertical)
-{
-  this.listbox.min_size = [this.size[0]-26, this.size[1]]
-  
-  prior(UIListBox, this).pack.call(this, canvas, is_vertical);
-  
-  if (this.listbox.size[1] > this.size[1])
-    this.vscroll.set_range([0, this.listbox.size[1]-this.size[1]]);
-  else
-    this.vscroll.set_range([0, 50]);
-  
-  this.listbox.pos[1] = this.size[1] - this.listbox.size[1];
-  this.listbox.pos[0] += this.scrollx;
-  this.listbox.pos[1] += this.scrolly;
-}
-
-UIListBox.prototype.get_min_size = function(UICanvas canvas, Boolean isVertical) {
-
-  if (this.size != undefined && this.size[0]+this.size[1] != 0.0) {
-    return this.size;
-  } else {
-    return [500, 300];
-  }
 }
 
 function ScrollButton(ctx, pos, size, callback) {

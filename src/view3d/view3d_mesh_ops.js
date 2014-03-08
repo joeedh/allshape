@@ -241,15 +241,15 @@ class MeshEditor extends View3DEditor {
     }));
     k.add(new KeyHandler("F", ["CTRL"], "Face Menu"), new FuncKeyHandler(function(ctx) {
       var mpos = ctx.keymap_mpos;
-      ctx.view3d.editor.rightclick_menu_face({x : mpos[0], y : mpos[1]});
+      ctx.view3d.editor.rightclick_menu_face({x : mpos[0], y : mpos[1]}, ctx.view3d);
     }));
     k.add(new KeyHandler("E", ["CTRL"], "Edge Menu"), new FuncKeyHandler(function(ctx) {
       var mpos = ctx.keymap_mpos;
-      ctx.view3d.editor.rightclick_menu_edge({x : mpos[0], y : mpos[1]});
+      ctx.view3d.editor.rightclick_menu_edge({x : mpos[0], y : mpos[1]}, ctx.view3d);
     }));
     k.add(new KeyHandler("V", ["CTRL"], "Vertex Menu"), new FuncKeyHandler(function(ctx) {
       var mpos = ctx.keymap_mpos;
-      ctx.view3d.editor.rightclick_menu_vert({x : mpos[0], y : mpos[1]});
+      ctx.view3d.editor.rightclick_menu_vert({x : mpos[0], y : mpos[1]}, ctx.view3d);
     }));
     k.add(new KeyHandler("W", [], "Tools Menu"), new FuncKeyHandler(function(ctx) {
       var mpos = ctx.keymap_mpos;

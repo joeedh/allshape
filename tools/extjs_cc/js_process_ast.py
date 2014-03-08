@@ -1272,9 +1272,13 @@ def process_static_vars(result, typespace):
       if type(n) == BinOpNode and n.op == ".":
         #don't traverse into the right side of . operators
         replace_var(n[0], scope)
-        return
-        
-      if type(n) == FunctionNode:
+        if type(n[1]) in [IdentNode, VarDeclNode]:
+          return
+        elif type(n[1]) == FuncCallNode: #need to fix this edge case: function calls operator precedence is messed up
+          replace_var(n[1][1:], scope)
+          return
+        replace_var(n[1], scope)
+      elif type(n) == FunctionNode:
         #hrm, not sure how best to handle this one.
         #avoid replacement in exprfunctions?
         #well, for now, just convert them.
@@ -1287,11 +1291,12 @@ def process_static_vars(result, typespace):
             p = p[0]
           p = p.gen_js(0).strip();
           scope[p] = p
+        
         for c in n.children[1:]:
           replace_var(c, scope)
-        
-      for c in n:
-        replace_var(c, scope)
+      else:
+        for c in n:
+          replace_var(c, scope)
     
     #find parent scope
     p = node.parent
@@ -1315,7 +1320,6 @@ def process_static_vars(result, typespace):
     
          
   traverse(result, VarDeclNode, visit);
-  
 
 from js_global import glob
 from js_typespace import *
