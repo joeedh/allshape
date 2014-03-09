@@ -747,4 +747,58 @@ class DataAPI {
       }
     }
   }
+  /*
+  get_prop_time(ctx, str) {
+    var ts = []
+    var c = time_ms()
+    
+    var ret = this.resolve_path(ctx, str);
+    
+    ts.push(time_ms()-c);
+    
+    if (ret == undefined) {
+      console.log("error getting property")
+      return;
+    }
+    
+    var p = ret[0];
+    
+    if (p.use_path) {
+      c = time_ms()
+      
+      var obj = eval(ret[2]);
+      var ret;
+      
+      ts.push(time_ms()-c);
+      c = time_ms();
+      
+      if (p.data.type == PropTypes.FLAG && ret[3]) {
+        var ret2 = eval("(obj & "+ret[1]+")");
+        ret = ret2 > 0 && ret2 == Number(ret[1]);
+      } else {
+        ret = eval("obj." + p.path);
+      }
+      
+      if (p.data.type == PropTypes.ENUM) {
+        ret = p.data.keys[ret];
+      }
+      
+      ts.push(time_ms()-c);
+      
+      return ts;
+    } else {
+      return ts;
+      
+      if (p.data.type == PropTypes.VEC3 && ret[3]) {
+        return p.data.data[ret[1]];
+      } else if (p.data.type == PropTypes.FLAG && ret[3]) {
+        return (p.data.data & Number(ret[1])) == Number(ret[1]);
+      } else {
+        if (p.data.type == PropTypes.ENUM)
+          return p.data.keys[p.data.data];
+        else 
+          return p.data.data;
+      }
+    }
+  }*/
 }

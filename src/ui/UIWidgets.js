@@ -51,7 +51,10 @@ class UIButton extends UIElement {
     
     var tsize = canvas.textsize(this.text);
     
-    canvas.text([(this.size[0]-tsize[0])*0.5, (this.size[1]-tsize[1])*0.45], this.text, uicolors["BoxText"]);
+    if (tsize[0] < this.size[0])
+      canvas.text([(this.size[0]-tsize[0])*0.25, (this.size[1]-tsize[1])*0.25], this.text, uicolors["BoxText"]);
+    else
+      canvas.text([5, (this.size[1]-tsize[1])*0.25], this.text, uicolors["BoxText"]);
     
     canvas.end(this);
   }
@@ -437,13 +440,14 @@ UINumBox.prototype.on_tick = function() {
       if (this.callback != undefined) {
         this.callback(this, this.val);
       }
+      
       this.do_recalc();
     }
   }
 }
 
 UINumBox.prototype.on_mousemove = function(MouseEvent event) {
-  var mpos = [event.x, event.y]
+  var mpos = objcache.getarr(event.x, event.y);
   
   if (this.clicked) {
       var df = (mpos[0] - this.start_mpos[0]) / 300.0

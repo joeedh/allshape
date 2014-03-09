@@ -1,5 +1,7 @@
 from logger import elog, mlog, alog
-from mysql_db import mysql_connect, mysql_reconnect, get_qs, estr
+from mysql_db import mysql_connect, mysql_reconnect, get_qs, \
+                     estr, valid_pass, SQLParamError, sql_selectall, \
+                     sql_insertinto, do_param_error, sq
 import random, time, json
 from utils import *
 from math import *
@@ -35,10 +37,12 @@ def gen_token(toktype, userid):
     code = int(random.random()*max_limit_code*0.999999)
     s += limit_code_rev[code]
   
+  """
   s += "."
   us = hex(userid).replace("0x", "")
   for i in range(16-len(us)):
     us = "0" + us
+  #"""
   
   s = toktype+"."+s
     
@@ -61,8 +65,6 @@ class AuthAPI_OAuthStart:
       else:
         qs2[k] = qs[k]
     qs = qs2
-    
-    print(qs)
     
     if "response_type" not in qs or "client_id" not in qs:
       alog("Invaild oauth request 1")
@@ -117,7 +119,12 @@ class AuthAPI_RefreshToken_WPHack:
       password = "{SHA}" + password
     
     cur, con = mysql_connect()
-    cur.execute("SELECT * FROM users WHERE username="+estr(user))
+    try:
+      qstr = sql_selectall("users", ["username"], [user], [sq.user])
+    except SQLParamError:
+      alog("possible sql injection: \"" + user + "\"")
+      serv.send_error(401)
+      return
     
     ret = cur.fetchone()
     if ret == None:
@@ -137,11 +144,25 @@ class AuthAPI_RefreshToken_WPHack:
     
     alog("Refresh token for %s: %s" % (user, tok))
 		
+    cols   = ["tokenid", "userid", "type",       "permissions",      "expiration"]
+    values = [tok,        userid,  toktypes["R"], default_permission, exprtime]
+    types  = [sq.token,   sq.int,  sq.int,        sq.int,             sq.datetime]
+
+    try:
+      qstr = sql_insertinto("authtokens", cols, values, types)
+    except SQLParamError:
+      do_param_error("cols: " + str(cols) + ", values:" + str(values))
+      serv.send_error(401)
+      return
+      
+    """
     qstr = "INSERT INTO authtokens (tokenid,userid,type,permissions,expiration) VALUES("
     
     qstr += estr(tok)+","+estr(userid)+","
     qstr += estr(toktypes["R"])+","+estr(default_permission)+","
     qstr += estr(exprtime)+")"
+    #"""
+    
     cur.execute(qstr)
     con.commit()
     
@@ -165,13 +186,22 @@ class AuthAPI_RefreshToken:
     #HACK: wsgi is turning +'s into spaces? how odd
     password = password.replace(" ", "+")
     
-    if not password.startswith("{SHA}"):
-      password = "{SHA}" + password
-    
+    if not valid_pass(password):
+      alog("invalid pass format %s" % password)
+      serv.send_error(401)
+      return
+      
     cur, con = mysql_connect()
-    cur.execute("SELECT * FROM users WHERE username="+estr(user))
-    
+    try:
+      qstr = sql_selectall("users", ["username"], [user], [sq.user])
+    except SQLParamError:
+      do_param_error(user)
+      serv.send_error(401)
+      return
+      
+    cur.execute(qstr)
     ret = cur.fetchone()
+    
     if ret == None:
       alog("invalid user %s" % user)
       serv.send_error(401)
@@ -190,11 +220,25 @@ class AuthAPI_RefreshToken:
     
     alog("Refresh token for %s: %s" % (user, tok))
 		
+    cols   = ["tokenid", "userid", "type",       "permissions",      "expiration"]
+    values = [tok,        userid,  toktypes["R"], default_permission, exprtime]
+    types  = [sq.token,   sq.int,  sq.int,        sq.int,             sq.datetime]
+
+    try:
+      qstr = sql_insertinto("authtokens", cols, values, types)
+    except SQLParamError:
+      do_param_error("cols: " + str(cols) + ", values:" + str(values))
+      serv.send_error(401)
+      return
+      
+    """
     qstr = "INSERT INTO authtokens (tokenid,userid,type,permissions,expiration) VALUES("
     
     qstr += estr(tok)+","+estr(userid)+","
     qstr += estr(toktypes["R"])+","+estr(default_permission)+","
     qstr += estr(exprtime)+")"
+    """
+    
     cur.execute(qstr)
     con.commit()
     
@@ -234,12 +278,17 @@ class AuthAPI_SessionToken:
 		
     alog("Generated session token %s for user %s" % (tok, str(userid)))
     
-    qstr = "INSERT INTO authtokens (tokenid,userid,type,"
-    qstr += "permissions,expiration) VALUES("
-    
-    qstr += estr(tok)+","+estr(userid)+","
-    qstr += estr(toktypes["A"])+","+estr(default_permission)+","
-    qstr += estr(exprtime)+")"
+    cols   = ["tokenid", "userid", "type",       "permissions",      "expiration"]
+    values = [tok,        userid,  toktypes["A"], default_permission, exprtime]
+    types  = [sq.token,   sq.int,  sq.int,        sq.int,             sq.datetime]
+
+    try:
+      qstr = sql_insertinto("authtokens", cols, values, types)
+    except SQLParamError:
+      do_param_error("cols: " + str(cols) + ", values:" + str(values))
+      serv.send_error(401)
+      return
+
     cur.execute(qstr)
     con.commit()
     
@@ -254,8 +303,6 @@ class AuthAPI_GetUserInfo:
   
   def do_GET(self, serv):
     qs = get_qs(serv.path)
-    
-    print(qs);
     
     if "accessToken" not in qs:
       elog("access token wasn't provided")

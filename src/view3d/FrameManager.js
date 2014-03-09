@@ -244,6 +244,9 @@ class ScreenArea extends UIFrame {
 
   on_draw(WebGLRenderingContext gl)
   {
+    //reset internal 2d canvas object cache state
+    //not finished yet -->> _reset_trilist_frame_counter();
+    
     g_app_state.size = new Vector2(this.size);
     
     this.area.pos[0] = 0; this.area.pos[1] = 0;
@@ -950,6 +953,7 @@ class Screen extends UIFrame {
     
     this.size = [width, height];
     this.pos = [0, 0];
+    this.use_old_size = false; //use old size on next on_resize call, but only that call
     
     this.gl = gl;
     
@@ -1265,7 +1269,7 @@ class Screen extends UIFrame {
       g_app_state.raster.pop_scissor();
     }
     
-    if (time_ms() - this.last_tick > 100) { //(IsMobile ? 500 : 150)) {
+    if (time_ms() - this.last_tick > 42) { //(IsMobile ? 500 : 150)) {
       this.on_tick();
       this.last_tick = time_ms();
     }
@@ -1313,8 +1317,14 @@ class Screen extends UIFrame {
   {
     g_app_state.size = new Vector2(newsize);
     
-    if (oldsize == undefined)
+    if (oldsize == undefined || this.use_old_size)
       oldsize = [this.size[0], this.size[1]];
+    
+    if (newsize[0] < 100 || newsize[1] < 100) {
+      this.use_old_size = true;
+      newsize[0] = 100;
+      newsize[1] = 100;
+    }
     
     var ratio = (new Vector2(newsize)).divide(oldsize);
     

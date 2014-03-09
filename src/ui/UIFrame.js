@@ -34,8 +34,13 @@ class UIFrame extends UIElement {
         c.do_recalc();
     }
   }
+
   on_resize(Array<int> newsize, Array<int> oldsize)
   {
+    if (this.canvas != undefined) {
+      this.canvas.on_resize(newsize, oldsize);
+    }
+    
     this.do_recalc();
     
     for (var c in this.children) {

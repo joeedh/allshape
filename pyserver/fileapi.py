@@ -1,6 +1,8 @@
 from logger import elog, mlog, alog
-from mysql_db import mysql_connect, get_qs, estr
-import random, time, json, os, os.path, sys, math
+from mysql_db import mysql_connect, mysql_reconnect, get_qs, \
+                     estr, valid_pass, SQLParamError, sql_selectall, \
+                     sql_insertinto, do_param_error, sq, sql_update
+import random, time, json, os, os.path, sys, math, types
 from utils import *
 from math import *
 from auth import do_auth, gen_token, toktypes, rot_userid, unrot_userid
@@ -32,8 +34,20 @@ class Folder (File):
 def create_file(userid, filename, mimetype, parentid):
   #fileid "1" is root for active user
   cur, con = mysql_connect()
+    
+  types  = [sq.int,   sq.int,     sq.str(32), sq.str(100)]
+  cols   = ["userid", "parentid", "mimeType", "name"     ]
+  values = [userid,   parentid,   mimetype,   filename   ]
   
-  cur.execute("INSERT INTO filedata (userid,parentid,mimeType,name) VALUES (%d,%d,\"%s\",\"%s\")"%(userid,parentid,mimetype,filename))
+  try:
+    qstr = sql_insertinto("filedata", cols, values, types)
+  except SQLParamError:
+    do_param_error("file creation, userid=" + str(userid) + ",  filename="+filename + ", mimetype=" + mimetype, "parentid="+str(parentid))
+    raise SQLParamError()
+    
+  #cur.execute("INSERT INTO filedata (userid,parentid,mimeType,name) VALUES (%d,%d,\"%s\",\"%s\")"%(userid,parentid,mimetype,filename))
+  
+  cur.execute(qstr);
   con.commit()
   
   cur.execute("SELECT LAST_INSERT_ID()")
@@ -44,7 +58,13 @@ def create_file(userid, filename, mimetype, parentid):
 def fetch_file(fileid):
   cur, con = mysql_connect()
   
-  cur.execute("SELECT * FROM filedata WHERE fileid=%d"%fileid)
+  try:
+    qstr = sql_selectall("filedata", ["fileid"], [fileid], [sq.int])
+  except SQLParamError:
+    do_param_error("fetch_file")
+    raise SQLParamError()
+  
+  cur.execute(qstr)
   ret = cur.fetchone()
   
   if ret == None:
@@ -58,6 +78,15 @@ def fetch_file(fileid):
   
   return f
 
+filetypes = {
+  "fileid" : sq.int,
+  "parentid" : sq.int,
+  "name" : sq.str(512),
+  "mimeType" : sq.str(255),
+  "other_meta" : sq.str(1024*4),
+  "userid" : sq.int,
+  "diskpath" : sq.str(512)
+}
 def update_file(fileid, meta):
   f = fetch_file(fileid)
   
@@ -96,6 +125,23 @@ def update_file(fileid, meta):
   
   f["other_meta"] = json.dumps(other_meta)
   print(f)
+  
+  types = []
+  cols = []
+  values = []
+  
+  for i,k in enumerate(f):
+    types.push(filetypes[k])
+    cols.push(k)
+    values.push(f[k])
+  
+  try:
+    qstr = sql_update("filedata", cols, values, types, ["fileid"], [sq.int], [fileid])
+  except SQLParamError:
+    do_param_error(str(f))
+    raise SQLParamError("file update error")
+  
+  """
   qstr = "UPDATE filedata SET "
   for i,k in enumerate(f):
     val = estr(f[k])
@@ -104,6 +150,7 @@ def update_file(fileid, meta):
     qstr += "%s=%s"%(k, val)
     
   qstr += " WHERE fileid=%d"%fileid
+  """
   
   cur.execute(qstr)
   con.commit()
@@ -147,10 +194,16 @@ def resolve_path(path):
   print("\n\n", cs)
   for i, c in enumerate(cs):
     c = c.strip()
-    print(c)
-    qstr = "SELECT fileid FROM filedata WHERE"
-    qstr += " parentid="+estr(parentid) + " AND"
-    qstr += " name="+estr(c)
+    
+    types  = [sq.int,     sq.str(512)]
+    cols   = ["parentid", "name"     ]
+    values = [parentid,   c          ]
+    
+    try:
+      qstr = sql_selectall("filedata", cols, values, types)
+    except SQLParamError:
+      do_param_error("resolve_path: \"%s\"" % path)
+      raise SQLParamError
     
     cur.execute(qstr);
     ret = cur.fetchone()
@@ -202,9 +255,21 @@ class FileAPI_DirList:
     if folderid == None:
       serv.send_error(400)
     
+    types  = [sq.int  ,  sq.int   ]
+    cols   = ["userid", "parentid"]
+    values = [userid  , folderid  ]
+    
+    try:
+      qstr = sql_selectall("filedata", cols, values, types)
+    except SQLParamError:
+      do_param_error("dirlist")
+      serv.send_error(400)
+    
+    """
     qstr = "SELECT name,fileid,mimeType FROM filedata "
     qstr += "WHERE userid="+estr(userid) + " AND "
     qstr += "parentid="+estr(folderid)
+    """
     
     cur, con = mysql_connect()
     cur.execute(qstr)
@@ -315,7 +380,15 @@ class UploadStatus:
   
   def from_sql(self, utoken):
     cur, con = mysql_connect()
-    qstr = "SELECT * FROM uploadtokens WHERE tokenid="+estr(utoken)
+    
+    try:
+      qstr = sql_selectall("uploadtokens", ["tokenid"], [utoken], [sq.token])
+    except SQLParamError:
+      do_param_error("UploadToken.from_sql")
+      raise SQLParamError()
+    
+    #qstr = "SELECT * FROM uploadtokens WHERE tokenid="+estr(utoken)
+    
     cur.execute(qstr)
     ret = cur.fetchone()
     
@@ -334,10 +407,42 @@ class UploadStatus:
     self.expiration = ret["expiration"]
     self.size = ret["size"]
     self.cur = ret["cur"]
+  
+  def toJSON(self):
+    obj = {}
+    for k in this.__dict__:
+      val = getattr(self, k)
+      if type(val) in [types.MethodType, types.FunctionType]: continue
+      
+      obj[k] = getattr(self, k)
+      
+    return obj
     
   def commit(self):
     cur, con = mysql_connect()
     
+    dnow = datetime.datetime.now()
+    dend = datetime.datetime.now()+datetime.timedelta(days=1)
+    
+    types   = [sq.token,   sq.path,       sq.datetime, sq.int     ]
+    cols    = ["tokenid",  "path",        "time",      "fileid"   ]
+    values  = [self.token, self.path,     dnow,        self.fileid]
+    
+    types  += [sq.str(100), sq.path,       sq.int,      sq.int       ]
+    cols   += ["name",      "realpath",    "userid",    "permissions"]
+    values += [self.name,   self.realpath, self.userid, 0            ]
+    
+    types  += [sq.datetime,  sq.int,    sq.int  ]
+    cols   += ["expiration", "size",    "cur"   ]
+    values += [dend,         self.size, self.cur]
+    
+    try:
+      qstr = sql_insertinto("uploadtokens", cols, values, types)
+    except SQLParamError:
+      do_param_error(json.dumps(self));
+      raise SQLParamError("upload token error; see error.log for details")
+      
+    """
     qstr = "INSERT INTO uploadtokens (tokenid,path,time,fileid,"
     qstr += "name,realpath,userid,permissions,expiration,size,cur) VALUES"
     qstr += "(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)" % (
@@ -353,6 +458,7 @@ class UploadStatus:
       estr(self.size),
       estr(self.cur),
     )
+    #"""
     
     cur.execute(qstr)
     con.commit()
@@ -460,9 +566,18 @@ class FileAPI_UploadStart:
     realpath = ustatus.realpath
     cur, con = mysql_connect()
     
+    try:
+      qstr = sql_update("filedata", ["diskpath"], [realpath], [sq.path], ["fileid"], [fileid], [sq.int])
+    except SQLParamError:
+      do_param_error("upload start")
+      serv.send_error(401)
+    
+    """
     qstr = "UPDATE filedata SET "
     qstr += "diskpath=%s"%estr(realpath)    
     qstr += " WHERE fileid=%d"%fileid
+    #"""
+    
     cur.execute(qstr)
     con.commit()
     

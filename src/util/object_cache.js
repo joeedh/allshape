@@ -64,12 +64,14 @@ function _cache_copy_object(obj) {
 
 var copy_object_deep = _cache_copy_object;
 
-class CacheCycle extends Array {
+var _cache_id_gen = 1;
+class CacheCycle extends GArray {
   constructor(obj, tot) {
     Array.call(this, tot);
     
     for (var i=0; i<tot; i++) {
       this[i] = _cache_copy_object(obj);
+      this[i]._cache_id = _cache_id_gen++;
     }
     
     this.cur = 0;
@@ -89,8 +91,23 @@ class ObjectCache {
   constructor() {
     this.cycles = {};
     this.arrays = {};
+    this.idmap = {};
   }
  
+  cache_remove(obj) {
+    if (obj == undefined || !("_cache_id" in obj)) {
+      console.trace();
+      console.log("WARNING: non-cached object ", obj, ", passed to ObjectCache.cache_remove");
+      return;
+    }
+    
+    var cycle = this.cycles[obj._cache_id];
+    cycle.remove(obj);
+    
+    //delete cache reference
+    delete obj._cache_id;
+  }
+  
   //fetches a cached  copy of templ.
   //note: you must pass the same templ
   //object each time to get the right
@@ -101,6 +118,11 @@ class ObjectCache {
     
     if (!(id in this.cycles)) {
       this.cycles[id] = new CacheCycle(templ, tot);
+      var c = this.cycles[id];
+      
+      for (var i=0; i<c.length; i++) {
+        this.idmap[c[i]._cache_id] = c;
+      }
     }
     
     if (templ._c_id == undefined)
@@ -120,14 +142,30 @@ class ObjectCache {
         cachesize : Size of obj cache
     }
   */
+  
+  is_cache_obj(obj) {
+    return "_cache_id" in obj;
+  }
+  
   fetch(descriptor) {
     var d = descriptor;
+    if (d.cachesize == undefined)
+      d.cachesize = CACHE_CYCLE_SIZE;
     
     var obj = this.raw_fetch(d.obj, d.cachesize);
     if (d.init != undefined)
       d.init(obj);
     
     return obj;
+  }
+  
+  getarr() {
+    var arr = this.array(arguments.length);
+    for (var i=0; i<arguments.length; i++) {
+      arr[i] = arguments[i];
+    }
+    
+    return arr;
   }
   
   array(int len) {
@@ -150,7 +188,7 @@ var objcache = new ObjectCache()
 var _itempl = {done : false, value : undefined};
 function cached_iret() {
   //XXX
-  return {done : false, value : undefined};
+  //return {done : false, value : undefined};
   
   var ret = objcache.raw_fetch(_itempl);
   

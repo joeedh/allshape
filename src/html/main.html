@@ -697,7 +697,9 @@ body, html {
 <script id="2d_text_vshader" type="x-shader/x-vertex">
     precision mediump float;
     uniform vec4 uColor;
-
+    uniform vec3 uLoc;
+    uniform vec3 uSize;
+    
     attribute vec2 vPosition;
     attribute vec2 vTexCoord;
     
@@ -705,12 +707,13 @@ body, html {
     varying vec2 g_TexCoord;
     void main()
     {
-       gl_Position = vec4(vPosition[0], vPosition[1], 0.0, 1.0);
+       gl_Position = vec4(vPosition[0]*uSize[0]+uLoc[0], vPosition[1]*uSize[1]+uLoc[1], uLoc[2], 1.0);
 
        g_TexCoord = vTexCoord;
        g_Color = uColor;
     }
 </script>
+
 <script id="2d_text_fshader" type="x-shader/x-fragment">
     precision mediump float;
     
@@ -1297,6 +1300,7 @@ function toJSON_intern (ob, tlevel) {
         // Make sure the canvas is sized correctly.
         reshape(gl);
         
+        var canvas;
         g.canvas = canvas = document.getElementById('example');
 		
         if (g != undefined && g.screen != undefined) {
@@ -1314,6 +1318,7 @@ function toJSON_intern (ob, tlevel) {
 
     function start()
     {
+        var canvas;
         var c = canvas = document.getElementById("example");
         
         document.onselectstart=new Function ("return false")  

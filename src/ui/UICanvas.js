@@ -27,9 +27,9 @@ class TriList {
     this.ssize = undefined : Array<float>;
     this.gl_spos = undefined : Array<float>;
     this.gl_ssize = undefined : Array<float>;
-    this.viewport = canvas.viewport;
+    this.viewport = canvas != undefined ? canvas.viewport : undefined;
   }
-  
+
   add_tri(Vector3 v1, Vector3 v2, Vector3 v3, 
                           Array<float> c1, Array<float> c2, Array<float> c3,
                           Array<float> t1, Array<float> t2, Array<float> t3) 
@@ -59,8 +59,10 @@ class TriList {
     cs.push(c3[0]); cs.push(c3[1]); cs.push(c3[2]); cs.push(c3[3]);
     
     if (this.use_tex) {
-      if (t1 == undefined)
-        t1 = t2 = t3 = [0, 0]
+      if (t1 == undefined) {
+        static zero = [0, 0];
+        t1 = t2 = t3 = zero
+      }
       
       var ts = self.texcos
       ts.push(t1[0]); ts.push(t1[1]); ts.push(t2[0]); ts.push(t2[1]);
@@ -97,7 +99,7 @@ class TriList {
     if (v1.length == 2) v1.push(0);
     if (v2.length == 2) v2.push(0);
     
-    this.line_strip([[v1, v2]], [[c1, c2]], undefined, width);
+    this.line_strip(objcache.getarr(objcache.getarr(v1, v2), objcache.getarr(c1, c2)), undefined, width);
   }
   
   line_strip(lines, colors, texcos, width=2.0, half=false) {//width, width are optional
@@ -184,7 +186,7 @@ class TriList {
         if (!half)
           this.add_quad(v0, v1, v2, v3, c1, c2, c3, c4, texcos[i][0], 
                       texcos[i][1], texcos[i][0], texcos[i][1]);
-        this.add_quad(v1, v0, v3.sub(n1), v2.sub(n2), c2, c1, c3, c4, texcos[i][0], 
+          this.add_quad(v1, v0, v3.sub(n1), v2.sub(n2), c2, c1, c3, c4, texcos[i][0], 
                       texcos[i][1], texcos[i][0], texcos[i][1]);
       } else {
         if (!half)
@@ -254,7 +256,7 @@ class TriList {
   }
   
   on_draw(gl) {
-    if (this.recalc) {
+    if (this.recalc || (this.tdrawbuf != undefined && this.tdrawbuf.is_dead)) {
       this.gen_buffers(gl);
     }
     
@@ -310,44 +312,76 @@ class TriList {
   }
 }
 
+/*
+var MAX_TRILIST_CACHE = 512;
+var _trilist_frame_counter = 0;
+var _trilist_template = {obj : new TriList(undefined, undefined), cachesize : MAX_TRILIST_CACHE};
+
+function _reset_trilist_frame_counter() {
+  _trilist_frame_counter = 0;
+}
+
+function _new_trilist(View3DHandler view3d, UICanvas canvas) {
+  if (_trilist_frame_counter = 0 >= MAX_TRILIST_CACHE) {
+    return new TriList(view3d, canvas);
+  } else {
+    var list = objcache.fetch(_trilist_template)
+    TriList.call(list, view3d, canvas);
+  }
+}
+
+function _save_trilist(TriList trilist) {
+  if (objcache.is_cache_obj(trilist)) {
+    objcache.cache_remove(trilist);
+  }
+}
+*/
+
 class TextDraw {
-  constructor(pos, text, color, view3d, mat, spos, ssize, viewport, size) {
+  constructor(pos, text, color, view3d, spos, ssize, viewport, size) {
     this.text = text;
-    this.pos = pos;
+    this.pos = [pos[0], pos[1], pos[2]];
     this.color = color;
     this.view3d = view3d
-    this.transmat = new Matrix4(mat)
     this.tdrawbuf = undefined : TextDrawBuffer;
     this.spos = spos;
     this.ssize = ssize;
     this.viewport = viewport;
-    this.size = size;
-    this.transmat.translate(pos[0], pos[1], 0.0);
-    this.transmat.scale(size, size, size);
+    this.size = [size[0], size[1], 0];
     this.raster = g_app_state.raster;
   }
   
   destroy() {
+    /*don't destroy the gl buffers here, since I'm
+      now caching them*/
+    /*
     if (this.tdrawbuf != undefined)
       this.tdrawbuf.destroy();
     this.tdrawbuf = undefined;
+    */
+  }
+  
+  gen_buffers(gl) {
+    this.tdrawbuf = this.raster.font.gen_text_buffers(gl, this.text, this.color, this.viewport);
+    return this.tdrawbuf;
   }
   
   on_draw(gl) {
+    static identitymat = new Matrix4();
+    
     gl.disableVertexAttribArray(4);
     if (this.tdrawbuf == undefined)
-      this.tdrawbuf = this.raster.font.gen_text_buffers(gl, 0, 0, this.text, this.color, this.transmat, this.viewport);
+      this.gen_buffers(gl);
     
-    var spos, ssize;
-    
+    var spos, ssize;  
     if (this.ssize != undefined) {
-        spos = new Vector3([this.spos[0], this.spos[1], 0]);
-        ssize = new Vector3([this.ssize[0], this.ssize[1], 0]);
+        spos = objcache.getarr(this.spos[0], this.spos[1], 0);
+        ssize = objcache.getarr(this.ssize[0], this.ssize[1], 0);
         
         g_app_state.raster.push_scissor(spos, ssize);
     }
     
-    this.tdrawbuf.on_draw(gl);
+    this.tdrawbuf.on_draw(gl, this.pos, this.size);
     
     if (this.ssize != undefined) {
       g_app_state.raster.pop_scissor();
@@ -395,6 +429,10 @@ class UICanvas {
     this.view3d = view3d;
     this.trilist.view3d = view3d
     
+    this.textcache = {};
+    this.textcachelen = 0;
+    this.max_textcache = 64;
+
     this.trans_stack = []
     this.transmat = new Matrix4()
     
@@ -518,10 +556,7 @@ class UICanvas {
       this.oldcache.remove(item);
   }
 
-  textsize(text, size) {
-    if (size == undefined)
-      size = default_ui_font_size;
-    
+  textsize(text, size=default_ui_font_size) {
     var box = this.raster.font.calcsize(text);
     return [box[0]*size, box[1]*size];
   }
@@ -874,11 +909,28 @@ class UICanvas {
     
     return this.trilist
   }
+  
+  on_resize(newsize, oldsize) {
+    //all cache entries with old size are now bad
+    for (var k in this.textcache) {
+      if (!this.textcache.hasOwnProperty(k)) continue;
+      this.textcache[k].destroy();
+    }
 
+    this.textcache = {};
+    this.textcachelen = 0;
+    
+    //clear entire cache
+    this.reset();
+    this.reset();
+  }
+  
   text(Array<float> pos, String text, Array<float> color, Number size, Array<float> scissor_pos, Array<float> scissor_size)
   { 
+    static loc = new Vector3();
+    
     if (size == undefined) {
-      size = default_ui_font_size;
+      size = objcache.getarr(default_ui_font_size, default_ui_font_size, default_ui_font_size);
     }
     
     if (color == undefined) {
@@ -897,7 +949,54 @@ class UICanvas {
       scissor_pos.multVecMatrix(this.transmat);
     }
     
-    var textdraw = new TextDraw(pos, text, color, this.view3d, this.transmat, scissor_pos, scissor_size, this.viewport, size);
+    
+    loc[0] = 0; loc[1] = 0; loc[2] = 0;
+    loc.multVecMatrix(this.transmat);
+    loc[0] += pos[0]
+    loc[1] += pos[1]
+    
+    //yes, raster is supposed to be a nasty global
+    var port = g_app_state.raster.viewport
+    var sx = port[1][0] - port[0][0]
+    var sy = port[1][1] - port[0][1]
+    
+    loc[0] = (Math.floor(loc[0])/sx)*2.0; //*2.0-1.0;
+    loc[1] = (Math.floor(loc[1])/sy)*2.0; //*2.0-1.0;
+    
+    var textdraw = new TextDraw(loc, text, color, this.view3d, scissor_pos, scissor_size, this.viewport, size);
+    var hash = text.toString() + ">>" + this.viewport.toString()
+    
+    if (!(hash in this.textcache)) {
+      if (this.textcachelen > this.max_textcache) {
+        var keys = Object.getOwnPropertyNames(this.textcache)
+        for (i=0; i<keys.length; i++) {
+          var k = keys[i];
+          
+          this.textcache[k].destroy();
+          var users = this.textcache[k].users;
+          
+          //possible evil!
+          for (var j=0; j<users.length; j++) {
+            users[j].recalc = true;
+            users[j].tdrawbuf = undefined;
+          }
+          delete this.textcache[k];
+          this.textcachelen--;
+          
+          //amortize cache destruction calls
+          if (this.textcachelen < this.max_textcache/3)
+            break;
+        }
+      }
+      
+      this.textcache[hash] = textdraw.gen_buffers(g_app_state.gl);
+      this.textcachelen++;
+    } else {
+      textdraw.tdrawbuf = this.textcache[hash];
+    }
+    
+    this.textcache[hash].users.push(textdraw);
+    
     if (this.drawlists[this.drawlists.length-1] == this.trilist) {
       this.drawlists.push(textdraw);
       
@@ -914,5 +1013,7 @@ class UICanvas {
         this.uncached.push(textdraw);
       }
     }
+    
+    return loc;
   }
 }

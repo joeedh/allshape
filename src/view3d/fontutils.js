@@ -64,10 +64,10 @@ function Font(WebGLRenderingContext gl, RasterState raster) {
     var y = 0;
     for (var i=0; i<totline; i++) {
       var bound = this.calc_string(lines[i]);
-      mm.minmax([bound[0][0], bound[1][0]+y]);
-      mm.minmax([bound[0][1], bound[1][1]+y]);
-      mm.minmax([bound[0][0], bound[1][1]+y]);
-      mm.minmax([bound[0][1], bound[1][0]+y]);
+      mm.minmax(objcache.getarr(bound[0][0], bound[1][0]+y));
+      mm.minmax(objcache.getarr(bound[0][1], bound[1][1]+y));
+      mm.minmax(objcache.getarr(bound[0][0], bound[1][1]+y));
+      mm.minmax(objcache.getarr(bound[0][1], bound[1][0]+y));
       
       y += this.linehgt;
     }
@@ -148,11 +148,13 @@ function Font(WebGLRenderingContext gl, RasterState raster) {
     var ret = _cs_rt[_cs_cur_rt];
     _cs_cur_rt = (_cs_cur_rt+1) % _cs_rt.length;
     
+    //[[minx, maxx], [miny, maxy]].  that's stupid of me.
     ret[0][0] = minx; ret[0][1] = Math.max(maxx, x);
     ret[1][0] = miny; ret[1][1] = maxy;
     return ret;
   };
   
+  //slow!
   this.draw_text = function(WebGLRenderingContext gl, int x, 
                             int y, String text, Array<float> clr,
                             Matrix4 mat) 
@@ -166,13 +168,16 @@ function Font(WebGLRenderingContext gl, RasterState raster) {
     gl.disableVertexAttribArray(2);
     gl.disableVertexAttribArray(3);
     
+    var shader = this.shader;
     var program = this.shader.program;
     gl.useProgram(program);
     
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, this.tex);
-    gl.uniform1i(gl.getUniformLocation(program, "sampler2d"), 0);
-    gl.uniform4fv(gl.getUniformLocation(program, "uColor"), clr);
+    
+    gl.uniform1i(shader.uniformloc(gl, "sampler2d"), 0);
+    gl.uniform4fv(shader.uniformloc(gl, "uColor"), clr);
+    gl.uniform3fv(shader.uniformloc(gl, "uLocation"), [0, 0, 0]);
     
     verts = new Array<float>();
     texcos = new Array<float>();
@@ -286,9 +291,8 @@ function Font(WebGLRenderingContext gl, RasterState raster) {
     return ret;
   }
   
-  this.gen_text_buffers = function(WebGLRenderingContext gl, int x, 
-                            int y, String text, Array<float> clr,
-                            Matrix4 mat, Array<float> viewport) 
+  this.gen_text_buffers = function(WebGLRenderingContext gl, String text, 
+                                   Array<float> clr, Array<float> viewport) 
   { //clr is optional, defaults to default_font_color
     var ret = this.split_text(text);
     var lines = ret[0]; totline = ret[1];
@@ -296,24 +300,9 @@ function Font(WebGLRenderingContext gl, RasterState raster) {
     if (clr == undefined) 
       clr = default_font_color;
     
-    if (mat != undefined)
-      mat.scale(1, 1, 1);
-    x = Math.floor(x);
-    y = Math.floor(y);
-    
-    gl.disableVertexAttribArray(2);
-    gl.disableVertexAttribArray(3);
-    
-    var program = this.shader.program;
-    gl.useProgram(program);
-    
-    gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, this.tex);
-    gl.uniform1i(gl.getUniformLocation(program, "sampler2d"), 0);
-    gl.uniform4fv(gl.getUniformLocation(program, "uColor"), clr);
-    
     verts = new Array<float>();
     texcos = new Array<float>();
+    var x=0, y=0;
     
     function add_rect(arr, x1, y1, w, h) {
       var x2 = x1 + w;
@@ -332,20 +321,33 @@ function Font(WebGLRenderingContext gl, RasterState raster) {
     var finfo = this.finfo;
     
     var v3 = new Vector3();
+    
     function transform_verts(Array<float> verts) {
+      static ret = [undefined, undefined, undefined, undefined];
+      
+      ret[0] = 1e8; ret[1] = 1e8; ret[2] = -1e8; ret[3] = -1e8;
+      
       for (var i=0; i<verts.length/2; i++) {
-        v3.load([verts[i*2], verts[i*2+1], 0.0])
-        if (mat != undefined) {
-          v3.multVecMatrix(mat);
-          v3[0] = Math.floor(v3[0]);
-          v3[1] = Math.floor(v3[1]);
-          
-          verts[i*2] = v3[0];
-          verts[i*2+1] = v3[1];
-        }
         verts[i*2] = (verts[i*2]/viewport[1][0])*2.0 - 1.0;
         verts[i*2+1] = (verts[i*2+1]/viewport[1][1])*2.0 - 1.0;
+        
+        ret[0] = Math.min(ret[0], verts[i*2])
+        ret[1] = Math.min(ret[1], verts[i*2+1])
+        ret[2] = Math.max(ret[2], verts[i*2])
+        ret[3] = Math.max(ret[3], verts[i*2+1])
       }
+      
+      ret[0] = (ret[0]);
+      ret[1] = (ret[1]);
+      ret[3] = 0.0;
+      
+      for (var i=0; i<verts.length/2; i++) {
+        //make sure origin is at center of text
+        verts[i*2] -= ret[0];
+        verts[i*2+1] -= ret[1];
+      }
+      
+      return ret; //normalized display coordinates
     }
     
     function transform_texcos(Array<float> texcos) {
@@ -365,10 +367,11 @@ function Font(WebGLRenderingContext gl, RasterState raster) {
     
     for (var j=totline-1; j>=0; j--) {
       var ret = this.calc_string(lines[j], add_char);
-      y += this.linehgt;
+      y += ret[1][1] - ret[1][0];
+      x = Math.max(ret[0][1]);
     }
     
-    transform_verts(verts);
+    var cent = transform_verts(verts);
     transform_texcos(texcos);
     
     verts = new Float32Array(verts);
@@ -385,61 +388,72 @@ function Font(WebGLRenderingContext gl, RasterState raster) {
     gl.bindBuffer(gl.ARRAY_BUFFER, tbuf);
     gl.bufferData(gl.ARRAY_BUFFER, texcos, gl.STATIC_DRAW);
     
-    return new TextDrawBuffer(vbuf, tbuf, verts.length, clr, gl, this.shader, this.tex);
+    return new TextDrawBuffer(vbuf, tbuf, verts.length, clr, gl, this.shader, this.tex, cent);
   }
 }
 
-function TextDrawBuffer(vbuf, tbuf, vlen, clr, gl, shader, tex) {
-  this.vbuf = vbuf;
-  this.tbuf = tbuf;
-  this.vlen = vlen;
-  this.clr = clr;
-  this.gl = gl;
-  this.tex = tex;
-  this.shader = shader;
-}
+class TextDrawBuffer {
+  constructor(vbuf, tbuf, vlen, clr, gl, shader, tex, origin) {
+    this.vbuf = vbuf;
+    this.tbuf = tbuf;
+    this.is_dead = false;
+    this.origin = [origin[0], origin[1], 0.0];
+    this.vlen = vlen;
+    this.clr = new Float32Array(clr);
+    this.gl = gl;
+    this.tex = tex;
+    this.shader = shader;
+    this.users = []; //XXX possible evil!
+  }
 
-create_prototype(TextDrawBuffer);
-
-TextDrawBuffer.prototype.on_draw = function(gl) {
-  gl.enable(gl.BLEND);
-  gl_blend_func(gl);
-  
-  //gl.blendEquation(gl.BLEND_EQUATION);
-  //gl.blendEquationSeparate(gl.BLEND_EQUATION, gl.BLEND_EQUATION);
-
-  var program = this.shader.program;
-  gl.useProgram(program);
-  
-  gl.activeTexture(gl.TEXTURE0);
-  gl.bindTexture(gl.TEXTURE_2D, this.tex);
-  
-  gl.uniform1i(gl.getUniformLocation(program, "sampler2d"), 0);
-  gl.uniform4fv(gl.getUniformLocation(program, "uColor"), new Float32Array(this.clr));
-  
-  gl.disableVertexAttribArray(2);
-  gl.disableVertexAttribArray(3);
-  
-  gl.enableVertexAttribArray(0);
-  gl.enableVertexAttribArray(1);
+  on_draw(gl, loc=[0,0,0], size=[1,1,1]) {
+    gl.enable(gl.BLEND);
+    gl_blend_func(gl);
     
-  gl.bindBuffer(gl.ARRAY_BUFFER, this.vbuf);
-  gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
-  
-  gl.bindBuffer(gl.ARRAY_BUFFER, this.tbuf);
-  gl.vertexAttribPointer(1, 2, gl.FLOAT, false, 0, 0);
+    //gl.blendEquation(gl.BLEND_EQUATION);
+    //gl.blendEquationSeparate(gl.BLEND_EQUATION, gl.BLEND_EQUATION);
+    
+    var shader = this.shader;
+    var program = shader.program;
+    gl.useProgram(program);
+    
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, this.tex);
+    
+    var origin = this.origin;
+    var l = objcache.getarr(loc[0]+origin[0], loc[1]+origin[1], loc[2]+origin[2]);
+    
+    gl.uniform1i(shader.uniformloc(gl, "sampler2d"), 0);
+    gl.uniform4fv(shader.uniformloc(gl, "uColor"), this.clr);
+    gl.uniform3fv(shader.uniformloc(gl, "uLoc"), l);
+    gl.uniform3fv(shader.uniformloc(gl, "uSize"), size);
+    
+    gl.disableVertexAttribArray(2);
+    gl.disableVertexAttribArray(3);
+    
+    gl.enableVertexAttribArray(0);
+    gl.enableVertexAttribArray(1);
+      
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.vbuf);
+    gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+    
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.tbuf);
+    gl.vertexAttribPointer(1, 2, gl.FLOAT, false, 0, 0);
 
-  gl.disable(gl.DEPTH_TEST);
-  
-  gl.drawArrays(gl.TRIANGLES, 0, this.vlen/2);
-  
-  gl.disableVertexAttribArray(0);
-  gl.disableVertexAttribArray(1);
-}
+    gl.disable(gl.DEPTH_TEST);
+    
+    gl.drawArrays(gl.TRIANGLES, 0, this.vlen/2);
+    
+    gl.disableVertexAttribArray(0);
+    gl.disableVertexAttribArray(1);
+  }
 
-TextDrawBuffer.prototype.destroy = function() {
-  var gl = this.gl;
-  
-  gl.deleteBuffer(this.vbuf);
-  gl.deleteBuffer(this.tbuf);
+  destroy() {
+    var gl = this.gl;
+    
+    this.is_dead = true;
+    
+    gl.deleteBuffer(this.vbuf);
+    gl.deleteBuffer(this.tbuf);
+  }
 }

@@ -107,7 +107,9 @@ class UIElement extends EventHandler {
     
     //console.log("f: " + f.toString());
     
-    var l1 = [], l2 = [];
+    var alen = color.length;
+    
+    var l1 = objcache.array(alen), l2 = objcache.array(alen);
     if (typeof(color[0]) == "number") {
       l1.push(color);
     } else {
@@ -131,7 +133,7 @@ class UIElement extends EventHandler {
       l2.push(l2[l2.length-1]);
     }
     
-    var l3 = [];
+    var l3 = objcache.array(l1.length);
     for (var i=0; i<l1.length; i++) {
       var clr = new Vector4(l1[i]);
       clr.interp(l2[i], f);
@@ -150,11 +152,15 @@ class UIElement extends EventHandler {
   }
 
   get_abs_pos() {
-    var pos = [this.pos[0], this.pos[1]];
+    static pos = [0, 0];
+    
+    pos[0] = this.pos[0];
+    pos[1] = this.pos[1];
     
     var p = this.parent;
     while (p != undefined) {
-      pos = [pos[0]+p.pos[0], pos[1]+p.pos[1]]
+      pos[0] += p.pos[0]
+      pos[1] += p.pos[1]
       p = p.parent;
     }
     
@@ -271,7 +277,9 @@ class UIElement extends EventHandler {
   update_data(Context ctx) { }
   get_min_size(UICanvas canvas, Boolean isvertical) 
   {
-    return [1, 1];
+    static ret = [1, 1];
+    
+    return ret;
   }
   build_draw(UICanvas canvas, Boolean isvertical) { }
   on_active() {}
