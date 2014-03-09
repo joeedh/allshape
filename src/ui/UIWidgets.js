@@ -52,7 +52,7 @@ class UIButton extends UIElement {
     var tsize = canvas.textsize(this.text);
     
     if (tsize[0] < this.size[0])
-      canvas.text([(this.size[0]-tsize[0])*0.25, (this.size[1]-tsize[1])*0.25], this.text, uicolors["BoxText"]);
+      canvas.text([(this.size[0]-tsize[0])*0.5, (this.size[1]-tsize[1])*0.25], this.text, uicolors["BoxText"]);
     else
       canvas.text([5, (this.size[1]-tsize[1])*0.25], this.text, uicolors["BoxText"]);
     

@@ -18,7 +18,7 @@ var PackFlags = {
 var CanvasFlags = {NOT_ROOT : 1, NO_PROPEGATE : 2}
 
 var _ui_element_id_gen = 1;
-var default_ui_font_size = 0.75;
+var default_ui_font_size = 0.7;
 function open_android_keyboard() {
    var canvas = document.getElementById("example")
    canvas.contentEditable = true

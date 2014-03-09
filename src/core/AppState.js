@@ -650,6 +650,34 @@ class AppState {
   }
 }
 
+class SavedContext {
+  constructor(ctx=undefined) {
+    if (ctx != undefined) {
+      this.scene = ctx.scene ? new DataRef(ctx.scene) : undefined;
+      this.object = ctx.object ? new DataRef(ctx.object) : undefined;
+      this.mesh = ctx.mesh ? new DataRef(ctx.mesh) : undefined;
+    } else {
+      this.scene = undefined; this.object = undefined; this.mesh = undefined;
+    }
+  }
+  
+  static fromSTRUCT(reader) {
+    var sctx = new SavedContext();
+    reader(sctx);
+    
+    return sctx;
+  }
+}
+
+SavedContext.STRUCT = """
+  SavedContext {
+    scene : dataref(DataBlock);
+    object : dataref(DataBlock);
+    mesh : dataref(DataBlock);
+  }
+"""
+
+
 /*
   need to split context into two structs: a serializable ToolContext,
   and a UI/View3D Context.
@@ -820,6 +848,8 @@ class ToolStack {
     function update_dataprop(d) {
       this2.undo();
       this2.redo();
+      var tool = this.undostack[this.undocur-1]; //XXX this MUST be correct
+      tool.saved_context = new SavedContext(new Context());
     }
     
     var prop = new StringProperty(tool.uiname, tool.uiname, tool.uiname, "Tool Name");
@@ -909,11 +939,28 @@ class ToolStack {
       if (!(tool.undoflag & UndoFlags.IGNORE_UNDO)) {
         tool.undo_pre(ctx);
       }
+      
       tool.exec(ctx);
+      tool.saved_context = new SavedContext(ctx);
     }
     
     if (!(tool.undoflag & UndoFlags.IGNORE_UNDO)) { 
       this.rebuild_last_tool(tool);
     }
   }
+  
+  static fromSTRUCT(reader) {
+    var ts = new ToolStack(g_app_state);
+    reader(ts);
+    
+    ts.undostack = new GArray(ts.undostack);
+    
+    return ts;
+  }
 }
+
+ToolStack.STRUCT = """
+  ToolStack {
+    undostack : array(ToolOp) | obj.undostack.slice(0, obj.undocur);
+  }
+"""

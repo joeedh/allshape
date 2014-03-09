@@ -68,7 +68,7 @@ class ObjectEditor extends View3DEditor {
     var ctx = new Context();
     var row = new RowFrame(ctx);
     
-    row.size = [115, view3d.size[1]-50]
+    row.size = [148, view3d.size[1]-50]
     row.draw_background = true
     row.rcorner = 100.0
     row.pos = [0, 28]

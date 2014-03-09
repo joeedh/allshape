@@ -746,7 +746,13 @@ class View3DHandler extends Area {
     k.add(new KeyHandler("K", [], "Debug Test"), new FuncKeyHandler(function (ctx) {
       //test compression
       console.log("file compression test");
-      g_app_state.load_user_file_new(g_app_state.create_user_file_new(undefined, true, true));
+      //g_app_state.load_user_file_new(g_app_state.create_user_file_new(undefined, true, true));
+      var d = [];
+      istruct.write_object(d, g_app_state.toolstack);
+      d = Iuppiter.compress(d)
+      
+      console.log("toolstack serialized: ", d, d.length);
+      
       //new Context().scene.graph.exec();
     }));
     
