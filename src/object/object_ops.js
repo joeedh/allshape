@@ -2,10 +2,7 @@
 
 class ObjectDuplicateOp extends ToolOp {
   constructor(obs) {
-    ToolOp.call(this);
-    
-    this.name = "object_duplicate";
-    this.uiname = "Object Duplicate"
+    ToolOp.call(this, "object_duplicate", "Object Duplicate");
     
     this.is_modal = false;
     
@@ -15,7 +12,7 @@ class ObjectDuplicateOp extends ToolOp {
     }
     
     this.outputs = {
-      OBJECTS :  new RefListProperty(obs, DataTypes.OBJECT, "objects", "Objects", "Duplicated objects")
+      OBJECTS :  new RefListProperty(undefined, DataTypes.OBJECT, "objects", "Objects", "Duplicated objects")
     }
   }
   
@@ -56,8 +53,8 @@ class ObjectDuplicateOp extends ToolOp {
 }
 
 class SelectObjAbstract extends ToolOp {
-  constructor() {
-    ToolOp.call(this);
+  constructor(String apiname, String uiname) {
+    ToolOp.call(this, apiname, uiname);
     this._undo_presel = new GArray();
     this._undo_active = undefined;
   }
@@ -88,8 +85,8 @@ class SelectObjAbstract extends ToolOp {
 
 class SelectObjectOp extends SelectObjAbstract {
   constructor(mode, set_active=true) {
-    SelectObjAbstract.call(this);
-    this.name = "Select";
+    SelectObjAbstract.call(this, "select", "Select");
+    
     this.is_modal = false;
     this.flag = ToolFlags.HIDE_TITLE_IN_LAST_BUTTONS;
     
@@ -146,9 +143,8 @@ class SelectObjectOp extends SelectObjAbstract {
 
 class ToggleSelectObjOp extends SelectObjAbstract {
   constructor(mode="auto") {
-    SelectObjAbstract.call(this);
-    this.name = "Select All";
-
+    SelectObjAbstract.call(this, "select_all", "Select All");
+    
     this.is_modal = false;
     this.flag = ToolFlags.HIDE_TITLE_IN_LAST_BUTTONS;
     

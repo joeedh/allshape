@@ -1,6 +1,6 @@
 class SelectOpAbstract extends ToolOp {
-  constructor() {
-    ToolOp.call(this);
+  constructor(String apiname, String uiname) {
+    ToolOp.call(this, apiname, uiname);
     
     this._undo_presel = [];
   }
@@ -67,9 +67,8 @@ class SelectOpAbstract extends ToolOp {
 
 class SelectOp extends SelectOpAbstract {
   constructor(mode) {
-    SelectOpAbstract.call(this);
+    SelectOpAbstract.call(this, "mesh_select", "Select");
     
-    this.name = "Select"
     this.is_modal = false;
     this.flag = ToolFlags.HIDE_TITLE_IN_LAST_BUTTONS;
     
@@ -125,13 +124,10 @@ class SelectOp extends SelectOpAbstract {
 
 class ToggleSelectAllOp extends SelectOpAbstract {
   constructor(mode) {
-    SelectOpAbstract.call(this);
+    SelectOpAbstract.call(this, "mesh_toggle_select_all", "Select All/None");
     
     if (mode == undefined)
       mode = "auto";
-    
-    this.name = "ToggleSelectAll"
-    this.uiname = "Toggle Select"
     
     this.is_modal = false;
     var selmode_enum = selectmode_enum.copy();
@@ -152,11 +148,13 @@ class ToggleSelectAllOp extends SelectOpAbstract {
     var mode = 0;
     
     var lst;
-    if (ctx.view3d.selectmode == MeshTypes.VERT)
+    var selmode = this.inputs.selmode.get_value();
+    
+    if (selmode == MeshTypes.VERT)
       lst = ctx.mesh.verts;
-    if (ctx.view3d.selectmode == MeshTypes.EDGE)
+    if (selmode == MeshTypes.EDGE)
       lst = ctx.mesh.edges;
-    if (ctx.view3d.selectmode == MeshTypes.FACE)
+    if (selmode == MeshTypes.FACE)
       lst = ctx.mesh.faces;
     
     if (this.inputs.mode.data == "auto") {
@@ -182,9 +180,8 @@ class ToggleSelectAllOp extends SelectOpAbstract {
 
 class EdgeLoopOp extends SelectOpAbstract {
   constructor(mode) {
-    SelectOpAbstract.call(this);
+    SelectOpAbstract.call(this, "mesh_eloop_select", "Loop Select");
     
-    this.name = "Select"
     this.is_modal = false;
     this.flag = ToolFlags.HIDE_TITLE_IN_LAST_BUTTONS;
     
@@ -264,9 +261,8 @@ class EdgeLoopOp extends SelectOpAbstract {
 
 class FaceLoopOp extends SelectOpAbstract {
   constructor(mode) {
-    SelectOpAbstract.call(this);
+    SelectOpAbstract.call(this, "mesh_floop_select", "Face Loop Select);
     
-    this.name = "Select"
     this.is_modal = false;
     this.flag = ToolFlags.HIDE_TITLE_IN_LAST_BUTTONS;
     
@@ -366,9 +362,8 @@ class CircleDraw extends UIElement {
 
 class CircleSelectOp extends SelectOpAbstract {
   constructor(selectmode) {
-    SelectOpAbstract.call(this);
+    SelectOpAbstract.call(this, "mesh_circle_select", "Circle Select");
     
-    this.name = "Select"
     this.is_modal = true;
     this.flag = ToolFlags.HIDE_TITLE_IN_LAST_BUTTONS;
     

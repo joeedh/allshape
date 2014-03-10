@@ -378,7 +378,7 @@ def build_target(files):
             failed_files.append(p[1])
           
       procs = newprocs
-      time.sleep(0.25)
+      time.sleep(0.75)
     
     if len(failed_files) > 0: continue
    
@@ -409,7 +409,7 @@ def build_target(files):
         if failed_ret(ret): #ret in [-1, 65280]:
           failed_files.append(p[1])
     procs = newprocs
-    time.sleep(0.25)
+    time.sleep(0.75)
     
   if len(failed_files) > 0:
     print("build failure\n\n")
@@ -526,7 +526,7 @@ def themain():
   if build_cmd == "loop":
     while 1:
       buildall()
-      time.sleep(0.15);
+      time.sleep(0.75);
   else:
     buildall()
 

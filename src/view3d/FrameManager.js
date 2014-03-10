@@ -307,10 +307,7 @@ ScreenArea.STRUCT = """
 
 class SplitAreasTool extends ToolOp {
   constructor(screen) {
-    ToolOp.call(this);
-    
-    this.name = "AreaSplitTool";
-    this.uiname = "Split Screen";
+    ToolOp.call(this, "area_split_tool", "Split Screen");
 
     this.screen = screen;
     this.canvas = screen.canvas;

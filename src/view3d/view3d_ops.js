@@ -1,12 +1,11 @@
 class ViewRotateOp extends ToolOp {
   constructor() {
-    ToolOp.call(this);
+    ToolOp.call(this, "view3d_orbit", "Orbit");
 
     this.undoflag = UndoFlags.IGNORE_UNDO;
 
     this.transdata = null;
     this.is_modal = true;
-    this.name = "ViewRotate"
 
     this.inputs = {MV1: new Vec3Property(new Vector3(), "mvector1", "mvector1", "mvector1"), 
                    MV2: new Vec3Property(new Vector3(), "mvector2", "mvector2", "mvector2")}
@@ -46,6 +45,8 @@ class ViewRotateOp extends ToolOp {
   }
 
   exec(ctx) {
+    ctx = this.modal_ctx;
+    
     var v1 = new Vector3(this.inputs.MV1.data);
     var v2 = new Vector3(this.inputs.MV2.data);
     
@@ -77,13 +78,12 @@ class ViewRotateOp extends ToolOp {
 
 class ViewPanOp extends ToolOp {
   constructor() {
-    ToolOp.call(this);
+    ToolOp.call(this, "view3d_pan", "Pan");
     
     this.undoflag = UndoFlags.IGNORE_UNDO;
     
     this.transdata = null;
     this.is_modal = true;
-    this.name = "ViewRotate"
 
     this.inputs = {MV1: new Vec3Property(new Vector3(), "mvector1", "mvector1", "mvector1"), 
                    MV2: new Vec3Property(new Vector3(), "mvector2", "mvector2", "mvector2")}
@@ -136,6 +136,8 @@ class ViewPanOp extends ToolOp {
   }
 
   exec(ctx) {
+    ctx = this.modal_ctx;
+    
     var v1 = new Vector3(this.inputs.MV1.data);
     var v2 = new Vector3(this.inputs.MV2.data);
     
@@ -272,11 +274,9 @@ function tprop_to_mprop(mprop, tprop) {
 
 class MeshToolOp extends ToolOp {
   constructor(meshop) {
-    ToolOp.call(this);
+    ToolOp.call(this, meshop.name, meshop.uiname);
     
     this.is_modal = false;
-    this.name = meshop.name;
-    this.uiname = meshop.uiname;
     
     this.meshop = meshop;
     
@@ -314,7 +314,6 @@ class MeshToolOp extends ToolOp {
 
   exec(ctx) {
     tprop_to_mprop(this.meshop.inputs, this.inputs);
-    
     ctx.appstate.jobs.kill_owner_jobs(ctx.mesh);
     
     ctx.mesh.ops.call_op(this.meshop);
@@ -324,14 +323,161 @@ class MeshToolOp extends ToolOp {
   }
 }
 
+class ClickExtrude extends ExtrudeAllOp, ToolOp {
+   constructor(ctx) {
+    ExtrudeAllOp.call(this);
+    
+    this.name = "Click Extrude";
+    this.is_modal = true;
+    this.inputs["transform"] = new TransformProperty(new Matrix4(), "transform", "Transform", "transfrom to apply")
+  }
+  
+  on_mousedown(event) {
+    console.log("click");
+    var ctx = this.modal_ctx;
+    var mpos = new Vector3([ctx.view3d.mpos[0], ctx.view3d.mpos[1], 0.0]);
+    var cent = new Vector3();
+    var totsel = 0;
+    var mesh = ctx.mesh;
+    
+    for (var v in mesh.verts) {
+      if (v.flag & Flags.SELECT) {
+        if (isNaN(v.co[0]) || isNaN(v.co[1]) || isNaN(v.co[2]))
+            continue;
+        totsel++;
+        cent.add(v.co);
+      }
+    }
+    
+    if (totsel == 0) {
+      for (var v in mesh.verts) {
+        if (isNaN(v.co[0]) || isNaN(v.co[1]) || isNaN(v.co[2]))
+          continue;
+        cent.add(v.co);
+        totsel++;
+      }
+      
+      cent.mulScalar(1.0/totsel);
+      
+      var v2 = mesh.make_vert(cent, new Vector3());
+      mesh.verts.select(v2);
+    } else {
+      cent.mulScalar(1.0/totsel);
+    }
+    
+    var projmat = ctx.view3d.drawmats.rendermat;
+    var scent = new Vector3(cent);
+    scent.multVecMatrix(projmat);
+    
+    mpos[0] = (mpos[0]/ctx.view3d.size[0])*2.0 - 1.0;
+    mpos[1] = (mpos[1]/ctx.view3d.size[1])*2.0 - 1.0;
+    mpos[2] = scent[2];
+    
+    var smpos = new Vector3(mpos);
+    smpos[2] = 0.0;
+    
+    var iprojmat = new Matrix4(ctx.view3d.drawmats.rendermat)
+    iprojmat.invert();
+    
+    mpos.multVecMatrix(iprojmat);
+    
+    var off = new Vector3(mpos).sub(cent);
+    var mat = new Matrix4();
+    
+    var soff = new Vector3(cent);
+    soff.multVecMatrix(projmat);
+    soff[2] = 0.0;
+    soff = new Vector3(smpos).sub(soff);
+    soff[2] = 0.0;
+    
+    var n1 = new Vector3(soff);
+    n1.normalize();
+    
+    var cameramat = ctx.view3d.drawmats.cameramat;
+    var origin = new Vector3([cameramat.$matrix.m41, cameramat.$matrix.m42, cameramat.$matrix.m43]);
+    
+    var viewvec = new Vector3(scent);
+    viewvec[2] = 0.0;
+    
+    viewvec.multVecMatrix(iprojmat);
+    viewvec.sub(origin)
+    
+    viewvec.normalize()
+    
+    var tanvec = mesh_find_tangent(mesh, viewvec, n1, projmat);
+    tanvec.normalize();
+    
+    console.log("tanvec: ", tanvec);
+    console.log("offvec: ", soff);
+    console.log("norvec: ", n1);
+    
+    var angle = Math.acos(n1.dot(tanvec));
+    
+    var w = winding(scent, new Vector3(scent).add(tanvec), smpos);
+    
+    console.log("w", w)
+    if (!w)
+      angle = -angle;
+    
+    console.log("angle: ", angle);
+    
+    if (isNaN(angle))
+      angle = 0;
+      
+    var q = new Quat()
+    q.axisAngleToQuat(viewvec, angle);
+    var rmat = q.toMatrix();
+    
+    var rmat = new Matrix4();
+    rmat.rotate(angle, viewvec);
+    
+    mat = new Matrix4()
+    mat.translate(off[0], off[1], off[2]);
+    mat.translate(cent[0], cent[1], cent[2]);
+    mat.multiply(rmat);
+    mat.translate(-cent[0], -cent[1], -cent[2]);
+    
+    this.inputs.transform.set_data(mat);
+    this.exec(this.modal_tctx);
+  }
+  
+  exec(tctx) {
+    var mesh = tctx.mesh;
+    
+    this.inputs.geometry.elements.load_iterator(mesh.ops.gen_flag_iter(MeshTypes.FACE|MeshTypes.VERT|MeshTypes.EDGE, Flags.SELECT));
+    ExtrudeAllOp.prototype.exec.call(this, tctx);
+    
+    var mat = this.inputs.transform.data;
+    
+    for (var v in mesh.verts) {
+      if (!(v.flag & SELECT)) continue;
+      
+      v.co.multVecMatrix(mat);
+    }
+    
+    mesh.api.recalc_normals();
+    mesh.regen_normals();
+    mesh.regen_positions();
+  }
+  
+  on_mouseup(event) {
+    console.log("end modal")
+    this.end_modal();
+  }
+
+
+  can_call(ctx) {
+    return ctx.mesh != undefined;
+  }
+}
+
+/*
 class ClickExtrude extends ToolOp {
   constructor(mode) {
     ToolOp.call(this);
     
     this.name = "Click Extrude"
     this.is_modal = true;
-    
-    var mode_vals = ["add", "subtract"];
     
     this.inputs = {trans: new Vec3Property(new Vector3(), "translation", "translation", "translation"), rot: new Vec4Property(new Vector3(), "rotation", "rotation", "rotation")}
   }
@@ -470,21 +616,20 @@ class ClickExtrude extends ToolOp {
     ctx.mesh.regen_positions();
   }
 }
+*/
 
 class ToggleSubSurfOp extends ToolOp {
   constructor() {
-    ToolOp.call(this);
+    ToolOp.call(this, "subsurf_toggle", "Toggle Subsurf");
     
     this.undoflag = UndoFlags.IGNORE_UNDO;
     
     this.is_modal = false;
-    this.name = "Toggle Subsurf"
-    self.uiname = "Subsurf"
     
     this.inputs = {}                 
     this.outputs = {}
   }
-
+  
   can_call(ctx) {
     return true;
   }

@@ -109,9 +109,7 @@ function file_dialog(mode, ctx, callback)
   
 function FileOpenOp()
 {
-  ToolOp.call(this);
-  this.name = "open_file";
-  this.uiname = "Open";
+  ToolOp.call(this, "open_file", "Open");
   
   this.is_modal = false;
   
@@ -124,12 +122,7 @@ inherit(FileOpenOp, ToolOp);
 
 FileOpenOp.prototype.exec = function(ctx)
 {
-  console.log("File save");
-  
-  var mesh_data = []
-  
-  ctx.mesh.pack(mesh_data);
-  mesh_data = ctx.appstate.create_user_file_new().buffer;
+  console.log("File open");
   
   function error(job, owner, msg) {
     console.log("network error", msg);
@@ -152,14 +145,12 @@ FileOpenOp.prototype.exec = function(ctx)
   }
   
   console.log("File open");
-  file_dialog("OPEN", ctx, open_callback);
+  file_dialog("OPEN", new Context(), open_callback);
 }
   
 function FileSaveAsOp()
 {
-  ToolOp.call(this);
-  this.name = "save_file_as";
-  this.uiname = "Save As";
+  ToolOp.call(this, "save_file_as", "Save As");
   
   this.is_modal = false;
   
@@ -174,11 +165,7 @@ FileSaveAsOp.prototype.exec = function(ctx)
 {
   console.log("File save");
   
-  var mesh_data = []
-  
-  ctx.mesh.pack(mesh_data);
   mesh_data = ctx.appstate.create_user_file_new().buffer;
-  
   function error(job, owner, msg) {
     console.log("network error", msg);
   }
@@ -202,15 +189,13 @@ FileSaveAsOp.prototype.exec = function(ctx)
     call_api(upload_file, {path:path, data:mesh_data}, finish, error, status);
   }
   
-  file_dialog("SAVE", ctx, save_callback);
+  file_dialog("SAVE", new Context(), save_callback);
 }
 
 function FileSaveOp()
 {
-  ToolOp.call(this);
-  this.name = "save_file";
-  this.uiname = "Save";
-  
+  ToolOp.call(this, "save_file", "Save");
+
   this.is_modal = false;
   
   this.undoflag = UndoFlags.IGNORE_UNDO;
@@ -224,9 +209,6 @@ FileSaveOp.prototype.exec = function(ctx)
 {
   console.log("File save");
   
-  var mesh_data = []
-  
-  ctx.mesh.pack(mesh_data);
   mesh_data = ctx.appstate.create_user_file_new().buffer;
   
   function error(job, owner, msg) {
@@ -255,7 +237,7 @@ FileSaveOp.prototype.exec = function(ctx)
   if (g_app_state.filepath != "") {
     save_callback(undefined, g_app_state.filepath);
   } else {
-    file_dialog("SAVE", ctx, save_callback);
+    file_dialog("SAVE", new Context(), save_callback);
   }
 }
 
@@ -287,7 +269,6 @@ function LoginDialog(ctx)
   row.add(this.userbox, PackFlags.INHERIT_WIDTH);
   row.add(this.passbox, PackFlags.INHERIT_WIDTH);
 }
-
 inherit(LoginDialog, PackedDialog);
 
 LoginDialog.prototype.end = function(do_cancel) {

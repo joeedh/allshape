@@ -247,7 +247,7 @@ function InsetRegionsOp(faceiter) {
   this.name = "inset_regions";
   this.inputs = {
     faces: new ElementBufferProperty("faces", MeshTypes.FACE),
-    make_holes: new MeshBoolProperty("use_hole", true, 0)
+    make_holes: new BoolProperty(true, "make_holes", "Make Holes", "")
   }
   
   this.outputs = {

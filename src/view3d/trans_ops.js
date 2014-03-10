@@ -117,17 +117,23 @@ class TransObjectType {
 class TransData {
   //objlist is only valid for objectmode transforms
   constructor(Context ctx, Object obj, Object objlist, int datamode) {
-    this.projmat = new Matrix4(ctx.view3d.drawmats.rendermat);
-    this.iprojmat = new Matrix4(this.projmat);
-    this.iprojmat.invert();
+    if (ctx.constructor == Context) {
+      this.projmat = new Matrix4(ctx.view3d.drawmats.rendermat);
+      this.iprojmat = new Matrix4(this.projmat);
+      this.iprojmat.invert();
+      this.start_mpos = new Vector2(ctx.view3d.mpos);
+      this.start_mpos[0] = this.start_mpos[0]/(ctx.view3d.size[0]/2) - 1.0;
+      this.start_mpos[1] = this.start_mpos[1]/(ctx.view3d.size[1]/2) - 1.0;
+    } else {
+      this.projmat = this.iprojmat = new Matrix4();
+      this.projmat.makeIdentity();
+      this.start_mpos = [0, 0];
+    }
     
     this.length = 0;
     this.datamode = datamode;
     this.center = new Vector3([0, 0, 0]);
     this.ctx = ctx;
-    this.start_mpos = new Vector2(ctx.view3d.mpos);
-    this.start_mpos[0] = this.start_mpos[0]/(ctx.view3d.size[0]/2) - 1.0;
-    this.start_mpos[1] = this.start_mpos[1]/(ctx.view3d.size[1]/2) - 1.0;
     
     this.object = obj; //current active object
     
@@ -271,8 +277,8 @@ var zclr = [0.0, 0.0, c, 0.5]
 var axclrs = [xclr, yclr, zclr]
 
 class TransformOp extends ToolOp {
-  constructor() {
-    ToolOp.call(this);
+  constructor(String apiname, String uiname) {
+    ToolOp.call(this, apiname, uiname);
    
     this.selecting_axis = false;
     this.constrain_plane = false;
@@ -343,11 +349,11 @@ class TransformOp extends ToolOp {
     
     ctx.appstate.jobs.queue_replace(job);
   }
-
-  do_normals() {
+  
+  do_normals(ctx) {
     var td = this.transdata;
     var verts = td.verts;
-    var mesh = this.modal_ctx.mesh;
+    var mesh = ctx.mesh;
     
     for (var l in td.loops) {
       l.v.flags |= Flags.DIRTY;
@@ -358,13 +364,7 @@ class TransformOp extends ToolOp {
           l.f.recalc_normal();    
     }
     
-    if (verts.length < 20) {
-      for (var i=0; i<verts.length; i++) {
-        verts[i].recalc_normal(false);
-      }
-    }
-    
-    if (verts.length > 20) {
+    if (verts.length > 20 && this.modal_ctx != undefined) {
       var view3d = this.modal_ctx.view3d
       
       var iter = new recalc_normals_job(mesh, true);
@@ -379,6 +379,10 @@ class TransformOp extends ToolOp {
       }
       
       this.modal_ctx.appstate.jobs.queue_replace(job, start_func);
+    } else {
+      for (var i=0; i<verts.length; i++) {
+        verts[i].recalc_normal(false);
+      }
     }
   }
   
@@ -461,7 +465,7 @@ class TransformOp extends ToolOp {
       }      
     }
     
-    this.exec(this.modal_ctx);
+    this.exec(this.modal_tctx);
   }
 
   gen_axis(axis, center) {
@@ -574,7 +578,7 @@ class TransformOp extends ToolOp {
 
   end_modal() {
     if (this.inputs.DATAMODE.data & EditModes.GEOMETRY) 
-      this.do_normals();
+      this.do_normals(this.modal_ctx);
     
     for (var dl in this.axis_drawlines) {
       this.modal_ctx.view3d.kill_drawline(dl);
@@ -653,10 +657,7 @@ class TransformOp extends ToolOp {
 
 class TranslateOp extends TransformOp {
   constructor(mode=0, ob_active=undefined) {
-    TransformOp.call(this);
-    
-    this.uiname = "Translate"
-    this.name = "translate"
+    TransformOp.call(this, "translate", "Translate");
     
     this.transdata = null;
     this.is_modal = true;
@@ -740,7 +741,7 @@ class TranslateOp extends TransformOp {
         v.co = co;
       }
       
-      this.do_normals();
+      this.do_normals(ctx);
       
       td.datatype.update(td);
     } else if (this.inputs.DATAMODE.data == EditModes.OBJECT) {
@@ -872,10 +873,7 @@ class TranslateOp extends TransformOp {
 }
 
 function RotateOp(mode=0) {
-  TransformOp.call(this);
-  
-  this.uiname = "Rotate"
-  this.name = "rotate"
+  TransformOp.call(this, "rotate", "Rotate");
   
   this.transdata = null;
   this.is_modal = true;
@@ -963,7 +961,7 @@ RotateOp.prototype.on_mousemove = function(event) {
   this.inputs.RAXIS.data = new Vector3([matrix.$matrix.m31, matrix.$matrix.m32, matrix.$matrix.m33]);
   this.inputs.ASP.data = this.modal_ctx.view3d.asp
   
-  this.exec(this.modal_ctx);
+  this.exec(this.modal_tctx);
 }
 
 RotateOp.prototype.on_keyup = function(event) {
@@ -1078,17 +1076,14 @@ RotateOp.prototype.exec = function(ctx) {
     v.co.add(td.center);
   }
   
-  this.do_normals();
+  this.do_normals(ctx);
   
   ctx.mesh.regen_positions();
   ctx.mesh.regen_normals();
 }
 
 function ScaleOp(mode=0) {
-  TransformOp.call(this);
-  
-  this.uiname = "Scale"
-  this.name = "scale"
+  TransformOp.call(this, "scale", "Scale");
   
   this.transdata = null;
   this.is_modal = true;
@@ -1157,7 +1152,7 @@ ScaleOp.prototype.on_mousemove = function(event) {
   
   if (v1.vectorDistance(v2) < 0.01) {
     this.inputs.SCALE.data = new Vector3([1.0, 1.0, 1.0]);
-    this.exec(this.modal_ctx);
+    this.exec(this.modal_tctx);
     return;
   }
   
@@ -1201,7 +1196,7 @@ ScaleOp.prototype.on_mousemove = function(event) {
   
   this.inputs.SCALE.data = new Vector3([fac, fac, fac]);
   this.inputs.SCALE.data.mul(cons_axis);
-  this.exec(this.modal_ctx);
+  this.exec(this.modal_tctx);
 }
 
 ScaleOp.prototype.exec = function(ctx) {
@@ -1225,7 +1220,7 @@ ScaleOp.prototype.exec = function(ctx) {
     v.co.add(td.center);
   }
   
-  this.do_normals();
+  this.do_normals(ctx);
   
   ctx.mesh.regen_positions();
   ctx.mesh.regen_normals();

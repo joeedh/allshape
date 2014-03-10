@@ -20,7 +20,7 @@ class ESubdivideOp extends MeshOp {
     this.flag &= ~MeshOpFlags.USE_PARTIAL_UNDO;
     
     this.inputs = {
-      count : new MeshIntProperty("count", 1, undefined, [1, 25]), 
+      count : IntProperty(1, "count", "Count", "", [1, 25]), 
       edges : new ElementBufferProperty("edges", MeshTypes.EDGE),
       fillmode : new FlagProperty(ES_FillFlags.EDGE_PATH, ES_FillFlags, undefined, "fillmode", "Fill Mode", "Method of connecting split edges")
     }
@@ -365,7 +365,7 @@ class QuadSubdOp extends MeshOp {
     this.uiname = "Subdivide"
     this.name = "QuadSubdivide";
     this.inputs = {
-      //count: new MeshIntProperty("count", 1, TPropFlags.PRIVATE), 
+      //count: new MeshIntProperty(1, "count", "Count", "", undefined, TPropFlags.PRIVATE), 
       input_faces: new ElementBufferProperty("faces", MeshTypes.FACE)
     }
     

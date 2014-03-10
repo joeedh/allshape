@@ -650,6 +650,23 @@ class AppState {
   }
 }
 
+//restricted context for tools
+class ToolContext {
+  constructor(scene=undefined, ob=undefined, mesh=undefinedd) {
+    if (scene == undefined)
+      scene = new Context().scene;
+    if (ob == undefined)
+      ob = new Context().object;
+    if (mesh==unefined)
+      mesh = new Context().mesh;
+      
+    this.scene = scene;
+    this.object = ob;
+    this.mesh = mesh;
+    this.datalib = g_app_state.datalib;
+  }
+}
+
 class SavedContext {
   constructor(ctx=undefined) {
     if (ctx != undefined) {
@@ -834,7 +851,7 @@ class ToolStack {
       if (!(tool.undoflag & UndoFlags.IGNORE_UNDO)) {
         tool.undo_pre(ctx);
       }    
-      tool.exec(new Context());
+      tool.exec(new ToolContext());
       this.undocur++;
 
       this.appstate.jobs.kill_owner_jobs(this.appstate.mesh);
@@ -933,15 +950,19 @@ class ToolStack {
       }
       
       tool.modal_ctx = ctx;
+      tool.modal_tctx = new ToolContext();
       tool.modal_init(ctx);
       tool._start_modal(ctx);
     } else {
+      var tctx = new ToolContext();
+      tool.saved_context = new SavedContext(ctx);
+      
       if (!(tool.undoflag & UndoFlags.IGNORE_UNDO)) {
+        //undo callbacks, unlike .exec, get full context structure
         tool.undo_pre(ctx);
       }
       
-      tool.exec(ctx);
-      tool.saved_context = new SavedContext(ctx);
+      tool.exec(tctx);
     }
     
     if (!(tool.undoflag & UndoFlags.IGNORE_UNDO)) { 

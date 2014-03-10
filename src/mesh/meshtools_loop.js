@@ -2,10 +2,7 @@
 
 function LoopCutOp()
 {
-  ToolOp.call(this);
-  
-  this.name = "loopcut";
-  this.uiname = "Loop Cut";
+  ToolOp.call(this, "mesh_loopcut", "Loop Cut");
   
   this.drawlines = new GArray();
   
@@ -34,7 +31,7 @@ LoopCutOp.prototype.modal_init = function(ctx) {
 
 LoopCutOp.prototype.on_mousedown = function(event) {
   if (event.button == 0) {
-    this.finish(this.modal_ctx);
+    this.finish(this.modal_tctx);
   } else if (event.button == 2) {
     this.cancel(this.modal_ctx);
   }

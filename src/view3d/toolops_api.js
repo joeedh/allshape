@@ -31,7 +31,7 @@
   1. Constructor should take a single, SavedContext parameter.
   2. Combine inputs and outputs into slots.
   3. Normalize input/output names (e.g. TRANSLATION -> translation).
-  4. Exec only gets SavedContext; accesses view3d in modal mode,
+  4. Exec only gets ToolContext; access view3d in modal mode,
      with .modal_ctx.
   5. A RuntimeSavedContext class?  ToolExecContext?
   6. Think about Context's class hierarchy.
@@ -672,6 +672,18 @@ Vec4Property.STRUCT = STRUCT.inherit(Vec4Property, ToolProperty) + """
 }
 """;
 
+class ToolOpAbstract {
+  constructor(apiname, uiname) {
+    this.uiname = "";
+    this.name = "";
+    
+    this.inputs = {};
+    this.outputs = [};
+  }
+  
+  exec(tctx) { }
+}
+
 class PropPair {
   constructor(key, value) {
     this.key = key;
@@ -694,12 +706,13 @@ PropPair.STRUCT = """
 var UndoFlags = {IGNORE_UNDO: 2}
 var ToolFlags = {HIDE_TITLE_IN_LAST_BUTTONS: 1}
 
-class ToolOp extends EventHandler {
-  constructor() {
+class ToolOp extends EventHandler, ToolOpAbstract {
+  constructor(apiname="(undefined)", uiname="(undefined)") {
+    ToolOpAbstract.call(this, apiname, uiname);
     EventHandler.call(this);
     
-    this.name = "(undefined)"
-    this.uiname = "(undefined)"
+    this.name = apiname;
+    this.uiname = uiname;
     
     this.is_modal = false;
     this.undoflag = 0;
@@ -855,10 +868,7 @@ ToolOp {
 class ToolMacro extends ToolOp {
   constructor (String name, String uiname, Array<ToolOp> tools=undefined) 
     {
-    ToolOp.call(this);
-    
-    this.name = name;
-    this.uiname = uiname;
+    ToolOp.call(this, name, uiname);
     
     this.cur_modal = 0;
     
