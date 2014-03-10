@@ -19,7 +19,7 @@ var MPropTypes = {
 var MeshOpFlags = {USE_PARTIAL_UNDO : 1}
 
 /*to avoid passing massive arrays around, ElementBuffers will use iterators*/
-function ElementBufferProperty extends MeshOpProperty {
+class ElementBufferProperty extends MeshOpProperty {
   constructor(name, allowed_elements) {
     MeshOpProperty.call(this, MPropTypes.ELEMENT_BUF, name);
     
@@ -52,7 +52,7 @@ class MeshOp extends ToolOpAbstract {
   exec(op, mesh) { }
 }
 
-class element_filter_iter
+class element_filter_iter {
   constructor(iter, typemask) {
     this.iter = iter;
     this.typemask = typemask;
@@ -386,10 +386,10 @@ class flagiterobj {
     this.mesh = mesh;
     this.typemask = typemask;
     this.flag = flag;
-    
-    this.__iterator__() {
-      return new flagiter(this.mesh, this.typemask, this.flag);
-    }
+  }
+  
+  __iterator__() {
+    return new flagiter(this.mesh, this.typemask, this.flag);
   }
 }
 
@@ -904,6 +904,7 @@ class ExtrudeEdgesOp extends MeshOp {
     
     mesh.regen_render();
   }
+}
 
 class ExtrudeVertsOp extends MeshOp {
   constructor(vertiter) {

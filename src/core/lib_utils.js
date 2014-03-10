@@ -1,5 +1,27 @@
 "use strict";
 
+/*
+  Some notes on undo:
+  
+  Undoing the deletion of a datablock is potentially
+  a very complex operation.  Since deleting a block unlinks
+  (unsets all references to) it, undoing back to the former state
+  would require performing that unlinking in reverse.  Since we
+  can't use direct references to the data model to implement undo,
+  we'd have to implement something like the datapath api, but considerable
+  more complicated (re-inserting DAG nodes, for example, would be really tricky).  
+  Testing it would be hellish, too.
+  
+  So for now, all tool ops that delete datablock must serialize the entire
+  app state (minus the UI) in .undo_pre(), and restore it in .undo().  
+
+  Another alternative is to store a copy of the app state at every X
+  point in the toolstack (actually, we'd store a diff to the previous copy).
+  That would lessen the penalty from rebuilding the previous state by
+  re-executing the tool stack.  But it would also take more memory, and would
+  still be too slow to use in most cases anyhow.
+*/
+
 /* 'DataBlock List.                         *
  *  A generic container list for datablocks */
 class DBList extends GArray {
@@ -7,7 +29,7 @@ class DBList extends GArray {
     GArray.call(this);
     
     this.type = type;
-    this.idmap = {}
+    this.idmap = {};
     this.selected = new GArray();
     this.active = undefined;
     this.length = 0;
@@ -243,6 +265,7 @@ function DataRem(dst, field) {
   refname, rem_func are optional, and default to 
   fieldname, DataRem(block, fieldname), respectively.
 */
+
 function wrap_getblock_us(datalib) {
   return function(dataref, block, fieldname, add_user, refname, rem_func) {
     if (dataref == undefined) return;
