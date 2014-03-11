@@ -29,15 +29,15 @@
   toolop refactor:
   
   1. Constructor should take a single, SavedContext parameter.
-  2. Combine inputs and outputs into slots.
+  2. XXX, decided against this for now -> Combine inputs and outputs into slots.
   3. Normalize input/output names (e.g. TRANSLATION -> translation).
-  4. Exec only gets ToolContext; access view3d in modal mode,
+  4. DONE: Exec only gets ToolContext; access view3d in modal mode,
      with .modal_ctx.
-  5. A RuntimeSavedContext class?  ToolExecContext?
+  5. DONE: A RuntimeSavedContext class?  ToolExecContext?
   6. Think about Context's class hierarchy.
   7. Default undo implementation should copy whole program state (other than the toolstack),
      not just the current mesh data.
-  8. Implement an iterator property type.  Perhaps something based on
+  8. DONE (for now): Implement an iterator property type.  Perhaps something based on
      a SavedContext-restricted subset of the datapath api?  Note to self:
      do not implement a datapath-based means of linking properties to other
      parts of the data model.  That's better done as an explicit part of the DAG
@@ -131,6 +131,21 @@ class ToolOp extends EventHandler, ToolOpAbstract {
     this.undoflag |= UndoFlags.IGNORE_UNDO;
   }
 
+  exec_pre(ToolContext tctx) {
+    for (var k in this.inputs) {
+      if (this.inputs[k].type == PropTypes.COLLECTION) {
+        console.log("yay, collection");
+        this.inputs[k].ctx = tctx;
+      }
+    }
+    
+    for (var k in this.outputs) {
+      if (this.outputs[k].type == PropTypes.COLLECTION) {
+        this.outputs[k].ctx = tctx;
+      }
+    }
+  }
+  
   /*private function*/
   _start_modal(Context ctx) {
     ctx.view3d.push_modal(this);

@@ -280,8 +280,8 @@ class MeshToolOp extends ToolOp {
     
     this.meshop = meshop;
     
-    this.inputs = mprop_to_tprop(meshop.inputs);
-    this.outputs = mprop_to_tprop(meshop.outputs);
+    this.inputs = meshop.inputs;
+    this.outputs = meshop.outputs;
     
     this._partial = undefined : Mesh;
   }
@@ -313,8 +313,8 @@ class MeshToolOp extends ToolOp {
   }
 
   exec(ctx) {
-    tprop_to_mprop(this.meshop.inputs, this.inputs);
-    ctx.appstate.jobs.kill_owner_jobs(ctx.mesh);
+    this.meshop.inputs = this.inputs;
+    g_app_state.jobs.kill_owner_jobs(ctx.mesh);
     
     ctx.mesh.ops.call_op(this.meshop);
     
@@ -325,11 +325,13 @@ class MeshToolOp extends ToolOp {
 
 class ClickExtrude extends ExtrudeAllOp, ToolOp {
    constructor(ctx) {
+    ToolOp.call(this);
     ExtrudeAllOp.call(this);
     
     this.name = "Click Extrude";
     this.is_modal = true;
-    this.inputs["transform"] = new TransformProperty(new Matrix4(), "transform", "Transform", "transfrom to apply")
+    
+    this.inputs.transform = new TransformProperty(new Matrix4(), "transform", "Transform", "transfrom to apply")
   }
   
   on_mousedown(event) {
@@ -443,9 +445,10 @@ class ClickExtrude extends ExtrudeAllOp, ToolOp {
   
   exec(tctx) {
     var mesh = tctx.mesh;
+    var mask = MeshTypes.FACE|MeshTypes.VERT|MeshTypes.EDGE;
     
-    this.inputs.geometry.elements.load_iterator(mesh.ops.gen_flag_iter(MeshTypes.FACE|MeshTypes.VERT|MeshTypes.EDGE, Flags.SELECT));
-    ExtrudeAllOp.prototype.exec.call(this, tctx);
+    this.inputs.elements.set_data(new MSelectIter(mask, mesh));
+    ExtrudeAllOp.prototype.exec.call(this, this, mesh);
     
     var mat = this.inputs.transform.data;
     

@@ -9,10 +9,10 @@ function ContextCreateOp(vertiter) {
   //this.flag |= MeshOpFlags.USE_PARTIAL_UNDO;
     
   this.inputs = {
-    verts: new ElementBufferProperty("verts", MeshTypes.VERT),
+    verts: new CollectionProperty(undefined, [Vertex], "verts", "Vertices", "")
   }
  
-  this.inputs.verts.load_iterator(vertiter);
+  this.inputs.verts.set_data(vertiter);
 }
 inherit(ContextCreateOp, MeshOp);
 

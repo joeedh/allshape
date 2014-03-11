@@ -652,12 +652,12 @@ class AppState {
 
 //restricted context for tools
 class ToolContext {
-  constructor(scene=undefined, ob=undefined, mesh=undefinedd) {
+  constructor(scene=undefined, ob=undefined, mesh=undefined) {
     if (scene == undefined)
       scene = new Context().scene;
     if (ob == undefined)
       ob = new Context().object;
-    if (mesh==unefined)
+    if (mesh==undefined)
       mesh = new Context().mesh;
       
     this.scene = scene;
@@ -818,7 +818,7 @@ class ToolStack {
     this.undostack = new GArray();
     this.appstate = appstate;
   }
-
+  
   undo_push(ToolOp tool) {
     if (this.undocur != this.undostack.length) {
       if (this.undocur == 0) {
@@ -850,10 +850,13 @@ class ToolStack {
       
       if (!(tool.undoflag & UndoFlags.IGNORE_UNDO)) {
         tool.undo_pre(ctx);
-      }    
-      tool.exec(new ToolContext());
+      }
+      var tctx = new ToolContext();
+      
+      tool.exec_pre(tctx);
+      tool.exec(tctx);
+      
       this.undocur++;
-
       this.appstate.jobs.kill_owner_jobs(this.appstate.mesh);
     }
   }
@@ -951,6 +954,8 @@ class ToolStack {
       
       tool.modal_ctx = ctx;
       tool.modal_tctx = new ToolContext();
+      
+      tool.exec_pre(tool.modal_tctx);
       tool.modal_init(ctx);
       tool._start_modal(ctx);
     } else {
@@ -962,6 +967,7 @@ class ToolStack {
         tool.undo_pre(ctx);
       }
       
+      tool.exec_pre(tctx);
       tool.exec(tctx);
     }
     

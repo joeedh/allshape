@@ -165,7 +165,7 @@ FileSaveAsOp.prototype.exec = function(ctx)
 {
   console.log("File save");
   
-  mesh_data = ctx.appstate.create_user_file_new().buffer;
+  mesh_data = g_app_state.create_user_file_new().buffer;
   function error(job, owner, msg) {
     console.log("network error", msg);
   }
@@ -209,7 +209,7 @@ FileSaveOp.prototype.exec = function(ctx)
 {
   console.log("File save");
   
-  mesh_data = ctx.appstate.create_user_file_new().buffer;
+  mesh_data = g_app_state.create_user_file_new().buffer;
   
   function error(job, owner, msg) {
     console.log("network error", msg);

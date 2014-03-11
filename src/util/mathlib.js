@@ -1040,7 +1040,7 @@ function isect_ray_plane(planeorigin, planenormal, rayorigin, raynormal)
 function mesh_find_tangent(mesh, viewvec, offvec, projmat, verts) //verts is optional
 {
   if (verts == undefined) 
-    verts = mesh.ops.gen_flag_iter(MeshTypes.VERT, Flags.SELECT);
+    verts = mesh.verts.selected;
   
   var vset = new set();
   var eset = new set();

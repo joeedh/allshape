@@ -347,7 +347,7 @@ class TransformOp extends ToolOp {
     var iter = new recalc_normals_job(mesh, false);
     var job = new Joblet(mesh, iter, function() { }, 1);
     
-    ctx.appstate.jobs.queue_replace(job);
+    g_app_state.jobs.queue_replace(job);
   }
   
   do_normals(ctx) {
@@ -378,7 +378,7 @@ class TransformOp extends ToolOp {
         }
       }
       
-      this.modal_ctx.appstate.jobs.queue_replace(job, start_func);
+      this.modal_g_app_state.jobs.queue_replace(job, start_func);
     } else {
       for (var i=0; i<verts.length; i++) {
         verts[i].recalc_normal(false);

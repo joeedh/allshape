@@ -406,7 +406,7 @@ class DataAPI {
       throw new Error("Mesh operation called with bad context");
     }
     
-    return ctx.mesh.ops.gen_select_iter(typemask);
+    return new MSelectIter(typemask, ctx.mesh);
   }
   
   prepare_args(ctx, call) { //args is private/optional

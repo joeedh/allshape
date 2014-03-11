@@ -20,10 +20,11 @@ var PropTypes = {
   FLAG: 16,
   DATAREF: 17,
   DATAREFLIST: 18,
-  TRANSFORM : 19 //ui-friendly matrix property
+  TRANSFORM : 19, //ui-friendly matrix property
+  COLLECTION : 20
 };
 
-var TPropFlags = {PRIVATE : 1, LABEL : 2};
+var TPropFlags = {PRIVATE : 1, LABEL : 2, STRICT_COLL : 4};
 
 class ToolProperty {
   constructor(type, apiname="", uiname=apiname, description="", flag=0) {
@@ -617,3 +618,129 @@ Vec4Property.STRUCT = STRUCT.inherit(Vec4Property, ToolProperty) + """
   data : vec4;
 }
 """;
+
+/*
+  A (very) generic container property.
+  Internally, it stores references to special 
+  iterable objects that implements the TPropIterable
+  interface (which we do via the multiple inheritance 
+  system), not arrays.  
+  
+  e.g. you might pass an eid_list, a DataRefList,
+  a TMeshSelectedIter, etc.
+*/
+
+class type_filter_iter extends ToolIter {
+  constructor(iter, Array typefilter, ctx) {
+    this.types = typefilter;
+    this.iter = iter;
+    this._ctx = ctx;
+  }
+  
+  set ctx(ctx) {
+    this._ctx = ctx;
+    this.iter.ctx = ctx;
+  }
+  
+  get ctx() {
+    return this._ctx;
+  }
+  
+  reset() {
+    this.iter.ctx = this.ctx;
+    this.iter.reset();
+  }
+  
+  next() {
+    var ret = this.iter.next();
+    var types = this.types;
+    var tlen = this.types.length;
+    
+    function has_type(obj) {
+      for (i=0; i<tlen; i++) {
+        if (obj instanceof types[i]) return true;
+      }
+      
+      return false;
+    }
+    
+    while (!ret.done && !has_type(ret.value)) {
+      ret = this.iter.next();
+    }
+    
+    if (ret.done)
+      this.iter.reset();
+    
+    return ret;
+  }
+}
+
+class CollectionProperty extends ToolProperty {
+  constructor(data, Array<Function> filter_types, apiname, uiname, description, flag) {
+    ToolProperty.call(this, PropTypes.COLLECTION, apiname, uiname, description, flag);
+    
+    this.types = filter_types;
+    this._data = undefined;
+    this._ctx = undefined;
+    
+    this.set_data(data);
+  }
+  
+  get ctx() {
+    return this._ctx;
+  }
+  
+  set ctx(data) {
+    this._ctx = data;
+    
+    if (this._data != undefined)
+      this._data.ctx = data;
+  }
+  
+  set_data(data) {
+    if (data == undefined) {
+      this._data = undefined;
+      return;
+    }
+    
+    if ("__tooliter__" in data && typeof  data.__tooliter__ == "function") {
+      this.set_data(data.__tooliter__());
+      return;
+    } else if ((this.flag & TPropFlags.STRICT_COLL) && !(data instanceof TPropIterable)) {
+      console.trace();
+      console.log("ERROR: bad data '", data, "' was passed to CollectionProperty.set_data!");
+      
+      //this is, sadly, an unrecoverable error.
+      throw new Error("ERROR: bad data '", data, "' was passed to CollectionProperty.set_data!");
+    }
+    
+    this._data = data;
+    this._data.ctx = this.ctx;
+  }
+  
+  //tool props are not supposed to use setters
+  //for .data, but since we need one for .get 
+  //(and since that meant renaming an inherited
+  //member), we add a setter here for the sake of
+  //robustness.
+  
+  set data(data) {
+    this.set_data(data);
+  }
+  
+  get data() {
+    return this._data;
+  }
+  
+  __iterator__() {
+    if (this._data == undefined) //return empty iterator if no data
+      return {next : function() { return {done : true, value : undefined};}};
+    
+    this._data.ctx = this._ctx;
+    
+    if (this.types != undefined && this.types.length > 0)
+      return new type_filter_iter(this.data.__iterator__(), this.types, this._ctx);
+    else
+      return this.data.__iterator__();
+  }
+}

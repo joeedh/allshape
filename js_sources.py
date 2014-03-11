@@ -43,6 +43,7 @@ js_targets = {"app.js" : [
 	"src/mesh/subsurf.js",
 
 	"src/view3d/events.js",
+  
   "src/core/toolprops.js",
   "src/core/toolprops_iter.js",
 	"src/core/toolops_api.js",

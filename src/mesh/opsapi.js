@@ -18,28 +18,6 @@ var MPropTypes = {
 
 var MeshOpFlags = {USE_PARTIAL_UNDO : 1}
 
-/*to avoid passing massive arrays around, ElementBuffers will use iterators*/
-class ElementBufferProperty extends MeshOpProperty {
-  constructor(name, allowed_elements) {
-    MeshOpProperty.call(this, MPropTypes.ELEMENT_BUF, name);
-    
-    this.iter = null : Iterator;
-    this.emask = allowed_elements;
-  }
-  
-  load_iterator(Iterator iter) {
-    this.iter = iter;
-  }
-  
-  __iterator__() : Iterator {
-    //console.trace();
-    if (this.mesh != undefined)
-      this.iter.mesh = this.mesh;
-    
-    return this.iter.__iterator__();
-  }
-}
-
 /*note: unlike ToolOps, MeshOps can call each other and recurse.*/
 class MeshOp extends ToolOpAbstract {
   constructor(apiname, uiname) {
@@ -91,81 +69,6 @@ class element_filter {
   }
 }
 
-class element_iter_convert {
-  constructor(iter, type) {
-    this.vset = new set();
-    this.iter = iter.__iterator__();
-    this.subiter = undefined;
-    
-    if (type == MeshTypes.VERT)
-      this.type = Vertex;
-    else if (type == MeshTypes.EDGE)
-      this.type = Edge;
-    else if (type == MeshTypes.LOOP)
-      this.type = Loop;
-    else if (type == MeshTypes.FACE)
-      this.type = Face;
-  }
-  
-  reset() {
-    if (this.iter.reset != undefined)
-      this.iter.reset();
-      
-    this.vset = new set();
-	
-    if (this.mesh != undefined)
-      this.iter.mesh = this.mesh;
-  }
-  
-  __iterator__() {
-    return this;
-  }
-  
-  next() {
-    if (this.mesh != undefined)
-      this.iter.mesh = this.mesh;
-      
-    var v = this._next();
-	
-    if (v.done) return v;
-	
-    var vset = this.vset;
-    while ((!v.done) && (v.value == undefined || vset.has(v.value))) {
-      v = this._next();
-    }
-    
-    if (!v.done)
-      vset.add(v.value);
-    
-    return v;
-  }
-  
-  _next() {
-    if (this.subiter == undefined) {
-      var next = this.iter.next();
-      
-      if (next.done) {
-        this.reset();
-        return next;
-      }
-  
-      if (next.value.constructor.name == this.type.name)
-        return next;
-      
-      this.subiter = next.value.verts.__iterator__();
-    }
-    
-    var vset = this.vset;
-	  var v = this.subiter.next();
-	  if (v.done) {
-        this.subiter = undefined;
-        return this._next();
-	  }
-	  
-	  return v;
-  }
-}
-
 class selectiter {
   constructor(mesh, typemask) {
     this.mask = typemask;
@@ -186,7 +89,7 @@ class selectiter {
     else if (this.mask & MeshTypes.FACE)
       this.curtype = MeshTypes.FACE
     else
-      throw "Invalid element type mask in selectiter.reset()";
+      throw new Error("Invalid element type mask in selectiter.reset() " + this.mask);
   }
 
   __iterator__() {
@@ -398,19 +301,12 @@ class MeshOpAPI {
     this.mesh = mesh;
   }
   
-  gen_flag_iter(typemask, flag) {
-    return new flagiterobj(this.mesh, typemask, flag);
-  }
-  
-  gen_select_iter(typemask) {
-    return new selectiter(this.mesh, typemask);
-  }
-  
   call_op(op) {
     for (var i in op.inputs) {
       var input = op.inputs[i];
-      if (input.type == MPropTypes.ELEMENT_BUF) {
-        input.iter.mesh = this.mesh;
+      
+      if (input.type == PropTypes.COLLECTION) {
+        input.ctx = new ToolContext();
         
         for (var e in input)  {
           e.flag |= Flags.DIRTY;
@@ -430,10 +326,10 @@ class RemoveDoublesOp extends MeshOp {
     this.name = "RemoveDoubles";
     this.inputs = {
       radius: new FloatProperty(0.0005, "radius", "Radius", ""), 
-      input_verts: new ElementBufferProperty("input_verts", MeshTypes.VERT)
+      input_verts: new CollectionProperty(undefined, [Vertex], "input_verts", "Verts", "")
     }
     
-    this.inputs.input_verts.load_iterator(vertiter);
+    this.inputs.input_verts.set_data(vertiter);
     
     this.shash = new spatialhash();  
   }
@@ -537,10 +433,10 @@ class SplitEdgeOp extends MeshOp {
     this.name = "Split Edge";
     this.inputs = {
       radius: new FloatProperty(0.0005, "radius", "Radius", ""), 
-      input_edges: new ElementBufferProperty("input_edges", MeshTypes.EDGE)
+      input_edges: new CollectionProperty(undefined, [Edge], "input_edges", "Edges", ""),
     }
     
-    this.inputs.input_edges.load_iterator(edgeiter);
+    this.inputs.input_edges.set_data(edgeiter);
     
     mesh.api.recalc_normals();
   }
@@ -548,7 +444,6 @@ class SplitEdgeOp extends MeshOp {
   exec(op, mesh) {
     var elist = list(this.inputs.input_edges);
     for (var e in elist) {
-      console.log(e.type)
       mesh.api.split_edge(e, 0.5);
     }
   }
@@ -561,10 +456,10 @@ class VertexConnectOp extends MeshOp {
     this.uiname = "Vertex Connect"
     this.name = "VertConnect";
     this.inputs = {
-      input_verts: new ElementBufferProperty("input_verts", MeshTypes.VERT)
+      input_verts: new CollectionProperty(undefined, [Vertex], "input_verts", "Vertices", "")
     }
     
-    this.inputs.input_verts.load_iterator(vertiter);
+    this.inputs.input_verts.set_data(vertiter);
   }
 
   exec(op, mesh) {
@@ -606,10 +501,10 @@ class DissolveFacesOp extends MeshOp {
     this.name = "dissolve_faces"
     this.uiname = "Dissolve";
     this.inputs = {
-      faces: new ElementBufferProperty("faces", MeshTypes.FACE)
+      faces: new CollectionProperty(undefined, [Face], "faces", "Faces", "")
     }
     
-    this.inputs.faces.load_iterator(faceiter);
+    this.inputs.faces.set_data(faceiter);
     
   }
 
@@ -619,7 +514,6 @@ class DissolveFacesOp extends MeshOp {
     var visit = new set();
     var cur = -1;
     
-    console.log(fset.length, this.inputs.faces);
     for (var f in fset) {
       if (visit.has(f)) continue;
       
@@ -643,8 +537,6 @@ class DissolveFacesOp extends MeshOp {
         }
       }
     }
-    
-    console.log("sl", shells.length);
     
     for (var s in shells) {
       mesh.api.join_faces(s);
@@ -687,10 +579,10 @@ class VertSmoothOp extends MeshOp {
     this.uiname = "Vertex Smooth"
     this.name = "VertSmooth";
     this.inputs = {
-      verts: new ElementBufferProperty("verts", MeshTypes.VERT)
+      verts: new CollectionProperty(undefined, [Vertex], "verts", "Vertices", ""),
     }
     
-    this.inputs.verts.load_iterator(vertiter);
+    this.inputs.verts.set_data(vertiter);
   }
 
   exec(op, mesh) {
@@ -709,14 +601,14 @@ class ExtrudeFacesOp extends MeshOp {
     this.uiname = "Extrude Faces"
     this.name = "ExtrudeFaces";
     this.inputs = {
-      input_faces: new ElementBufferProperty("input_faces", MeshTypes.FACE)
+      input_faces: new CollectionProperty(undefined, [Face], "input_faces", "Faces", ""),
     }
     
     this.outputs = {
       group_no: new Vec3Property(new Vector3(), "group_no", "normal", "")
     }
     
-    this.inputs.input_faces.load_iterator(faceiter);
+    this.inputs.input_faces.set_data(faceiter);
   }
 
   exec(op, mesh) {
@@ -833,14 +725,14 @@ class ExtrudeEdgesOp extends MeshOp {
     this.name = "Extrude Edges"
     this.name = "ExtrudeEdges";
     this.inputs = {
-      input_edges: new ElementBufferProperty("input_edges", MeshTypes.EDGE)
+      input_edges: new CollectionProperty(undefined, [Edge], "input_edges", "Edges", ""),
     }
     
     this.outputs = {
       group_no: new Vec3Property(new Vector3(), "group_no", "normal", "")
     }
     
-    this.inputs.input_edges.load_iterator(edgeiter);
+    this.inputs.input_edges.set_data(edgeiter);
   }
 
   exec(op, mesh) {
@@ -913,14 +805,14 @@ class ExtrudeVertsOp extends MeshOp {
     this.uiname = "Extrude Verts"
     this.name = "ExtrudeVerts";
     this.inputs = {
-      input_verts: new ElementBufferProperty("input_verts", MeshTypes.VERT)
+      input_verts: new CollectionProperty(undefined, [Vertex], "input_verts", "Vertices", ""),
     }
     
     this.outputs = {
       group_no: new Vec3Property(new Vector3(), "group_no", "normal", "")
     }
     
-    this.inputs.input_verts.load_iterator(vertiter);
+    this.inputs.input_verts.set_data(vertiter);
   }
 
   exec(op, mesh) {
@@ -973,14 +865,14 @@ class ExtrudeAllOp extends MeshOp {
     this.name = "Extrude"
     this.name = "ExtrudeAll";
     this.inputs = {
-      elements: new ElementBufferProperty("elements", MeshTypes.VERT|MeshTypes.EDGE|MeshTypes.FACE)
+      elements: new CollectionProperty(undefined, [Element], "elements", "Elements", "")
     }
     
     this.outputs = {
       group_no: new Vec3Property(new Vector3(), "group_no", "normal", "")
     }
     
-    this.inputs.elements.load_iterator(elementiter);
+    this.inputs.elements.set_data(elementiter);
   }
 
   exec(op, mesh) {
@@ -995,7 +887,6 @@ class ExtrudeAllOp extends MeshOp {
         eset.add(e);
       } else if (e.type == MeshTypes.FACE) {
         fset.add(e);
-        console.log("fset?");
       }
     }
     
@@ -1059,10 +950,10 @@ class FlipNormalsOp extends MeshOp {
     this.uiname = "Flip Normals"
     this.name = "FlipNormals";
     this.inputs = {
-      faces: new ElementBufferProperty("faces", MeshTypes.FACE)
+      faces: new CollectionProperty(undefined, [Face], "faces", "Faces", ""),
     }
     
-    this.inputs.faces.load_iterator(faceiter);
+    this.inputs.faces.set_data(faceiter);
   }
 
   exec(op, mesh) {
@@ -1081,10 +972,10 @@ class DeleteVertsOp extends MeshOp {
     this.uiname = "Delete Vertices"
     this.name = "DeleteVertices";
     this.inputs = {
-      verts: new ElementBufferProperty("verts", MeshTypes.VERT)
+      verts: new CollectionProperty(undefined, [Vertex], "verts", "Vertices", ""),
     }
     
-    this.inputs.verts.load_iterator(vertiter);
+    this.inputs.verts.set_data(vertiter);
   }
 
   exec(op, mesh) {
@@ -1106,10 +997,10 @@ class DeleteEdgesOp extends MeshOp {
     this.uiname = "Delete Edges"
     this.name = "DeleteEdges";
     this.inputs = {
-      edges: new ElementBufferProperty("edges", MeshTypes.VERT)
+      edges: new CollectionProperty(undefined, [Edge], "edges", "Edges", ""),
     }
     
-    this.inputs.edges.load_iterator(vertiter);
+    this.inputs.edges.set_data(vertiter);
   }
 
   exec(op, mesh) {
@@ -1131,10 +1022,10 @@ class DeleteFacesOp extends MeshOp {
     this.uiname = "Only Faces"
     this.name = "DeleteFaces";
     this.inputs = {
-      faces: new ElementBufferProperty("faces", MeshTypes.VERT)
+      faces: new CollectionProperty(undefined, [Face], "faces", "Faces", ""),
     }
     
-    this.inputs.faces.load_iterator(vertiter);
+    this.inputs.faces.set_data(vertiter);
   }
 
   exec(op, mesh) {
@@ -1156,10 +1047,10 @@ class DeleteFaceRegionOp extends MeshOp {
     this.uiname = "Delete Faces"
     this.name = "DeleteFaces";
     this.inputs = {
-      faces: new ElementBufferProperty("faces", MeshTypes.VERT)
+      faces: new CollectionProperty(undefined, [Face], "faces", "Faces", ""),
     }
     
-    this.inputs.faces.load_iterator(vertiter);
+    this.inputs.faces.set_data(vertiter);
   }
 
   exec(op, mesh) {
@@ -1235,17 +1126,16 @@ class TriangulateOp extends MeshOp {
     this.uiname = "Triangulate"
     this.name = "Triangulate";
     this.inputs = {
-      faces: new ElementBufferProperty("faces", MeshTypes.VERT)
+      faces: new CollectionProperty(undefined, [Face], "faces", "Faces", ""),
     }
     
-    this.inputs.faces.load_iterator(faceiter);
+    this.inputs.faces.set_data(faceiter);
   }
 
   exec(op, mesh) {
     var faces = list(this.inputs.faces);
     
     for (var f in faces) {
-      console.log(f)
       var fset = triangulate(mesh, f);
       //tris_to_quads(mesh, fset);
     }
@@ -1261,10 +1151,10 @@ class Tri2QuadOp extends MeshOp {
     this.uiname = "Tris2Quads"
     this.name = "tri2quad";
     this.inputs = {
-      faces: new ElementBufferProperty("faces", MeshTypes.VERT)
+      faces: new CollectionProperty(undefined, [Face], "faces", "Faces", ""),
     }
     
-    this.inputs.faces.load_iterator(faceiter);
+    this.inputs.faces.set_data(faceiter);
   }
 
   exec(op, mesh) {
@@ -1373,11 +1263,11 @@ class MeshDuplicateOp extends MeshOp {
     this.name = "duplicate";
     
     this.inputs = {
-      "geometry" : new ElementBufferProperty("geometry", MeshTypes.VERT|MeshTypes.EDGE|MeshTypes.FACE),
+      geometry: new CollectionProperty(undefined, [Element], "geometry", "Geometry", ""),
       "deselect_old" : new BoolProperty(false, "deselect_old", "Deselect Old", "")
     };
     
-    this.inputs.geometry.load_iterator(geometry);
+    this.inputs.geometry.set_data(geometry);
   }
 
   exec(op, mesh) {

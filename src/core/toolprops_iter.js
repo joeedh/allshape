@@ -28,15 +28,31 @@
   iterating, but *only then*.
 */
 
-class ToolIter {
+//a generic abstract class,
+//for container types that can
+//be stored directly in tool
+//properties.
+class TPropIterable {
   constructor() {
-    this.parent = undefined : IterProperty;
-    this.ctx = undefined; //is set by IterProperty, which gets it from calling code
-    this.ret = {done : true, value : undefined}; //might try cached_iret() later. . .
   }
   
-  set_parent(p) {
-    this.parent = p;
+  __iterator__() : ToolIter { }
+}
+
+class TCanSafeIter {
+  constructor() {
+  }
+  
+  __tooliter__() : TPropIterable {}
+}
+
+class ToolIter extends TPropIterable {
+  constructor(Array<Function> itemtypes=[]) {
+    TPropIterable.call(this);
+     
+    this.itemtypes = itemtypes;
+    this.ctx = undefined; //is set by IterProperty, which gets it from calling code
+    this.ret = {done : true, value : undefined}; //might try cached_iret() later. . .
   }
   
   next() {
@@ -49,11 +65,8 @@ class ToolIter {
   spawn() { //spawn a copy of this iterator
   }
   
-  _on_end() {
-    this.parent._iter_end(this);
-  }
-  
-  get_block(ref) {
+  //a utility function for child classes
+  _get_block(ref) {
     if (this.ctx != undefined) {
       //a very paranoid test, for edge cases
       //where ctx.object is not the same as
@@ -70,9 +83,20 @@ class ToolIter {
   __iterator__() {
     return this;
   }
+  
+  //subclasses are required to implement this
+  static fromSTRUCT(reader) {
+    var obj = new ToolIter();
+    reader(obj);
+    return obj;
+  }
 }
+ToolIter.STRUCT = """
+  ToolIter {
+  }
+""";
 
-class TMeshSelectIter extends ToolIter {
+class MSelectIter extends ToolIter {
   constructor(int typemask, Mesh mesh) {
     ToolIter.call(this);
     
@@ -82,54 +106,116 @@ class TMeshSelectIter extends ToolIter {
     this.mask = typemask;
     this.mesh = undefined;
     this.init = true;
+    this.iter = undefined;
   }
   
-  _on_end() {
-    prior(TMeshSelectIter, this)._on_end.call(this);
-    this.mesh = undefined; //very important: clean up references.
+  __iterator__() {
+    if (this.init) {
+      return this;
+    } else { //detect nested iterator cases
+      return new MSelectIter(this.mask, this.meshref);
+    }
+  }
+    
+  reset() {
+    this.init = true;
+    this.mesh = undefined;
+    this.iter = undefined;
   }
   
   next() {
     if (this.init) {
       //init state
-      this.mesh = this.get_block(this.meshref);
+      this.mesh = this._get_block(this.meshref);
       this.init = false;
+      this.iter = new selectiter(this.mesh, this.mask);
     }
+    
+    var ret = this.iter.next();
+    
+    if (ret.done) {
+      this.reset();
+    }
+    
+    return ret;
   }
 }
 
-class IterProperty extends ToolProperty {
-  constructor(data, apiname, uiname, description, flag) {
-    ToolProperty.call(this, data, apiname, uiname, description, flag);
+class element_iter_convert extends ToolIter {
+  constructor(iter, type) {
+    ToolIter.call(this);
     
-    this.iter_use = 0;
-    this._ctx = undefined;
-  }
-  
-  get ctx() {
-    return this._ctx;
-  }
-  
-  set ctx(data) {
-    this._ctx = data;
+    if (!(iter instanceof TPropIterable)) {
+      throw new Error("element_iter_convert requires a 'safe' TPropIterable-derived iterator");
+    }
     
-    if (this.data != undefined)
-      this.data.ctx = data;
+    this.vset = new set();
+    this.iter = iter.__iterator__();
+    this.subiter = undefined;
+    
+    if (type == MeshTypes.VERT)
+      this.type = Vertex;
+    else if (type == MeshTypes.EDGE)
+      this.type = Edge;
+    else if (type == MeshTypes.LOOP)
+      this.type = Loop;
+    else if (type == MeshTypes.FACE)
+      this.type = Face;
   }
   
-  get data() {
-    this.iter_use++;
-    if (this.iter_use != 1)
-      return this.data.spawn();
-    else
-      return this.data;
+  reset() {
+    if (this.iter.reset != undefined)
+      this.iter.reset();
+      
+    this.vset = new set();
+    this.iter.ctx = this.ctx;
   }
   
-  _iter_end(ToolIter iter) {
-    this.iser_use--;
+  __iterator__() {
+    return this;
   }
   
-  set_ctx(ToolContext tctx) {
-    this.ctx = tctx;
+  next() {
+    if (this.mesh != undefined)
+      this.iter.mesh = this.mesh;
+      
+    var v = this._next();
+	
+    if (v.done) return v;
+	
+    var vset = this.vset;
+    while ((!v.done) && (v.value == undefined || vset.has(v.value))) {
+      v = this._next();
+    }
+    
+    if (!v.done)
+      vset.add(v.value);
+    
+    return v;
+  }
+  
+  _next() {
+    if (this.subiter == undefined) {
+      var next = this.iter.next();
+      
+      if (next.done) {
+        this.reset();
+        return next;
+      }
+  
+      if (next.value.constructor.name == this.type.name)
+        return next;
+      
+      this.subiter = next.value.verts.__iterator__();
+    }
+    
+    var vset = this.vset;
+	  var v = this.subiter.next();
+	  if (v.done) {
+        this.subiter = undefined;
+        return this._next();
+	  }
+	  
+	  return v;
   }
 }

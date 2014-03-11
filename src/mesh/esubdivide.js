@@ -21,13 +21,13 @@ class ESubdivideOp extends MeshOp {
     
     this.inputs = {
       count : IntProperty(1, "count", "Count", "", [1, 25]), 
-      edges : new ElementBufferProperty("edges", MeshTypes.EDGE),
+      edges : new CollectionProperty(undefined, [Edge], "edges", "Edges", ""),
       fillmode : new FlagProperty(ES_FillFlags.EDGE_PATH, ES_FillFlags, undefined, "fillmode", "Fill Mode", "Method of connecting split edges")
     }
     
     this.inputs.fillmode.data |= ES_FillFlags.QUAD_CORNER;
     
-    this.inputs.edges.load_iterator(edgeiter);
+    this.inputs.edges.set_data(edgeiter);
     this.inputs.count.data = count;
   }
   
@@ -366,10 +366,10 @@ class QuadSubdOp extends MeshOp {
     this.name = "QuadSubdivide";
     this.inputs = {
       //count: new MeshIntProperty(1, "count", "Count", "", undefined, TPropFlags.PRIVATE), 
-      input_faces: new ElementBufferProperty("faces", MeshTypes.FACE)
+      input_faces: new CollectionProperty(undefined, [Face], "faces", "Faces", "")
     }
     
-    this.inputs.input_faces.load_iterator(faceiter);
+    this.inputs.input_faces.set_data(faceiter);
     //this.inputs.count.data = count;
   }
    

@@ -381,7 +381,7 @@ function api_define_ops() {
       return new FileSaveAsOp();
     },
     "screen.area_split_tool" : function(ctx, args) {
-      return new SplitAreasTool(ctx.appstate.screen);
+      return new SplitAreasTool(g_app_state.screen);
     },
     
     "object.toggle_select_all" : function(ctx, args) {

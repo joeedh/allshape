@@ -246,14 +246,14 @@ function InsetRegionsOp(faceiter) {
   this.uiname = "Inset Regions"
   this.name = "inset_regions";
   this.inputs = {
-    faces: new ElementBufferProperty("faces", MeshTypes.FACE),
+    faces: new CollectionProperty(undefined, [Face], "faces", "Faces", ""),
     make_holes: new BoolProperty(true, "make_holes", "Make Holes", "")
   }
   
   this.outputs = {
   }
   
-  this.inputs.faces.load_iterator(faceiter);
+  this.inputs.faces.set_data(faceiter);
   
   this.exec = function(op, mesh) {
     if (this.inputs.make_holes == false) {
@@ -275,13 +275,13 @@ function BridgeOp(edgeiter) {
   this.uiname = "Bridge Edges"
   this.name = "bridge_edges";
   this.inputs = {
-    edges: new ElementBufferProperty("edges", MeshTypes.EDGE),
+    edges: new CollectionProperty(undefined, [Edge], "faces", "Faces", ""),
   }
   
   this.outputs = {
   }
   
-  this.inputs.edges.load_iterator(edgeiter);
+  this.inputs.edges.set_data(edgeiter);
   
   this.exec = function(op, mesh) {
     var eset = new set(this.edgeiter);

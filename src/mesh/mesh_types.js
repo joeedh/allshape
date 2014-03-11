@@ -565,12 +565,19 @@ class GeoArrayIter {
   }
 }
 
-class AllTypesSelectIter {
+class AllTypesSelectIter extends TCanSafeIter {
   constructor(mesh) {
+    TCanSafeIter.call(this);
+    
     this.ret = {done : false, value : undefined};
     this.type = MeshTypes.VERT;
     this.mesh = mesh;
     this.iter = undefined : Iter;
+  }
+  
+  __tooliter__() {
+    var mask = MeshTypes.VERT | MeshTypes.EDGE | MeshTypes.FACE;
+    return new MSelectIter(mask, this.mesh);
   }
   
   __iterator__() {
