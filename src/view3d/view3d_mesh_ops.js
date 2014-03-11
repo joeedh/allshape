@@ -56,8 +56,8 @@ class MeshEditor extends View3DEditor {
   }
 
   render_selbuf(gl, view3d, typemask) {
-      if (this.ss_mesh) 
-        subsurf_selbuf_render(this.gl, this.ss_mesh, this.mesh, view3d.drawmats, 
+      if (this.object.ss_mesh) 
+        subsurf_selbuf_render(this.gl, this.object.ss_mesh, this.mesh, view3d.drawmats, 
                               (this.selectmode|MeshTypes.FACE|typemask));
       else
         render_mesh_selbuf(this.gl, this.mesh, view3d.drawmats, 
@@ -87,10 +87,8 @@ class MeshEditor extends View3DEditor {
     this.ctx = new Context();
     this.mesh = object.data;
     this.object = object;
-    
     this.gl = gl;
     this.selectmode = view3d.selectmode;
-    
     view3d.check_subsurf(this.ctx, object);
     
     this.mesh.update_callback(view3d, function(view3d, mesh, event) {
@@ -135,6 +133,8 @@ class MeshEditor extends View3DEditor {
       object.data.flag |= MeshFlags.USE_MAP_CO;
       subsurf_render(gl, view3d, object.ss_mesh, object.data, 
                      view3d.drawmats, !view3d.use_backbuf_sel, true);
+      
+      //this.view3d.test_render_selbuf(1|2|8)
     } else {
       this.mesh.flag &= ~MeshFlags.USE_MAP_CO;
       render_mesh(gl, view3d, object.data, view3d.drawmats, !view3d.use_backbuf_sel); 

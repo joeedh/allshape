@@ -668,7 +668,7 @@ class type_filter_iter extends ToolIter {
       ret = this.iter.next();
     }
     
-    if (ret.done)
+    if (ret.done && this.iter.reset)
       this.iter.reset();
     
     return ret;

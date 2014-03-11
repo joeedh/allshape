@@ -868,7 +868,7 @@ class ToolStack {
     function update_dataprop(d) {
       this2.undo();
       this2.redo();
-      var tool = this.undostack[this.undocur-1]; //XXX this MUST be correct
+      var tool = this2.undostack[this2.undocur-1]; //XXX this MUST be correct
       tool.saved_context = new SavedContext(new Context());
     }
     

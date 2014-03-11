@@ -317,6 +317,7 @@ class ToolMacro extends ToolOp {
       }
       
       op.undo_pre(ctx);    
+      op.exec_pre(ctx);
       op.exec(ctx);
     }
   }
@@ -338,6 +339,7 @@ class ToolMacro extends ToolOp {
             p.user_set_data.call(p);
         }
         op.modal_ctx = this.modal_ctx;
+        op.modal_tctx = this.modal_tctx;
         
         op.undo_pre(ctx);      
         return op.modal_init(ctx);
@@ -349,6 +351,7 @@ class ToolMacro extends ToolOp {
         }
         
         op.undo_pre(ctx);
+        op.exec_pre(ctx);
         op.exec(ctx);
       }
     }

@@ -20,7 +20,7 @@ class ESubdivideOp extends MeshOp {
     this.flag &= ~MeshOpFlags.USE_PARTIAL_UNDO;
     
     this.inputs = {
-      count : IntProperty(1, "count", "Count", "", [1, 25]), 
+      count : new IntProperty(1, "count", "Count", "", [1, 25]), 
       edges : new CollectionProperty(undefined, [Edge], "edges", "Edges", ""),
       fillmode : new FlagProperty(ES_FillFlags.EDGE_PATH, ES_FillFlags, undefined, "fillmode", "Fill Mode", "Method of connecting split edges")
     }

@@ -1003,14 +1003,21 @@ def p_method(p):
   p[0].add(statementlist)
   if p[5] != None:
     p[0].type = p[5]
-    
+
+def p_getset_id(p):
+  '''getset_id : ID
+               | NUMBER
+  '''
+  
+  p[0] = str(p[1])
+  
 def p_method_def(p):
   #I don't want to make get/set exclusive parse tokens,
   #so I'm going to enforce that here in the production function.
   
   '''method_def : method
-                | ID ID LPAREN RPAREN func_type_opt LBRACKET statementlist_opt RBRACKET
-                | ID ID LPAREN setter_param_list RPAREN func_type_opt LBRACKET statementlist_opt RBRACKET
+                | ID getset_id LPAREN RPAREN func_type_opt LBRACKET statementlist_opt RBRACKET
+                | ID getset_id LPAREN setter_param_list RPAREN func_type_opt LBRACKET statementlist_opt RBRACKET
   '''
   set_parse_globals(p)
   

@@ -378,7 +378,7 @@ class TransformOp extends ToolOp {
         }
       }
       
-      this.modal_g_app_state.jobs.queue_replace(job, start_func);
+      g_app_state.jobs.queue_replace(job, start_func);
     } else {
       for (var i=0; i<verts.length; i++) {
         verts[i].recalc_normal(false);

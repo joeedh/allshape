@@ -159,7 +159,6 @@ LoopCutOp.prototype.find_loop = function(ctx, edge) {
   
   is_loop = !loop_stopped;
   
-  console.log("is_loop", is_loop);
   return [edges, v1s, is_loop];
 }
 
@@ -220,7 +219,6 @@ LoopCutOp.prototype.recalc = function() {
           }
           if (found) continue;
           
-          console.log("yay2");
           var co2 = new Vector3(other_tri_vert(e, f).co);
           co2.multVecMatrix(pmat);
           
@@ -247,7 +245,6 @@ LoopCutOp.prototype.recalc = function() {
       this.drawlines.push(dl);
     }
   }
-  console.log(edges.length);
 }
 
 LoopCutOp.prototype.on_mousemove = function(event) {
@@ -298,7 +295,6 @@ LoopCutOp.prototype.end_modal = function(ctx) {
 
 LoopCutOp.prototype.exec = function(ctx) {
   var mesh = ctx.mesh;
-  console.log(this.inputs);
   
   var undoset = new set();
   var ops = new GArray();

@@ -406,7 +406,50 @@ class View3DHandler extends Area {
     co[1] = (co[1]+1.0)*0.5*this.size[1];
     co[2] = 0.0;
   }
+  
+  test_render_selbuf(typemask) {
+    var gl = this.gl;
+    
+    gl.colorMask(true, true, true, true);
+    gl.clear(gl.COLOR_BUFFER_BIT 
+           | gl.DEPTH_BUFFER_BIT 
+           | gl.STENCIL_BUFFER_BIT);
+          
+    gl.viewport(0, 0, this.size[0], this.size[1]);
+    gl.disable(gl.SCISSOR_TEST);
+    gl.disable(gl.DITHER);
+    gl.enable(gl.DEPTH_TEST);
+    gl.disable(gl.BLEND); 
+    
+    var sce = this.ctx.scene;
+    for (var ob in sce.objects) {
+      if (ob.sid == -1)
+        ob.sid = ibuf_idgen.idgen();
+      
+      this.sidmap[ob.sid] = new DataRef(ob);
+      
+      if (ob !== this.ctx.object) {
+        this.transmat.push();
+        this.transmat.multiply(ob.matrix);
+        this.render_selbuf_obj(this.gl, ob, typemask);
+        this.transmat.pop();
+      }
+    }
 
+    this.sidmap[this.ctx.object.sid] = new DataRef(this.ctx.object);
+    
+    this.transmat.push();
+    this.transmat.multiply(this.ctx.object.matrix);
+    this.editor.render_selbuf(this.gl, this, typemask);
+    this.transmat.pop();
+    
+    gl.flush();
+    gl.finish();
+    
+    gl.enable(gl.SCISSOR_TEST);
+    gl.enable(gl.DITHER);
+  }
+  
   ensure_selbuf(typemask) {//typemask is optional, additional type masks to this.select
     var gl = this.gl;
     var fbuf = this.get_framebuffer();

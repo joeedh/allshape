@@ -54,11 +54,6 @@ class Vertex extends Element {
     
     this.type = MeshTypes.VERT;
     
-    if (co == undefined)
-      co = [0, 0, 0];
-    if (no == undefined)
-      no = [0, 0, 0];
-    
     this.co = new Vector3(co);
     this.no = new Vector3(no);
     this.td_sco = new Vector3(co); //transform start coordinates
@@ -69,7 +64,7 @@ class Vertex extends Element {
       parametric surface.*/
     this.mapco = new Vector3(); 
   }
-
+  
   get loops() {
       return new MeshIterate(MeshIter.VERT_LOOPS, this);
   }

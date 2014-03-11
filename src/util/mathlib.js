@@ -1149,3 +1149,66 @@ class Mat4Stack {
     return mat;
   }
 }
+
+//little subsystem to create Vector3's backed
+//with typed array views.  possibly stupid.
+class WrapperVecPool {
+  constructor(nsize, psize=512, nsize=3) {
+    this.pools = [];
+    this.cur = 0;
+    this.psize = psize;
+    this.bytesize = 4;
+    this.nsize = nsize;
+    
+    this.new_pool();
+  }
+  
+  new_pool() {
+    var pool = new Float32Array(this.psize*this.nsize);
+    this.pools.push(pool);
+    this.cur = 0;
+  }
+  
+  get() {
+    if (this.cur >= this.psize)
+      this.new_pool();
+    
+    var pool = this.pools[this.pools.length-1];
+    var n = this.nsize;
+    var cur = this.cur;
+    var bs = this.bytesize;
+    
+    var view = new Float32Array(pool.buffer, Math.floor(cur*n*bs), n);
+    this.cur++;
+    
+    return new WVector3(view);
+  }
+}
+
+var test_vpool = new WrapperVecPool();
+
+class WVector3 extends Vector3 {
+  constructor(view, arg=undefined) {
+    this.view = view;
+    Vector3.call(this, arg);
+  }
+  
+  get 0() {
+    return this.view[0];
+  }
+  set 0(n) {
+    this.view[0] = n;
+  }
+  get 1() {
+    return this.view[1];
+  }
+  set 1(n) {
+    this.view[1] = n;
+  }
+  get 2() {
+    return this.view[2];
+  }
+  set 2(n) {
+    this.view[2] = n;
+  }
+}
