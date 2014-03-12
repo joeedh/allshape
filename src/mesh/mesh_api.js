@@ -760,7 +760,8 @@ function MeshAPI(Mesh mesh) {
       if (totw > 0) {
         w = Math.round(w/totw);
       } else {
-        console.log("Implement me: test edge against tesselation triangles?");
+        if (DEBUG.mesh_api) 
+          console.log("Implement me: test edge against tesselation triangles?");
         w = wind;
       }
       

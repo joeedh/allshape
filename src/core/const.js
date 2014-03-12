@@ -23,6 +23,7 @@ var DEBUG = {
   selbuf : false,
   toolstack : false,
   transform : false,
+  mesh_api : false,
   keyboard : false,
   modifier_keys : false,
   mouse : false,
