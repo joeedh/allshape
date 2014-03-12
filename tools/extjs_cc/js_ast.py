@@ -328,6 +328,7 @@ class VarDeclNode(IdentNode):
     
     s = ""
     if self.local and type(self.parent) != VarDeclNode: s += "var "
+    elif "static" in self.modifiers and type(self.parent) != VarDeclNode: s += "static "
     s += str(self.val)
     
     s = self.s(s)
@@ -1798,7 +1799,93 @@ class ClassMember (IdentNode):
     if len(self) > 0:
       s += self.s(" = ") + self[0].gen_js(0)
     return s
+
+
+class MethodNode(FunctionNode):
+  def __init__(self, name, is_static=False):
+    FunctionNode.__init__(self, name, glob.g_line)
+    self.is_static = is_static
+    
+    #self[0] : params
+    #self[1] : statementlist
+    
+  def gen_js(self, tlevel):
+    s = self.s(self.name + "(")
+    
+    for i, c in enumerate(self[0]):
+      if i > 0: s += c.s(", ")
+      s += c.gen_js(0)
+    s += ") {\n"
+    
+    s += self[1].gen_js(tlevel)
+    s += self.s(tab(tlevel-1) + "}")
+    
+    return s
+    
+class MethodGetter(MethodNode):
+  def __init__(self, name, is_static=False):
+    MethodNode.__init__(self, name, is_static)
+    #getters do not take any function parameters,
+    #but since we ultimately inherit
+    #from FunctionNode we add an empty param list
+    #here.
+    self.add(ExprListNode([]))
+    
+  def gen_js(self, tlevel):
+    s = self.s("get " + self.name + "(")
+    
+    for i, c in enumerate(self[0]):
+      if i > 0: s += c.s(", ")
+      s += c.gen_js(0)
+    s += ") {\n"
+    
+    s += self[1].gen_js(tlevel)
+    s += self.s(tab(tlevel-1) + "}")
+    
+    return s
+
+class MethodSetter(MethodNode):
+  def __init__(self, name, is_static=False):
+    MethodNode.__init__(self, name, is_static)
   
+  def gen_js(self, tlevel):
+    s = self.s("set " + self.name + "(")
+    
+    for i, c in enumerate(self[0]):
+      if i > 0: s += c.s(", ")
+      s += c.gen_js(0)
+    s += ") {\n"
+    
+    s += self[1].gen_js(tlevel)
+    s += self.s(tab(tlevel-1) + "}")
+    
+    return s
+    
+class ClassNode(Node):
+  def __init__(self, name, parents):
+    Node.__init__(self)
+  
+    self.name = name
+    self.parents = parents
+    
+  def gen_js(self, tlevel):
+    t1 = tab(tlevel)
+    t2 = tab(tlevel+1)
+    
+    s = self.s("class " + self.name + " ")
+    if self.parents != None and len(self.parents) > 0:
+      s += self.s("extends ")
+      for i, p in enumerate(self.parents):
+        if i > 0: s += self.s(", ")
+        s += p.gen_js(0)
+    s += self.s(" {\n")
+
+    for c in self:
+      s += t1 + c.gen_js(tlevel+1) + "\n"
+    s += "}"
+    
+    return s
+    
 def node_is_class(node):
   if type(node) != FunctionNode:
     return False
@@ -1818,3 +1905,4 @@ def line_print(s, do_print=True):
   if do_print:
     print(s2)
   return s2
+

@@ -16,9 +16,9 @@ class CanIter {
   }
 }
 
-var debug_int_1 = 0;
+var int debug_int_1 = 0;
 class GArray extends Array {
-  constructor(input) {
+  constructor(Object input) {
     Array<T>.call(this)
 
     if (input != undefined) {
@@ -28,18 +28,18 @@ class GArray extends Array {
     }
   }
 
-  pack(data) {
+  pack(Array<byte> data) {
     pack_int(data, this.length);
     for (var i=0; i<this.length; i++) {
       this[i].pack(data);
     }
   }
 
-  __iterator__() {
+  __iterator__() : GArrayIter<T> {
     return new GArrayIter<T>(this);
   }
     
-  toJSON() {
+  toJSON() : Array<Object> {
     var arr = new Array(this.length);
     
     var i = 0;
@@ -147,7 +147,7 @@ class GArray extends Array {
 EXPORT_FUNC(GArray)
 
 //turn defined_classes into a GArray, now that we've defined it (garray)
-var defined_classes = new GArray(defined_classes);
+var Function defined_classes = new GArray(defined_classes);
 
 function obj_value_iter(Object obj) {
   this.ret = {done : false, value : undefined};
@@ -186,7 +186,7 @@ function list<T>(Iterator<T> iter) : GArray<T> {
 }
 EXPORT_FUNC(list)
 
-var g_list = list;
+var Function g_list = list;
 
 class eid_list extends GArray {
   constructor(GeoArrayIter<Element> iter) {
@@ -220,10 +220,10 @@ Array.prototype.__hash__ = function() : String {
 //an iterator that allows removing elements from
 //a set during iteration
 class SafeSetIter {
-  constructor(set) {
+  constructor(set set1) {
     this.ret = {done : false, value : undefined};
-    this.set = set
-    this.iter = new SetIter(set)
+    this.set = set1
+    this.iter = new SetIter(set1)
     this.nextitem = undefined;
   }
   
@@ -268,10 +268,10 @@ function SafeSetIter<T>(set) {
 } */
 
 class SetIter {
-  constructor(set) {
+  constructor(set set1) {
     this.ret = {done : false, value : undefined};
-    this.set = set
-    this.iter = Iterator(set.items)
+    this.set = set1
+    this.iter = Iterator(set1.items)
   }
    
   next() : T {
@@ -296,7 +296,7 @@ class SetIter {
 EXPORT_FUNC(SetIter)
 
 class set {
-  constructor(input) {
+  constructor(Object input) {
     this.items = {}
     this.length = 0;
     
@@ -313,7 +313,7 @@ class set {
     }
   }
 
-  pack(data) {
+  pack(Array<byte> data) {
     pack_int(data, this.length);
     
     for (var item in this) {
@@ -321,7 +321,7 @@ class set {
     }
   }
 
-  toJSON() {
+  toJSON() : Array<Object> {
     var arr = new Array(this.length);
     
     var i = 0;
@@ -357,15 +357,15 @@ class set {
     this.length -= 1;
   }
 
-  safe_iter() : Iterator {
+  safe_iter() : SafeSetIter {
     return new SafeSetIter<T>(this);
   }
 
-  __iterator__() : Iterator {
+  __iterator__() : SetIter {
     return new SetIter<T>(this);
   }
 
-  union(set<T> b) {
+  union(set<T> b) : set {
     var newset = new set<T>(this);
     
     for (var T item in b) {
@@ -375,7 +375,7 @@ class set {
     return newset;
   }
 
-  has(T item) {
+  has(T item) : Boolean {
     if (item == undefined) {
       console.trace();
     }
@@ -413,13 +413,13 @@ class GArrayIter {
 }
 
 class HashKeyIter {
-  constructor(hash) {
+  constructor(hashtable hash) {
     this.ret = {done : false, value : undefined};
     this.hash = hash;
     this.iter = Iterator(hash.items);
   }
   
-  next() {
+  next() : IterRet {
     var reti = this.ret;
     var iter = this.iter;
     var items = this.hash.items;
@@ -448,7 +448,7 @@ class hashtable {
     this.length = 0;
   }
 
-  add(key, item) {
+  add(Object key, Object item) {
     if (!this.items.hasOwnProperty(key.__hash__())) 
       this.length++;
     
@@ -456,17 +456,17 @@ class hashtable {
     this.keymap[key.__hash__()] = key;
   }
 
-  remove(key) {
+  remove(Object key) {
     delete this.items[key.__hash__()]
     delete this.keymap[key.__hash__()]
     this.length -= 1;
   }
 
-  __iterator__() {
+  __iterator__() : HashKeyIter {
     return new HashKeyIter(this)
   }
 
-  values() {
+  values() : GArray<Object> {
     var ret = new GArray();
     for (var k in this) {
       ret.push(this.items[k]);
@@ -475,15 +475,15 @@ class hashtable {
     return ret;
   }
 
-  keys() {
+  keys() : GArray<Object> {
     return list(this);
   }
 
-  get(key) {
+  get(Object key) : Object {
     return this.items[key.__hash__()];
   }
 
-  set(key, item) {
+  set(Object key, Object item) {
     if (!this.has(key)) {
       this.length++;
     }
@@ -492,7 +492,7 @@ class hashtable {
     this.keymap[key.__hash__()] = key;
   }
 
-  union(b) {
+  union(hashtable b) : hashtable {
     var newhash = new hashtable(this)
     
     for (var item in b) {
@@ -502,7 +502,7 @@ class hashtable {
     return newhash;
   }
 
-  has(item) {
+  has(Object item) : Boolean {
     if (item == undefined)
       console.trace();
     return this.items.hasOwnProperty(item.__hash__())
@@ -1036,7 +1036,7 @@ function copy_into(dst, src) {
   return dst;
 }
 
-var __v3d_g_s = [];
+var Array<float> __v3d_g_s = [];
 function get_spiral(size)
 {
   if (__v3d_g_s.length == size*size)
@@ -1106,7 +1106,7 @@ function get_spiral(size)
 }
   
 //ltypeof function, that handles object instances of basic types
-var _bt_h = {
+var ObjMap<String> _bt_h = {
   "String" : "string",
   "RegExp" : "regexp",
   "Number" : "number",

@@ -65,7 +65,7 @@ class Vertex extends Element {
     this.mapco = new Vector3(); 
   }
   
-  get loops() {
+  get loops() : MeshIterate {
       return new MeshIterate(MeshIter.VERT_LOOPS, this);
   }
   
@@ -174,15 +174,15 @@ class Edge extends Element {
     return i;
   }
   
-  get verts() {
+  get verts() : MeshIterate {
     return new MeshIterate(MeshIter.EDGE_VERTS, this);
   }
   
-  get loops() {
+  get loops() : MeshIterate {
     return new MeshIterate(MeshIter.EDGE_LOOPS, this);
   }
   
-  get faces() {
+  get faces() : MeshIterate {
     return new MeshIterate(MeshIter.EDGE_FACES, this);
   }
 

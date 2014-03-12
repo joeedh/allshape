@@ -34,6 +34,8 @@ gcs["g_add_opt_initializers"] = "nao"
 gcs["g_do_docstrings"] = "ds"
 gcs["g_docstring_propname"] = "dsp"
 gcs["g_enable_static_vars"] = "esv"
+gcs["g_write_manifest"] = "wm"
+gcs["g_warn_types"] = "WT"
 
 def argv_to_argline():
   s = ""
@@ -244,5 +246,7 @@ class Glob(AbstractGlob):
     g_do_docstrings = False
     g_docstring_propname = "__doc__"
     g_enable_static_vars = True
+    g_write_manifest = True
+    g_warn_types = False
     
 glob = Glob()

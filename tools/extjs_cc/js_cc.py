@@ -270,7 +270,7 @@ from js_typespace import *
 from js_generators import *
 from js_process_ast import traverse, traverse_i, null_node, \
                            find_node, flatten_statementlists, \
-                           kill_bad_globals
+                           kill_bad_globals, expand_harmony_classes
 
 tst_js_arg_fmt = False
 
@@ -694,7 +694,15 @@ def parse_intern(data, create_logger=False, expand_loops=True, expand_generators
     
   if glob.g_force_global_strict:
     kill_bad_globals(result, typespace)
+  
+  if glob.g_write_manifest and glob.g_outfile != "":
+    buf = gen_manifest_file(result, typespace);
+    file = open(glob.g_outfile+".manifest", "w")
+    file.write(buf)
+    file.close()
     
+  expand_harmony_classes(result, typespace);
+  
   if glob.g_clear_slashr:
     print("\n")
   

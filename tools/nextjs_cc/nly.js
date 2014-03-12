@@ -3,10 +3,7 @@ function get_argvs() {
 }
 function cwd() {
   return process.cwd();
-  
 }
-
-console.log("\n");
 
 lexer = thelexer();
 parser = theparser();

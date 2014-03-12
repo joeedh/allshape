@@ -183,7 +183,10 @@ class JSTypeSpace:
     for k in self.functions:
       f = self.functions[k]
       if not node_is_class(f): continue
-      
+  
+  def warning(self, msg, srcnode):
+    sys.stderr.write("\n%s:(%s): warning: %s"%(srcnode.file, srcnode.line+1, msg))
+  
   def error(self, msg, srcnode):
     if glob.g_print_stack:
       pass #traceback.print_stack()

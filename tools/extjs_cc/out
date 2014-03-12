@@ -1,50 +1,21 @@
-function tst2(i) {
- return i+1;
+
+
+class bleh extends a, b, c {
+ get 0() {
+  return this._0;
+ }
+ set 0(n) {
+  this._0 = n;
+ }
+ normalizedDot(v, v2) {
+  static n1=new Vector3();
+  static n2=new Vector3();
+  n1.load(this);
+  n2.load(v);
+  n1.normalize();
+  n2.normalzie();
+  var b=n1(a, b);
+  return n1.n1(n2);
+ }
 }
-function tst(i) {
- return i;
-}
-arrlit = [0, 1, 2, 3];
-objlit = {a: 1, b: 2, c: 3}
-function main(a, b) {
- print(fstr(a/2));
- this.a = 1;
- this.b = 2;
- this.c = "yay";
- this.e = [0, 1, 2, 3];
- a = 1;
- b = 2;
- c = 3;
- var d=4;
- var g=5;
- this.bleh = function(a, b) {
-  console.log("yay!");
- }
- if (a==3) {
-   print("awesome");
- }
- else 
-  if (a==2) {
-   print(":)");
-   a = 1;
- }
- else 
-  if (a==3) {
-   print(";)");
- }
- else {
-  print("yay, else");
-  a = 2234.23432;
- }
- print("past if");
- return tst(-1);
-}
-var n=null;
-var m=new main();
-this.__iterator__ = function() {
- return this;
-}
-m+=2;
-t+=1, n = 2, m+=3;
-var obj={p: 1, c: 2, d: 3}
-var arr=[0, 1, 2, 3];
+

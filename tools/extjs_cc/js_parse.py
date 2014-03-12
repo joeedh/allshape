@@ -889,9 +889,9 @@ def p_class(p):
   for n in tail[1]:
     cls.add(n)
   
-  p[0] = expand_harmony_class(cls)
+  p[0] = cls;
   if p[3] != None:
-    p[0].template = p[3]
+    p[0].template = p[3];
   
 def p_exprclass(p):
   '''exprclass : CLASS id_opt class_tail'''
