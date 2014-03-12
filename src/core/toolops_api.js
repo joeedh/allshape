@@ -134,7 +134,6 @@ class ToolOp extends EventHandler, ToolOpAbstract {
   exec_pre(ToolContext tctx) {
     for (var k in this.inputs) {
       if (this.inputs[k].type == PropTypes.COLLECTION) {
-        console.log("yay, collection");
         this.inputs[k].ctx = tctx;
       }
     }
@@ -171,12 +170,13 @@ class ToolOp extends EventHandler, ToolOpAbstract {
     be copying the mesh unnecessarily*/
     
   undo_pre(Context ctx) {
-    var data1 = new Array<byte>()
-    ctx.mesh.pack(data1);
-    this._undocpy = new DataView(new Uint8Array(data1).buffer);
+    this._undocpy = g_app_state.create_undo_file();
   }
 
   undo(Context ctx) {
+    g_app_state.load_undo_file(this._undocpy);
+    
+    /*
     ctx.kill_mesh_ctx(ctx.mesh);
     
     var m2 = new Mesh()
@@ -185,6 +185,7 @@ class ToolOp extends EventHandler, ToolOpAbstract {
     m2.regen_render();
     
     ctx.set_mesh(m2);
+    */
   }
   
   //NOTE: this method can returned undefined!!!
@@ -299,9 +300,7 @@ class ToolMacro extends ToolOp {
     tools2.reverse();
     
     for (var op in tools2) {
-      //XXX
       op.undo(ctx);
-      ctx.set_mesh(g_app_state.mesh); //paranoid check
     }
   }
 

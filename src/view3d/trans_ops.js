@@ -671,11 +671,9 @@ class TranslateOp extends TransformOp {
     if (ob_active == undefined)
       ob_active = (new Context()).object;
     
-    console.log("--------------->", ob_active);
     TransformOp.default_slots(this, mode, ob_active);
     if (ob_active != undefined)
       this.inputs.OBJECT.set_data(ob_active);
-    console.log(this.inputs.OBJECT.data, ob_active);
   }
 
   can_call(ctx) {

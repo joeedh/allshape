@@ -461,6 +461,7 @@ class MeshEditor extends View3DEditor {
     var op = this.selectmode == MeshTypes.FACE ? new FaceLoopOp() : new EdgeLoopOp();
     
     op.inputs.eid_es.data.push(e.eid);
+    op.inputs.selmode.set_data(view3d.selectmode);
     
     if (event.shiftKey) {
       op.inputs.mode.data = (e.flag & Flags.SELECT) ? "subtract" : "add";

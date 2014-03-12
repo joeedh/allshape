@@ -440,7 +440,9 @@ var _st_packers = [
     var stt = thestruct.get_struct(type.data);
         
     if (val.constructor.name != type.data && (val instanceof cls)) {
-      console.log(val.constructor.name + " inherits from " + cls.name);
+      if (DEBUG.Struct) {
+        console.log(val.constructor.name + " inherits from " + cls.name);
+      }
       stt = thestruct.get_struct(val.constructor.name);
     } else if (val.constructor.name == type.data) {
       stt = thestruct.get_struct(type.data);
@@ -450,7 +452,7 @@ var _st_packers = [
     }
     
     if (stt.id == 0) {
-      console.log("-------------------------------->", stt);
+      //console.log("-------------------------------->", stt);
     }
     packer_debug_start("tstruct '" + stt.name + "'");
     
@@ -1109,7 +1111,6 @@ function init_struct_packer() {
       }
     }    
   }
-  console.log("done");
 }
 
 function gen_struct_str() {
@@ -1295,8 +1296,6 @@ function time_packers() {
   }
   tarr.sort();
   
-  console.log("pack result: ", tarr[tot/2]);
-  
   tot = 200;
   tarr = new Array(tot);
   var ist = istruct;
@@ -1309,8 +1308,6 @@ function time_packers() {
     
     tarr[i] = end-start;
   }
-  
-  console.log("schema result: ", tarr[tot/2]);
 }
 
 function profile_schema() {

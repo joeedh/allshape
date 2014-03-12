@@ -4,7 +4,7 @@ class SelectOpAbstract extends ToolOp {
     
     this._undo_presel = [];
   }
-
+  
   undo_pre(ctx) {
     var m = ctx.mesh
     
@@ -261,7 +261,7 @@ class EdgeLoopOp extends SelectOpAbstract {
 
 class FaceLoopOp extends SelectOpAbstract {
   constructor(mode) {
-    SelectOpAbstract.call(this, "mesh_floop_select", "Face Loop Select);
+    SelectOpAbstract.call(this, "mesh_floop_select", "Face Loop Select");
     
     this.is_modal = false;
     this.flag = ToolFlags.HIDE_TITLE_IN_LAST_BUTTONS;

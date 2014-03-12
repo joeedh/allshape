@@ -310,9 +310,7 @@ class View3DHandler extends Area {
     this.ctx = new Context();
     this.ctx.mesh = this.mesh;
     
-    console.log(this.editors);
     for (var e in this.editors) {
-      console.log(e);
       e.view3d = this;
       e.mesh = this.mesh;
       e.ctx = this.ctx;
@@ -401,6 +399,9 @@ class View3DHandler extends Area {
   project(Vector3 co, Matrix4 pmat) {
     pmat.isPersp = true;
     co.multVecMatrix(pmat);
+    
+    if (this.size == undefined)
+      this.size = g_app_state.raster.viewport[1];
     
     co[0] = (co[0]+1.0)*0.5*this.size[0];
     co[1] = (co[1]+1.0)*0.5*this.size[1];
@@ -788,13 +789,17 @@ class View3DHandler extends Area {
   
     k.add(new KeyHandler("K", [], "Debug Test"), new FuncKeyHandler(function (ctx) {
       //test compression
-      console.log("file compression test");
-      //g_app_state.load_user_file_new(g_app_state.create_user_file_new(undefined, true, true));
+      //console.log("file compression test");
+      //g_app_state.load_user_file_new(g_app_state.create_user_file_new(true, true));
+      /*
       var d = [];
       istruct.write_object(d, g_app_state.toolstack);
       d = Iuppiter.compress(d)
       
       console.log("toolstack serialized: ", d, d.length);
+      */
+      
+      g_app_state.load_undo_file(g_app_state.create_undo_file());
       
       //new Context().scene.graph.exec();
     }));

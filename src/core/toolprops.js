@@ -195,7 +195,6 @@ class RefListProperty extends ToolProperty {
       ToolProperty.prototype.set_data.call(this, undefined);
     } else {
       var lst = new DataRefList();
-      console.log(this.types);
       for (var i=0; i<value.length; i++) {
         var block = value[i];
         

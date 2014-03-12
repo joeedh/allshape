@@ -5,6 +5,14 @@ var FileFlags = {COMPRESSED_LZSTRING : 1};
 /*Globals*/
 var AppState g_app_state = undefined;
 
+class FileData {
+  constructor(blocks, fstructs, version) {
+    this.blocks = blocks;
+    this.fstructs = fstructs;
+    this.version = version;
+  }
+}
+
 class AppSettings {
   constructor() {
     this.unit_scheme = "imperial";
@@ -250,7 +258,7 @@ class AppState {
   }
 
   set_startup_file() {
-    var buf = this.create_user_file_new(undefined, true, false);
+    var buf = this.create_user_file_new(true, false);
     buf = new Uint8Array(buf.buffer);
     
     /*var ar = [];
@@ -264,6 +272,31 @@ class AppState {
     localStorage.startup_file = buf;
   }
 
+  create_undo_file() {
+    var buf = this.create_user_file_new(true, false, false);
+    
+    return buf;
+  }
+  
+  load_undo_file(undofile) {
+    var screen = this.screen;
+    var toolstack = this.toolstack;
+    
+    console.log(undofile);
+    
+    var datalib = new DataLib();
+    this.datalib = datalib;
+    var filedata = this.load_blocks(undofile);
+    
+    this.link_blocks(datalib, filedata);
+    
+    //this.load_user_file_new(undofile);
+    this.screen = screen;
+    this.toolstack = toolstack;
+    
+    this.screen.ctx = new Context();
+  }
+  
   /*
     new file format:
     ALSH          | 4 chars
@@ -286,8 +319,8 @@ class AppState {
     data (of length data_length-4)
     
   */
-  create_user_file_new(different_mesh, gen_dataview=true, compress=false) : ArrayBuffer {
-    var mesh = different_mesh != undefined ? different_mesh : this.mesh;
+  create_user_file_new(gen_dataview=true, compress=false, save_screen=true) : ArrayBuffer {
+    var mesh = this.mesh;
     
     function bheader(data, type, subtype) {
       pack_static_string(data, type, 4);
@@ -322,13 +355,15 @@ class AppState {
     bheader(data, "SDEF", "SDEF") ;
     pack_string(data, buf);
     
-    //write screen block
-    var data2 = []
-    istruct.write_object(data2, this.screen);
+    if (save_screen) {
+      //write screen block
+      var data2 = []
+      istruct.write_object(data2, this.screen);
 
-    bheader(data, "SCRN", "STRT");
-    pack_int(data, data2.length);
-    data = data.concat(data2);
+      bheader(data, "SCRN", "STRT");
+      pack_int(data, data2.length);
+      data = data.concat(data2);
+    }
     
     var data2 = [];
     for (var lib in this.datalib.datalists.values()) {
@@ -418,7 +453,7 @@ class AppState {
     }
   }
 
-  load_user_file_new(DataView data, unpack_ctx uctx) {
+  load_user_file_new(DataView data, unpack_ctx uctx, use_existing_screen=false) {
     if (uctx == undefined) {
       uctx = new unpack_ctx();
     }
@@ -557,6 +592,7 @@ class AppState {
         gen_default_file(this2.size);
         this2.size = size;
         this2.datalib = datalib;
+        screen = this2.screen;
       } else {
         var size =  new Vector2(this2.size);
         this2.reset_state(screen, undefined);
@@ -587,8 +623,6 @@ class AppState {
         this2.screen.canvas = new UICanvas(this2.active_view3d, [new Vector2(this2.screen.pos), new Vector2(this2.screen.size)])
       }
       
-      console.log("-------------------------->", this2.size, this2.screen.size);
-      
       this2.screen.on_resize(this2.size);
       this2.screen.size = this2.size;
       
@@ -596,6 +630,172 @@ class AppState {
     }
     
     load_state();
+  }
+
+  load_blocks(DataView data, unpack_ctx uctx) {
+    if (uctx == undefined) {
+      uctx = new unpack_ctx();
+    }
+    
+    var s = unpack_static_string(data, uctx, 4);
+    if (s != "ALSH") {
+      console.log(s, s.length);
+      console.log(data);
+      throw new Error("Could not load file.");
+    }
+    
+    var file_flag = unpack_int(data, uctx);
+    
+    var version_major = unpack_int(data, uctx);
+    var version_minor = unpack_int(data, uctx)/100.0;
+    
+    var version = version_major + version_minor;
+    
+    if (file_flag & FileFlags.COMPRESSED_LZSTRING) {
+      console.log("decompressing. . .");
+      
+      data = new Uint16Array(data.buffer.slice(uctx.i, data.byteLength));
+      var s = ""
+      for (var i=0; i<data.length; i++) {
+        s += String.fromCharCode(data[i]);
+      }
+      data = LZString.decompress(s)
+      
+      var data2 = new Uint8Array(data.length);
+      console.log("uncompressed length: ", data.length);
+      
+      for (var i=0; i<data.length; i++) {
+        data2[i] = data.charCodeAt(i);
+      }
+      
+      data = new DataView(data2.buffer);
+      uctx.i = 0;
+    }
+    
+    var blocks = new GArray();
+    var fstructs = new STRUCT();
+    
+    var tmap = get_data_typemap();
+    
+    while (uctx.i < data.byteLength) {
+      var type = unpack_static_string(data, uctx, 4);
+      var subtype = unpack_static_string(data, uctx, 4);
+      var len = unpack_int(data, uctx);
+      var bdata;
+      
+      if (subtype == "JSON") {
+        bdata = unpack_static_string(data, uctx, len);
+      } else if (subtype == "STRT") {
+        if (type == "BLCK") {
+          var dtype = unpack_int(data, uctx);
+          bdata = unpack_bytes(data, uctx, len-4);
+          bdata = [dtype, bdata];
+        } else {
+          bdata = unpack_bytes(data, uctx, len);        
+        }
+      } else if (subtype == "SDEF") {
+        bdata = unpack_static_string(data, uctx, len).trim();
+        fstructs.parse_structs(bdata);
+      } else {
+        console.log(subtype, type, uctx.i, data.byteLength);
+        console.trace();
+        throw new Error("Unknown block type '" + subtype + "', " + JSON.stringify({subtype: subtype, type : type}));
+      }
+      
+      blocks.push({type : type, subtype : subtype, len : len, data : bdata});
+    }
+    
+    return new FileData(blocks, fstructs, version);
+  }
+  
+  link_blocks(DataLib datalib, FileData filedata) {
+    var blocks = filedata.blocks;
+    var fstructs = filedata.fstructs;
+    var version = filedata.version;
+    
+    var tmap = get_data_typemap();
+    
+    for (var i=0; i<blocks.length; i++) {
+      var b = blocks[i];
+      
+      if (b.subtype == "JSON") {
+        b.data = JSON.parse(b.data);
+      } else if (b.subtype == "STRT") { //struct data should only be lib blocks
+        if (b.type == "BLCK") {
+          var lt = tmap[b.data[0]];
+          
+          lt = lt != undefined ? lt.name : lt;
+          
+          b.data = fstructs.read_object(b.data[1], tmap[b.data[0]]);
+          
+          datalib.add(b.data, false);
+        } else {
+          if (b.type == "SCRN") {
+            b.data = fstructs.read_object(b.data, Screen);
+          }
+        }
+      }
+    }
+    
+    //ensure we get an error if the unpacking code/
+    //tries to access g_app_state.active_view3d.
+    this.active_view3d = undefined;
+    
+    var getblock = wrap_getblock(datalib);
+    var getblock_us = wrap_getblock_us(datalib);  
+    var screen = undefined;
+    
+    this.mesh = undefined;
+    this.object = undefined;
+    this.scene = undefined;
+    
+    //handle version changes
+    this.do_versions(datalib, blocks, version);
+    
+    for (var i=0; i<blocks.length; i++) {
+      var block = blocks[i];
+      
+      if (block.subtype == "STRT" && block.type != "SCRN") {
+        block.data.data_link(block.data, getblock, getblock_us);
+      }
+    }
+    
+    for (var i=0; i<blocks.length; i++) {
+      var block = blocks[i];
+      
+      if (block.type == "SCRN") {
+        screen = block.data;
+      }
+    }
+    
+    if (screen != undefined) {
+      this.active_view3d = undefined;
+      
+      for (var sa in screen.areas) {
+        //need to get rid of appstate.active_view3d
+        if (sa.area instanceof View3DHandler) {
+          this.active_view3d = sa.area;
+          break;
+        }
+      }
+    }
+    
+    var ctx = new Context();
+    this.mesh = ctx.mesh;
+    
+    if (screen != undefined) {
+      screen.view3d = this.active_view3d;
+      screen.data_link(screen, getblock, getblock_us);
+    }
+    
+    if (screen != undefined) {
+      if (screen.canvas == undefined) {
+        screen.canvas = new UICanvas(this.active_view3d, [new Vector2(screen.pos), new Vector2(screen.size)])
+      }
+      
+      screen.on_resize(this.size);
+      screen.size = this.size;
+    }
   }
 
   create_user_file_old(Mesh different_mesh) : ArrayBuffer {
@@ -834,10 +1034,10 @@ class ToolStack {
 
   undo() {
     if (this.undocur > 0) {
+      this.appstate.jobs.kill_owner_jobs(this.appstate.mesh);
+      
       this.undocur--;
       this.undostack[this.undocur].undo(new Context());
-      
-      this.appstate.jobs.kill_owner_jobs(this.appstate.mesh);
     }
   }
 
@@ -929,9 +1129,12 @@ class ToolStack {
     var ctx = new Context();
     
     if (tool.can_call(ctx) == false) {
-      console.trace()
+      if (DEBUG.toolstack) {
+        console.trace()
+        console.log(typeof tool);
+      }
+      
       console.log("Can not call tool '" + tool.constructor.name + "'");
-      console.log(typeof tool);
       return;
     }
     

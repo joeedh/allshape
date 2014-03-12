@@ -421,7 +421,7 @@ class Dag {
     var nmap = this.idmap = {};
     var sockmap = {};
     
-    console.log("in DAG data link");
+    //console.log("in DAG data link");
     //console.log(nodes);
     //console.log(nodes.length);
     

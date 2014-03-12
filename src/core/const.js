@@ -21,6 +21,7 @@ var DEBUG = {
   datalib : false, 
   glext : false, //prints gl extensions to console on startup
   selbuf : false,
+  toolstack : false,
   transform : false,
   keyboard : false,
   modifier_keys : false,
