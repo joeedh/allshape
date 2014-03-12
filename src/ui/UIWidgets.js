@@ -372,7 +372,6 @@ UINumBox.prototype.on_mousedown = function(MouseEvent event) {
   }
   
   if (event.button == 0 && !this.clicked && !event.shiftKey) {
-    console.log(event.x, event.y)
     this.push_modal()
     
     this.start_mpos = [event.x, event.y]
@@ -380,8 +379,6 @@ UINumBox.prototype.on_mousedown = function(MouseEvent event) {
     this.clicked = true;
     this.do_recalc();
   } else if (event.shiftKey) {
-    console.log(event.x, event.y)
-    
     //swap out with text button
     var unit = this.unit;
     
@@ -498,7 +495,7 @@ UINumBox.prototype.build_draw = function(UICanvas canvas) {
   var tsize = canvas.textsize(str)
   
   pad = (this.size[0] - tsize[0])*0.5
-  canvas.text([pad, 0.45*(this.size[1]-tsize[1])+1], str, uicolors["BoxText"]);
+  canvas.text([pad, 0.25*(this.size[1]-tsize[1])+1], str, uicolors["BoxText"]);
   
   var siz = this.size[1]/2.0
   var x = 4, y= (this.size[1]-siz)/2;
@@ -701,7 +698,6 @@ UIMenuLabel.prototype.spawn_menu = function(Array<int> mpos) {
   }
   
   var this2 = this;
-  console.log("co", this.callback_override);
   
   if (this.menu.callback != this.callback_override) {
     this.menu_callback = menu.callback;
@@ -1233,7 +1229,6 @@ UITextBox.prototype.build_draw = function(UICanvas canvas) {
         if (x == undefined)
           x = 0;
         
-        console.log(x, this.size[1]);
         canvas.line([x, 0], [x, this.size[1]], uicolors["HighlightCursor"], undefined, 2.0);
       }
     }
@@ -1326,7 +1321,6 @@ class UIListBox extends ColumnFrame {
   }
   
   on_keydown(event) {
-    console.log(event);
     if (event.keyCode == charmap["Up"]) {
       this.jump(-1);
     } else if (event.keyCode == charmap["Down"]) {

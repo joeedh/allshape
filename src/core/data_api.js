@@ -298,6 +298,7 @@ class DataAPI {
     
     this.root_struct = ContextStruct;
     this.cache = {};
+    this.evalcache = {};
   }
   
   parse_call_line_intern(ctx, line) {
@@ -664,25 +665,39 @@ class DataAPI {
       value = Math.floor(value);
     
     if (p.use_path) {
+      var func;
+      var code = "func = function(ctx, value) {\n"
+      
       var value2 = value;
       if (p.data.type == PropTypes.ENUM) {
         value2 = p.data.values[value2];
       } 
       
-      obj = eval(ret[2]);
+      code += "  obj = " + ret[2] + ";\n";
+      
       if (p.data.type == PropTypes.VEC3 && ret[3]) {
-        //eval("obj." + ret[1] + " = value2;");
-        obj[ret[1]] = value2;
+        code += "obj[" + ret[1] + "] = value";
       } else if (p.data.type == PropTypes.FLAG && ret[3]) {
         if (value2) {
-          value2 = eval(ret[2]) | Number(ret[1]);
+          code += "  value = value | " + ret[1] + ";\n";
         } else {
-          value2 = eval(ret[2]) & ~Number(ret[1]);
+          code += "  value = value & ~(" + ret[1] + ");\n";
         }
-        eval(ret[2] + " = value2;");
+        code += "  " + ret[2] + " = value;\n";
       } else {
-        eval("obj." + p.path + " = value2;");
+        code += "  obj." + p.path + " = value;\n";
       }
+      
+      code += "}"
+      
+      if (!(code in this.evalcache)) {
+        eval(code);
+        this.evalcache[code] = func;
+      } else {
+        func = this.evalcache[code];
+      }
+      
+      func(ctx, value);
     }
     
     if (p.data.type == PropTypes.VEC3 && ret[3]) {
@@ -708,26 +723,63 @@ class DataAPI {
     }
   }
   
-  get_prop(ctx, str) {
+  get_prop(Context ctx, String str) : Object {
     var ret = this.resolve_path(ctx, str);
     
     if (ret == undefined) {
       console.log("error getting property")
-      return;
+      return undefined;
     }
     
     var p = ret[0];
     
     if (p.use_path) {
-      var obj = eval(ret[2]);
-      var ret;
+      var func;
+      var code = "func = function(ctx) {\n  var obj=" + ret[2] + ";\n";
       
       if (p.data.type == PropTypes.FLAG && ret[3]) {
-        var ret2 = eval("(obj & "+ret[1]+")");
-        ret = ret2 > 0 && ret2 == Number(ret[1]);
+        code += "  return (obj & " + ret[1] + ")";
+        code += " == " + ret[1] + ";\n"
       } else {
-        ret = eval("obj." + p.path);
+        code += "  return obj." + p.path + ";\n";
       }
+      
+      code += "}\n"
+      
+      if (!(code in this.evalcache)) {
+        try {
+          eval(code);
+        } catch (error) {
+          console.log("===syntax error compiling internal datapath getter===");
+          var s = "1  ";
+          var l = 2;
+          for (var i=0; i<code.length; i++) {
+            var c = code[i];
+            
+            s += c;
+            
+            if (c == "\n") {
+              var lstr = l.toString();
+              s += lstr;
+              
+              for (var j=0; j<2-lstr.length; j++) {
+                s += " ";
+              }
+              
+              s += " ";
+              l++;
+            }
+          }
+          
+          console.log(s);
+          throw error;
+        }
+        this.evalcache[code] = func;
+      } else {
+        func = this.evalcache[code];
+      }
+      
+      ret = func(ctx)
       
       if (p.data.type == PropTypes.ENUM) {
         ret = p.data.keys[ret];
@@ -747,6 +799,7 @@ class DataAPI {
       }
     }
   }
+  
   /*
   get_prop_time(ctx, str) {
     var ts = []

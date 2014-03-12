@@ -10,7 +10,10 @@ class CacheStack extends Array {
   
   pop() {
     var ret = Array.prototype.pop.apply(this, arguments);
-    this.dellist.push(ret);
+    
+    if (this.dellist.length < 64) {
+      this.dellist.push(ret);
+    }
     
     return ret;
   }

@@ -81,7 +81,16 @@ class MeshEditor extends View3DEditor {
     var menu = toolop_menu(view3d.ctx, "Add", oplist);
     view3d.call_menu(menu, view3d, mpos);
   }
-
+  
+  _update_callback(view3d, mesh, event) {
+    if (event == MeshEvents.RECALC) {
+      if (mesh.render.recalc & (MeshRecalcFlags.REGEN_TESS|MeshRecalcFlags.REGEN_COS)) 
+      {
+        view3d.redo_selbuf = true;
+      }
+    }
+  }
+  
   draw_object(gl, view3d, object, is_active)
   {
     this.ctx = new Context();
@@ -91,14 +100,7 @@ class MeshEditor extends View3DEditor {
     this.selectmode = view3d.selectmode;
     view3d.check_subsurf(this.ctx, object);
     
-    this.mesh.update_callback(view3d, function(view3d, mesh, event) {
-      if (event == MeshEvents.RECALC) {
-        if (mesh.render.recalc & (MeshRecalcFlags.REGEN_TESS|MeshRecalcFlags.REGEN_COS)) 
-        {
-          view3d.redo_selbuf = true;
-        }
-      }
-    });
+    this.mesh.update_callback(view3d, this._update_callback);
     
     this.gl = gl;
     if (object.ss_mesh != null) {
@@ -146,10 +148,10 @@ class MeshEditor extends View3DEditor {
     var ctx = new Context();
     var row = new RowFrame(ctx);
     
-    row.size = [148, view3d.size[1]-50]
+    row.size = [148, view3d.size[1]-34-30]
     row.draw_background = true
     row.rcorner = 100.0
-    row.pos = [0, 28]
+    row.pos = [0, 33]
     
     view3d.cols.push(row);
     view3d.add(row);
@@ -185,8 +187,8 @@ class MeshEditor extends View3DEditor {
     
     col.draw_background = true;
     col.rcorner = 100.0
-    col.pos = [0,0]
-    col.size = [view3d.size[0], 30];
+    col.pos = [0,0] 
+    col.size = [view3d.size[0], 35];
     
     col.prop("object.use_subsurf");
     

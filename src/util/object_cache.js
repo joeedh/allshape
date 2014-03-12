@@ -113,6 +113,8 @@ class ObjectCache {
   //object each time to get the right
   //behavior.
   raw_fetch(templ, tot=CACHE_CYCLE_SIZE) {
+    //return _cache_copy_object(templ); //XXX
+    
     var id = templ._c_id;
     if (id == undefined) id = _c_idgen++;
     
@@ -179,7 +181,16 @@ class ObjectCache {
       arr = this.arrays[len];
     }
     
-    return this.raw_fetch(arr);
+    var arr2 = this.raw_fetch(arr);
+    
+    if (arr2.length > 8) {
+      for (var i=0; i<arr2.length; i++) {
+        arr2[i] = undefined;
+      }
+      arr2.length = len;
+    }
+    
+    return arr2;
   }
 }
 

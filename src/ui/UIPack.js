@@ -363,6 +363,7 @@ class ColumnFrame extends UIPackFrame {
     
     var sum=0;
     var max_wid = 0;
+    var max_hgt = 0;
     for (var c in this.children) {
       var s;
       
@@ -372,11 +373,12 @@ class ColumnFrame extends UIPackFrame {
         s = [c.size[0], c.size[1]];
       
       max_wid = Math.max(s[0], max_wid);
+      max_hgt = Math.max(s[1], max_hgt);
       sum += s[0];
     }
     
     var x;
-    var y = 2;
+    var y = (this.size[1] - max_hgt)*0.5;
     var pad = 4;
     max_wid *= ((this.size[0])/sum);
     
