@@ -161,7 +161,7 @@ def match_re(re, data):
   start, end = m.start(), m.end()
   return start==0 and end == len(data)
   
-pass_re = re.compile("{SHA}[a-zA-Z0-9=\-/]+")
+pass_re = re.compile("{SHA}[a-zA-Z0-9+=\-/]+")
 max_pass_length = 128
 class PassValidate(SQLType):
   maxlen = max_pass_length
