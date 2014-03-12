@@ -6,7 +6,7 @@ function to_la(info, lex, eof) {
     
     if (tok == undefined) {
       info.att = ""
-      return eof;
+      return {match : eof, tok : undefined};
     }
     
     info.att = tok.value;
@@ -20,11 +20,12 @@ function to_la(info, lex, eof) {
     //console.log(match, info.att, info.offset);
     
     tok.symbol = match;
-    return match;
+    
+    return {match : match, tok : tok};
   } catch (err) {
     if (err instanceof PUTLParseError) {
       info.att = "";
-      return -1;
+      return {match : -1, tok : undefined};
     } else {
       print_stack(err);
       throw err;
@@ -51,10 +52,6 @@ function do_prod(name, stack, len) {
   }
   return prod[0];
 }
-
-var __dbg_withparsetree = false;
-var __dbg_withtrace = true;
-var __dbg_withstepbystep = false;
 
 function tostr(obj) {
   var visit = [];
@@ -121,3 +118,7 @@ function tostr(obj) {
   
   return ret;
 }
+
+var __dbg_withparsetree = false;
+var __dbg_withtrace = false;
+var __dbg_withstepbystep = false;
