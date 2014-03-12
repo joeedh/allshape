@@ -17,7 +17,7 @@ class ESubdivideOp extends MeshOp {
     this.name = "EdgeSubdivide";
     this.uiname = "Split Edges"
     
-    this.flag &= ~MeshOpFlags.USE_PARTIAL_UNDO;
+    this.flag &= ~ToolFlags.USE_PARTIAL_UNDO;
     
     this.inputs = {
       count : new IntProperty(1, "count", "Count", "", [1, 25]), 

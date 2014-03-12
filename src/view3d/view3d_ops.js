@@ -287,7 +287,7 @@ class MeshToolOp extends ToolOp {
   }
 
   undo_pre(ctx) {
-    if (this.meshop.flag & MeshOpFlags.USE_PARTIAL_UNDO) {
+    if (this.meshop.flag & ToolFlags.USE_PARTIAL_UNDO) {
       this._partial = ctx.mesh.gen_partial(ctx.mesh.selected, this.meshop.undo_expand_lvl);
     } else {
       prior(MeshToolOp, this).undo_pre.call(this, ctx);
@@ -295,7 +295,7 @@ class MeshToolOp extends ToolOp {
   }
 
   undo(ctx) {
-    if (this.meshop.flag & MeshOpFlags.USE_PARTIAL_UNDO) {
+    if (this.meshop.flag & ToolFlags.USE_PARTIAL_UNDO) {
       var part = this._partial;
       var mesh = ctx.mesh;
       

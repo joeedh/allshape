@@ -16,8 +16,6 @@ var MPropTypes = {
   BOOL: 8
 };
 
-var MeshOpFlags = {USE_PARTIAL_UNDO : 1}
-
 /*note: unlike ToolOps, MeshOps can call each other and recurse.*/
 class MeshOp extends ToolOpAbstract {
   constructor(apiname, uiname) {
@@ -576,6 +574,8 @@ class VertSmoothOp extends MeshOp {
   constructor(vertiter) {
     MeshOp.call(this);
     
+    this.flag |= ToolFlags.USE_PARTIAL_UNDO;
+    
     this.uiname = "Vertex Smooth"
     this.name = "VertSmooth";
     this.inputs = {
@@ -596,7 +596,7 @@ class ExtrudeFacesOp extends MeshOp {
   constructor(faceiter) {
     MeshOp.call(this);
     
-    this.flag |= MeshOpFlags.USE_PARTIAL_UNDO;
+    this.flag |= ToolFlags.USE_PARTIAL_UNDO;
 
     this.uiname = "Extrude Faces"
     this.name = "ExtrudeFaces";
@@ -720,7 +720,7 @@ class ExtrudeEdgesOp extends MeshOp {
   constructor(edgeiter) {
     MeshOp.call(this);
     
-    this.flag |= MeshOpFlags.USE_PARTIAL_UNDO;
+    this.flag |= ToolFlags.USE_PARTIAL_UNDO;
 
     this.name = "Extrude Edges"
     this.name = "ExtrudeEdges";
@@ -860,7 +860,7 @@ class ExtrudeAllOp extends MeshOp {
   constructor(elementiter) {
     MeshOp.call(this);
     
-    this.flag |= MeshOpFlags.USE_PARTIAL_UNDO;
+    this.flag |= ToolFlags.USE_PARTIAL_UNDO;
     
     this.name = "Extrude"
     this.name = "ExtrudeAll";

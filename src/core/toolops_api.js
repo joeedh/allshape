@@ -84,7 +84,7 @@ PropPair.STRUCT = """
 """;
 
 var UndoFlags = {IGNORE_UNDO: 2}
-var ToolFlags = {HIDE_TITLE_IN_LAST_BUTTONS: 1}
+var ToolFlags = {HIDE_TITLE_IN_LAST_BUTTONS: 1, USE_PARTIAL_UNDO : 2}
 
 class ToolOp extends EventHandler, ToolOpAbstract {
   constructor(apiname="(undefined)", uiname="(undefined)") {

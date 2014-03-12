@@ -6,7 +6,7 @@ function ContextCreateOp(vertiter) {
   this.uiname = "Create Face"
   this.name = "ContextCreate";
   
-  //this.flag |= MeshOpFlags.USE_PARTIAL_UNDO;
+  //this.flag |= ToolFlags.USE_PARTIAL_UNDO;
     
   this.inputs = {
     verts: new CollectionProperty(undefined, [Vertex], "verts", "Vertices", "")
