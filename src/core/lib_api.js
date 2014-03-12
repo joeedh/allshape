@@ -162,11 +162,11 @@ class DataRefList extends GArray {
     }
   }
   
-  __iterator__() {
+  __iterator__() : DataRefListIter{
     return new DataRefListIter(this, new Context());
   }
   
-  get(i, return_block=true) {
+  get(int i, Boolean return_block=true) {
     if (return_block) {
       var dl = this.datalib != undefined ? this.datalib : g_app_state.datalib;
       return dl.get(this[i]);
@@ -214,7 +214,7 @@ class DataRefList extends GArray {
     this.pop(i);
   }
   
-  pop(i, return_block=true) {
+  pop(int i, Boolean return_block=true) {
     var ret = GArray.prototype.pop.call(this, i);
     
     if (return_block)
@@ -250,7 +250,7 @@ class DataRefList extends GArray {
   }
  
   //inserts *before* index
-  insert(index, b) {
+  insert(int index, b) {
     if (!(b = this._b(b))) return;
     
     GArray.prototype.insert.call(this, b);
@@ -264,7 +264,7 @@ class DataRefList extends GArray {
 }
 
 class DataList {
-  constructor(type) {
+  constructor(int type) {
     this.list = new GArray();
     this.namemap = {};
     this.type = type;
@@ -284,7 +284,7 @@ class DataLib {
     this.idgen = new EIDGen();
   }
   
-  get_datalist(typeid) {
+  get_datalist(int typeid) : DataList {
     var dl;
     
     if (!this.datalists.has(typeid)) {
@@ -297,27 +297,26 @@ class DataLib {
     return dl;
   }
   
-  get scenes() {
+  get scenes() : DataList<Scene> {
     return this.get_datalist(DataTypes.SCENE);
   }
   
-  get objects() {
+  get objects() : DataList<ASObject> {
     return this.get_datalist(DataTypes.OBJECT);
   }
   
-  get meshes() {
+  get meshes() : DataList<Mesh> {
     return this.get_datalist(DataTypes.MESH);
   }
   
-  search(type, prefix) {
+  search(int type, String prefix) : GArray<DataBlock> {
     //this is what red-black trees are for.
     //oh well.
     
     var list = this.datalists.get(type);
+    var ret = new GArray();
     
     prefix = prefix.toLowerCase();
-    
-    var ret = new GArray();
     for (var i=0; i<list.list.length; i++) {
       if (list.list[i].strip().toLowerCase().startsWith(prefix)) {
         ret.push(list.list[i]);
@@ -329,7 +328,7 @@ class DataLib {
 
   //clearly I need to write a simple string
   //processing language with regexpr's
-  gen_name(block, name) {
+  gen_name(DataBlock block, String name) {
     if (name == undefined || name.trim() == "") {
       name = DataNames[block.lib_type];
     }
@@ -373,7 +372,7 @@ class DataLib {
     return name;
   }
 
-  add(block, set_id) {
+  add(DataBlock block, Boolean set_id) {
     if (set_id == undefined)
       set_id = true;
     
@@ -403,7 +402,7 @@ class DataLib {
     block.on_add(this);
   }
 
-  get_active(data_type) {
+  get_active(int data_type) {
     if (this.datalists.has(data_type)) {
       var lst = this.datalists.get(data_type);
       
@@ -421,7 +420,7 @@ class DataLib {
     }
   }
 
-  get(id) {
+  get(DataRef id) {
     if (id instanceof DataRef)
       id = id.id;
     
@@ -431,7 +430,7 @@ class DataLib {
   pack() {
   }
 
-  static unpack(block, uctx) {
+  static unpack(DataView data, unpack_ctx uctx) {
   }
 }
 
@@ -444,7 +443,7 @@ class UserRef {
 }
 
 class DataBlock {
-  constructor(type, name) {
+  constructor(int type, String name) {
     this.constructor.datablock_type = type;
     
     //name is optional
@@ -474,7 +473,7 @@ class DataBlock {
     //or leave it as an integer?
   }
 
-  set_fake_user(val) {
+  set_fake_user(Boolean val) {
     if ((this.flag & BlockFlags.FAKE_USER) && !val) {
       this.flag &= ~BlockFlags.FAKE_USER;
       this.lib_refs -= 1;
@@ -484,7 +483,7 @@ class DataBlock {
     }
   }
 
-  toJSON() {
+  toJSON() : Object {
     return {
       lib_id : this.lib_id,
       lib_lib : this.lib_lib,
@@ -505,7 +504,7 @@ class DataBlock {
     this.flag = obj.flag;
   }
 
-  pack(data) {
+  pack(Array<byte> data) {
     pack_int(data, this.lib_id);
     if (this.lib_lib != undefined)
       this.pack_int(this.lib_lib.id);
@@ -517,7 +516,7 @@ class DataBlock {
     pack_string(data, this.name);
   }
 
-  static unpack(data, uctx) {
+  static unpack(DataView data, unpack_ctx uctx) {
     this.lib_id = unpack_int(data, uctx);
     this.lib_lib = unpack_int(data, uctx); //XXX finish linking implementation
     this.lib_type = unpack_int(data, uctx);
@@ -536,11 +535,11 @@ class DataBlock {
   //see _Lib_GetBlock and _Lib_GetBlock_us in lib_utils.js.
   data_link(block, getblock, getblock_us) { }
 
-  __hash__() {
+  __hash__() : String {
     return "DB" + this.lib_id;
   }
 
-  lib_adduser(user, name, remfunc) {
+  lib_adduser(Object user, String name, Function remfunc) {
     //remove_lib should be optional?
     
     var ref = new UserRef()
@@ -553,7 +552,7 @@ class DataBlock {
     this.lib_refs++;
   }
 
-  lib_remuser(user, refname) {
+  lib_remuser(Object user, String refname) {
     var newusers = new GArray();
     
     for (var i=0; i<this.lib_users.length; i++) {

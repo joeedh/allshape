@@ -231,11 +231,18 @@ def expand_harmony_class(cls):
   return node
 
 def gen_manifest_file(result, typespace):
+  
+  """this bit of code clears all type info.
+     helpful for figuring out how much of the program,
+     percentage-wise, is already typed.
+     
+     NOTE: this corrupts the AST tree.
   def rec1(n):
     n.type = UnknownTypeNode()
     for c in n:
       rec1(c)
   rec1(result)
+  #"""
   
   def build_func_name(n):
     if type(n) == FunctionNode:
