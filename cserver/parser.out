@@ -1,0 +1,175 @@
+Created by PLY version 3.4 (http://www.dabeaz.com/ply)
+
+Unused terminals:
+
+    INCLUDE
+    ALL
+
+Grammar
+
+Rule 0     S' -> statementlist
+Rule 1     statementlist -> statement
+Rule 2     statementlist -> statementlist statement
+Rule 3     statementlist -> <empty>
+Rule 4     statement -> code
+Rule 5     statement -> html
+Rule 6     statement -> binding
+Rule 7     code -> CODE
+Rule 8     binding -> BINDING
+Rule 9     html -> HTML
+
+Terminals, with rules where they appear
+
+ALL                  : 
+BINDING              : 8
+CODE                 : 7
+HTML                 : 9
+INCLUDE              : 
+error                : 
+
+Nonterminals, with rules where they appear
+
+binding              : 6
+code                 : 4
+html                 : 5
+statement            : 1 2
+statementlist        : 2 0
+
+Parsing method: LALR
+
+state 0
+
+    (0) S' -> . statementlist
+    (1) statementlist -> . statement
+    (2) statementlist -> . statementlist statement
+    (3) statementlist -> .
+    (4) statement -> . code
+    (5) statement -> . html
+    (6) statement -> . binding
+    (7) code -> . CODE
+    (9) html -> . HTML
+    (8) binding -> . BINDING
+
+  ! shift/reduce conflict for CODE resolved as shift
+  ! shift/reduce conflict for HTML resolved as shift
+  ! shift/reduce conflict for BINDING resolved as shift
+    $end            reduce using rule 3 (statementlist -> .)
+    CODE            shift and go to state 1
+    HTML            shift and go to state 8
+    BINDING         shift and go to state 6
+
+  ! CODE            [ reduce using rule 3 (statementlist -> .) ]
+  ! HTML            [ reduce using rule 3 (statementlist -> .) ]
+  ! BINDING         [ reduce using rule 3 (statementlist -> .) ]
+
+    html                           shift and go to state 2
+    code                           shift and go to state 3
+    binding                        shift and go to state 5
+    statement                      shift and go to state 7
+    statementlist                  shift and go to state 4
+
+state 1
+
+    (7) code -> CODE .
+
+    CODE            reduce using rule 7 (code -> CODE .)
+    HTML            reduce using rule 7 (code -> CODE .)
+    BINDING         reduce using rule 7 (code -> CODE .)
+    $end            reduce using rule 7 (code -> CODE .)
+
+
+state 2
+
+    (5) statement -> html .
+
+    CODE            reduce using rule 5 (statement -> html .)
+    HTML            reduce using rule 5 (statement -> html .)
+    BINDING         reduce using rule 5 (statement -> html .)
+    $end            reduce using rule 5 (statement -> html .)
+
+
+state 3
+
+    (4) statement -> code .
+
+    CODE            reduce using rule 4 (statement -> code .)
+    HTML            reduce using rule 4 (statement -> code .)
+    BINDING         reduce using rule 4 (statement -> code .)
+    $end            reduce using rule 4 (statement -> code .)
+
+
+state 4
+
+    (0) S' -> statementlist .
+    (2) statementlist -> statementlist . statement
+    (4) statement -> . code
+    (5) statement -> . html
+    (6) statement -> . binding
+    (7) code -> . CODE
+    (9) html -> . HTML
+    (8) binding -> . BINDING
+
+    CODE            shift and go to state 1
+    HTML            shift and go to state 8
+    BINDING         shift and go to state 6
+
+    html                           shift and go to state 2
+    code                           shift and go to state 3
+    binding                        shift and go to state 5
+    statement                      shift and go to state 9
+
+state 5
+
+    (6) statement -> binding .
+
+    CODE            reduce using rule 6 (statement -> binding .)
+    HTML            reduce using rule 6 (statement -> binding .)
+    BINDING         reduce using rule 6 (statement -> binding .)
+    $end            reduce using rule 6 (statement -> binding .)
+
+
+state 6
+
+    (8) binding -> BINDING .
+
+    CODE            reduce using rule 8 (binding -> BINDING .)
+    HTML            reduce using rule 8 (binding -> BINDING .)
+    BINDING         reduce using rule 8 (binding -> BINDING .)
+    $end            reduce using rule 8 (binding -> BINDING .)
+
+
+state 7
+
+    (1) statementlist -> statement .
+
+    CODE            reduce using rule 1 (statementlist -> statement .)
+    HTML            reduce using rule 1 (statementlist -> statement .)
+    BINDING         reduce using rule 1 (statementlist -> statement .)
+    $end            reduce using rule 1 (statementlist -> statement .)
+
+
+state 8
+
+    (9) html -> HTML .
+
+    CODE            reduce using rule 9 (html -> HTML .)
+    HTML            reduce using rule 9 (html -> HTML .)
+    BINDING         reduce using rule 9 (html -> HTML .)
+    $end            reduce using rule 9 (html -> HTML .)
+
+
+state 9
+
+    (2) statementlist -> statementlist statement .
+
+    CODE            reduce using rule 2 (statementlist -> statementlist statement .)
+    HTML            reduce using rule 2 (statementlist -> statementlist statement .)
+    BINDING         reduce using rule 2 (statementlist -> statementlist statement .)
+    $end            reduce using rule 2 (statementlist -> statementlist statement .)
+
+WARNING: 
+WARNING: Conflicts:
+WARNING: 
+WARNING: shift/reduce conflict for CODE in state 0 resolved as shift
+WARNING: shift/reduce conflict for HTML in state 0 resolved as shift
+WARNING: shift/reduce conflict for BINDING in state 0 resolved as shift

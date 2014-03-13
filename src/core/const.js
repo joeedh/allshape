@@ -6,7 +6,7 @@
 var formacad_file_ext = ".al3";
 
 //application version
-var g_app_version = 0.04;
+var g_app_version = 0.042;
 
 /*all selection bitflags flags must use this value, even if they define
   their own enumeration member, e.g. MeshFlags.SELECT*/
@@ -32,5 +32,6 @@ var DEBUG = {
   ui_datapaths : false,
   ui_menus : false,
   ui_canvas : false,
-  Struct : false
+  Struct : false,
+  dag : false
 };

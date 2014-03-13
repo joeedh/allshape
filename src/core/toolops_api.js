@@ -62,6 +62,23 @@ class ToolOpAbstract {
   }
   
   exec(tctx) { }
+  
+  /*set default inputs. note that this is call is not 
+    necessary for many modal tools, which generate their
+    inputs in modal mode prior to executing.
+  
+    get_default is a passed in function, of prototype:
+      function get_default(keyword, default_value, input_property);
+      
+    note that this function should never be called in the contextual
+    of re-executing (redoing) a tool on the undo stack.
+    
+    input_property is required, so that we can validate types in the future.
+    otherwise we might end up destroying the tool default cache every time
+    we modify a tool input.
+  */
+  default_inputs(Context ctx, ToolGetDefaultFunc get_default) {  
+  }
 }
 
 class PropPair {
@@ -83,8 +100,13 @@ PropPair.STRUCT = """
   }
 """;
 
-var UndoFlags = {IGNORE_UNDO: 2}
-var ToolFlags = {HIDE_TITLE_IN_LAST_BUTTONS: 1, USE_PARTIAL_UNDO : 2}
+var UndoFlags = {IGNORE_UNDO: 2};
+
+var ToolFlags = {
+  HIDE_TITLE_IN_LAST_BUTTONS: 1, 
+  USE_PARTIAL_UNDO : 2,
+  USE_DEFAULT_INPUT : 4
+};
 
 class ToolOp extends EventHandler, ToolOpAbstract {
   constructor(apiname="(undefined)", uiname="(undefined)") {

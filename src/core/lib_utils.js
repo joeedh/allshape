@@ -321,3 +321,148 @@ function wrap_getblock(datalib) {
     }
   }
 }
+
+
+/*
+  DataRefList.  A simple container for block references.
+  Most of the API will accept either a block or a DataRef.
+  
+  __iterator__ will use the ids to fetch and return blocks,
+  though.
+*/
+class DataRefList extends GArray, TPropIterable {
+  constructor(lst=undefined) {
+    GArray.call(this);
+    
+    this.datalib = undefined;
+    
+    if (lst == undefined)
+      return;
+    
+    if (lst instanceof Array) {
+      for (var i=0; i<lst.length; i++) {
+        if (lst[i] == undefined) continue;
+        
+        this.push(lst[i]);
+      }
+    } else if ("__iterator__" in lst) {
+      for (var b in lst) {
+        this.push(b);
+      }
+    }
+  }
+  
+  __iterator__() : DataRefListIter {
+    return new DataRefListIter(this, new Context());
+  }
+  
+  //we don't want all of ctx, just the current datalib
+  set ctx(ctx) {
+    this.datalib = ctx.datalib;
+  }
+  
+  get ctx() {
+    return undefined;
+  }
+  
+  /*funnily enough, I didn't realize until now that my grammar
+    can handle methods named 'get' or 'set'.  I didn't make
+    them keywords because I didn't want to lose those two names
+    for variables, but it's kindof cool I can use them for methods,
+    too*/
+  get(int i, Boolean return_block=true) {
+    if (return_block) {
+      var dl = this.datalib != undefined ? this.datalib : g_app_state.datalib;
+      return dl.get(this[i]);
+    } else {
+      return this[i];
+    }
+  }
+  
+  push(Object b) {
+    if (!(b = this._b(b))) return;
+    
+    if (b instanceof DataBlock)
+      b = new DataRef(b);
+    
+    GArray.prototype.push.call(this, new DataRef(b));
+  }
+  
+  _b(b) {
+    if (b == undefined) {
+      console.log("WARNING: undefined passed to DataRefList.push()");
+      console.trace();
+      return;
+    }
+    
+    if (b instanceof DataBlock) {
+      return new DataRef(b);
+    } else if (b instanceof DataRef) {
+      return b;
+    } else {
+      console.trace();
+      console.log("WARNING: bad value ", b, " passed to DataRefList._b()");
+    }
+  }
+  
+  remove(b) {
+    if (!(b = this._b(b))) return;
+    var i = this.indexOf(b);
+    
+    if (i < 0) {
+      console.trace();
+      console.log("WARNING: ", b, " not found in this DataRefList");
+      return;
+    }
+    
+    this.pop(i);
+  }
+  
+  pop(int i, Boolean return_block=true) {
+    var ret = GArray.prototype.pop.call(this, i);
+    
+    if (return_block)
+      ret = new Context().datalib.get(ret.id);
+      
+    return ret;
+  }
+  
+  replace(a, b) {
+    if (!(b = this._b(b))) return;
+    
+    var i = this.indexOf(a);
+    if (i < 0) {
+      console.trace();
+      console.log("WARNING: ", b, " not found in this DataRefList");
+      return;
+    }
+    
+    this[i] = b;
+  }
+  
+  indexOf(b) {
+    Array.indexOf.call(this, b);
+    
+    if (!(b = this._b(b))) return;
+    
+    for (var i=0; i<this.length; i++) {
+      if (this[i].id == b.id)
+        return i;
+    }
+    
+    return -1;
+  }
+ 
+  //inserts *before* index
+  insert(int index, b) {
+    if (!(b = this._b(b))) return;
+    
+    GArray.prototype.insert.call(this, b);
+  }
+  
+  prepend(b) {
+    if (!(b = this._b(b))) return;
+    
+    GArray.prototype.prepend.call(this, b);
+  }
+}

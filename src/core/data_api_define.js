@@ -403,6 +403,14 @@ function api_define_ops() {
     "object.duplicate": function(ctx, args) {
       //XXX someday, will need to support passing in a list of objects too
       return new ObjectDuplicateOp(ctx.scene.objects.selected);
+    },
+    
+    "object.set_parent": function(ctx, args) {
+      //XXX someday, will need to support passing in a list of objects too
+      var op = new ObjectParentOp();
+      op.flag |= ToolFlags.USE_DEFAULT_INPUT;
+      
+      return op;
     }
   }
 }

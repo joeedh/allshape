@@ -472,6 +472,11 @@ class DataAPI {
   call_op(ctx, str) {
     //try {
       var op = this.get_op_intern(ctx, str);
+      
+      if (op.flag & ToolFlags.USE_DEFAULT_INPUT) {
+        this.appstate.toolstack.default_inputs(ctx, op);
+      }
+      
       this.appstate.toolstack.exec_tool(op);
     /*} catch (error) {
       if (error != TinyParserError) {

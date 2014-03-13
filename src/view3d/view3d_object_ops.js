@@ -77,6 +77,7 @@ class ObjectEditor extends View3DEditor {
     view3d.add(row);
     
     row.toolop("screen.area_split_tool()", PackFlags.INHERIT_WIDTH);
+    row.toolop("object.set_parent()", PackFlags.INHERIT_WIDTH);
     row.label("");
     
     row.label("Last Tool:", false)

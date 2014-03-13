@@ -173,6 +173,9 @@ class AppState {
     this.size = screen != undefined ? screen.size : [512, 512];
     this.raster = new RasterState(gl, screen != undefined ? screen.size : [512, 512]);
     
+    static toolop_input_cache = {};
+    this.toolop_input_cache = toolop_input_cache;
+    
     this.datalib = new DataLib();
     
     this.jobs = new JobManager();
@@ -338,7 +341,7 @@ class AppState {
     
     //version
     var major = Math.floor(g_app_version);
-    var minor = Math.floor((g_app_version - Math.floor(g_app_version))*100);
+    var minor = Math.floor((g_app_version - Math.floor(g_app_version))*1000);
     
     pack_int(data, major);
     pack_int(data, minor);
@@ -451,6 +454,14 @@ class AppState {
         sce.graph = undefined;
       }
     }
+    
+    console.log("VERSION FILE LOAD", version);
+    if (version < 0.041) {
+      for (var sce in datalib.scenes) {
+        //rebuild scene graph. . .
+        sce.graph = undefined;
+      }
+    }
   }
 
   load_user_file_new(DataView data, unpack_ctx uctx, use_existing_screen=false) {
@@ -468,7 +479,7 @@ class AppState {
     var file_flag = unpack_int(data, uctx);
     
     var version_major = unpack_int(data, uctx);
-    var version_minor = unpack_int(data, uctx)/100.0;
+    var version_minor = unpack_int(data, uctx)/1000.0;
     
     var version = version_major + version_minor;
     
@@ -539,6 +550,7 @@ class AppState {
           lt = lt != undefined ? lt.name : lt;
           
           b.data = fstructs.read_object(b.data[1], tmap[b.data[0]]);
+          b.data.lib_refs = 0; //reading code will re-calculate ref count
           
           datalib.add(b.data, false);
         } else {
@@ -647,7 +659,7 @@ class AppState {
     var file_flag = unpack_int(data, uctx);
     
     var version_major = unpack_int(data, uctx);
-    var version_minor = unpack_int(data, uctx)/100.0;
+    var version_minor = unpack_int(data, uctx)/1000.0;
     
     var version = version_major + version_minor;
     
@@ -1017,6 +1029,35 @@ class ToolStack {
     this.undocur = 0;
     this.undostack = new GArray();
     this.appstate = appstate;
+    this.valcache = appstate.toolop_input_cache;
+  }
+  
+  default_inputs(Context ctx, ToolOp tool) {
+    var cache = this.valcache;
+    
+    //input_prop will be necassary for type checking
+    //in the future
+    function get_default(String key, Object defaultval, ToolProperty input_prop) {
+      key = tool.constructor.name + ":" + key;
+      
+      if (key in cache)
+        return cache[key];
+      
+      cache[key] = defaultval;
+      
+      return defaultval;
+    }
+    
+    /*set .ctx on tool properties*/
+    var tctx = new ToolContext();
+    for (var k in tool.inputs) {
+      tool.inputs[k].ctx = tctx;
+    }
+    for (var k in tool.outputs) {
+      tool.outputs[k].ctx = tctx;
+    }
+    
+    tool.default_inputs(ctx, get_default);
   }
   
   undo_push(ToolOp tool) {

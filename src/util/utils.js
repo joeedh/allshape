@@ -34,7 +34,11 @@ class GArray extends Array {
       this[i].pack(data);
     }
   }
-
+  
+  has(T item) : Boolean {
+    return this.indexOf(item) >= 0;
+  }
+  
   __iterator__() : GArrayIter<T> {
     return new GArrayIter<T>(this);
   }

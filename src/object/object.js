@@ -124,6 +124,7 @@ class ASObject extends DagNode {
   
   dag_execute() {
     var mat = this.matrix = this.basic_matrix();
+    console.log("executing ASOBject[" +this.lib_id+"] dag_execute");
     
     if (this.parent != undefined) {
       mat.multiply(this.parentinv);
@@ -142,11 +143,6 @@ class ASObject extends DagNode {
     mat.rotate(this.rot_euler[0], this.rot_euler[1], this.rot_euler[2]);
     mat.scale(this.size[0], this.size[1], this.size[2]);
     mat.translate(this.loc[0], this.loc[1], this.loc[2]);
-    
-    if (this.parent != undefined) {
-      mat.multiply(this.parentinv);
-      mat.multiply(this.parent.matrix);
-    }
     
     return mat;
   }
@@ -223,15 +219,17 @@ class ASObject extends DagNode {
     //matrix (this.parentinv) such that the object's post-parent
     //position/location/size is the same as pre-parent.
     
-    if (this.parent == newpar) {
+    if (this.parent == newpar && newpar != undefined) {
       console.log("parent already set; resetting DAG relationships. . .");
       this.unparent(scene);
       preserve_child_space = false;
     }
     
-    if (newpar == undefined || newpar == null) {
+    if (newpar == undefined) {
       console.log("Warning: unparent with obj.unparent(scene), not obj.set_parent(scene, undefined)!");
-      this.unparent(scene);
+      if (this.parent != undefined) {
+        this.unparent(scene);
+      }
       return;
     }
     
@@ -246,6 +244,7 @@ class ASObject extends DagNode {
     
     scene.graph.connect(newpar, "dep", this, "parent");
     this.lib_adduser(this, "parent", DataRem(this, "parent"));
+    this.parent = newpar;
   }
   
   from_matrix(Matrix4 mat) {
@@ -259,17 +258,19 @@ class ASObject extends DagNode {
 }
 
 ASObject.STRUCT = STRUCT.inherit(ASObject, DataBlock) + """
-  matrix : mat4;
-  loc : vec3;
-  rot_euler : vec3;
-  rot_method : int;
-  size : vec3;
-  flag : int;
-  data : dataref(DataBlock);
-  layermask : int;
-  bb : array(vec3);
-  bb_display : int;
-  scene : dataref(Scene);
-  ss_steps : int;
+  matrix      : mat4;
+  parentinv   : mat4;
+  loc         : vec3;
+  rot_euler   : vec3;
+  rot_method  : int;
+  size        : vec3;
+  flag        : int;
+  data        : dataref(DataBlock);
+  parent      : dataref(ASObject);
+  layermask   : int;
+  bb          : array(vec3);
+  bb_display  : int;
+  scene       : dataref(Scene);
+  ss_steps    : int;
 }
 """;

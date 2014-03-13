@@ -16,7 +16,6 @@ js_targets = {"app.js" : [
   "src/util/strutils.js",
   "src/util/workerutils.js",
 	"src/core/lib_api.js",
-	"src/core/lib_utils.js",
 	"src/util/mathlib.js",
 	"src/util/parseutil.js",
 	"src/util/jslzjb.js",
@@ -48,10 +47,13 @@ js_targets = {"app.js" : [
   "src/core/toolprops_iter.js",
 	"src/core/toolops_api.js",
 
+	"src/core/lib_utils.js",
+
 	"src/mesh/meshtools_cad.js",
 	"src/mesh/meshtools_loop.js",
 	"src/mesh/meshtools_create.js",
 
+  "src/view3d/transform.js",
 	"src/view3d/trans_ops.js",
 	"src/view3d/trans_ops_special.js",
 	"src/view3d/fontutils.js",
