@@ -16,6 +16,7 @@ glob_long_word_shorten = {"generators": "gens", "error": "err", "warnings": "war
 gcs = glob_cmd_short_override
 gcs["g_printnodes"] = "pn"
 gcs["g_printtokens"] = "pt"
+gcs["g_docroot"] = "dr"
 
 def argv_to_argline():
   s = ""
@@ -187,5 +188,9 @@ class Glob(AbstractGlob):
   g_printnodes = False
   g_printtokens = False
   g_build_main = True
+  g_docroot = ""
   
+  def __init__(self):
+    self.g_docroot = os.getcwd()
+    
 glob = Glob()

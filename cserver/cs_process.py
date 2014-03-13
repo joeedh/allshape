@@ -1,4 +1,5 @@
 from cs_ast import *
+import os, sys, os.path, time, random, math, struct
 
 def traverse(n, ntype, func, use_depth=False, 
              exclude=[], copy_children=False, 
@@ -91,6 +92,19 @@ class GenTemplateVisit(NodeVisit):
     type = node.type.replace("*", "STAR").replace("[", "A").replace("]", "A")
     buf = "  do_out(GETSTR(%s, %s));\n" % (type, node.val)
     self.s(buf)
+
+def gen_page_uid(docroot, filename):
+  filename = os.path.abspath(os.path.normpath(filename))
+  docroot = os.path.abspath(os.path.normpath(docroot))
+  
+  prefix = os.path.commonprefix([filename, docroot])
+  uid = filename[len(prefix):]
+  if uid[0] == "/" or uid[0] == "\\": uid = uid[1:]
+  
+  uid = uid.replace(".ccs", "").replace("/", "_").replace("\\", "_")
+  uid = uid.replace(".", "").replace("-", "")
+  
+  return uid
   
 def gen_template(n):
   vs = GenTemplateVisit()
@@ -107,13 +121,16 @@ $$CODE_HERE$$
     buf = """
 #include "boilerplate.h"
 
-int exec_page(void *ctx) {
+int p_$$UID$$(void *ctx) {
 $$CODE_HERE$$
 }
 """
+  uid = gen_page_uid(glob.g_docroot, glob.g_file)
   
   buf = buf.replace("$$CODE_HERE$$", vs.buf);
-  
+  if "$$UID$$" in buf:
+    buf = buf.replace("$$UID$$", uid)
+ 
   return buf
   
 def html_to_c_str(val):
