@@ -80,17 +80,18 @@ class GenTemplateVisit(NodeVisit):
       traverse(c)
       
   def HtmlNode(self, node, scope, traverse, tlevel):
-    buf = "  do_out(%s);\n" % html_to_c_str(node.val)
+    buf = "  do_out(state, %s);\n" % html_to_c_str(node.val)
     
     
     self.s(buf)
     
   def CodeNode(self, node, scope, traverse, tlevel):
-    self.s(node.val)
+    if len(node.val.strip()) > 0:
+      self.s(node.val)
     
   def BindingNode(self, node, scope, traverse, tlevel):
     type = node.type.replace("*", "STAR").replace("[", "A").replace("]", "A")
-    buf = "  do_out(GETSTR(%s, %s));\n" % (type, node.val)
+    buf = "  do_out(state, GETSTR(%s, %s));\n" % (type, node.val)
     self.s(buf)
 
 def gen_page_uid(docroot, filename):
@@ -104,7 +105,7 @@ def gen_page_uid(docroot, filename):
   uid = uid.replace(".ccs", "").replace("/", "_").replace("\\", "_")
   uid = uid.replace(".", "").replace("-", "")
   
-  return uid
+  return "_pg_"+uid
   
 def gen_template(n):
   vs = GenTemplateVisit()
@@ -121,7 +122,7 @@ $$CODE_HERE$$
     buf = """
 #include "boilerplate.h"
 
-int p_$$UID$$(void *ctx) {
+static int $$UID$$(HandlerInfo *state) {
 $$CODE_HERE$$
 }
 """

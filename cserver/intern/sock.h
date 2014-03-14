@@ -18,4 +18,12 @@
 #pragma comment(lib, "Ws2_32.lib")
 
 #endif
+
+#define MAXBUF  128
+#define MAXQUERY  128
+
+extern void *page_handlers[];
+extern int page_handlers_len;
+extern char *page_handler_names[];
+
 #endif /* _SOCK_H */

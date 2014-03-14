@@ -1,3 +1,6 @@
+#ifndef _UTILS_H
+#define _UTILS_H
+
 typedef struct List {
 	void *first, *last;
 } List;
@@ -17,9 +20,12 @@ void List_FreeListM(List *list);
 #define ELEM4(a, b, c, d, e) (ELEM3(a, b, c, d) || ELEM3(a, c, d, e))
 #define ELEM5(a, b, c, d, e, f) (ELEM4(a, b, c, d, e) || ELEM4(a, c, d, e, f))
 #define SWAP(type, a, b) {type _t; _t = a; a = b; b = _t;}
-#define MIN(a, b) ((a) > (b) ? (a) : (b))
-#define MAX(a, b) ((a) < (b) ? (a) : (b))
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
 #define ABS(a) ((a) < 0 ? -(a) : (a))
+#define CLAMP(n, min, max) MIN(MAX(n, min), max)
 
 #define CHECK_TYPE_INLINE(val, type) ((void)(((type *)0) != (val)))
 
+#define EXPORT 
+#endif /* _UTILS_H */

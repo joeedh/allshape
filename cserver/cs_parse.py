@@ -1,3 +1,4 @@
+import os.path
 from ply import yacc
 from cs_lex import *
 from cs_ast import *
@@ -104,12 +105,17 @@ def get_linestr(p):
 def p_error(p):
   line = get_lineno(p)+1
   
-  errstr = "\n%s(%i): Syntax Error" % (glob.g_file, line)
-  sys.stderr.write(errstr+"\n");
-  
-  linestr, colstr = get_linestr(p)
-  sys.stderr.write("  %s\n  %s" % (linestr, colstr))
-  
+  if not glob.g_msvc_errors:
+    errstr = "\n%s(%i): Syntax Error" % (glob.g_file, line)
+    sys.stderr.write(errstr+"\n");
+    
+    linestr, colstr = get_linestr(p)
+    sys.stderr.write("  %s\n  %s" % (linestr, colstr))
+  else:
+    linestr, colstr = get_linestr(p)
+    errstr = "%s(%s,%s): error: Syntax Error\n" % (os.path.abspath(glob.g_file), line, len(colstr))
+    sys.stderr.write(errstr)
+    
   raise JSCCError("Parse error")
   
 parser = yacc.yacc()

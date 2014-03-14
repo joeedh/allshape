@@ -5,9 +5,9 @@ _tabversion = '3.2'
 
 _lr_method = 'LALR'
 
-_lr_signature = b'z\x13\xacq\xe9rQTF\xb8^3Z\xa4\xee\x99'
+_lr_signature = b'\x14}Y\xf0\x1f\x9c\xf2\x94P\xbd\x88\xfc?\xe4\xa3\xce'
     
-_lr_action_items = {'HTML':([0,1,2,3,4,5,6,7,8,9,],[8,-7,-5,-4,8,-6,-8,-1,-9,-2,]),'CODE':([0,1,2,3,4,5,6,7,8,9,],[1,-7,-5,-4,1,-6,-8,-1,-9,-2,]),'BINDING':([0,1,2,3,4,5,6,7,8,9,],[6,-7,-5,-4,6,-6,-8,-1,-9,-2,]),'$end':([0,1,2,3,4,5,6,7,8,9,],[-3,-7,-5,-4,0,-6,-8,-1,-9,-2,]),}
+_lr_action_items = {'HTML':([0,1,2,3,4,5,6,7,8,9,],[2,-5,-9,-7,-1,-4,-8,2,-6,-2,]),'$end':([0,1,2,3,4,5,6,7,8,9,],[-3,-5,-9,-7,-1,-4,-8,0,-6,-2,]),'CODE':([0,1,2,3,4,5,6,7,8,9,],[3,-5,-9,-7,-1,-4,-8,3,-6,-2,]),'BINDING':([0,1,2,3,4,5,6,7,8,9,],[6,-5,-9,-7,-1,-4,-8,6,-6,-2,]),}
 
 _lr_action = { }
 for _k, _v in _lr_action_items.items():
@@ -16,7 +16,7 @@ for _k, _v in _lr_action_items.items():
       _lr_action[_x][_k] = _y
 del _lr_action_items
 
-_lr_goto_items = {'html':([0,4,],[2,2,]),'binding':([0,4,],[5,5,]),'statement':([0,4,],[7,9,]),'statementlist':([0,],[4,]),'code':([0,4,],[3,3,]),}
+_lr_goto_items = {'html':([0,7,],[1,1,]),'binding':([0,7,],[8,8,]),'statement':([0,7,],[4,9,]),'code':([0,7,],[5,5,]),'statementlist':([0,],[7,]),}
 
 _lr_goto = { }
 for _k, _v in _lr_goto_items.items():
@@ -34,5 +34,5 @@ _lr_productions = [
   ('statement -> binding','statement',1,'p_statement','c:\\dev\\allshape\\cserver\\cs_parse.py',39),
   ('code -> CODE','code',1,'p_code','c:\\dev\\allshape\\cserver\\cs_parse.py',44),
   ('binding -> BINDING','binding',1,'p_binding','c:\\dev\\allshape\\cserver\\cs_parse.py',49),
-  ('html -> HTML','html',1,'p_html','c:\\dev\\allshape\\cserver\\cs_parse.py',55),
+  ('html -> HTML','html',1,'p_html','c:\\dev\\allshape\\cserver\\cs_parse.py',60),
 ]

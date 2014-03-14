@@ -11,7 +11,7 @@ typedef struct MemHead {
   int code2;
   
   int size, used, len, esize;
-  char *file; int line;
+  char *file, *tag; int line;
 } MemHead;
 
 typedef struct MemTail {
@@ -35,7 +35,7 @@ static List MemTails;
 
 #define GET_TAIL(mem) ((MemTail*)(((unsigned char*)(mem+1)) + mem->size))
 
-void *_MEM_malloc(size_t size, char *file, int line)
+void *_MEM_malloc(size_t size, char *tag, char *file, int line)
 {
   MemHead *mem;
   MemTail *tail;
@@ -57,7 +57,8 @@ void *_MEM_malloc(size_t size, char *file, int line)
   mem->size = size; mem->used = 0;
   mem->len = 0; mem->esize = 0;
   mem->esize = 0;
-  mem->file = file; 
+  mem->file = file;
+  mem->tag = tag;
   mem->line = line;
   
   tail->code1 = T_MEMCODE1;
@@ -71,9 +72,9 @@ void *_MEM_malloc(size_t size, char *file, int line)
   return mem+1;
 }
 
-void *_MEM_calloc(size_t size, char *file, int line)
+void *_MEM_calloc(size_t size, char *tag, char *file, int line)
 {
-  char *mem = (char*) _MEM_malloc(size, file, line), *c=mem;
+  char *mem = (char*) _MEM_malloc(size, tag, file, line), *c=mem;
   size_t i;
   
   for (i=0; i<size; i++, c++) {
@@ -102,6 +103,37 @@ int _MEM_check(void *vmem, char *file, int line)
   return 1;
 }
 
+int _MEM_size(void *vmem, char *file, int line)
+{
+  MemHead *mem = (MemHead*)vmem;
+  MemTail *tail;
+  
+  if (!vmem) {
+    fprintf(stderr, "Warning: tried to free NULL pointer!\n");
+    fprintf(stderr, "  at line %d: file: %s\n", line, file); 
+    return 0;
+  }
+  
+  mem--;
+  
+  if (mem->code1 == FREECODE) {
+    fprintf(stderr, "MEM_size: Error: Double free!\n");
+    fprintf(stderr, "  at line %d: file: %s\n", line, file); 
+    return 0;
+  }
+  
+  if (!_MEM_check(vmem, file, line)) {
+    tail = GET_TAIL(mem);
+
+    fprintf(stderr, "MEM_size: Error: Corrupted memory block %p!\n", vmem);
+    fprintf(stderr, "  at line %d: file: %s\n", line, file); 
+   //fprintf(stderr, "[h1=%s, h2=%s, t1=%s, t2=%s] ", mem->code1, mem->code2, tail->code1, tail->code2);
+    return 0;
+  }
+
+  return mem->size;
+}
+
 void _MEM_free(void *vmem, char *file, int line) 
 {
   MemHead *mem = (MemHead*)vmem;
@@ -116,14 +148,17 @@ void _MEM_free(void *vmem, char *file, int line)
   mem--;
   
   if (mem->code1 == FREECODE) {
-    fprintf(stderr, "Error: Detected double free!\n");
+    fprintf(stderr, "Error: Double free!\n");
     fprintf(stderr, "  at line %d: file: %s\n", line, file); 
     return;
   }
   
   if (!_MEM_check(vmem, file, line)) {
-    fprintf(stderr, "Error: Corrupted memory block!\n");
+    tail = GET_TAIL(mem);
+
+    fprintf(stderr, "MEM_free: Error: Corrupted memory block %p!\n", vmem);
     fprintf(stderr, "  at line %d: file: %s\n", line, file); 
+    //fprintf(stderr, "[h1=%s, h2=%s, t1=%s, t2=%s] ", mem->code1, mem->code2, tail->code1, tail->code2);
     return;
   }
   
@@ -165,6 +200,11 @@ void MEM_PrintMemBlocks(FILE *file)
   
   fprintf(file, "=====Allocated Memory Blocks:======\n");
   for (mem=(MemHead*)MemHeads.first; mem; mem=mem->next) {
+    MemTail *tail = GET_TAIL(mem);
+    if (!_MEM_check(mem+1, __FILE__, __LINE__)) {
+      fprintf(file, "[corrupted, h1=%s, h2=%s, t1=%s, t2=%s] ", mem->code1, mem->code2, tail->code1, tail->code2);
+    }
+
     fprintf(file, "%s:%d: size: %d\n", memprint_truncate(mem->file), 
 			      mem->line, mem->size);
   }
@@ -179,10 +219,11 @@ void *_Array_New(size_t esize, size_t length, char *file, int line)
   if (length == 0) return NULL;
   
   size = length*esize;
-  
-  mem = (MemHead*)_MEM_calloc(size, file, line);
+  size = size == 0 ? esize*4 : size;
+
+  mem = (MemHead*)_MEM_calloc(size, "array", file, line);
   mem--;
-  mem->used = 0;
+  mem->used = length*esize;
   mem->esize = esize;
   
   tail = GET_TAIL(mem);
@@ -207,8 +248,34 @@ void *_Array_Realloc(void *vmem, size_t newlength, char *file, int line)
   tail = GET_TAIL(mem2);
   tail->used = mem->used;
   
-  free(mem);
+  _MEM_free(mem+1, file, line);
   return mem2+1;
+}
+
+void *_Array_GrowOne(void *vmem, int esize, char *file, int line)
+{
+  MemHead *mem = (MemHead*)vmem;
+  MemTail *tail;
+  
+	mem--;
+
+  if (vmem == NULL) {
+    mem = (MemHead*)_Array_New(esize, esize*2, file, line);
+    mem--;
+    mem->used = 0;
+  }
+  
+  if (mem->size - mem->used < mem->esize) {
+    mem = (MemHead*)_Array_Realloc(mem+1, mem->size*2, file, line);
+    mem--;
+  }
+  
+  mem->used += mem->esize;
+  
+  tail = GET_TAIL(mem);
+  tail->used = mem->used;
+
+	return mem+1;
 }
 
 void *_Array_Append(void *vmem, void *item, int esize, char *file, int line)
@@ -221,6 +288,7 @@ void *_Array_Append(void *vmem, void *item, int esize, char *file, int line)
   if (vmem == NULL) {
     mem = (MemHead*)_Array_New(esize, esize*2, file, line);
     mem--;
+    mem->used = 0;
   }
   
   if (mem->size - mem->used < mem->esize) {
@@ -267,16 +335,18 @@ void *_Array_Resize(void *vmem, int newlen, int esize, char *file, int line)
     return _Array_New(esize, newlen, file, line);
   }
   
-  if (mem->used + newlen*mem->esize <= mem->size) {
-    mem->used = newlen*mem->esize;
-    
-    tail = GET_TAIL(mem);
-    tail->used = mem->used;
-    
-    return mem+1;
+  if (mem->used + newlen*mem->esize >= mem->size) {
+    //double buffer
+    mem = (MemHead*)_Array_Realloc(mem+1, newlen*2, file, line);
+    mem--;
   }
   
-  mem = (MemHead*)_Array_Realloc(mem, newlen, file, line);
+  mem->used = newlen*mem->esize;
+    
+  tail = GET_TAIL(mem);
+  tail->used = mem->used;
+    
+  return mem+1;
 }
 
 int _Array_Len(void *vmem, char *file, int line)
@@ -289,5 +359,5 @@ int _Array_Len(void *vmem, char *file, int line)
 	if (mem->esize != 0)
 		return mem->used / mem->esize;
 	else 
-		return 0;
+		return mem->used;
 }

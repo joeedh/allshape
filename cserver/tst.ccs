@@ -1,16 +1,21 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-<title><#=char* get_title1()#></title>
+<title><#=char* "tst page"#></title>
 </head>
 <body>
-<#
+  <ul>
+<# 
+  {
   int i;
   for (i=0; i<5; i++) {
   #>
-    <p><#=int i #></p>
+    <li><#=int i #></li>
   <#
   }
+  }
 #>
+</ul>
 </body>
 </html>

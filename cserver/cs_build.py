@@ -8,6 +8,24 @@ from math import floor
 
 REBUILD = 1
 WASBUILT = 2
+msvc_mode = False
+
+filter = ""
+if len(sys.argv) > 1:
+  if len(sys.argv) == 3:
+    build_cmd = sys.argv[1].lower()
+    filter = sys.argv[2]
+  else:
+    build_cmd = sys.argv[1].lower()
+    if "msvc_mode" in build_cmd:
+      print("msvc mode")
+      msvc_mode = True
+    elif build_cmd not in ["build", "cleanbuild", "clean", "loop"]:
+      filter = build_cmd
+      build_cmd = "single"
+else:
+  filter = ""
+  build_cmd = "build"
 
 sep = os.path.sep
 def modimport(name):
@@ -24,7 +42,8 @@ try:
   config_dict = config.__dict__
 except (IOError, FileNotFoundError):
   config_dict = {}
-  print("warning, missing local_build.py")
+  if not msvc_mode:
+    print("warning, missing local_build.py")
 
 def validate_cfg(val, vtype):
   if vtype == "bool":
@@ -55,16 +74,20 @@ def getcfg(key, default, type):
   return default
 
 num_cores = getcfg("num_cores", 5, "int")
+build_obj_code = getcfg("do_final_build", True, "bool")
 
 if len(localcfg) > 0:
-  print("build config:")
+  if not msvc_mode:
+    print("build config:")
   keys = list(localcfg.keys())
   keys.sort()
   for key in keys:
     val = localcfg[key]
-    print("  " + key + ": " + str(val)) 
+    if not msvc_mode:
+      print("  " + key + ": " + str(val)) 
     
-  print("\n")
+  if not msvc_mode:
+    print("\n")
 
 #normpath helper func
 def np(path):
@@ -102,20 +125,6 @@ for k in targets2:
     
 db = None
 db_depend = None
-
-filter = ""
-if len(sys.argv) > 1:
-  if len(sys.argv) == 3:
-    build_cmd = sys.argv[1].lower()
-    filter = sys.argv[2]
-  else:
-    build_cmd = sys.argv[1].lower()
-    if build_cmd not in ["build", "cleanbuild", "clean", "loop"]:
-      filter = build_cmd
-      build_cmd = "single"
-else:
-  filter = ""
-  build_cmd = "build"
 
 if build_cmd == "clean": build_cmd = "cleanbuild"
 if not os.path.exists("build"):
@@ -158,6 +167,7 @@ CCS = getcfg("CCS", np("cs_cc.py"), "path")
 CC = getcfg("CC", "gcc", "string")
 do_debug = getcfg("debug", False, "bool")
 do_profile = getcfg("profile", False, "bool")
+docroot = getcfg("docroot", os.getcwd(), "path");
 
 CFLAGS = getcfg("CFLAGS", "", "string")
 if do_debug:
@@ -165,10 +175,13 @@ if do_debug:
 if do_profile:
   CFLAGS += " -p"
 
-print("using python executable \"" + PYBIN.strip() + "\"")
+if not msvc_mode:
+  print("using python executable \"" + PYBIN.strip() + "\"")
 
 #minified, concatenated build
-CCSFLAGS = ""
+CCSFLAGS = " -dr " + docroot + " "
+if msvc_mode: CCSFLAGS += "-mv "
+
 CCSFLAGS += getcfg("JFLAGS", "", "string")
 
 def cp_handler(file, target):
@@ -179,7 +192,8 @@ def cp_handler(file, target):
 
 def CCS_handler(file, target):
   ret = [PYBIN + "%s %s %s %s" % (CCS, file, target, CCSFLAGS)]
-  ret += [CC_handler(target, target.replace(".c", ".o"))]
+  if build_obj_code:
+    ret += [CC_handler(target, target.replace(".c", ".o"))]
   
   return ret
 
@@ -195,8 +209,8 @@ class Handler (object):
     self.func = func
     
 handlers = {
-  r'.*\.ccs\b' : Handler(CCS_handler, False),
-  r'.*\.c\b' : Handler(CC_handler),
+  r'.*\.ccs\b' : Handler(CCS_handler, not build_obj_code),
+  r'.*\.c\b' : Handler(CC_handler) if build_obj_code else Handler(null_handler),
   r'.*\.h\b' : Handler(cp_handler, False)
 }
 
@@ -296,10 +310,12 @@ def do_rebuild(abspath):
     
     for path2 in db_depend[abspath]:
       if path2 in db and safe_stat(path2) != db[path2]:
-        print("bla3")
+        if not msvc_mode:
+          print("bla3")
         return True
       elif path2 not in db:
-        print("bla2", path2)
+        if not msvc_mode:
+          print("bla2", path2)
         return True
     
   return False
@@ -380,11 +396,13 @@ def build_target(files):
     elif cmd == "nobuild":
       db[abspath] = os.stat(abspath).st_mtime
       db.sync()
-      print(abspath)
+      if not msvc_mode:
+        print(abspath)
       continue
     
     perc = int((float(fi) / len(target))*100.0)
-    print("[%i%%] " % perc, cmd)
+    if not msvc_mode:
+      print("[%i%%] " % perc, cmd)
     
     #execute build command
     while len(procs) >= num_cores:
@@ -415,7 +433,8 @@ def build_target(files):
         
         cmdlist = shlex.split(c)
         #cmdlist[0] = np(cmdlist[0])
-        print(cmdlist)
+        if not msvc_mode:
+          print(cmdlist)
         proc = subprocess.Popen(cmdlist)
         procs.append([proc, f])
     else:
@@ -440,7 +459,8 @@ def build_target(files):
     time.sleep(0.75)
     
   if len(failed_files) > 0:
-    print("build failure\n\n")
+    if not msvc_mode:
+      print("build failure\n\n")
     for f in failed_files:
       for i, f2 in enumerate(built_files):
         if f2[2] == f: break
@@ -460,7 +480,8 @@ def build_target(files):
         
   for pathtime in built_files:
     try:
-      print("saving", db[pathtime[0]], pathtime[1])
+      if not msvc_mode:
+        print("saving", db[pathtime[0]], pathtime[1])
     except KeyError:
       pass
     
@@ -468,10 +489,79 @@ def build_target(files):
 
   db.close()
   db_depend.close()
-    
+  
+  if build_final:
+    gen_final_target(files)
+  
   if build_cmd != "loop":
-    print("build finished")
+    if not msvc_mode:
+      print("build finished")
 
+def gen_final_target(files):
+  from cs_process import gen_page_uid
+  
+  target = "build/"+files.target
+  if not msvc_mode:
+    print("writing %s..."%target)
+  
+  target = os.path.abspath(os.path.normpath(target))
+  file = open(target, "w")
+  file.write("""#include "boilerplate.h"
+#include "site_boilerplate.h"
+""")
+
+  for f in files:
+    if not f.source.endswith(".ccs"):  continue
+    
+    f2 = open(f.target, "r")
+    buf = f2.read()
+    f2.close()
+    
+    file.write(buf+"\n")
+  
+  file.write("void *page_handlers[] = {");
+  
+  hnames = "char *page_handler_names[] = {";
+  
+  i = 0
+  for f in files:
+    if not f.source.endswith(".ccs"):  continue
+    i += 1
+    
+    if i > 1: 
+      file.write(",")
+      hnames += ","
+      
+    file.write("\n")
+    hnames += "\n"
+    
+    fn = f.source
+    fn = os.path.abspath(fn)
+    
+    pre = os.path.commonprefix([os.path.abspath(docroot), fn])
+    fn = fn[len(pre):].replace("\\", "/").strip().replace(".ccs", "")
+    
+    if not fn.startswith("/"):
+      fn = "/" + fn
+    if fn.endswith("/"):
+      fn = fn[:-1]
+    
+    hnames += "\"" + fn + "\""
+    uid = gen_page_uid(docroot, fn)
+    fn = f.source
+    if "/" in fn or "\\" in fn:
+      fn = os.path.split(fn)[1].strip()
+    
+    file.write("  "+uid)
+  
+  file.write("\n};\n");
+  hnames += "\n};\n";
+  
+  file.write(hnames);
+  
+  file.write("int page_handlers_len = sizeof(page_handlers) / sizeof(*page_handlers);\n");
+  file.close()
+  
 def buildall():
   for t in targets:
     for s in t:

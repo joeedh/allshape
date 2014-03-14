@@ -2,8 +2,9 @@ Created by PLY version 3.4 (http://www.dabeaz.com/ply)
 
 Unused terminals:
 
-    INCLUDE
     ALL
+    CODE_ERR
+    INCLUDE
 
 Grammar
 
@@ -23,6 +24,7 @@ Terminals, with rules where they appear
 ALL                  : 
 BINDING              : 8
 CODE                 : 7
+CODE_ERR             : 
 HTML                 : 9
 INCLUDE              : 
 error                : 
@@ -54,31 +56,21 @@ state 0
   ! shift/reduce conflict for HTML resolved as shift
   ! shift/reduce conflict for BINDING resolved as shift
     $end            reduce using rule 3 (statementlist -> .)
-    CODE            shift and go to state 1
-    HTML            shift and go to state 8
+    CODE            shift and go to state 3
+    HTML            shift and go to state 2
     BINDING         shift and go to state 6
 
   ! CODE            [ reduce using rule 3 (statementlist -> .) ]
   ! HTML            [ reduce using rule 3 (statementlist -> .) ]
   ! BINDING         [ reduce using rule 3 (statementlist -> .) ]
 
-    html                           shift and go to state 2
-    code                           shift and go to state 3
-    binding                        shift and go to state 5
-    statement                      shift and go to state 7
-    statementlist                  shift and go to state 4
+    html                           shift and go to state 1
+    binding                        shift and go to state 8
+    statementlist                  shift and go to state 7
+    code                           shift and go to state 5
+    statement                      shift and go to state 4
 
 state 1
-
-    (7) code -> CODE .
-
-    CODE            reduce using rule 7 (code -> CODE .)
-    HTML            reduce using rule 7 (code -> CODE .)
-    BINDING         reduce using rule 7 (code -> CODE .)
-    $end            reduce using rule 7 (code -> CODE .)
-
-
-state 2
 
     (5) statement -> html .
 
@@ -88,7 +80,37 @@ state 2
     $end            reduce using rule 5 (statement -> html .)
 
 
+state 2
+
+    (9) html -> HTML .
+
+    CODE            reduce using rule 9 (html -> HTML .)
+    HTML            reduce using rule 9 (html -> HTML .)
+    BINDING         reduce using rule 9 (html -> HTML .)
+    $end            reduce using rule 9 (html -> HTML .)
+
+
 state 3
+
+    (7) code -> CODE .
+
+    CODE            reduce using rule 7 (code -> CODE .)
+    HTML            reduce using rule 7 (code -> CODE .)
+    BINDING         reduce using rule 7 (code -> CODE .)
+    $end            reduce using rule 7 (code -> CODE .)
+
+
+state 4
+
+    (1) statementlist -> statement .
+
+    CODE            reduce using rule 1 (statementlist -> statement .)
+    HTML            reduce using rule 1 (statementlist -> statement .)
+    BINDING         reduce using rule 1 (statementlist -> statement .)
+    $end            reduce using rule 1 (statementlist -> statement .)
+
+
+state 5
 
     (4) statement -> code .
 
@@ -96,36 +118,6 @@ state 3
     HTML            reduce using rule 4 (statement -> code .)
     BINDING         reduce using rule 4 (statement -> code .)
     $end            reduce using rule 4 (statement -> code .)
-
-
-state 4
-
-    (0) S' -> statementlist .
-    (2) statementlist -> statementlist . statement
-    (4) statement -> . code
-    (5) statement -> . html
-    (6) statement -> . binding
-    (7) code -> . CODE
-    (9) html -> . HTML
-    (8) binding -> . BINDING
-
-    CODE            shift and go to state 1
-    HTML            shift and go to state 8
-    BINDING         shift and go to state 6
-
-    html                           shift and go to state 2
-    code                           shift and go to state 3
-    binding                        shift and go to state 5
-    statement                      shift and go to state 9
-
-state 5
-
-    (6) statement -> binding .
-
-    CODE            reduce using rule 6 (statement -> binding .)
-    HTML            reduce using rule 6 (statement -> binding .)
-    BINDING         reduce using rule 6 (statement -> binding .)
-    $end            reduce using rule 6 (statement -> binding .)
 
 
 state 6
@@ -140,22 +132,32 @@ state 6
 
 state 7
 
-    (1) statementlist -> statement .
+    (0) S' -> statementlist .
+    (2) statementlist -> statementlist . statement
+    (4) statement -> . code
+    (5) statement -> . html
+    (6) statement -> . binding
+    (7) code -> . CODE
+    (9) html -> . HTML
+    (8) binding -> . BINDING
 
-    CODE            reduce using rule 1 (statementlist -> statement .)
-    HTML            reduce using rule 1 (statementlist -> statement .)
-    BINDING         reduce using rule 1 (statementlist -> statement .)
-    $end            reduce using rule 1 (statementlist -> statement .)
+    CODE            shift and go to state 3
+    HTML            shift and go to state 2
+    BINDING         shift and go to state 6
 
+    html                           shift and go to state 1
+    binding                        shift and go to state 8
+    code                           shift and go to state 5
+    statement                      shift and go to state 9
 
 state 8
 
-    (9) html -> HTML .
+    (6) statement -> binding .
 
-    CODE            reduce using rule 9 (html -> HTML .)
-    HTML            reduce using rule 9 (html -> HTML .)
-    BINDING         reduce using rule 9 (html -> HTML .)
-    $end            reduce using rule 9 (html -> HTML .)
+    CODE            reduce using rule 6 (statement -> binding .)
+    HTML            reduce using rule 6 (statement -> binding .)
+    BINDING         reduce using rule 6 (statement -> binding .)
+    $end            reduce using rule 6 (statement -> binding .)
 
 
 state 9

@@ -11,8 +11,8 @@ static PoolAlloc **pool_allocators = NULL;
 
 PoolAlloc *_Pool_new(int esize, int csize, char *file, int line)
 {
-	PoolAlloc *alloc = (PoolAlloc*) MEM_calloc(sizeof(PoolAlloc));
-	PoolChunk *chunk = (PoolChunk*) MEM_malloc(sizeof(PoolChunk) + esize*csize);
+	PoolAlloc *alloc = (PoolAlloc*) MEM_calloc(sizeof(PoolAlloc), "pool");
+	PoolChunk *chunk = (PoolChunk*) MEM_malloc(sizeof(PoolChunk) + esize*csize, "pool");
 	_FreeElement *freel;
 	char *ptr;
 	int i;
@@ -43,7 +43,7 @@ void *_Pool_malloc(PoolAlloc *pool, char *file, int line)
 		char *ptr;
 		int i;
 
-		chunk = (PoolChunk*) MEM_malloc(sizeof(PoolChunk) + pool->esize*pool->csize);
+		chunk = (PoolChunk*) MEM_malloc(sizeof(PoolChunk) + pool->esize*pool->csize, "PoolChunk");
 		array_append(pool->chunks, chunk);
 
 		ptr = (char*)(chunk+1);

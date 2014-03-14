@@ -36,7 +36,9 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  <PropertyGroup />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <CustomBuildBeforeTargets>Build</CustomBuildBeforeTargets>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -45,6 +47,14 @@
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <CustomBuildStep>
+      <Command>cd c:\dev\allshape\cserver &amp;&amp; python cs_build.py msvc_mode</Command>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Message>Generating server pages...</Message>
+      <Outputs>c:\dev\allshape\cserver\build\pages.c</Outputs>
+      <Inputs>tst.ccs;%(Inputs)</Inputs>
+    </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -60,10 +70,30 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\build\pages.c" />
+    <ClCompile Include="..\..\intern\boilerplate.c" />
+    <ClCompile Include="..\..\intern\hashtable.c" />
+    <ClCompile Include="..\..\intern\memalloc.c" />
+    <ClCompile Include="..\..\intern\poolalloc.c" />
+    <ClCompile Include="..\..\intern\requestlib.c" />
     <ClCompile Include="..\..\intern\server_main.c" />
+    <ClCompile Include="..\..\intern\site.c" />
+    <ClCompile Include="..\..\intern\strutils.c" />
+    <ClCompile Include="..\..\intern\utils.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\intern\boilerplate.h" />
+    <ClInclude Include="..\..\intern\hashtable.h" />
+    <ClInclude Include="..\..\intern\memalloc.h" />
+    <ClInclude Include="..\..\intern\poolalloc.h" />
+    <ClInclude Include="..\..\intern\requestlib.h" />
+    <ClInclude Include="..\..\intern\site_boilerplate.h" />
     <ClInclude Include="..\..\intern\sock.h" />
+    <ClInclude Include="..\..\intern\strutils.h" />
+    <ClInclude Include="..\..\intern\utils.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\tst.ccs" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

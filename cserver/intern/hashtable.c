@@ -71,7 +71,7 @@ void Hash_insert(SmallHash *hash, uintptr_t key, void *item)
 		int i = 0;
 
 		if (hash->table != hash->stacktable || newsize > SMSTACKSIZE) {
-			tmp = MEM_calloc(sizeof(*hash->table) * newsize);
+			tmp = MEM_calloc(sizeof(*hash->table) * newsize, "hashtable");
 		}
 		else {
 			SWAP(SmallHashEntry *, hash->stacktable, hash->copytable);

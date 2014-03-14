@@ -22,7 +22,7 @@ def parse_intern(buf):
   try:
     result = parser.parse(buf)
   except JSCCError:
-    return ""
+    sys.exit(-1)
     
   compact_strnodes(result, StrNode)
   compact_strnodes(result, HtmlNode)
@@ -34,6 +34,7 @@ def parse_intern(buf):
   buf2 = gen_template(result)
   
   return buf2
+
 def main():
   cparse = argparse.ArgumentParser(add_help=False)
 
@@ -67,4 +68,7 @@ def main():
     print(buf2)
   
 if __name__ == "__main__":
-  main()
+  try:
+    main()
+  except JSCCError:
+    sys.exit(-1)

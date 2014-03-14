@@ -17,6 +17,7 @@ gcs = glob_cmd_short_override
 gcs["g_printnodes"] = "pn"
 gcs["g_printtokens"] = "pt"
 gcs["g_docroot"] = "dr"
+gcs["g_msvc_errors"] = "mv"
 
 def argv_to_argline():
   s = ""
@@ -187,8 +188,9 @@ class Glob(AbstractGlob):
   g_lexpos = 0
   g_printnodes = False
   g_printtokens = False
-  g_build_main = True
+  g_build_main = False
   g_docroot = ""
+  g_msvc_errors = False
   
   def __init__(self):
     self.g_docroot = os.getcwd()

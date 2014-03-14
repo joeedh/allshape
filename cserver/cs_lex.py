@@ -9,6 +9,7 @@ states = [
 
 tokens = [
   "CODE",
+  "CODE_ERR",
   "HTML",
   "BINDING",
   "ALL"
@@ -24,6 +25,12 @@ t_QUOTE = r'[\'"]'
 t_POUND = r'\#'
 #"""
 
+
+def t_CODE_ERR(t):
+  r'\#\>'
+  
+  return t
+  
 def do_lineno(t):
   t.lexer.lineno += t.value.count("\n")
   
