@@ -16,7 +16,7 @@ const void do_out(HandlerInfo *state, const char *str)
 {
   s_cat(state->out_buf, (char*) str);
 
-  if (strlen(str) > MAX_STR_OUT_LEN) {
+  if (strlen(str, MAX_STR_OUT_LEN*2) > MAX_STR_OUT_LEN) {
     fprintf(ERRFILE, "ERROR: bad str\n");
     fprintf(ERRFILE, "%s", str);
     return;
@@ -54,6 +54,12 @@ PageHandlerFunc get_page(char *path) {
   }
 
   return NULL;
+}
+
+
+const char *CWS_getstr_str(char *input)
+{
+  return input;
 }
 
 const char *CWS_getstr_charSTAR(char *input)

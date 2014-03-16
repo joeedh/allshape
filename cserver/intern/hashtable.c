@@ -148,6 +148,8 @@ void *Hash_lookup(SmallHash *hash, uintptr_t key)
 	unsigned int h, hoff = 1;
 	void *v;
 
+  if (hash->size == 0) return NULL;
+
 	h = (unsigned int)(key);
 
 	while ((hash->table[h % hash->size].key != key) ||
@@ -173,6 +175,8 @@ int Hash_haskey(SmallHash *hash, uintptr_t key)
 {
 	unsigned int h = (unsigned int)(key);
 	unsigned int hoff = 1;
+
+  if (hash->size == 0) return 0;
 
 	while ((hash->table[h % hash->size].key != key) ||
 	       (hash->table[h % hash->size].val == SMHASH_CELL_UNUSED))

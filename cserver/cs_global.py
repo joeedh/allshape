@@ -32,6 +32,9 @@ dont_set = set(["expand", "destroy", "add", "force",
 class AbstractGlob:
     __arg_map = {}
     
+    def __init__(self):
+      self.stack = []
+      
     def reset(self):
       self.load(Glob(), _debug=False)
       for attr in glob_defaults:
@@ -180,7 +183,13 @@ class AbstractGlob:
         if val != None and val != getattr(self, attr):
           setattr(self, attr, val)
           glob_defaults[attr] = val
-
+    
+    def push(self):
+      self.stack.append(self.copy())
+      
+    def pop(self):
+      self.load(self.stack.pop(-1))
+    
 class Glob(AbstractGlob):
   g_file = ""
   g_outfile = ""
@@ -193,6 +202,8 @@ class Glob(AbstractGlob):
   g_msvc_errors = False
   
   def __init__(self):
+    AbstractGlob.__init__(self)
     self.g_docroot = os.getcwd()
     
 glob = Glob()
+

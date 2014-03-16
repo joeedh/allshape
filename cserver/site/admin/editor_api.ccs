@@ -1,0 +1,26 @@
+<#
+{
+char *title, *body, *path;
+int ok=0;
+
+title = RQ_GetDataQueryKey(state, "title");
+path = RQ_GetDataQueryKey(state, "path");
+body = RQ_GetDataQueryKey(state, "body");
+
+if (title && body && path) {
+	DocPage page;
+	do_out(state, title);
+	do_out(state, path);
+	do_out(state, body);
+
+	ok = PG_InitPage(&page, path, title, PAGE_TYPE_PAGE, body);
+	ok = PG_UpdatePage(&page);
+}
+
+if (ok)
+	do_out(state, "page saved");
+else
+	do_out(state, "error!");
+
+}
+#>

@@ -1,5 +1,6 @@
 from cs_ast import *
 import os, sys, os.path, time, random, math, struct
+from cs_parse import JSCCError
 
 def traverse(n, ntype, func, use_depth=False, 
              exclude=[], copy_children=False, 
@@ -30,7 +31,7 @@ def traverse(n, ntype, func, use_depth=False,
 
 class NodeVisit:
   def __init__(self):
-    pass
+    self.required_nodes = set()
   
   def traverse(self, node, scope={}, tlevel=0):
     if scope == None and tlevel != 0:
@@ -67,6 +68,7 @@ def compact_strnodes(n, ntype):
   for c in dellist:
     n.remove(c)
 
+from cs_cc import cs_parse
 class GenTemplateVisit(NodeVisit):
   def __init__(self):
     NodeVisit.__init__(self)
@@ -93,7 +95,52 @@ class GenTemplateVisit(NodeVisit):
     type = node.type.replace("*", "STAR").replace("[", "A").replace("]", "A")
     buf = "  do_out(state, GETSTR(%s, %s));\n" % (type, node.val)
     self.s(buf)
-
+  
+  def IncludeNode(self, node, scope, traverse, tlevel):
+    #eek!
+    fpath = os.path.abspath(os.path.normpath(glob.g_file))
+    fdir = os.path.split(fpath)[0]
+    paths = [fdir, os.getcwd()]
+    common = os.path.commonprefix(paths);
+    paths = [p[len(common):] for p in paths]
+    f = None
+    npath = ""
+    
+    for p in paths:
+      p = common + p
+      if len(p) > 0 and not p.endswith("/") and not p.endswith("\\"):
+        p += "/"
+      
+      try:
+        f = open(p+node.val, "r")
+        npath = os.path.abspath(os.path.normpath(p+node.val))
+      except FileNotFoundError:
+        continue
+    
+    if f == None:
+      print("error including " + node.val + "!")
+      raise JSCCError("error!");
+    
+    buf = f.read()
+    f.close()
+    
+    glob.push()
+    glob.g_file = npath
+    try:
+      n2 = cs_parse(buf)
+      node.parent.replace(node, n2)
+      traverse(n2)
+      glob.pop()
+    except JSCCError:
+      glob.pop()
+      print("error including " + node.val + "!")
+      raise JSCCError("error!");
+    
+    if n2 == None or len(n2) == 0:
+      print("error including " + node.val + "!")
+      raise JSCCError("error!");
+    
+    
 def gen_page_uid(docroot, filename):
   filename = os.path.abspath(os.path.normpath(filename))
   docroot = os.path.abspath(os.path.normpath(docroot))
@@ -134,7 +181,13 @@ $$CODE_HERE$$
  
   return buf
   
-def html_to_c_str(val):
+def html_to_c_str(val, max_col=70):
   val = val.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r")
-  return '"' + val + '"'
+  val2 = ""
+  for i in range(len(val)):
+    val2 += val[i]
+    if ((i+1)%max_col) == 0:
+      val2 += "\\\n"
+     
+  return '"' + val2 + '"'
   

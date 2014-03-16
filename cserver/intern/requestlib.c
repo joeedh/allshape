@@ -1,19 +1,35 @@
 #include "boilerplate.h"
 #include "sock.h"
 #include "requestlib.h"
+#include "../site_config.h"
+#include "strutils.h"
 
-EXPORT char docroot[1048] = "c:\\dev\\allshape\\cserver";
-EXPORT char servroot[1048] = "c:\\dev\\allshape\\cserver";
-EXPORT char servhost[256] = "localhost:8080";
+EXPORT char docroot[1048] = DOCROOT;
+EXPORT char servroot[1048] = SERVROOT;
+EXPORT char servhost[256] = SERVHOST;
 
-HandlerInfo *HL_New(ReqInfo *info)
+HandlerInfo *HL_New(ReqInfo *req)
 {
-  HandlerInfo *hl = MEM_calloc(sizeof(HandlerInfo), "HandlerInfo");
+  HandlerInfo *hl = (HandlerInfo*) MEM_calloc(sizeof(HandlerInfo), "HandlerInfo");
+  char *buf;
+
   hl->docroot = s_dup(docroot);
   hl->servroot = s_dup(servroot);
-  hl->req = info;
-  hl->query = RQ_ParseQuery(info->path);
+  hl->req = req;
 
+  RQ_SplitQuery(req->path, NULL, &buf, NULL);
+  hl->query = RQ_ParseQuery(buf);
+  s_free(buf);
+
+  if (!strcncmp(req->method, "POST", 5, 5) && req->body != NULL) {
+    char *encoding = RQ_GetHeader(req, "Content-Type");
+
+    if (encoding && s_find(encoding, "urlencoded") >= 0) {
+      //turn binary body data into 0-terminated C string
+      array_append(req->body, 0);
+      hl->query2 = RQ_ParseQuery(req->body);
+    }
+  }
   return hl;
 }
 
@@ -22,14 +38,25 @@ void HL_Free(HandlerInfo *info)
 {
   int i, len;
 
+  s_free(info->docroot);
+  s_free(info->servroot);
+  
+  //free url query
   len = array_len(info->query);
-
   for (i=0; i<len; i++) {
     s_free(info->query[i]);
   }
-
   if (info->query)
     array_free(info->query);
+
+  //free body query, if it exists (e.g. POST-submitted forms)
+  len = array_len(info->query2);
+  for (i=0; i<len; i++) {
+    s_free(info->query2[i]);
+  }
+  if (info->query2)
+    array_free(info->query2);
+
   if (info->out_buf)
     s_free(info->out_buf);
 
@@ -39,16 +66,16 @@ void HL_Free(HandlerInfo *info)
 
 int RQ_SplitQuery(char *path, char **pathout, char **query, char **label)
 {
-  char buf[MAXQUERY];
+  char buf[MAXURL];
   char *c = path;
   int i=0, j=0, qstart, lstart, plen;
 
   if (path == NULL) {
     fprintf(stderr, "NULL passed to RQ_SplitQuery()!");
 
-    if (*pathout) *pathout = s_dup("");
-    if (*query) *query = s_dup("");
-    if (*label) *label = s_dup("");
+    if (pathout) *pathout = s_dup("");
+    if (query) *query = s_dup("");
+    if (label) *label = s_dup("");
 
     return 0;
   }
@@ -56,8 +83,8 @@ int RQ_SplitQuery(char *path, char **pathout, char **query, char **label)
   plen = strlen(path);
   qstart = lstart = plen;
 
-  if (strlen(path) >= MAXQUERY) {
-    path[MAXQUERY-1] = 0;
+  if (strlen(path) >= MAXURL) {
+    path[MAXURL-1] = 0;
 
     fprintf(stderr, "%s\n", path);
     fprintf(stderr, "corrupted path detected\n");
@@ -117,7 +144,7 @@ int RQ_SplitQuery(char *path, char **pathout, char **query, char **label)
   return 1;
 }
 
-char **RQ_ParseQuery(char *path)
+char **RQ_ParseQuery(char *query_in)
 {
   char *query;
   char *c;
@@ -126,11 +153,10 @@ char **RQ_ParseQuery(char *path)
   int i, qlen;
   char *buf=NULL;
 
-  RQ_SplitQuery(path, NULL, &query, NULL);
+  query = s_dup(query_in);
   buf = s_dup(query);
   array_resize(buf, array_len(buf)*2);
 
-  RQ_UnEscapePath(query, buf, array_len(buf), RQ_ESC_QUERY);
   s_free(query);
 
   query = buf;
@@ -157,17 +183,21 @@ char **RQ_ParseQuery(char *path)
   }
 
   if (array_len(ret) > 0) {
-    if (!cur_word) {
-      cur_word = NULL;
-      array_append(cur_word, 0);
-    }
-  
+    array_append(cur_word, 0);
     array_append(ret, cur_word);
 
     if (array_len(ret) % 2 != 0)
       array_append(ret, "");
   }
 
+  qlen = array_len(ret);
+  for (i=0; i<qlen; i++) {
+    char *ret2 = s_dup(ret[i]);
+
+    RQ_UnEscapePath(ret2, ret[i], array_len(ret2), RQ_ESC_QUERY);
+    //printf("%s\n", ret[i]);
+    s_free(ret2);
+  }
   s_free(query);
   return ret;
 }
@@ -187,7 +217,7 @@ static void init_good_chars(void) {
     good_chars[i] = 1;
   }
 
-  for (i = '0'; i<'9'; i++) {
+  for (i = '0'; i<='9'; i++) {
     good_chars[i] = 1;
     good_hex[i] = i-'0'+1;
   }
@@ -241,9 +271,12 @@ void RQ_UnEscapePath(char *input, char *output, int outlen, int mask)
         co += 1;
         continue;
       }
+    } else if (c == '+') {
+      *co = ' ';
+    } else {
+      *co = *ci;
     }
 
-    *co = *ci;
     ci++;
     co++;
     i++;
@@ -300,7 +333,7 @@ void RQ_EscapePath(char *input, char *output, int outlen, int mask)
       if (i < outlen-3) {
         if (c == ' ') 
           c = 20;
-        j = sprintf(co, "%%%2x", (int)c);
+        j = sprintf(co, "%%%02x", (int)c);
         if (j > 0) {
           co += j-1;
           i += j-1;
@@ -357,6 +390,18 @@ char *RQ_BuildQuery(char **query)
   return ret;
 }
 
+char *RQ_GetDataQueryKey(HandlerInfo *info, char *key)
+{
+  int len = array_len(info->query2), i;
+
+  for (i=0; i<len/2; i++) {
+    if (info->query2[i*2] && !strcmp(info->query2[i*2], key))
+      return i*2+1 < len ? info->query2[i*2+1] : NULL;
+  }
+
+  return NULL;
+}
+
 char *RQ_GetQueryKey(HandlerInfo *info, char *key)
 {
   int len = array_len(info->query), i;
@@ -392,6 +437,8 @@ void RQ_Free(ReqInfo *req)
     array_free(req->headers);
   if (req->path)
     s_free(req->path);
+  if (req->body)
+    array_free(req->body);
 }
 
 void RQ_AddHeader(ReqInfo *req, char *header, char *val)
@@ -405,7 +452,7 @@ char *RQ_GetHeader(ReqInfo *req, char *header)
   int len = array_len(req->headers), i;
 
   for (i=0; i<len/2; i++) {
-    if (req->headers[i*2] && !strcmp(req->headers[i*2], header))
+    if (req->headers[i*2] && !strcncmp(req->headers[i*2], header, s_len(req->headers[i*2]), strlen(header)))
       return i*2+1 < len ? req->headers[i*2+1] : NULL;
   }
 
@@ -423,10 +470,12 @@ void RQ_StandardHeaders(ReqInfo *req, int content_length, char *mimeType)
   RQ_AddHeader(req, "ServerHost", servhost);
 }
 
-char *RQ_BuildReq(ReqInfo *req, int add_path)
+char *RQ_BuildReq(ReqInfo *req, int add_path, int code)
 {
   char *s = NULL;
+  char buf[1024];
   char **headers = req->headers;
+  char *reason;
   int i, len;
 
   s_cat(s, req->method);
@@ -435,7 +484,14 @@ char *RQ_BuildReq(ReqInfo *req, int add_path)
     s_cat(s, req->path);
   }
 
-  s_cat(s, " http/1.1\r\n");
+  if (code == 200) {
+    reason = "OK";
+  } else if (code > 400) {
+    reason = "ERR";
+  }
+  sprintf(buf, "http/1.1 %d %s\r\n", code, reason);
+
+  s_cat(s, buf);
 
   len = array_len(headers);
   for (i=0; i<len/2; i++) {

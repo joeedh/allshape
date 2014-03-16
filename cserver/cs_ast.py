@@ -146,3 +146,6 @@ class BindingNode(StrNode):
 class HtmlNode(StrNode):
   pass 
 
+class IncludeNode(StrNode):
+  pass
+  

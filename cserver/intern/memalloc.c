@@ -4,6 +4,9 @@
 #include <string.h>
 
 #include "utils.h"
+#include "pthread.h"
+
+pthread_mutex_t mem_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 typedef struct MemHead {
   struct MemHead *next, *prev;
@@ -39,7 +42,9 @@ void *_MEM_malloc(size_t size, char *tag, char *file, int line)
 {
   MemHead *mem;
   MemTail *tail;
-  
+ 
+  pthread_mutex_lock(&mem_mutex);
+
 	if (size & 7) {
 		size = size + 8 - (size & 7); //round up to nearest multiple of eight
 	}
@@ -47,6 +52,7 @@ void *_MEM_malloc(size_t size, char *tag, char *file, int line)
   mem = (MemHead*) malloc(size+sizeof(MemHead)+sizeof(MemTail));
   
   if (!mem) {
+    pthread_mutex_unlock(&mem_mutex);
     return NULL;
   }
   
@@ -69,6 +75,7 @@ void *_MEM_malloc(size_t size, char *tag, char *file, int line)
   List_Append(&MemHeads, mem);
   List_Append(&MemTails, tail);
   
+  pthread_mutex_unlock(&mem_mutex);
   return mem+1;
 }
 
@@ -139,9 +146,12 @@ void _MEM_free(void *vmem, char *file, int line)
   MemHead *mem = (MemHead*)vmem;
   MemTail *tail;
   
+  pthread_mutex_lock(&mem_mutex);
+
   if (!vmem) {
     fprintf(stderr, "Warning: tried to free NULL pointer!\n");
     fprintf(stderr, "  at line %d: file: %s\n", line, file); 
+    pthread_mutex_unlock(&mem_mutex);
     return;
   }
   
@@ -150,6 +160,7 @@ void _MEM_free(void *vmem, char *file, int line)
   if (mem->code1 == FREECODE) {
     fprintf(stderr, "Error: Double free!\n");
     fprintf(stderr, "  at line %d: file: %s\n", line, file); 
+    pthread_mutex_unlock(&mem_mutex);
     return;
   }
   
@@ -159,6 +170,7 @@ void _MEM_free(void *vmem, char *file, int line)
     fprintf(stderr, "MEM_free: Error: Corrupted memory block %p!\n", vmem);
     fprintf(stderr, "  at line %d: file: %s\n", line, file); 
     //fprintf(stderr, "[h1=%s, h2=%s, t1=%s, t2=%s] ", mem->code1, mem->code2, tail->code1, tail->code2);
+    pthread_mutex_unlock(&mem_mutex);
     return;
   }
   
@@ -171,6 +183,7 @@ void _MEM_free(void *vmem, char *file, int line)
   tail->code1 = tail->code2 = FREECODE;
   
   free(mem);
+  pthread_mutex_unlock(&mem_mutex);
 }
 
 const char *memprint_truncate(const char *path)
@@ -193,8 +206,10 @@ const char *memprint_truncate(const char *path)
 void MEM_PrintMemBlocks(FILE *file)
 {
   MemHead *mem;
-  
+  pthread_mutex_lock(&mem_mutex);
+
   if (MemHeads.first == NULL) {
+    pthread_mutex_unlock(&mem_mutex);
     return;
   }
   
@@ -208,6 +223,8 @@ void MEM_PrintMemBlocks(FILE *file)
     fprintf(file, "%s:%d: size: %d\n", memprint_truncate(mem->file), 
 			      mem->line, mem->size);
   }
+
+  pthread_mutex_unlock(&mem_mutex);
 }
 
 void *_Array_New(size_t esize, size_t length, char *file, int line)
@@ -233,6 +250,7 @@ void *_Array_New(size_t esize, size_t length, char *file, int line)
   return mem+1;
 }
 
+
 void *_Array_Realloc(void *vmem, size_t newlength, char *file, int line)
 {
   MemHead *mem = (MemHead*)vmem, *mem2;
@@ -250,6 +268,35 @@ void *_Array_Realloc(void *vmem, size_t newlength, char *file, int line)
   
   _MEM_free(mem+1, file, line);
   return mem2+1;
+}
+
+void *_Array_nDup(void *vmem, int esize, int n, char *file, int line)
+{
+  void *arr = _Array_New(esize, n, file, line);
+
+  if (!arr) return NULL;
+
+  memcpy(arr, vmem, n*esize);
+
+  return arr;
+}
+
+void *_Array_Dup(void *vmem, char *file, int line)
+{
+  MemHead *mem1, *mem2;
+
+  if (!_MEM_check(vmem, file, line)) {
+    fprintf(stderr, "Invalid pointer %p passed to _Array_Dup()!\n", vmem);
+    return NULL;
+  }
+
+  mem1 = vmem;
+  mem1--;
+
+  mem2 = _Array_New(mem1->esize, mem1->used/mem1->esize, file, line);
+  memcpy(mem2+1, mem1+1, mem1->used);
+
+  return (void*) (mem2+1);
 }
 
 void *_Array_GrowOne(void *vmem, int esize, char *file, int line)
@@ -313,7 +360,7 @@ void *_Array_Pop(void *vmem, char *file, int line)
   mem--;
   if (mem->used < mem->esize) {
     fprintf(stderr, "Invalid call to Array_Pop\n");
-    return;
+    return NULL;
   }
   
   mem->used -= mem->esize;
@@ -335,7 +382,7 @@ void *_Array_Resize(void *vmem, int newlen, int esize, char *file, int line)
     return _Array_New(esize, newlen, file, line);
   }
   
-  if (mem->used + newlen*mem->esize >= mem->size) {
+  if (newlen*mem->esize >= mem->size) {
     //double buffer
     mem = (MemHead*)_Array_Realloc(mem+1, newlen*2, file, line);
     mem--;
@@ -347,6 +394,15 @@ void *_Array_Resize(void *vmem, int newlen, int esize, char *file, int line)
   tail->used = mem->used;
     
   return mem+1;
+}
+
+void *_Array_CatN(void *arr1, void *arr2, int len, int esize, char *file, int line) {
+  int start = _Array_Len(arr1, file, line);
+
+  arr1 = _Array_Resize(arr1, start+len, esize, file, line);
+  memcpy(((char*)arr1) + start, arr2, len);
+
+  return arr1;
 }
 
 int _Array_Len(void *vmem, char *file, int line)

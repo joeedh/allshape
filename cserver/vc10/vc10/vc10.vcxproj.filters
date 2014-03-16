@@ -5,41 +5,50 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
     </Filter>
-    <Filter Include="Resource Files">
+    <Filter Include="Resources">
+      <UniqueIdentifier>{fe8fc715-cfa4-457e-9907-327aeaadc47b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\intern\server_main.c">
-      <Filter>Resource Files</Filter>
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\intern\poolalloc.c">
-      <Filter>Resource Files</Filter>
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\intern\memalloc.c">
-      <Filter>Resource Files</Filter>
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\intern\hashtable.c">
-      <Filter>Resource Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\intern\boilerplate.c">
-      <Filter>Resource Files</Filter>
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\intern\utils.c">
-      <Filter>Resource Files</Filter>
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\intern\strutils.c">
-      <Filter>Resource Files</Filter>
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\intern\requestlib.c">
-      <Filter>Resource Files</Filter>
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\intern\site.c">
-      <Filter>Resource Files</Filter>
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\build\pages.c">
-      <Filter>Resource Files</Filter>
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\intern\thread.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\intern\fileutils.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\intern\boilerplate.c">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -70,10 +79,55 @@
     <ClInclude Include="..\..\intern\site_boilerplate.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\intern\thread.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\intern\fileutils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\intern\types.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\site_config.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\tst.ccs">
-      <Filter>Header Files</Filter>
+    <None Include="..\..\build_local.py">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\cs_sources.py">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\site\getpage.ccs">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\site\admin\editor.ccs">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\site\admin\editor_api.ccs">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\site\index.ccs">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\site\footer.ccs">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\site\header.ccs">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\cs_build.py">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\site\admin\admin.ccs">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\site\admin\main.ccs">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\site\admin\pages.ccs">
+      <Filter>Resources</Filter>
     </None>
   </ItemGroup>
 </Project>

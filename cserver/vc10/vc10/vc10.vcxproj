@@ -37,15 +37,19 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <CustomBuildBeforeTargets>Build</CustomBuildBeforeTargets>
+    <CustomBuildBeforeTargets>BuildCompileTraverse</CustomBuildBeforeTargets>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>C:\dev\blender\lib\windows\pthreads\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>C:\dev\blender\lib\windows\pthreads\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>pthreadVSE2.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <CustomBuildStep>
       <Command>cd c:\dev\allshape\cserver &amp;&amp; python cs_build.py msvc_mode</Command>
@@ -53,7 +57,7 @@
     <CustomBuildStep>
       <Message>Generating server pages...</Message>
       <Outputs>c:\dev\allshape\cserver\build\pages.c</Outputs>
-      <Inputs>tst.ccs;%(Inputs)</Inputs>
+      <Inputs>editor.ccs;editor_api.css;index.ccs;getpage.ccs;header.ccs;footer.ccs%(Inputs)</Inputs>
     </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -72,6 +76,7 @@
   <ItemGroup>
     <ClCompile Include="..\..\build\pages.c" />
     <ClCompile Include="..\..\intern\boilerplate.c" />
+    <ClCompile Include="..\..\intern\fileutils.c" />
     <ClCompile Include="..\..\intern\hashtable.c" />
     <ClCompile Include="..\..\intern\memalloc.c" />
     <ClCompile Include="..\..\intern\poolalloc.c" />
@@ -79,10 +84,12 @@
     <ClCompile Include="..\..\intern\server_main.c" />
     <ClCompile Include="..\..\intern\site.c" />
     <ClCompile Include="..\..\intern\strutils.c" />
+    <ClCompile Include="..\..\intern\thread.c" />
     <ClCompile Include="..\..\intern\utils.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\intern\boilerplate.h" />
+    <ClInclude Include="..\..\intern\fileutils.h" />
     <ClInclude Include="..\..\intern\hashtable.h" />
     <ClInclude Include="..\..\intern\memalloc.h" />
     <ClInclude Include="..\..\intern\poolalloc.h" />
@@ -90,10 +97,26 @@
     <ClInclude Include="..\..\intern\site_boilerplate.h" />
     <ClInclude Include="..\..\intern\sock.h" />
     <ClInclude Include="..\..\intern\strutils.h" />
+    <ClInclude Include="..\..\intern\thread.h" />
+    <ClInclude Include="..\..\intern\types.h" />
     <ClInclude Include="..\..\intern\utils.h" />
+    <ClInclude Include="..\..\site_config.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\tst.ccs" />
+    <None Include="..\..\build_local.py" />
+    <None Include="..\..\cs_build.py" />
+    <None Include="..\..\cs_sources.py" />
+    <None Include="..\..\site\admin\admin.ccs" />
+    <None Include="..\..\site\admin\editor.ccs" />
+    <None Include="..\..\site\admin\editor_api.ccs" />
+    <None Include="..\..\site\admin\main.ccs" />
+    <None Include="..\..\site\admin\pages.ccs" />
+    <None Include="..\..\site\footer.ccs" />
+    <None Include="..\..\site\getpage.ccs" />
+    <None Include="..\..\site\header.ccs">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="..\..\site\index.ccs" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

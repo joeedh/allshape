@@ -12,8 +12,9 @@ grammar format:
   c code
 #>
 <html code>
+<#include "something.ccs">
 
-<a href=<#="some_c_func()">>
+<a href=<#=str "some_c_func()">>
 
 so it's a templating system.
 
@@ -38,6 +39,7 @@ def p_statement(p):
   ''' statement : code
                 | html
                 | binding
+                | include
   '''
   p[0] = p[1]
 
@@ -46,6 +48,11 @@ def p_code(p):
   '''
   p[0] = CodeNode(p[1])
 
+def p_include(p):
+  '''include : INCLUDE
+  '''
+  p[0] = IncludeNode(p[1])
+  
 def p_binding(p):
   ''' binding : BINDING
   '''

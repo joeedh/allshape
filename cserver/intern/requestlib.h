@@ -1,11 +1,16 @@
 #ifndef _REQUEST_LIB
 #define _REQUEST_LIB
 
+extern char docroot[1048];
+extern char servroot[1048];
+extern char servhost[256];
+
 typedef struct ReqInfo {
   char method[8];
   char *path;
   char **headers;
   int totheader;
+  char *body;
 } ReqInfo;
 
 typedef struct HandlerInfo {
@@ -13,6 +18,7 @@ typedef struct HandlerInfo {
     char *docroot;
     char *servroot;
     char **query;
+    char **query2;
     char *out_buf;
 } HandlerInfo;
 
@@ -22,6 +28,7 @@ void HL_Free(HandlerInfo *info);
 
 char *RQ_BuildQuery(char **query);
 char *RQ_GetQueryKey(HandlerInfo *info, char *key);
+char *RQ_GetDataQueryKey(HandlerInfo *info, char *key);
 
 void RQ_InitReq(ReqInfo *info, char *method);
 //does not free ReqInfo struct itself
@@ -31,7 +38,7 @@ void RQ_Free(ReqInfo *info);
 void RQ_AddHeader(ReqInfo *info, char *header, char *val);
 char *RQ_GetHeader(ReqInfo *info, char *header);
 void RQ_StandardHeaders(ReqInfo *info, int content_length, char *mimeType);
-char *RQ_BuildReq(ReqInfo *info, int add_path);
+char *RQ_BuildReq(ReqInfo *info, int add_path, int code);
 
 char **RQ_ParseQuery(char *path);
 int RQ_SplitQuery(char *path, char **pathout, char **query, char **label);

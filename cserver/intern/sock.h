@@ -19,8 +19,9 @@
 
 #endif
 
-#define MAXBUF  128
-#define MAXQUERY  128
+#define MAXBUF  16384
+#define MAXURL  8196
+#define MAXBODY 1024*1024*700
 
 extern void *page_handlers[];
 extern int page_handlers_len;

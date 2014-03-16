@@ -7,11 +7,18 @@
 #include <string.h>
 #include <math.h>
 
+#include "thread.h"
+#include "pthread.h"
+
+pthread_mutex_t net_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t time_mutex = PTHREAD_MUTEX_INITIALIZER;
 #ifdef WIN32
 
 double time_ms(void) {
+
 	static int hasperfcounter = -1; /* (-1 == unknown) */
 	static double perffreq;
+  pthread_mutex_lock(&time_mutex);
 
 	if (hasperfcounter == -1) {
 		__int64 ifreq;
@@ -23,7 +30,8 @@ double time_ms(void) {
 		__int64 count;
 
 		QueryPerformanceCounter((LARGE_INTEGER *) &count);
-
+    
+    pthread_mutex_unlock(&time_mutex);
 		return count / perffreq;
 	}
 	else {
@@ -39,13 +47,31 @@ double time_ms(void) {
 		}
 
 		ltick = ntick;
+
+    pthread_mutex_unlock(&time_mutex);
 		return accum;
 	}
+
+  pthread_mutex_unlock(&time_mutex);
 }
 
 //XXX
 SOCKET open_sockets[512];
 int cursock = 0;
+volatile int active_threads = 1;
+pthread_mutex_t active_thread_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+int inc_active_threads() {
+  pthread_mutex_lock(&active_thread_mutex);
+  active_threads++;
+  pthread_mutex_unlock(&active_thread_mutex);
+}
+
+int dec_active_threads() {
+  pthread_mutex_lock(&active_thread_mutex);
+  active_threads--;
+  pthread_mutex_unlock(&active_thread_mutex);
+}
 
 int initSockets() {
   WSADATA wsaData;
@@ -63,7 +89,7 @@ int initSockets() {
 int loadSocket(char *port) {
   struct addrinfo *result = NULL, hints;
   SOCKET ListenSocket = INVALID_SOCKET;
-  int iResult;
+  int iResult, ret;
   
   ZeroMemory(&hints, sizeof (hints));
   hints.ai_family = AF_INET;
@@ -107,14 +133,19 @@ int loadSocket(char *port) {
   }
 
   freeaddrinfo(result);
+  pthread_mutex_lock(&net_mutex);
 
-  open_sockets[cursock] = ListenSocket;
-  return cursock++;
+  ret = cursock;
+  open_sockets[cursock++] = ListenSocket;
+
+  pthread_mutex_unlock(&net_mutex);
+  return ret;
 }
 
 int waitForConnection(int sock) {
   SOCKET ClientSocket;
   SOCKET ListenSocket = open_sockets[sock];
+  int ret;
 
   // Accept a client socket
   ClientSocket = accept(ListenSocket, NULL, NULL);
@@ -123,8 +154,12 @@ int waitForConnection(int sock) {
     return 0;
   }
 
+  pthread_mutex_lock(&net_mutex);
+  ret = cursock;
   open_sockets[cursock++] = ClientSocket;
-  return cursock-1;
+  pthread_mutex_unlock(&net_mutex);
+
+  return ret;
 }
 
 int socketSend(int sock, int clientsock, const char *buf, int buflen) {
@@ -148,23 +183,27 @@ int socketSend(int sock, int clientsock, const char *buf, int buflen) {
 
 int socketRecv(int sock, int clientsock, char *buf, int buflen) {
   SOCKET ClientSocket = open_sockets[clientsock];
-  int iResult;
+  int iResult, iError;
 
   iResult = recv(ClientSocket, buf, buflen, 0);
 
-  if (iResult > 0) {
-    return iResult;
-  } else if (iResult == 0) {
+ if (iResult == 0) {
       printf("Connection closing...\n");
       return -1;
-  } else {
+  } else if (iResult < 0) {
       printf("recv failed: %d\n", WSAGetLastError());
       closesocket(ClientSocket);
       WSACleanup();
       return -1;
   }
 
-  return 0;
+  iError = WSAGetLastError();
+  if (iError == WSAEMSGSIZE) {
+    printf("failed to get full message");
+    return 0;
+  }
+
+  return iResult;
 }
 
 void sleep_ms(int ms) {
@@ -222,7 +261,7 @@ int parse_request(char *buf, ReqInfo *req, int buflen) {
   char c;
   char method[32];
   char path[8192];
-  char key[32];
+  char key[64];
   char val[256];
   int j=0;
 
@@ -230,14 +269,14 @@ int parse_request(char *buf, ReqInfo *req, int buflen) {
   
   c = strcspn(buf, " \t");
 
-  if (c <= 0 || c > 3) return -1;
+  if (c <= 0 || c > 4) return -1;
 
   memcpy(method, buf, c);
   method[c] = 0;
   i += c;
 
   strcpy(req->method, method);
-  printf("method: '%s'\n", method);
+  //printf("method: '%s'\n", method);
 
   consume_space(buf, ih);
   c = strcspn(buf+i, " \t");
@@ -247,7 +286,7 @@ int parse_request(char *buf, ReqInfo *req, int buflen) {
   path[c] = 0;
   i+=c;
 
-  printf("path: %s\n", path);
+  //printf("path: %s\n", path);
   consume_space(buf, ih);
   if (!expect(buf, "HTTP/1.1", ih))
     return -1;
@@ -263,7 +302,8 @@ int parse_request(char *buf, ReqInfo *req, int buflen) {
     //char *cp;
     c = CLAMP(strcspn(buf+i, ": "), 0, sizeof(key)-1);
 
-    if (c <= 0) break;
+    if (c <= 0) 
+      break;
 
     memcpy(key, buf+i, c);
     key[c] = 0;
@@ -274,7 +314,8 @@ int parse_request(char *buf, ReqInfo *req, int buflen) {
     consume_ws(buf, ih, buflen);
     c = CLAMP(strcspn(buf+i, "\r"), 0, sizeof(val)-1);
 
-    if (c <= 0) break;
+    if (c <= 0) 
+      break;
 
     memcpy(val, buf+i, c);
     val[c] = 0;
@@ -286,7 +327,7 @@ int parse_request(char *buf, ReqInfo *req, int buflen) {
     array_append(req->headers, s_dup(val));
     req->totheader++;
 
-    printf("header: '%s' : '%s'\n", key, val);
+    //printf("header: '%s' : '%s'\n", key, val);
   }
 
   return 0;
@@ -298,8 +339,11 @@ int do_default_res(int sock, int csock, HandlerInfo *info)
   PageHandlerFunc func;
   char *buf = NULL;
   char *res = NULL;
-  
-  RQ_InitReq(&req, "GET");
+  char *mime = NULL;
+  char *path2 = NULL;
+  int i, ilen, iadd, err = 0, totread=0;
+
+  RQ_InitReq(&req, info->req->method);
   if (info->res) {
     RQ_Free(info->res);
     MEM_free(info->res);
@@ -310,94 +354,237 @@ int do_default_res(int sock, int csock, HandlerInfo *info)
     s_free(info->out_buf);
   info->out_buf = NULL;
 
+  s_cpy(buf, docroot);
+  RQ_SplitQuery(info->req->path, &path2, NULL, NULL);
+
+  if (path2[0] != '/')
+    s_cat(buf, "/");
+  s_cat(buf, path2);
+
+  s_free(info->req->path);
+  info->req->path = path2;
+
   func = get_page(info->req->path);
   if (!func) {
-    s_cat(info->out_buf, "<!DOCTYPE html><html><head><title>404 Error</title></head><body>404</body></html>");
+    FILE *file;
+    char *path2;
+
+    file = fopen(buf, "rb");
+    if (file) {
+      int readlen = 4096;
+      array_resize(buf, readlen+1);
+
+      totread = 0;
+      while (!feof(file)) {
+        int r = fread(buf, 1, readlen, file);
+        if (r < 0) break;
+
+        if (r < readlen) {
+          buf[r] = 0;
+        } else {
+          buf[readlen] = 0;
+        }
+
+        array_catn(info->out_buf, buf, r);
+        totread += r;
+      }
+    } else {
+      err = 404;
+    }
+
   } else {
     func(info);
+  }
+  
+  //at this point, buf is either static page data, or the query path
+  //free it.
+  array_free(buf);
+
+  if (err) {
+    s_cpy(info->out_buf, "<!DOCTYPE html><html><head><title>404 Error</title></head><body>404</body></html> ");
+    mime = "text/html";
+  } else {
     if (!info->out_buf) {
-      s_cat(info->out_buf, "<!DOCTYPE html><html><head><title>500 Error</title></head><body>500</body></html>");
+      err = 500;
+      s_cpy(info->out_buf, "<!DOCTYPE html><html><head><title>500 Error</title></head><body>500</body></html> ");
+      mime = "text/html";
     }
   }
+  
+  if (!err) {
+    if (s_endswith(info->req->path, ".js")) {
+      mime = "application/javascript";
+    } else if (s_endswith(info->req->path, ".jpg")) {
+      mime = "image/jpeg";
+    } else if (s_endswith(info->req->path, ".png")) {
+      mime = "image/png";
+    } else if (s_endswith(info->req->path, ".css")) {
+      mime = "text/css";
+    } else {
+      mime = "text/html";
+    }
+  }
+  RQ_StandardHeaders(&req, s_len(info->out_buf), mime);
 
-  RQ_StandardHeaders(&req, strlen(info->out_buf), "text/html");
+  res = RQ_BuildReq(&req, 0, err != 0 ? err : 200);
+  //s_cat(res, "\r\n");
 
-  res = RQ_BuildReq(&req, 0);
-  s_cat(res, "\r\n");
-  s_cat(res, info->out_buf);
+  //remove NULL terminator byte
+  //from now on, res is no longer
+  //a C string
+  while (res[array_len(res)-1] == 0) {
+    array_pop(res);
+  }
+  array_catn(res, info->out_buf, array_len(info->out_buf));
 
-  socketSend(sock, csock, res, s_len(res));
+  iadd = 1024;
+  ilen = array_len(res);
+  for (i=0; i<ilen; i += iadd) {
+    int len2 = i+iadd > ilen ? ilen%iadd : iadd;
+
+    socketSend(sock, csock, res+i, len2);
+  }
 
   s_free(res);
+  RQ_Free(&req);
 }
 
-int serv(int sock) {
+typedef struct threadarg {
+  int sock, csock;
+} threadarg;
+
+void *thread_start(void *arg) {
+  char *reqs = NULL;
+  char *body = NULL;
+  threadarg *ta = (threadarg*)arg;
+  int sock, csock, content_len=0;
   char buf[MAXBUF];
   ReqInfo req;
-  int csock;
   int atstart=1;
-  char last_method[8];
-  char *reqs = NULL;
   double time;
+  char *end=NULL;
   HandlerInfo *info;
-
-  //print blocks before accepting next connection
-  MEM_PrintMemBlocks(stderr);
-
-  //make sure we're not null.  could also do reqs = s_dup("");
-  array_append(reqs, 0);
-  csock = waitForConnection(sock);
   
+  RQ_InitReq(&req, "null");
+  sock = ta->sock;
+  csock = ta->csock;
+
+  //don't need the thread arg anymore
+  MEM_free(ta);
+
   while (1) {
     int ret = socketRecv(sock, csock, buf, MAXBUF);
-    
+    int hi;
+
     if (atstart)
       time = time_ms();
     atstart = 0;
 
     if (ret >= MAXBUF) ret = MAXBUF-1;
+
     if (ret < 0) {
-      fprintf(stderr, "Connection error");
-      break;
-    }
+       RQ_Free(&req);
+       break;
+    } else if (ret > 0) {
+      ret = MIN(ret, MAXBUF);
 
-    if (ret == 0) {
-      break;
-    }
-
-    buf[ret] = 0;
-    buf[MAXBUF-1] = 0;
+      //printf("got %d\n\n|%s\n", ret, reqs);
+      array_catn(reqs, buf, ret);
     
-    s_cat(reqs, buf);
-    if (!s_endswith(reqs, "\r\n\r\n"))
-      continue;
+      if (!end) {
+        end = strnstr(reqs, "\r\n\r\n", array_len(reqs)+1);
+        if (end) {
+          int start;
+          char *val;
 
-    printf("got %d\n\n|%s\n", ret, reqs);
-    ret = parse_request(reqs, &req, ret);
+          //find body, if it exists
+          start =  (int)(end - reqs)+4;
+          if (start < s_len(reqs)) {
+            body = array_ndup(reqs+start, array_len(reqs)-start);
+          }
 
-    if (ret < 0) {
-      printf("parse_request error!");
+          array_resize(reqs, start+1);
+          reqs[start] = 0;
+
+          if (reqs[0] == 'P') {
+            //printf("%s\n", reqs);
+          }
+          ret = parse_request(reqs, &req, array_len(reqs));
+
+          if (ret < 0) {
+            fprintf(stderr, "parse_request error!");
+            RQ_Free(&req);
+            break;
+          }
+
+          val = RQ_GetHeader(&req, "Content-Length");
+          if (val) {
+            content_len = atoi(val) - 4;
+            content_len = CLAMP(content_len, 0, MAXBODY);
+          } else {
+            content_len = 0;
+          }
+        }
+      } else {
+        array_catn(body, buf, ret);
+      }
     }
 
+    if (!end || array_len(body) < content_len) 
+      continue;
+    
+    //invoke response handler
+    if (body == NULL)
+      array_append(body, 0);
+    
+    req.body = body;
+    
     info = HL_New(&req);
-
     do_default_res(sock, csock, info);
 
-    printf("\ntime : %.4fms\n\n", time_ms()-time);
+    printf("time : %.4fms\n\n", time_ms()-time);
 
     HL_Free(info);
     MEM_free(info);
     RQ_Free(&req);
-
-    //memcpy(last_method, req.method, 3);
+    RQ_InitReq(&req, "null");
 
     sleep_ms(5);
     array_reset(reqs);
-    array_append(reqs, 0);
+    body = NULL;
     atstart = 1;
+    end = NULL;
+  }
+  
+  array_free(body);
+  array_free(reqs);
+  dec_active_threads();
+}
+
+int serv(int sock) {
+  int csock, ret;
+  static int curthread=0;
+  threadarg *ta;
+
+  //print blocks before accepting next connection
+  MEM_PrintMemBlocks(stderr);
+  
+  csock = waitForConnection(sock);
+  while (active_threads >= MAXTHREAD) {
+    sleep_ms(1);
   }
 
-  s_free(reqs);
+  ta = (threadarg*) MEM_calloc(sizeof(*ta), "threadarg");
+  ta->csock = csock;
+  ta->sock = sock;
+
+  curthread++;
+  inc_active_threads();
+
+  ret = pthread_create(&curthread, NULL, thread_start, ta);
+  if (ret != 0) {
+    MEM_free(ta);
+  }
 }
 
 int test_strutil_main(int argc, char **argv) {
@@ -458,19 +645,21 @@ int main2(int argc, char **argv) {
   //init
   RQ_OnStartup();
 
-  path =  RQ_EscapeDup("/root/?a=[0]&b={2}&c=#4#label", RQ_ESC_QUERY);
+  path =  RQ_EscapeDup("/root/?title=yay", RQ_ESC_QUERY); //a=[0]&b={2}&c=#4#label", RQ_ESC_QUERY);
 
   RQ_SplitQuery(path, &pathout, &query, &label);
-  qs = RQ_ParseQuery(path);
+  qs = RQ_ParseQuery(query);
   qlen = array_len(qs);
 
   for (i=0; i<qlen/2; i++) {
     printf("'%s' : '%s'\n", qs[i*2], qs[i*2+1]);
   }
+  printf("\n");
+
 
   fprintf(stdout, "%s|'%s' : '%s' : '%s'\n", path, pathout, query, label);
 
-  path = "/sdfdsf/sdfsd?a=yay yay yay&b = 2[] & c = bleh";
+  path = "/sdfdsf/sdfsd?a=title"; //yay yay yay&b = 2[] & c = bleh";
   pathout = s_dup(path);
   array_resize(pathout, s_len(pathout)*3);
 
@@ -489,7 +678,7 @@ int main2(int argc, char **argv) {
   req.path = s_dup("/some/path");
   RQ_StandardHeaders(&req, 10, "application/x-html");
 
-  path = RQ_BuildReq(&req, 1);
+  path = RQ_BuildReq(&req, 1, 200);
 
   RQ_Free(&req);
 

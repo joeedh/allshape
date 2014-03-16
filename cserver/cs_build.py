@@ -150,7 +150,7 @@ for t in targets:
     if f2.strip().endswith(".c"): 
       f2 = f2[:f2.rfind(".c")] + ".o"
     if f2.strip().endswith(".ccs"): 
-      f2 = f2[:f2.rfind(".ccs")] + ".c"
+      f2 = f2[:f2.rfind(".ccs")] + ".ccs.c"
 
     f.target = "build/" + f2;
 
@@ -243,10 +243,14 @@ def add_depend(dest, src):
   
 def build_depend(f):
   file = open(f, "r")
+  
   for line in file.readlines():
+    if "<#include" in line:
+      line = line[line.find("<#include")+1:line.find("#>")].strip()
+      
     if not (line.strip().startswith("#") and "include" in line and '"' in line):
       continue
-    
+      
     line = line.strip().replace("\n", "").replace("\r", "")
     
     i = 0
@@ -274,6 +278,7 @@ def build_depend(f):
         else:
           word += c
       i += 1
+    #print(filename)
     add_depend(f, filename)
 
 def safe_stat(path):
@@ -300,6 +305,7 @@ def do_rebuild(abspath):
   if safe_stat(abspath) != db[abspath]:
     return True
   
+  abspath = os.path.abspath(os.path.normpath(abspath))
   if abspath in db_depend:
     del db_depend[abspath]
 
@@ -377,6 +383,8 @@ def build_target(files):
     build_final |= rebuild in [REBUILD, WASBUILT]
     if rebuild != REBUILD: continue
     
+    build_depend(abspath)
+    
     sf.build = WASBUILT
     
     built_files.append([abspath, os.stat(abspath).st_mtime, f])
@@ -401,8 +409,8 @@ def build_target(files):
       continue
     
     perc = int((float(fi) / len(target))*100.0)
-    if not msvc_mode:
-      print("[%i%%] " % perc, cmd)
+    #if not msvc_mode:
+    print("[%i%%] " % perc, fname)
     
     #execute build command
     while len(procs) >= num_cores:
@@ -512,7 +520,6 @@ def gen_final_target(files):
 
   for f in files:
     if not f.source.endswith(".ccs"):  continue
-    
     f2 = open(f.target, "r")
     buf = f2.read()
     f2.close()

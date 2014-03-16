@@ -6,9 +6,31 @@ import argparse, base64, json
 from cs_parse import *
 from cs_lex import *
 from cs_ast import *
-from cs_process import *
 from cs_global import glob
 
+from cs_process import compact_strnodes
+
+def cs_parse(buf):
+  if glob.g_printtokens:
+    print("Printing tokens...")
+    lexer.input(buf)
+    tok = lexer.token()
+    while tok != None:
+      print("  ", tok)
+      tok = lexer.token()
+    print("\n")
+
+  try:
+    result = parser.parse(buf)
+  except JSCCError:
+    sys.exit(-1)
+    
+  compact_strnodes(result, StrNode)
+  compact_strnodes(result, HtmlNode)
+  
+  return result
+
+from cs_process import *
 def parse_intern(buf):
   if glob.g_printtokens:
     print("Printing tokens...")

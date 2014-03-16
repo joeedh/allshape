@@ -1,6 +1,7 @@
+import sys, re
 from ply import lex
 
-reserved = ["include"]
+reserved = []
 
 states = [
   ("code", "exclusive"),
@@ -12,7 +13,8 @@ tokens = [
   "CODE_ERR",
   "HTML",
   "BINDING",
-  "ALL"
+  "ALL",
+  "INCLUDE"
 ] + [r.upper() for r in reserved]
 
 """
@@ -82,10 +84,44 @@ def t_binding_ALL(t):
   global cur_binding
   cur_binding += t.value
   do_lineno(t)
+
+get_incl_re = re.compile(r'["<\'][a-zA-Z0-9_./\\]+[">\']')
+def t_INCLUDE(t):
+  r'\<\#include\s*["<\'][a-zA-Z0-9_./\\]+[">\']\s*\#\>'
   
+  global get_incl_re
+  m = get_incl_re.search(t.value)
+  if m == None:
+    t.type = "ERROR"
+    return t
+    
+  spn = m.span()
+  s = t.value[spn[0]:spn[1]]
+  s = s[1:-1]
+  
+  t.value = s
+  return t
+
+"""
+import re
+pat = re.compile(r'\<\#include\s*["<\'][a-zA-Z0-9_./\\]+[">\']\s*\#\>')
+tst = "<#include 'site/bleh.h' #>s"
+m = pat.match(tst)
+if m:
+  re2 = re.compile(r'["<\'][a-zA-Z0-9_./\\]+[">\']')
+  print(dir(m))
+  m2 = re2.search(tst)
+  print(m2.span())
+  spn = m2.span()
+  print(spn)
+  s = tst[spn[0]: spn[1]]
+  print(s)
+sys.exit()
+#"""
+
 cur_code = ""
 def t_CODE(t):
-  r'\<\#'
+  r'\<\#(?!include)'
   
   global cur_code
   t.lexer.push_state("code")
