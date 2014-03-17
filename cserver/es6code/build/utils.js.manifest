@@ -1,0 +1,119 @@
+EXPORT "c:/dev/allshape/src/util/utils.js"
+class Iter  {
+  reset()
+  next()
+}
+class CanIter  {
+  __iterator__() : Iter
+}
+global int debug_int_1
+class GArray extends Array {
+  constructor(Object input)
+  pack(Array<byte> data)
+  has(T item) : Boolean
+  __iterator__() : GArrayIter<T>
+  toJSON() : Array<Object>
+  insert(int index,T item)
+  prepend(T item)
+  remove(T item,Boolean ignore_existence)
+  replace(T olditem,T newitem)
+  toSource() : String
+  toString() : String
+}
+global Function defined_classes
+function obj_value_iter(Object obj)
+function list(Iterator<T> iter) : GArray<T>
+global Function g_list
+class eid_list extends GArray {
+  constructor(GeoArrayIter<Element> iter)
+}
+class SafeSetIter  {
+  constructor(set set1)
+  __iterator__() : SafeSetIter<T>
+  next() : T
+}
+class SetIter  {
+  constructor(set set1)
+  next() : T
+}
+class set  {
+  constructor(Object input)
+  pack(Array<byte> data)
+  toJSON() : Array<Object>
+  toSource() : String
+  toString() : String
+  add(T item)
+  remove(T item)
+  safe_iter() : SafeSetIter
+  __iterator__() : SetIter
+  union(set<T> b) : set
+  has(T item) : Boolean
+}
+class GArrayIter  {
+  constructor(GArray<T> arr)
+  next() : T
+  reset()
+}
+class HashKeyIter  {
+  constructor(hashtable hash)
+  next() : IterRet
+}
+class hashtable  {
+  constructor()
+  add(Object key,Object item)
+  remove(Object key)
+  __iterator__() : HashKeyIter
+  values() : GArray<Object>
+  keys() : GArray<Object>
+  get(Object key) : Object
+  set(Object key,Object item)
+  union(hashtable b) : hashtable
+  has(Object item) : Boolean
+}
+function validate_mesh_intern(Object m)
+function validate_mesh(Object m)
+function concat_array(Object a1,Object a2)
+function get_callstack(Object err)
+function print_stack(Object err)
+function time_ms()
+class movavg  {
+  constructor(Object length)
+  _recalc()
+  update(Object val)
+  valueOf()
+}
+class Timer  {
+  constructor(Object interval_ms)
+  ready()
+}
+function other_tri_vert(Object e,Object f)
+global Object _sran_tab
+class StupidRandom  {
+  constructor(Object seed)
+  seed(Object seed)
+  random()
+}
+global StupidRandom seedrand
+function get_nor_zmatrix(Vector3 no)
+global Object _o_basic_types
+function is_obj_lit(Object obj)
+function UnitTestError(Object msg)
+function utest(Object func)
+function do_unit_tests()
+class EIDGen  {
+  constructor()
+  fromSTRUCT(Object unpacker)
+  set_cur(Object cur)
+  max_cur(Object cur)
+  get_cur(Object cur)
+  gen_eid()
+  gen_id()
+  toJSON()
+  fromJSON(Object obj)
+}
+function copy_into(Object dst,Object src)
+global Array<float> __v3d_g_s
+function get_spiral(Object size)
+global ObjMap<String> _bt_h
+function btypeof(Object obj)
+

@@ -1,0 +1,8 @@
+EXPORT "c:/dev/allshape/src/util/strutils.js"
+global Object _b64str
+global Object _b64_map
+global Object _b64_arr
+function b64encode(Object arr,Object add_newlines=false,Object collimit=76)
+function b64decode(Object s,Object gen_str=false,Object gen_uint8arr=true)
+function limit_line(Object s,Object limit=80)
+

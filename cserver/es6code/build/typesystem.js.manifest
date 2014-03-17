@@ -1,0 +1,26 @@
+EXPORT "c:/dev/allshape/src/core/typesystem.js"
+global Object defined_classes
+global Object defined_tests
+function create_test(Object obj)
+global int _prototype_id_gen
+function test_inherit_multiple()
+function init_native_type(Object obj)
+function inherit_multiple(Object obj,Object parents)
+function __instance_of(Object child,Object parent)
+global Object instance_of
+function inherit(Object obj,Object parent)
+function inherit_old(Object obj,Object parent)
+function create_prototype(Object obj)
+function define_static(Object obj,Object name,Object val)
+function prior(Object thisproto,Object obj)
+function arr_iter(Object keys)
+function __get_iter(Object obj)
+global Object arr_iter
+class _KeyValIterator  {
+  constructor(Object obj)
+  __iterator__()
+  next()
+}
+global Object Iterator
+function define_docstring(Object func,Object docstr)
+

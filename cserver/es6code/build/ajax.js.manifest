@@ -1,0 +1,69 @@
+EXPORT "c:/dev/allshape/src/core/ajax.js"
+global Object DEFL_NAMELEN
+function get_endian()
+global Object little_endian
+function str_to_uint8(String str) : Uint8Array
+global Object _pack_stack
+global Object _rec_pack
+function rec_pack_struct(Object name)
+function push_pack_stack()
+function pop_pack_stack()
+function pack_record_start()
+function pack_record_end()
+function _pack_rec(Object type,Object data)
+global Object _static_byte
+global Object _static_view
+function pack_int(Array<byte> data,int i)
+function pack_byte(Array<byte> data,byte i)
+function pack_float(Array<byte> data,float f)
+function pack_double(Array<byte> data,float f)
+function pack_vec2(Array<byte> data,Vector2 vec)
+function pack_vec3(Array<byte> data,Vector3 vec)
+function pack_vec4(Array<byte> data,Vector4 vec)
+function pack_quat(Array<byte> data,Quat vec)
+function pack_mat4(Array<byte> data,Matrix4 mat)
+function pack_dataref(Array<byte> data,DataBlock b)
+function truncate_utf8(Array<byte> arr,int maxlen)
+global Object _static_sbuf_ss
+function pack_static_string(Array<byte> data,String str,int length)
+function test_str_packers()
+global Object _static_sbuf
+function pack_string(Array<byte> data,String str)
+function unpack_bytes(DataView data,unpack_ctx uctx,int len)
+function unpack_array(DataView data,unpack_ctx uctx,Function unpacker)
+function unpack_garray(DataView data,unpack_ctx uctx,Function unpacker)
+function unpack_dataref(DataView data,unpack_ctx uctx) : int
+function unpack_byte(DataView data,unpack_ctx uctx) : byte
+function unpack_int(DataView data,unpack_ctx uctx) : int
+function unpack_float(DataView data,unpack_ctx uctx) : float
+function unpack_vec2(Array<byte> data,unpack_ctx uctx)
+function unpack_vec3(DataView data,unpack_ctx uctx) : Vector3
+function unpack_vec4(Array<byte> data,unpack_ctx uctx)
+function unpack_quat(Array<byte> data,unpack_ctx uctx)
+function unpack_mat4(Array<byte> data,unpack_ctx uctx)
+function encode_utf8(Object arr,Object str)
+function decode_utf8(Object arr)
+function test_utf8()
+global Object _static_arr_uss
+function unpack_static_string(DataView data,unpack_ctx uctx,int length) : String
+global Object _static_arr_us
+function unpack_string(DataView data,unpack_ctx uctx) : String
+class unpack_ctx  {
+  constructor()
+}
+function send_mesh(Mesh mesh)
+function NetStatus()
+class NetJob  {
+  constructor(Object owner,Object iter,Object finish,Object error,Object status)
+}
+function parse_headers(Object headers)
+function api_exec(Object path,Object netjob,Object mode,Object data,Object mime,Object extra_headers,Object responseType)
+function AuthSessionGen(Object job,Object user,Object password,Object refresh_token)
+function auth_session(Object user,Object password,Object finish,Object error,Object status)
+function call_api(Object iternew,Object args,Object finish,Object error,Object status)
+function get_user_info(Object job,Object args)
+function get_dir_files(Object job,Object args)
+function upload_file(Object job,Object args)
+function get_file_data(Object job,Object args)
+function BJSON()
+

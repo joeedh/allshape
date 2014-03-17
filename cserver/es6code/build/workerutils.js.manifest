@@ -1,0 +1,3 @@
+EXPORT "c:/dev/allshape/src/util/workerutils.js"
+function define_worker_interface(Object workers)
+

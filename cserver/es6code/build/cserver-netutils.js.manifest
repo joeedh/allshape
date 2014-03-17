@@ -1,0 +1,10 @@
+EXPORT "c:/dev/allshape/cserver/es6code/src/cserver-netutils.js"
+class NetStatus  {
+  progress(Object perc,Object msg="")
+  error(Object code,Object msg)
+  success(Object code,Object msg)
+}
+class netutils  {
+  upload_data(String path,ArrayBuffer data,NetStatus callbacks)
+}
+
