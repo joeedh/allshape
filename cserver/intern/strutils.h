@@ -131,6 +131,9 @@ static int strcncmp(char *s1, char *s2, int n1, int n2)
     }
   }
 
+  n1 = strnlen(s1, n1);
+  n2 = strnlen(s2, n2);
+
   if (n1 > n2) return 1;
   else if (n1 < n2) return -1;
   else return 0;

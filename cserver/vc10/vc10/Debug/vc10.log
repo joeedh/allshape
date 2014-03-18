@@ -1,4 +1,4 @@
-﻿Build started 3/16/2014 3:26:13 AM.
+﻿Build started 3/17/2014 4:48:35 AM.
      1>Project "C:\dev\allshape\cserver\vc10\vc10\vc10.vcxproj" on node 2 (build target(s)).
      1>InitializeBuildStatus:
          Creating "Debug\vc10.unsuccessfulbuild" because "AlwaysCreate" was specified.
@@ -7,59 +7,27 @@
          cd c:\dev\allshape\cserver && python cs_build.py msvc_mode
          :VCEnd
          msvc mode
+         [182%]  media.ccs
        ClCompile:
-         C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin\CL.exe /c /IC:\dev\blender\lib\windows\pthreads\include /ZI /nologo /W3 /WX- /Od /Oy- /D WIN32 /D _MBCS /D _MBCS /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc100.pdb" /Gd /TC /analyze- /errorReport:prompt ..\..\build\pages.c ..\..\intern\site.c
-         site.c
-     1>c:\dev\allshape\cserver\intern\strutils.h(95): warning C4090: 'return' : different 'const' qualifiers
-     1>c:\dev\allshape\cserver\intern\strutils.h(106): warning C4101: 'val' : unreferenced local variable
-     1>c:\dev\allshape\cserver\intern\site.c(14): warning C4996: 'strcpy': This function or variable may be unsafe. Consider using strcpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-                 c:\program files (x86)\microsoft visual studio 10.0\vc\include\string.h(105) : see declaration of 'strcpy'
-     1>c:\dev\allshape\cserver\intern\site.c(15): warning C4996: 'strcpy': This function or variable may be unsafe. Consider using strcpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-                 c:\program files (x86)\microsoft visual studio 10.0\vc\include\string.h(105) : see declaration of 'strcpy'
-     1>c:\dev\allshape\cserver\intern\site.c(18): warning C4996: 'strncpy': This function or variable may be unsafe. Consider using strncpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-                 c:\program files (x86)\microsoft visual studio 10.0\vc\include\string.h(188) : see declaration of 'strncpy'
-     1>c:\dev\allshape\cserver\intern\site.c(28): warning C4996: 'strcpy': This function or variable may be unsafe. Consider using strcpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-                 c:\program files (x86)\microsoft visual studio 10.0\vc\include\string.h(105) : see declaration of 'strcpy'
-     1>c:\dev\allshape\cserver\intern\site.c(52): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-                 c:\program files (x86)\microsoft visual studio 10.0\vc\include\stdio.h(234) : see declaration of 'fopen'
-     1>c:\dev\allshape\cserver\intern\site.c(54): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-                 c:\program files (x86)\microsoft visual studio 10.0\vc\include\stdio.h(234) : see declaration of 'fopen'
-     1>c:\dev\allshape\cserver\intern\site.c(69): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-                 c:\program files (x86)\microsoft visual studio 10.0\vc\include\stdio.h(234) : see declaration of 'fopen'
-     1>c:\dev\allshape\cserver\intern\site.c(222): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-                 c:\program files (x86)\microsoft visual studio 10.0\vc\include\stdio.h(234) : see declaration of 'fopen'
-     1>c:\dev\allshape\cserver\intern\site.c(283): warning C4996: 'strncpy': This function or variable may be unsafe. Consider using strncpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-                 c:\program files (x86)\microsoft visual studio 10.0\vc\include\string.h(188) : see declaration of 'strncpy'
-     1>c:\dev\allshape\cserver\intern\site.c(292): warning C4996: 'strncpy': This function or variable may be unsafe. Consider using strncpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-                 c:\program files (x86)\microsoft visual studio 10.0\vc\include\string.h(188) : see declaration of 'strncpy'
-     1>c:\dev\allshape\cserver\intern\site.c(295): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-                 c:\program files (x86)\microsoft visual studio 10.0\vc\include\stdio.h(234) : see declaration of 'fopen'
-     1>c:\dev\allshape\cserver\intern\site.c(303): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-                 c:\program files (x86)\microsoft visual studio 10.0\vc\include\stdio.h(234) : see declaration of 'fopen'
-     1>c:\dev\allshape\cserver\intern\site.c(315): warning C4003: not enough actual parameters for macro 'array_growone'
-     1>c:\dev\allshape\cserver\intern\site.c(318): warning C4003: not enough actual parameters for macro 'array_growone'
-     1>c:\dev\allshape\cserver\intern\site.c(351): warning C4996: 'strncpy': This function or variable may be unsafe. Consider using strncpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-                 c:\program files (x86)\microsoft visual studio 10.0\vc\include\string.h(188) : see declaration of 'strncpy'
-     1>c:\dev\allshape\cserver\intern\site.c(360): warning C4047: 'return' : 'DocPage *' differs in levels of indirection from 'int'
-     1>c:\dev\allshape\cserver\intern\site.c(364): warning C4047: 'return' : 'int' differs in levels of indirection from 'DocPage *'
+         C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin\CL.exe /c /IC:\dev\blender\lib\windows\pthreads\include /ZI /nologo /W3 /WX- /Od /Oy- /D WIN32 /D _MBCS /D _MBCS /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc100.pdb" /Gd /TC /analyze- /errorReport:prompt ..\..\build\pages.c
          pages.c
      1>c:\dev\allshape\cserver\build\strutils.h(95): warning C4090: 'return' : different 'const' qualifiers
      1>c:\dev\allshape\cserver\build\strutils.h(106): warning C4101: 'val' : unreferenced local variable
      1>c:\dev\allshape\cserver\build\pages.c(183): warning C4047: '=' : 'int' differs in levels of indirection from 'DocPage *'
-     1>c:\dev\allshape\cserver\build\pages.c(210): warning C4101: 'jlen' : unreferenced local variable
-     1>c:\dev\allshape\cserver\build\pages.c(210): warning C4101: 'ilen' : unreferenced local variable
-     1>c:\dev\allshape\cserver\build\pages.c(210): warning C4101: 'j' : unreferenced local variable
-         Generating Code...
+     1>c:\dev\allshape\cserver\build\pages.c(211): warning C4101: 'jlen' : unreferenced local variable
+     1>c:\dev\allshape\cserver\build\pages.c(211): warning C4101: 'ilen' : unreferenced local variable
+     1>c:\dev\allshape\cserver\build\pages.c(211): warning C4101: 'j' : unreferenced local variable
      1>c:\dev\allshape\cserver\build\pages.c(86): warning C4716: '_pg_getpage' : must return a value
      1>c:\dev\allshape\cserver\build\pages.c(161): warning C4715: '_pg_admin_editor' : not all control paths return a value
      1>c:\dev\allshape\cserver\build\pages.c(194): warning C4716: '_pg_admin_editor_api' : must return a value
-     1>c:\dev\allshape\cserver\build\pages.c(244): warning C4716: '_pg_admin_admin' : must return a value
-     1>c:\dev\allshape\cserver\build\pages.c(253): warning C4716: '_pg_admin_main' : must return a value
-     1>c:\dev\allshape\cserver\build\pages.c(291): warning C4715: '_pg_admin_pages' : not all control paths return a value
-     1>c:\dev\allshape\cserver\build\pages.c(301): warning C4716: '_pg_index' : must return a value
-     1>c:\dev\allshape\cserver\build\pages.c(334): warning C4716: '_pg_header' : must return a value
-     1>c:\dev\allshape\cserver\build\pages.c(342): warning C4716: '_pg_footer' : must return a value
-     1>c:\dev\allshape\cserver\intern\site.c(256): warning C4716: 'PG_PrintPageMeta' : must return a value
+     1>c:\dev\allshape\cserver\build\pages.c(245): warning C4716: '_pg_admin_admin' : must return a value
+     1>c:\dev\allshape\cserver\build\pages.c(254): warning C4716: '_pg_admin_main' : must return a value
+     1>c:\dev\allshape\cserver\build\pages.c(292): warning C4715: '_pg_admin_pages' : not all control paths return a value
+     1>c:\dev\allshape\cserver\build\pages.c(308): warning C4716: '_pg_admin_media' : must return a value
+     1>c:\dev\allshape\cserver\build\pages.c(351): warning C4716: '_pg_admin_media_upload' : must return a value
+     1>c:\dev\allshape\cserver\build\pages.c(361): warning C4716: '_pg_index' : must return a value
+     1>c:\dev\allshape\cserver\build\pages.c(394): warning C4716: '_pg_header' : must return a value
+     1>c:\dev\allshape\cserver\build\pages.c(402): warning C4716: '_pg_footer' : must return a value
        Link:
          C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"C:\dev\allshape\cserver\vc10\Debug\vc10.exe" /NOLOGO /LIBPATH:C:\dev\blender\lib\windows\pthreads\lib pthreadVSE2.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /ManifestFile:"Debug\vc10.exe.intermediate.manifest" /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /DEBUG /PDB:"C:\dev\allshape\cserver\vc10\Debug\vc10.pdb" /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:\dev\allshape\cserver\vc10\Debug\vc10.lib" /MACHINE:X86 Debug\pages.obj
          Debug\boilerplate.obj
@@ -84,4 +52,4 @@
 
 Build succeeded.
 
-Time Elapsed 00:00:03.51
+Time Elapsed 00:00:07.66

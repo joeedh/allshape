@@ -1203,6 +1203,8 @@ if __name__ == "__main__":
       ret = main()
     except SystemExit:
       ret = -1
+    except KeyboardInterrupt:
+      ret = -1
     except:
       traceback.print_stack()
       traceback.print_exc()

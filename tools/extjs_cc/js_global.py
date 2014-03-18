@@ -36,6 +36,7 @@ gcs["g_docstring_propname"] = "dsp"
 gcs["g_enable_static_vars"] = "esv"
 gcs["g_write_manifest"] = "wm"
 gcs["g_warn_types"] = "WT"
+gcs["g_debug_print_calls"] = "dpr"
 
 def argv_to_argline():
   s = ""
@@ -248,5 +249,6 @@ class Glob(AbstractGlob):
     g_enable_static_vars = True
     g_write_manifest = True
     g_warn_types = False
+    g_debug_print_calls = False
     
 glob = Glob()

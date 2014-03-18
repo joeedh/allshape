@@ -3,8 +3,9 @@
 
 #include <time.h>
 #include "pthread.h"
+#include "thread.h"
 
-static pthread_rwlock_t db_lock = PTHREAD_RWLOCK_INITIALIZER;
+static RWLock db_lock = RWLOCK_INIT;
 
 int PG_InitPage(DocPage *page, char *path, char *title, int type, char *body)
 {
@@ -83,7 +84,7 @@ int db_started = 0;
 int PG_FreeDB() {
   int ilen, i;
   
-  pthread_rwlock_wrlock(&db_lock);
+  RW_wrlock(&db_lock);
 
   ilen = array_len(site_db.pages);
   for (i=0; i<ilen; i++) {
@@ -104,7 +105,7 @@ int PG_FreeDB() {
   db_started = 0;
 
   memset(&site_db, 0, sizeof(site_db));
-  pthread_rwlock_unlock(&db_lock);
+  RW_unlock(&db_lock);
 
   return 1;
 }
@@ -114,11 +115,11 @@ int PG_ReloadDB() {
   DocPage page;
   int off = 0;
 
-  pthread_rwlock_wrlock(&db_lock);
-
   if (db_started) {
     PG_FreeDB();
   }
+
+  RW_wrlock(&db_lock);
 
   memset(&site_db, 0, sizeof(site_db));
   Hash_init(&site_db.page_hash);
@@ -126,7 +127,7 @@ int PG_ReloadDB() {
 
   if (!dbfile) {
     fprintf(stderr, "error loading database file in PG_ReloadDB\n");
-    pthread_rwlock_unlock(&db_lock);
+    RW_unlock(&db_lock);
     return 0;
   }
 
@@ -159,7 +160,7 @@ int PG_ReloadDB() {
   }
 
   db_started = 1;
-  pthread_rwlock_unlock(&db_lock);
+  RW_unlock(&db_lock);
   return 1;
 }
 
@@ -167,16 +168,16 @@ int PG_SaveDB() {
   FILE *f = PG_open_database("wb");
   int i, ilen;
 
-  pthread_rwlock_rdlock(&db_lock);
+  RW_rdlock(&db_lock);
   if (!db_started) {
     if (f)
       fclose(f);
-    pthread_rwlock_unlock(&db_lock);
+    RW_unlock(&db_lock);
     return 0;
   }
 
   if (!f) {
-    pthread_rwlock_unlock(&db_lock);
+    RW_unlock(&db_lock);
     return 0;
   }
 
@@ -191,7 +192,7 @@ int PG_SaveDB() {
   }
 
   fclose(f);
-  pthread_rwlock_unlock(&db_lock);
+  RW_unlock(&db_lock);
 
   return 1;
 }
@@ -213,7 +214,7 @@ DocPage *PG_FetchPage(char *path, int type, int fetch_body)
 
   PG_EnsureDB();
 
-  pthread_rwlock_rdlock(&db_lock);
+  RW_rdlock(&db_lock);
 
   hash = type == PAGE_TYPE_PAGE ? &site_db.page_hash : &site_db.post_hash;
   page = Hash_lookup(hash, Hash_CString(b64path));
@@ -231,7 +232,7 @@ DocPage *PG_FetchPage(char *path, int type, int fetch_body)
   }
   s_free(b64path);
 
-  pthread_rwlock_unlock(&db_lock);
+  RW_unlock(&db_lock);
   return page;
 }
 
@@ -240,7 +241,7 @@ int PG_PrintPageMeta(void) {
   DocPage *page;
 
   PG_ReloadDB();
-  pthread_rwlock_rdlock(&db_lock);
+  RW_rdlock(&db_lock);
 
   ilen1 = array_len(site_db.pages);
   ilen2 = array_len(site_db.pages);
@@ -252,7 +253,7 @@ int PG_PrintPageMeta(void) {
     printf("%s:\"%s\", modified:%.1f, b64form: %s\n", page->title, 
             page->path, (double)page->modified_time, page->b64path);
   }
-  pthread_rwlock_unlock(&db_lock);
+  RW_unlock(&db_lock);
 }
 
 static int pg_savepage_intern(DocPage *page)
@@ -324,8 +325,6 @@ static int pg_savepage_intern(DocPage *page)
   }
 
   memcpy(page2, page, sizeof(DocPage));
-
-  return PG_SaveDB();
 }
 
 //this function, by definition, does *not* retain page->body
@@ -336,7 +335,7 @@ DocPage *PG_UpdatePage(DocPage *page) {
   p2 = PG_FetchPage(page->path, page->type, 0);
 
   //update existing page record
-  pthread_rwlock_wrlock(&db_lock);
+  RW_wrlock(&db_lock);
   if (p2) {
     if (p2->body) {
       s_free(p2->body);
@@ -353,11 +352,13 @@ DocPage *PG_UpdatePage(DocPage *page) {
 
     page = p2;
   }
-  pthread_rwlock_unlock(&db_lock);
-
+  RW_unlock(&db_lock);
+  
+  RW_wrlock(&db_lock);
   ret = pg_savepage_intern(page);
+  RW_unlock(&db_lock);
 
-  return ret;
+  return ret && PG_SaveDB();
 }
 
 int PG_SavePage(DocPage *page) {

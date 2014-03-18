@@ -3,7 +3,8 @@
 <#{
 	static struct {char path[32]; char name[32];} admin_pages[] = {
 		{"main", "Dashboard"},
-		{"pages", "Pages"}
+		{"pages", "Pages"},
+		{"media", "Media"}
 	}, *page, *p;
 
 	static int totadmin = sizeof(admin_pages) / sizeof(*admin_pages);

@@ -129,5 +129,11 @@
     <None Include="..\..\site\admin\pages.ccs">
       <Filter>Resources</Filter>
     </None>
+    <None Include="..\..\site\admin\media.ccs">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\..\site\admin\media_upload.ccs">
+      <Filter>Resources</Filter>
+    </None>
   </ItemGroup>
 </Project>

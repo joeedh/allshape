@@ -110,6 +110,8 @@
     <None Include="..\..\site\admin\editor.ccs" />
     <None Include="..\..\site\admin\editor_api.ccs" />
     <None Include="..\..\site\admin\main.ccs" />
+    <None Include="..\..\site\admin\media.ccs" />
+    <None Include="..\..\site\admin\media_upload.ccs" />
     <None Include="..\..\site\admin\pages.ccs" />
     <None Include="..\..\site\footer.ccs" />
     <None Include="..\..\site\getpage.ccs" />

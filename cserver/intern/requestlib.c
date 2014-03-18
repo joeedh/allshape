@@ -506,3 +506,27 @@ char *RQ_BuildReq(ReqInfo *req, int add_path, int code)
 
   return s;
 }
+
+void RQ_PrintHeaders(ReqInfo *req) {
+  int i, ilen;
+
+  ilen = array_len(req->headers)/2;
+  printf("==Headers==");
+  for (i=0; i<ilen; i++) {
+    printf("%s: %s\n", req->headers[i*2], req->headers[i*2+1]);
+  }
+  printf("\n");
+}
+
+void RQ_OutHeaders(HandlerInfo *info, ReqInfo *req) {
+  char buf[256];
+  int i, ilen;
+
+  ilen = array_len(req->headers)/2;
+  do_out(info, "<h3>==Headers==</h3>\n");
+  for (i=0; i<ilen; i++) {
+    sprintf(buf, "<b>%s:</b> %s<br>\n", req->headers[i*2], req->headers[i*2+1]);
+    do_out(info, buf);
+  }
+  do_out(info, "<br>");
+}

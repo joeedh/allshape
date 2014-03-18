@@ -10,6 +10,8 @@ cs_targets = {
     "site/admin/admin.ccs",
     "site/admin/main.ccs",
     "site/admin/pages.ccs",
+    "site/admin/media.ccs",
+    "site/admin/media_upload.ccs",
     "site/index.ccs",
     "site/header.ccs",
     "site/footer.ccs",

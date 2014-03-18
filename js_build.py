@@ -2,7 +2,7 @@
 
 import os, sys, os.path, time, random, math
 import shelve, struct, io, imp, ctypes, re
-import subprocess, shlex
+import subprocess, shlex, signal
 import imp, runpy
 from math import floor
 
@@ -19,12 +19,15 @@ def modimport(name):
   
   return mod
 
-try:
-  config = modimport("build_local")
-  config_dict = config.__dict__
-except (IOError, FileNotFoundError):
-  config_dict = {}
-  print("warning, missing local_build.py")
+def config_tryimp(name):
+  try:
+    mod = modimport(name)
+  except (IOError, FileNotFoundError):
+    return {}
+  return mod.__dict__
+
+config_dict2 = config_tryimp("js_sources")
+config_dict = config_tryimp("build_local")
 
 def validate_cfg(val, vtype):
   if vtype == "bool":
@@ -41,9 +44,10 @@ def validate_cfg(val, vtype):
   else: return True
 
 localcfg = {}
-def getcfg(key, default, type):
-  if key in config_dict:
-    val = config_dict[key]
+localcfg_core = {}
+def getcfg_intern(key, default, type, env, localcfg):
+  if key in env:
+    val = env[key]
     if not validate_cfg(val, type):
       raise RuntimeError("Invalid value for " + key + ": " + str(val))
     
@@ -52,11 +56,58 @@ def getcfg(key, default, type):
     return val
   return default
 
+def getcfg(key, default, type):
+  return getcfg_intern(key, default, type, config_dict, localcfg)
+
+def getcorecfg(key, default, type):
+  return getcfg_intern(key, default, type, config_dict2, localcfg_core)
+
+def addslash(path):
+  while path.endswith("/"): path = path[:-2]
+  while path.endswith("\\"): path = path[:-2]
+  
+  path += sep
+  return path
+  
 num_cores = getcfg("num_cores", 5, "int")
 do_minify = getcfg("do_minify", True, "bool")
 do_smaps = getcfg("do_smaps", True, "bool")
 do_smap_roots = getcfg("do_smap_roots", False, "bool")
 aggregate_smaps = getcfg("aggregate_smaps", do_smaps, "bool")
+
+build_path = getcorecfg("build_path", "build", "string")
+target_path = getcorecfg("target_path", build_path, "string")
+db_path = getcorecfg("db_path", ".build_db/", "string")
+
+build_path = addslash(build_path)
+target_path = addslash(target_path)
+db_path = addslash(db_path)
+
+if not os.path.exists(db_path):
+  os.mkdir(db_path)
+
+open_dbs = {}
+def open_db(path):
+  global open_dbs, db_path
+  
+  path = db_path + path
+  db = shelve.open(path)
+  open_dbs[id(db)] = path
+  return db
+  
+def close_db(db):
+  db.close()
+  del open_dbs[id(db)]
+
+procs = []
+def signal_handler(signal, stack):
+  print("====================================")
+  sys.stderr.write("signal caught; closing databases. . .\n")
+  for v in open_dbs.values():
+    v.close()
+  sys.stderr.write("done.\n")
+
+signal.signal(signal.SIGINT, signal_handler)
 
 if len(localcfg) > 0:
   print("build config:")
@@ -139,7 +190,7 @@ for t in targets:
       f2 = os.path.split(f.source)[1]
     else:
       f2 = f.source
-    f.target = "build/" + f2;
+    f.target = build_path + f2;
 
 win32 = sys.platform == "win32"
 PYBIN = sys.executable
@@ -155,7 +206,7 @@ TCC = getcfg("TCC", np("tools/extjs_cc/js_cc.py"), "path")
 print("using python executable \"" + PYBIN.strip() + "\"")
 
 #minified, concatenated build
-JFLAGS = ""
+JFLAGS = "-dpr "
 
 if aggregate_smaps:
   JFLAGS += " -nref"
@@ -302,8 +353,8 @@ def filter_srcs(files):
   
   procs = []
   
-  db = shelve.open("jbuild.db".replace("/", sp))
-  db_depend = shelve.open("jbuild_dependencies.db".replace("/", sp))
+  db = open_db("jbuild.db")
+  db_depend = open_db("jbuild_dependencies.db")
   
   if build_cmd == "cleanbuild":  
     for k in db:
@@ -322,16 +373,14 @@ def filter_srcs(files):
     build_depend(abspath);
     i += 1
   
-  db.close()
-  db_depend.close()
+  close_db(db)
+  close_db(db_depend)
   
 def build_target(files):
-  global db, db_depend
+  global db, db_depend, procs
   
-  procs = []
-  
-  db = shelve.open("jbuild.db".replace("/", sp))
-  db_depend = shelve.open("jbuild_dependencies.db".replace("/", sp))
+  db = open_db("jbuild.db")
+  db_depend = open_db("jbuild_dependencies.db")
   
   if build_cmd == "cleanbuild":  
     for k in db:
@@ -342,8 +391,9 @@ def build_target(files):
   failed_files = []
   fi = 0
   
+  filtered = list(iter_files(files))
   build_final = False
-  for f, target, abspath, rebuild in iter_files(files):
+  for f, target, abspath, rebuild in filtered:
     fname = os.path.split(abspath)[1]
     sf = files[fi]
     fi += 1
@@ -363,8 +413,23 @@ def build_target(files):
         use_popen = handlers[k].use_popen
         re_size = len(k)
     
-    perc = int((float(fi) / len(target))*100.0)
-    print("[%i%%] " % perc, cmd)
+    perc = int((float(fi) / len(filtered))*100.0)
+    
+    """
+    dcmd = cmd.replace(JCC, "js_cc").replace(PYBIN, "")
+    dcmd = dcmd.split(" ")
+    dcmd2 = ""
+    for n in dcmd:
+      if n.strip() == "": continue
+      n = n.strip()
+      if "/" in n or "\\" in n:
+        n = os.path.split(n)[1]
+      dcmd2 += n + " "
+    dcmd = dcmd2  
+    """
+    
+    dcmd = os.path.split(f)[1] if ("/" in f or "\\" in f) else f
+    print("[%i%%] " % perc, dcmd)
     
     #execute build command
     while len(procs) >= num_cores:
@@ -375,7 +440,7 @@ def build_target(files):
         else:
           ret = p[0].returncode
           if failed_ret(ret):
-            failed_files.append(p[1])
+            failed_fles.append(p[1])
           
       procs = newprocs
       time.sleep(0.75)
@@ -391,7 +456,6 @@ def build_target(files):
       
       cmdlist = shlex.split(cmd)
       #cmdlist[0] = np(cmdlist[0])
-      print(cmdlist)
       proc = subprocess.Popen(cmdlist)
       procs.append([proc, f])
     else:
@@ -422,8 +486,8 @@ def build_target(files):
     for pathtime in built_files:
       db[pathtime[0]] = pathtime[1]
     
-    db.close()
-    db_depend.close()
+    close_db(db)
+    close_db(db_depend)
     
     if build_cmd != "loop":
       sys.exit(-1)
@@ -437,25 +501,25 @@ def build_target(files):
       pass
     
     db[pathtime[0]] = pathtime[1]
-
-  db.close()
-  db_depend.close()
+  
+  close_db(db)
+  close_db(db_depend)
   
   #write aggregate, minified file
   if build_final:
-    print("\n\nwriting %s..." % files.target)
+    print("\n\nwriting %s..." % (target_path+files.target))
     sys.stdout.flush()
-    aggregate(files, 'build/'+files.target)
+    aggregate(files, target_path+files.target)
     print("done.")
     
   if build_cmd != "loop":
     print("build finished")
 
-def aggregate(files, outpath="build/app.js"):
+def aggregate(files, outpath=target_path+"app.js"):
   outfile = open(outpath, "w")
   
   if aggregate_smaps:
-    f = open("build/srclist.txt", "w")
+    f = open(build_path+"srclist.txt", "w")
     for p in files:
       if not p.source.endswith(".js"): continue
       f.write(p.target+".map"+"\n")
@@ -502,7 +566,7 @@ def aggregate(files, outpath="build/app.js"):
     sbuf += "]}\n"
   
   if do_smaps:
-    outfile.write("//# sourceMappingURL=/content/app.js.map\n")
+    outfile.write("//# sourceMappingURL=/content/" + os.path.split(outpath)[1] + ".map\n")
   
   outfile.close()
   
@@ -531,4 +595,10 @@ def themain():
     buildall()
 
 if __name__ == "__main__":
-  themain()
+  ret = 0
+  try:
+    themain()
+  except KeyboardInterrupt:
+    ret = -1
+
+  sys.exit(ret)

@@ -194,7 +194,7 @@ int socketRecv(int sock, int clientsock, char *buf, int buflen) {
       printf("recv failed: %d\n", WSAGetLastError());
       closesocket(ClientSocket);
       WSACleanup();
-      return -1;
+      return -2;
   }
 
   iError = WSAGetLastError();
@@ -474,7 +474,7 @@ void *thread_start(void *arg) {
 
   while (1) {
     int ret = socketRecv(sock, csock, buf, MAXBUF);
-    int hi;
+    int hi, go=0;
 
     if (atstart)
       time = time_ms();
@@ -482,7 +482,9 @@ void *thread_start(void *arg) {
 
     if (ret >= MAXBUF) ret = MAXBUF-1;
 
-    if (ret < 0) {
+    if (ret == -1 && body && array_len(body) == content_len) {
+      go = 1;
+    } else if (ret < 0) {
        RQ_Free(&req);
        break;
     } else if (ret > 0) {
@@ -500,14 +502,14 @@ void *thread_start(void *arg) {
           //find body, if it exists
           start =  (int)(end - reqs)+4;
           if (start < s_len(reqs)) {
-            body = array_ndup(reqs+start, array_len(reqs)-start);
+            body = array_ndup((reqs+start), (array_len(reqs)-start));
           }
 
           array_resize(reqs, start+1);
           reqs[start] = 0;
 
-          if (reqs[0] == 'P') {
-            //printf("%s\n", reqs);
+          if (reqs[0] == 'P' && reqs[1] == 'U') {
+            printf("put operation!\n");
           }
           ret = parse_request(reqs, &req, array_len(reqs));
 
@@ -530,7 +532,7 @@ void *thread_start(void *arg) {
       }
     }
 
-    if (!end || array_len(body) < content_len) 
+    if (!go && (!end || array_len(body) < content_len))
       continue;
     
     //invoke response handler

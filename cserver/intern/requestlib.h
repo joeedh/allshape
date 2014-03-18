@@ -50,6 +50,8 @@ char *RQ_UnEscapeDup(char *input, int mask);
  
 //called in main, on startup
 void RQ_OnStartup(void);
+void RQ_PrintHeaders(ReqInfo *req);
+void RQ_OutHeaders(HandlerInfo *info, ReqInfo *req);
 
 #define RQ_ESC_PATH   1
 #define RQ_ESC_QUERY  2
