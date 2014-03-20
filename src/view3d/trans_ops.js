@@ -61,8 +61,10 @@ class TranslateOp extends TransformOp {
   cancel(ctx) {
     var td = this.transdata;
     
-    for (var i=0; i<td.length; i++) {
-      td.datatype.reset(td, i);
+    if (td.datatype.reset) {
+      for (var i=0; i<td.length; i++) {
+        td.datatype.reset(td, i);
+      }
     }
     
     td.datatype.update(td);

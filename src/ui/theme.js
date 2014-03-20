@@ -13,6 +13,8 @@ var colors3d = {
   Selection : [0.7, 0.4, 0.1, 1.0]
 };
 
+var view3d_bg = [0.6, 0.6, 0.9, 1.0];
+
 var lighten = darken
 var uicolors = {
   "Box": [

@@ -1025,6 +1025,13 @@ function render_mesh_elements(WebGLRenderingContext gl, View3DHandler view3d,
 {
   if (draw_edges == undefined)
      draw_edges = true;
+     
+  if (mesh.render.recalc != 0) {
+    if (mesh.render.tri_vbuff == 0)
+      mesh.regen_render()
+    
+    gen_mesh_render(gl, mesh, mesh.render.drawprogram, mesh.render.vertprogram, mesh.render.recalc);
+  }
   
   gl.enableVertexAttribArray(0);
   gl.enableVertexAttribArray(1);

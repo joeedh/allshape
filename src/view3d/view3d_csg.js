@@ -106,9 +106,11 @@ class CSGDraw {
   
   clear() {
     var gl = this.gl;
-    gl.clearColor(0, 0, 0, 1.0);
+    
+    gl.clearColor(0, 0, 0.0, 1.0);
     gl.clearDepth(10000);
     gl.clear(gl.DEPTH_BUFFER_BIT|gl.COLOR_BUFFER_BIT);
+    gl.clearColor(view3d_bg[0], view3d_bg[1], view3d_bg[2], view3d_bg[3]);
   }
   
   render_obj(ob, prog, args) {
@@ -197,7 +199,7 @@ class CSGDraw {
     prog = this.start_render2();
     
     //draw subtract to main drawbuffer
-    var clr = [1.0, 0.2, 0.0, 1.0];
+    var clr = [0.7,0.7, 0.7, 1.0];
     
     gl.depthMask(0);
     this.render_obj(obs, prog, {clr : clr, is_sub : 1.0, cull : gl.FRONT});
@@ -223,7 +225,7 @@ class CSGDraw {
     /****************** main render ****************/
     prog = this.start_render2();
     
-    //draw subtract to main drawbuffer
+    //draw add to main drawbuffer
     var clr = [1.0, 0.2, 0.0, 1.0];
     
     this.render_obj(oba, prog, {clr : clr, off: 1.0, is_sub : 0.0, cull : gl.BACK});
@@ -277,140 +279,6 @@ class CSGDraw {
         return;
       }
     }
-    
-    if (this.fbuf == undefined)
-      this.gen_buffers(gl, view3d);
-    
-    var prog = this.prog;
-    gl.useProgram(prog.program);
-    mat.setUniform(gl, prog.uniformloc(gl, "normalinv"), false);
-    
-    gl.enableVertexAttribArray(0);
-    gl.disableVertexAttribArray(1);
-    gl.enableVertexAttribArray(2);
-
-    gl.disable(gl.DITHER);
-    gl.enable(gl.BLEND);
-    
-    
-    var this2 = this;
-    function render(prog, clr, mode="a") {
-      for (var node in sce.graph.sortlist) {
-        if (!(node instanceof ASObject)) continue;
-        var ASObject ob = node;
-        if (!ob.csg) continue;
-        
-        if (mode == "a" && ob.csg_mode == CsgModes.SUBTRACT)
-          continue;
-        else if (mode == "s" && ob.csg_mode != CsgModes.SUBTRACT)
-          continue;
-        
-        view3d.transmat.push()
-        view3d.transmat.multiply(ob.matrix);
-        
-        this2.draw_obj(gl, ob, clr, prog);
-        view3d.transmat.pop();
-      }
-    }
-    
-    for (var node in sce.graph.sortlist) {
-      if (!(node instanceof ASObject)) continue;
-      var ASObject ob = node;
-      
-      if (!ob.csg) continue;
-      
-      //this.sort_obj(ob);
-    }
-    
-    this.fbuf.bind();
-    
-    gl.useProgram(prog.program);
-    
-    //if (!debug_fbuf) {
-      gl.clearColor(0, 0, 0, 1.0);
-      gl.clearDepth(10000);
-      gl.clear(gl.DEPTH_BUFFER_BIT|gl.COLOR_BUFFER_BIT);
-    //}
-    
-    gl.enable(gl.BLEND);
-    gl.blendFunc(gl.ONE, gl.ONE);
-    gl.blendEquation(gl.FUNC_ADD);
-    gl.depthFunc(gl.LESS);
-    gl.enable(gl.CULL_FACE);
-    gl.cullFace(gl.BACK);
-    var clr;
-    
-    /************************ start *********************/
-    
-    //subtraction nodes
-    clr = [0.0, 0.0, 0, 1.0];
-    gl.cullFace(gl.FRONT);
-    render(prog, clr, "s");
-    
-    gl.depthMask(0);
-    clr = [0.0, 1.0/255.0, 0, 1.0];
-    gl.cullFace(gl.FRONT);
-    gl.depthFunc(gl.LESS);
-    render(prog, clr, "a");
-    
-    clr = [0.0, 1.0/255.0, 0, 1.0];
-    gl.cullFace(gl.BACK);
-    render(prog, clr, "a");
-    gl.depthMask(1);
-    
-    //subtraction nodes
-    clr = [1.0/255.0, 0.0, 0, 1.0];
-    gl.cullFace(gl.FRONT);
-    //render(prog, clr, "s");
-    
-    clr = [1.0/255.0, 0, 0, 1.0];
-    gl.cullFace(gl.BACK);
-    gl.depthFunc(gl.LESS);
-    //render(prog, clr, "a");
-    
-    gl.cullFace(gl.BACK);
-    this.fbuf.unbind();
-      
-    gl.depthFunc(gl.LESS);
-  
-    /****************** finished generating stencil texture ****************/
-
-    gl.enable(gl.BLEND);
-    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-    gl.depthFunc(gl.LESS);
-    
-    prog = this.prog2;
-    gl.useProgram(prog.program);
-    mat.setUniform(gl, prog.uniformloc(gl, "normalinv"), false);
-    
-    gl.activeTexture(gl.TEXTURE3);
-    gl.bindTexture(gl.TEXTURE_2D, this.fbuf.textures[1]);
-    gl.uniform1i(prog.uniformloc(gl, "sampler2d"), 3);
-    gl.uniform1f(prog.uniformloc(gl, "width"), this.size[0]);
-    gl.uniform1f(prog.uniformloc(gl, "height"), this.size[1]);
-    gl.enable(gl.CULL_FACE);
-    
-    //others
-    var clr = [1.0, 0.2, 0.0, 1.0];
-    // /*
-    gl.uniform1f(prog.uniformloc(gl, "off"), 1.0);
-    gl.uniform1f(prog.uniformloc(gl, "is_sub"), 0.0);
-    gl.depthFunc(gl.LESS);
-    gl.cullFace(gl.BACK);
-    render(prog, clr, "a");
-    // */
-    
-    //subtract
-    var clr = [1.0, 0.2, 0.0, 1.0];
-    gl.uniform1f(prog.uniformloc(gl, "off"), 0.0);
-    gl.uniform1f(prog.uniformloc(gl, "is_sub"), 1.0);
-    gl.depthFunc(gl.GREATER);
-    gl.cullFace(gl.FRONT);
-    //render(prog, clr, "s");
-    
-    gl.cullFace(gl.BACK);
-    gl.disable(gl.CULL_FACE);
-    gl.depthFunc(gl.LESS);
   }
   
   destroy(gl) {

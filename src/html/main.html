@@ -1238,7 +1238,7 @@ function toJSON_intern (ob, tlevel) {
         
         gl.useProgram(program.program);
         
-        gl.clearColor(0.0, 0.0, 0.5, 1.0);
+        gl.clearColor(view3d_bg[0], view3d_bg[1], view3d_bg[2], view3d_bg[3]);
         gl.clearDepth(10000);
         
         gl.disable(gl.SAMPLE_COVERAGE);
