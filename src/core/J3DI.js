@@ -105,8 +105,20 @@ function loadShader(WebGLRenderingContext ctx, String shaderId) : WebGLShader
 {
     var shaderScript = document.getElementById(shaderId);
     if (!shaderScript) {
-        log("*** Error: shader script '"+shaderId+"' not found");
-        return null;
+      shaderScript = {text : shaderId, type : undefined};
+      
+      if (shaderId.trim().toLowerCase().startsWith("//vertex")) {
+        shaderScript.type = "x-shader/x-vertex";
+      } else if (shaderId.trim().toLowerCase().startsWith("//fragment")) {
+        shaderScript.type = "x-shader/x-fragment";
+      } else {
+        console.trace();
+        console.log("Invalid shader type");
+        console.log("================");
+        console.log(shaderScript);
+        console.log("================");
+        throw new Error("Invalid shader type for shader script;\n script must start with //vertex or //fragment");
+      }
     }
 
     if (shaderScript.type == "x-shader/x-vertex")

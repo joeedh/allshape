@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<!--
+Copyright (c) 2003-2014, CKSource - Frederico Knabben. All rights reserved.
+For licensing, see LICENSE.md or http://ckeditor.com/license
+-->
+<html>
+
+<# {
+  char *path = RQ_GetQueryKey(state, "page");
+  
+  PG_EnsureDB();
+  PG_PrintPageMeta();
+
+  if (path) {
+    DocPage *page, pg;
+    int new_mode=0;
+
+    if (!strcmp(path, "[new]")) {
+      new_mode = 1;
+      page = &pg;
+      PG_InitPage(&pg, "/path/to/page", "Title Here", PAGE_TYPE_PAGE, "<b>New Page</b>");
+      PG_UpdatePage(page);
+    } else {      
+      page = PG_FetchPage(path, PAGE_TYPE_PAGE, 1);
+    }
+
+    if (!page) {
+      #><head>Error!</head><body>Error!</body></html><#
+      return -1;
+    }
+
+    if (!page->body) {
+      page->body = s_dup("<b>New Page</b>");
+    }
+#>
+  <head>
+	  <meta charset="utf-8">
+	  <title>Using the CKEditor Read-Only API &mdash; CKEditor Sample</title>
+	  <script src="/js/ckeditor/ckeditor.js"></script>
+	  <link rel="stylesheet" href="/js/ckeditor/samples/sample.css" />
+	  <script>
+
+		  var editor;
+
+		  // The instanceReady event is fired, when an instance of CKEditor has finished
+		  // its initialization.
+		  CKEDITOR.on( 'instanceReady', function( ev ) {
+			  editor = ev.editor;
+		  });
+
+	  </script>
+    <style type="text/css">
+    .horiz { display: inline; }
+    </style>
+  </head>
+  <body>
+	  <form action="/admin/editor_api" method="post">
+      <ul class="horiz">
+      <li class="horiz">  
+          <b>Title: </b><input type="text" name="title" value="<#=str page->title #>" />
+          <# if (!new_mode) { #>
+            <b>Path: </b><#=str page->path #><input type="hidden" name="path" value="<#=str page->path #>" />
+          <# } else { #>
+            <b>Path: </b><input type="text" name="path" value="<#=str page->path #>" />
+          <# } #>
+      <li class="horiz">
+			  <textarea class="ckeditor" id="editor1" name="body" cols="100" rows="10"><#=str page->body #></textarea>
+      </li>
+      <li class="horiz">
+        <input type="submit" />
+      </li>
+      </ul>
+	  </form>
+	  <div id="footer">
+		  <hr>
+		  <p>
+			  CKEditor - The text editor for the Internet - <a class="samples" href="http://ckeditor.com/">http://ckeditor.com</a>
+		  </p>
+		  <p id="copy">
+			  Copyright &copy; 2003-2014, <a class="samples" href="http://cksource.com/">CKSource</a> - Frederico
+			  Knabben. All rights reserved.
+		  </p>
+	  </div>
+  </body>
+<#   } else { #>
+<head>Error!</head>
+<body>Error!</body>
+<#   } #>
+
+<# } #>
+</html>

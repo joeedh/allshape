@@ -828,14 +828,9 @@ function get_dir_files(job, args) {
 function upload_file(job, args) {
   var suffix;
   
-  var token = g_app_state.session.tokens.access;
-  if (args.path == undefined) {
-    suffix = "&id="+args.id;
-  } else {
-    suffix = "&path="+args.path;
-  }
+  var url = args.url;
+  var url2 = args.chunk_url
   
-  var url = "/api/files/upload/start?accessToken="+token+suffix;
   api_exec(url, job);  
   yield 1;
   
@@ -854,8 +849,7 @@ function upload_file(job, args) {
   for (var i=0; i<ilen; i++) {
     console.log("Uploading chunk "+(i+1)+" of "+ilen);
     
-    var url = "/api/files/upload?accessToken="+token+"&uploadToken="+upload_token;
-    
+    var url = url2 + "&uploadToken="+upload_token;
     var size = i == ilen-1 ? len%(csize) : csize;
       
     console.log(i*csize, size, data);

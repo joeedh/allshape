@@ -1,0 +1,35 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<# {
+	char *path = RQ_GetQueryKey(state, "page");
+	DocPage *page;
+
+	if (path) {
+	  page = PG_FetchPage(path, PAGE_TYPE_PAGE, 1);
+  }
+
+  s_free(path);
+
+	if (page && page->body) {
+  #>
+  <head>
+  <title><#=str page->title #></title>
+
+  <#include "header.ccs" #>
+
+  <div id="primary" class="content-area">
+    <div id="content" class="site-content" role="main">
+      <#=str page->body #>
+    </div>
+  </div>
+
+  <# } else { #>
+    <head><title>Error</title>
+    <#include "header.ccs" #>
+
+    <h1>Error</h1>
+  <# } #>
+<# } #>
+<#include "footer.ccs" #>
+</body>
+</html>

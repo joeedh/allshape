@@ -694,6 +694,29 @@ body, html {
       gl_FragColor = clr;
     }
 </script>
+
+<script id="2d_rect_vshader" type="x-shader/x-vertex">
+    precision mediump float;
+    uniform vec4 color;
+
+    attribute vec4 vPosition;
+    
+    void main()
+    {
+       gl_Position = vPosition;
+    }
+</script>
+
+<script id="2d_rect_fshader" type="x-shader/x-fragment">
+    precision mediump float;
+    uniform vec4 color;
+    
+    void main()
+    {
+      gl_FragColor = color;
+    }
+</script>
+
 <script id="2d_text_vshader" type="x-shader/x-vertex">
     precision mediump float;
     uniform vec4 uColor;
@@ -1123,6 +1146,12 @@ function toJSON_intern (ob, tlevel) {
         }
         
         gl.getExtension("OES_TEXTURE_FLOAT");
+       
+        gl.rect2d = new ShaderProgram(
+          gl,
+          "2d_rect_vshader", "2d_rect_fshader",
+          ["vPosition"]
+        );
         
         gl.selbuf = new ShaderProgram(
           gl,
@@ -1209,7 +1238,7 @@ function toJSON_intern (ob, tlevel) {
         
         gl.useProgram(program.program);
         
-        gl.clearColor(0.0, 0.0, 0.5, 1.0);
+        gl.clearColor(view3d_bg[0], view3d_bg[1], view3d_bg[2], view3d_bg[3]);
         gl.clearDepth(10000);
         
         gl.disable(gl.SAMPLE_COVERAGE);

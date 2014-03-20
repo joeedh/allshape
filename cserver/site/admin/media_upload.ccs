@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>upload</title>
+</head>
+<body>
+<# {
+  char *body = state->req->body;
+
+  RQ_OutHeaders(state, state->req);
+  RQ_PrintHeaders(state->req);
+  
+  printf("%s\n", state->req->method);
+  printf("BODY EXISTS: %p\n", body);
+  if (body) {
+    int i, ilen;
+    char c, buf[2];
+
+    printf("BODY LENGTH: %d\n", array_len(body));
+    
+    buf[1] = 0;
+    ilen = array_len(body);
+    for (i=0; i<ilen; i++) {
+      c = body[i];
+      switch(c) {
+        case '\n':
+          do_out(state, "<br>\n");
+          break;
+        case '\r':
+          break;
+        case 0:
+          do_out(state, "?");
+          break;
+        default:
+          buf[0] = c;
+          do_out(state, buf);
+      }
+    }
+  }
+} #>
+</body>
+</html>

@@ -7,8 +7,8 @@ var ibuf_idgen = new EIDGen();
 ibuf_idgen.gen_id();
 
 //stupid statics
-var __v3d_g_s = []
-var _v3d_static_mat = new Matrix4()
+var __v3d_g_s = [];
+var _v3d_static_mat = new Matrix4();
 var bleh_bleh = 0;
 
 class View3DEditor {
@@ -78,90 +78,21 @@ class IndexBufItem {
   }
 }
 
-class FrameBuffer {
-  constructor(gl, size) {
-    this.size = size;
-    this.fbuf = undefined;
-    this.rbuf1 = undefined;
-    this.rbuf2 = undefined;
-    this.gl = gl;
-    this.caller = undefined;
-    
-    this.idmap = {};
-  }
-
-  //returns true if the framebuffer needs to be redrawn
-  capture(size, caller) {
-    size[0] = Math.ceil(size[0]);
-    size[1] = Math.ceil(size[1]);
-    
-    if (this.fbuf == undefined) {
-      this.regen();
-      return true;
-    }
-    
-    if (size[0] != this.size[0] || size[1] != this.size[1]) {
-      this.size = size;
-      this.regen();
-      return true;
-    }
-    
-    var c2 = this.caller;
-    this.caller = caller;
-    
-    return c2 != caller;
-  }
-
-  regen() {
-    this.size[0] = Math.ceil(this.size[0]);
-    this.size[1] = Math.ceil(this.size[1]);
-    
-    if (this.fbuf != undefined) {
-      gl.deleteFramebuffer(this.fbuf);
-      gl.deleteRenderbuffer(this.rbuf1);
-      gl.deleteRenderbuffer(this.rbuf2);  
-    }
-
-    this.fbuf = gl.createFramebuffer()
-    gl.bindFramebuffer(gl.FRAMEBUFFER, this.fbuf);
-
-    this.rbuf1 = gl.createRenderbuffer();
-    gl.bindRenderbuffer(gl.RENDERBUFFER, this.rbuf1);
-    gl.renderbufferStorage(gl.RENDERBUFFER, gl.RGBA4, this.size[0], this.size[1]);
-    
-    this.rbuf2 = gl.createRenderbuffer();
-    gl.bindRenderbuffer(gl.RENDERBUFFER, this.rbuf2);
-    gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, this.size[0], this.size[1]);
-    
-    gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, 
-                              gl.RENDERBUFFER, this.rbuf1);
-                              
-    gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, 
-                              gl.RENDERBUFFER, this.rbuf2);
-  }
-
-  bind() {
-    //this.regen();
-    this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.fbuf);
-  }
-
-  unbind() {
-    this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
-  }
-}
-
-var _v3d_id_gen = 0
 class View3DHandler extends Area {
    constructor(WebGLRenderingContext gl, Mesh mesh, ShaderProgram vprogram, ShaderProgram fprogram, 
                        DrawMats drawmats, int x, int y, int width, 
                        int height, int znear, int zfar) 
   {
+    static int v3d_id = 0;
+    
     this.drawmats = drawmats;
     this.transmat = new Mat4Stack();
     
     this.mesh = mesh;
     this.sidmap = {}; //stores objects, and possibly manipulator widgets and the like
     
+    this.csg_render = undefined;
+    this.draw_csg = false;
     this.znear = znear;
     this.zfar = zfar;
     this.vprogram = vprogram;
@@ -222,7 +153,7 @@ class View3DHandler extends Area {
     
     this.keymap = new KeyMap()
     this.define_keymap();
-    this._id = _v3d_id_gen++;
+    this._id = v3d_id++;
     
     this.editor = new MeshEditor(this);
     this.editors = new GArray([this.editor]);
@@ -281,6 +212,68 @@ class View3DHandler extends Area {
     v3d._in_from_struct = false;
     
     return v3d;
+  }
+  
+  draw_rect(gl, pos, size, color) {
+    static verts = undefined;
+    
+    if (verts == undefined) {
+      verts = gl.createBuffer();
+    }
+    
+    size = new Vector2(size).div(this.size);
+    pos = new Vector2(pos).div(this.size);
+    
+    var vs = new Float32Array(12);
+    
+    var d = 0;
+    vs[d++] = pos[0];
+    vs[d++] = pos[1];
+    
+    vs[d++] = pos[0];
+    vs[d++] = pos[1]+size[1];
+    
+    vs[d++] = pos[0]+size[0];
+    vs[d++] = pos[1]+size[1];
+    
+    
+    vs[d++] = pos[0];
+    vs[d++] = pos[1];
+    
+    vs[d++] = pos[0]+size[0];
+    vs[d++] = pos[1]+size[1];
+
+    vs[d++] = pos[0]+size[0];
+    vs[d++] = pos[1];
+    
+    for (var i=0; i<12; i++) {
+      vs[i] = (vs[i]-0.5)*2.0;
+    }
+    gl.enableVertexAttribArray(0);
+    gl.disableVertexAttribArray(1);
+    gl.disableVertexAttribArray(2);
+    gl.disableVertexAttribArray(3);
+    gl.disableVertexAttribArray(4);
+    
+    gl.bindBuffer(gl.ARRAY_BUFFER, verts);
+    gl.bufferData(gl.ARRAY_BUFFER, vs, gl.STATIC_DRAW);
+    
+    gl.useProgram(gl.rect2d.program);
+    
+    gl.bindBuffer(gl.ARRAY_BUFFER, verts);
+    gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+    
+    gl.uniform4fv(gl.rect2d.uniformloc(gl, "color"), color);
+    
+    gl.depthFunc(gl.ALWAYS);
+    gl.depthMask(0);
+    
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+    gl.flush();
+    gl.depthFunc(gl.LESS);
+    gl.depthMask(1);
+    
+    //ctx.disableVertexAttribArray(0);
   }
   
   get selectmode() {
@@ -698,9 +691,25 @@ class View3DHandler extends Area {
   }
 
   on_tick() {
+    this.editor.on_tick(this.ctx);
     prior(View3DHandler, this).on_tick.call(this);
   }
   
+  ensure_csg(Boolean is_enabled=true) {
+    this.draw_csg = is_enabled;
+    
+    if (is_enabled && !this.csg_render) {
+      this.csg_render = new CSGDraw(this, this.ctx.scene);
+    } else if (!is_enabled && this.csg_render) {
+      this.csg_render.destroy();
+      this.csg_render = undefined;
+    }
+    
+    //XXX paranoid check; might not be good enough
+    if (this.csg_render) {
+      this.csg_render.scene = this.ctx.scene;
+    }
+  }
   update_selbuf() {
     this.redo_selbuf = true;
   }
@@ -710,6 +719,7 @@ class View3DHandler extends Area {
   }
 
   on_draw(WebGLRenderingContext gl, test) {
+    this.gl = gl;
     this.editor.shift = this.shift;
     this.editor.alt = this.alt;
     this.editor.ctrl = this.ctrl;
@@ -744,6 +754,11 @@ class View3DHandler extends Area {
     var objects = scene.objects;
     
     for (var ob in objects) {
+      if (ob.csg && ob != ctx.object) {
+        this.ensure_csg(true);
+        continue;
+      }
+      
       this.transmat.push();
       this.transmat.multiply(ob.matrix);
       
@@ -751,7 +766,7 @@ class View3DHandler extends Area {
       if (ob == ctx.object) {
         this.editor.draw_object(gl, this, ob, true);
       } else {
-        this.draw_object_basic(gl, ob, false);
+        this.draw_object_basic(gl, ob);
       }
       
       this.transmat.pop();
@@ -760,6 +775,10 @@ class View3DHandler extends Area {
     //clean up transformation stack
     this.transmat.reset(cameramat_backup);
     this.drawmats.cameramat.load(cameramat_backup);
+    
+    if (this.draw_csg) {
+      this.csg_render.on_draw(gl, this);
+    }
     
     this.draw_lines(gl);
     Area.prototype.on_draw.call(this, gl)
@@ -1044,6 +1063,24 @@ class View3DHandler extends Area {
     this.editor.on_inactive(this);
     this.editor = editor;
     editor.on_active(this);
+    editor.gl = this.gl;
+    
+    for (var c in list(this.cols)) {
+      this.remove(c);
+    }
+    for (var c in list(this.rows)) {
+      this.remove(c);
+    }
+    
+    this.cols = new GArray();
+    this.rows = new GArray();
+    
+    // /*
+    this.build_topbar();
+    this.editor.build_bottombar(this);
+    this.editor.build_sidebar1(this);
+    // */
+    this.do_recalc();
   }
   
   ensure_editor(editortype) {
@@ -1127,7 +1164,7 @@ class View3DHandler extends Area {
     }
   }
   
-  draw_object_basic(gl, object, is_active) {
+  draw_object_basic(gl, object, drawmode=gl.TRIANGLES, is_active=false) {
     this.gl = gl;
     
     //gl.depthFunc(gl.GREATER);
@@ -1141,7 +1178,6 @@ class View3DHandler extends Area {
     gl.polygonOffset(0.5, 200);
     if (object.data instanceof Mesh) {
       this.check_subsurf(this.ctx, object);
-      var drawmode = gl.TRIANGLES;
       
       if (object.subsurf) {
         subsurf_render(gl, this, object.ss_mesh, object.data, 
@@ -1152,7 +1188,7 @@ class View3DHandler extends Area {
       }
     }
     
-    if (is_active) {
+    if (is_active && drawmode != gl.LINES) {
       this.draw_object_flat(gl, object, colors3d.ActiveObject);
     } else if (object.flag & SELECT) {
       this.draw_object_flat(gl, object, colors3d.Selection);

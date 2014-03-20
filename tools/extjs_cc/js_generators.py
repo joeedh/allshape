@@ -413,7 +413,7 @@ def visit_generators(node):
         flatten_frames(f)
   
   flatten_frames(frames)
-  print([f.label for f in flatframes])
+  #print([f.label for f in flatframes])
   
   def frames_transform(frames, node2):
     scope = frames.scope
@@ -777,7 +777,7 @@ def visit_generators(node):
       slist.add(js_parse("""$s.value = $n;""", ["$__ret", node[0]], start_node=AssignNode))
     
     slen = len(slist)
-    print(slist)
+    #print(slist)
     
     if node in node.parent:
       i = node.parent.index(node)

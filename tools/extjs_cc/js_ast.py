@@ -1,8 +1,56 @@
 from js_lex import HexInt, StringLit
 from js_global import glob
 from js_util_types import odict
-import sys, traceback
+import sys, traceback, os, os.path
 
+if 0: #glob.g_debug_print_calls:
+  def theprint(arg, **args):
+    args = [arg] + list(args)
+    colwid = 80
+    
+    frame = sys._getframe(1)
+    line = frame.f_lineno
+    filename = frame.f_code.co_filename
+    if "/" in filename or "\\" in filename:
+      filename = os.path.split(filename)[1]
+    
+    filename = "  (%s:%d)" % (filename, line)
+    maxcol = colwid - len(filename)-1
+    
+    out = ""
+    for i, a in enumerate(args):
+      s = str(a)
+      if i > 0: s = " " + s
+      out += s
+    
+    out += "\n"
+    out2 = ""
+    
+    col = 0
+    for s in out:
+      if s == "\n":
+        while col < maxcol:
+          col += 1
+          out2 += " "
+        
+        out2 += filename
+        col = 0
+      
+      if col >= maxcol:
+        out2 += filename + "\n"
+        col = 0
+        
+      out2 += s
+      if s != "\n":
+        col += 1
+        
+    sys.stdout.write(out2)
+else:
+  theprint = print
+
+#def print(arg, **args):
+#  theprint(arg, **args)
+  
 def tab(tlvl, tstr=" "):
   s = ""
   for i in range(tlvl):

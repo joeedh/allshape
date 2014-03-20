@@ -54,7 +54,9 @@ class DagSocket {
   }
   
   static fromSTRUCT(reader) {
+    static _version_convert_id = 1;
     var s = new DagSocket();
+    
     reader(s);
     
     s.edges = new GArray(s.edges);
@@ -145,12 +147,23 @@ class DagNodeData {
     reader(nd);
     
     var ins = nd.ins, outs = nd.outs;
-    nd.ins = new GArray(nd.ins); nd.outs = new GArray(nd.outs);
+    nd.ins = new GArray(); nd.outs = new GArray();
     
     nd.add_sockets("i", ins);
     nd.add_sockets("o", outs);
     
     return nd;
+  }
+  
+  set_owner(Object owner) {
+    this.owner = owner;
+    for (var s in this.ins) {
+      s.node = owner;
+    }
+    
+    for (var s in this.outs) {
+      s.node = owner;
+    }
   }
 }
 
@@ -178,13 +191,21 @@ class DagNode extends DataBlock {
   
   dag_execute() { }
   dag_update() {
+    var node = this;
     function flush(n) {
       n.dag_node.flag |= DagFlags.DIRTY;
       
       for (var o in n.dag_node.outs) {
-        for (var e in o.edges) {
-          var n2 = e.opposite(e).node;
-          flush(n2);
+        for (var e in o) {
+          var n2 = e.opposite(o).node;
+          
+          if (n2 != n) {
+            flush(n2);
+          } else {
+            /*
+            console.log("yeek in dag_update.flush");
+            console.log("----=-->", node, n, e, e.opposite(o));*/
+          }
         }
       }
     }
@@ -194,7 +215,7 @@ class DagNode extends DataBlock {
 }
 
 function ddebug(msg) {
-  if (debug_dag) {
+  if (DEBUG.dag) {
     if (arguments.length > 1) {
       var args = []
       for (var i=0; i<arguments.length; i++) {
@@ -206,6 +227,14 @@ function ddebug(msg) {
       console.log(msg);
     }
   }
+}
+
+function DagRemFunc(dag, socket, dstsocket) {
+  function rem() {
+    dag.socket_disconnect(socket, dstsocket);
+  }
+  
+  return rem;
 }
 
 class Dag {
@@ -237,9 +266,20 @@ class Dag {
     var sortl = new GArray();
     
     function dosort(n) {
+      static _i = 0;
+      
+      _i++;
+      
+      if (_i > 10) { //XXX make this bigger
+        console.log("infinite loop in dag sort");
+        return;
+      }
+      
       for (var i=0; i<n.dag_node.ins.length; i++) {
+        var s = n.dag_node.ins[i];
+        
         for (var e in n.dag_node.ins[i]) {
-          var n2 = e.opposite(e).node;
+          var n2 = e.opposite(s).node;
           
           if (n2.dag_node.flag & DagFlags.SORTDIRTY) {
             dosort(n2);
@@ -248,10 +288,18 @@ class Dag {
       }
       
       sortl.push(n);
+      n.dag_node.flag &= ~DagFlags.SORTDIRTY;
       
       for (var i=0; i<n.dag_node.outs.length; i++) {
+        var s = n.dag_node.outs[i];
+        
         for (var e in n.dag_node.outs[i]) {
-          var n2 = e.opposite(e).node;
+          var n2 = e.opposite(s).node;
+          
+          if (_i > 10) { //XXX make this bigger
+            console.log("infinite loop in dag sort 2");
+            return;
+          }
           
           if (n2.dag_node.flag & DagFlags.SORTDIRTY) {
             dosort(n2);
@@ -262,20 +310,21 @@ class Dag {
     
     for (var i=0; i<nodes.length; i++) {
       var n = nodes[i];
-      ddebug("sorting node ", (n.dag_node.flag & DagFlags.SORTDIRTY), n);
+      ddebug("sorting node ", n.dag_node.id);
       
       if (n.dag_node.flag & DagFlags.SORTDIRTY)
         dosort(n);
     }
     
     this.sortlist = sortl;
+    this.flag &= ~DagFlags.SORTDIRTY;
   }
 
   exec() {
     if (debug_dag)
       console.log("executing dag...");
     
-    if (this.flag & DagFlags.DIRTY) {
+    if (this.flag & DagFlags.SORTDIRTY) {
       if (debug_dag)
         console.log("sorting dag...");
         
@@ -324,16 +373,15 @@ class Dag {
       node.dag_node.id = this.idgen.gen_id();
     
     for (var s in node.dag_node.ins) {
-      if (s.id == -1)
-        s.id = this.sock_idgen.gen_id();
+      s.id = this.sock_idgen.gen_id();
     }
+    
     for (var s in node.dag_node.outs) {
-      if (s.id == -1)
-        s.id = this.sock_idgen.gen_id();
+      s.id = this.sock_idgen.gen_id();
     }
     
     this.nodes.push(node);
-    this.flag |= DagFlags.DIRTY;
+    this.flag |= DagFlags.SORTDIRTY;
     this.idmap[node.dag_node.id] = node;
   }
 
@@ -353,7 +401,7 @@ class Dag {
       this.nodes.remove(node);
     }
     delete this.idmap[node.dag_node.id];
-    this.flag |= DagFlags.DIRTY;
+    this.flag |= DagFlags.SORTDIRTY;
   }
 
   //returns a new DagEdge object
@@ -362,6 +410,8 @@ class Dag {
     
     s1.edges.push(e);
     s2.edges.push(e);
+    
+    this.flag |= DagFlags.SORTDIRTY;
     
     return e;
   }
@@ -382,6 +432,8 @@ class Dag {
         break;
       }
     }
+    
+    this.flag |= DagFlags.SORTDIRTY;
   }
 
   //socktype must be one of ['i', 'o'], input/output
@@ -404,13 +456,20 @@ class Dag {
     }
     
     sock.edges = new GArray();
+    
+    this.flag |= DagFlags.SORTDIRTY;
   }
 
   //this function connects inputs to outputs.
   //make sure the arguments are in the right order
   connect(n1, String s1name, n2, String s2name) {
-    var s1 = n1.node_data.outmap[s1name];
-    var s2 = n2.node_data.inmap[s2name];
+    var s1 = n1.dag_node.outmap[s1name];
+    var s2 = n2.dag_node.inmap[s2name];
+    
+    if (s1.node == undefined)
+      s1.node = n1;
+    if (s2.node == undefined)
+      s2.node = n2;
     
     return this.socket_connect(s1, s2);
   }
@@ -460,13 +519,37 @@ class Dag {
       var n = node.dag_node;
       
       for (var s in n.ins) {  
-        s.node = n;
+        s.node = node;
         sockmap[s.id] = s;
       }
       
       for (var s in n.outs) {
-        s.node = n;
+        s.node = node;
         sockmap[s.id] = s;
+      }
+    }
+    
+    sockmap[-1] = -1;
+    
+    var this2 = this;
+    var userset = new set();
+    function get_sock(sock, id, add_libuser=false) {
+      if (typeof(id) == "object") return id;
+      
+      if (id in sockmap) {
+        var ret = sockmap[id];
+        
+        if (add_libuser && ret != sock && (ret.node instanceof DataBlock)) {
+          if (!userset.has(ret.node)) {
+            ret.node.lib_adduser(sock, "socket", DagRemFunc(this2, sock, ret));
+            userset.add(ret.node);
+          }
+        }
+        
+        return ret;
+      } else {
+        console.log("Yeek!  Bad socket id ", id);
+        return -1;
       }
     }
     
@@ -475,14 +558,15 @@ class Dag {
       
       for (var s in n.ins) {
         for (var e in s.edges) {
-          e.src = sockmap[e.src];
-          e.dst = sockmap[e.dst];
+          e.src = get_sock(s, e.src, true);
+          e.dst = get_sock(s, e.dst);
         }
       }
+      
       for (var s in n.outs) {
         for (var e in s.edges) {
-          e.src = sockmap[e.src];
-          e.dst = sockmap[e.dst];
+          e.src = get_sock(s, e.src);
+          e.dst = get_sock(s, e.dst);
         }
       }
     }
@@ -503,17 +587,17 @@ class Dag {
         n.owner = node;
       
       for (var s in n.ins) {
-        s.node = n;
+        s.node = node;
         s.data_link(block, this, getblock, getblock_us);
       }
       
       for (var s in n.outs) {
-        s.node = n;
+        s.node = node;
         s.data_link(block, this, getblock, getblock_us);
       }
     }
     
-    function find_link(e, s) {
+    function find_link(DagEdge e, DagSocket s) {
       for (var e2 in s.edges) {
         if (e2.src == e.src && e2.dst == e.dst) return e2;
       }
@@ -524,14 +608,18 @@ class Dag {
     function link_sock(s, type) {
       for (var e in s.edges) {
         var target = type=="i" ? e.src : e.dst;
-        if (!(e in e.src.edges)) {
+        var found=false;
+        
+        if (!target.edges.has(e)) {
           var e2 = find_link(e, target);
           if (e2 == undefined) {
             console.log("ERROR: Couldn't find edge in e.src", e);
             continue;
           }
           
-          e.src.edges.replace(e2, e);
+          //var target2 = type == "i" ? e2.dst : e2.src;
+          if (target.edges.has(e2))
+            target.edges.replace(e2, e);
         }
       }
     }
@@ -539,11 +627,11 @@ class Dag {
     for (var node in nodes) {
       var n = node.dag_node;
       for (var s in n.ins) {
-        link_sock(s, "i");
+        //link_sock(s, "i");
       }
       
       for (var s in n.outs) {
-        link_sock(s, "o");
+        //link_sock(s, "o");
       }
     }
   }
@@ -556,7 +644,7 @@ class Dag {
     var dag = new Dag();
     reader(dag);
     
-    dag.flag |= DagFlags.DIRTY;
+    dag.flag |= DagFlags.SORTDIRTY;
     return dag;
   }
 }

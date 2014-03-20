@@ -1,2 +1,0 @@
-from js_typespace import *
-from js_ast import *

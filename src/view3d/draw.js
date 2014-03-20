@@ -142,6 +142,97 @@ function gen_tris_job(Mesh mesh) {
   //console.log("fi:", fi, "fi2:", fi2, mesh.faces.length);
 }
 
+function gen_mesh_tribuf(WebGLRenderingContext gl, Mesh mesh, Loop ls, int recalcflags)
+{
+  /*triangle data*/
+  var tri_vbuff = new Array<float>();
+  var tri_nbuff = new Array<float>();
+  var i = 0, j=0, c=0, k=0;
+  
+  for (var i=0; i<ls.length; i++) {
+    if (ls[i] == undefined || ls[i].v == undefined) {
+      for (var j=0; j<3; j++) {
+        tri_vbuff.push(0.0);
+      }
+      continue;
+    }
+      
+    tri_vbuff.push(ls[i].v.co[0]);
+    tri_vbuff.push(ls[i].v.co[1]);
+    tri_vbuff.push(ls[i].v.co[2]);
+  }
+  
+  for (var i=0; i<ls.length; i++) {
+    if (ls[i] == undefined || ls[i].v == undefined) {
+      for (var j=0; j<3; j++) {
+        tri_nbuff.push(0.0);
+      }
+      continue;
+    }
+      
+    if (recalcflags & MeshRecalcFlags.REGEN_NORS) {
+      if (ls[i].f.flags & Flags.SHADE_SMOOTH) {
+        tri_nbuff.push(ls[i].v.no[0]);
+        tri_nbuff.push(ls[i].v.no[1]);
+        tri_nbuff.push(ls[i].v.no[2]);
+      } else {
+        tri_nbuff.push(ls[i].f.no[0]);
+        tri_nbuff.push(ls[i].f.no[1]);
+        tri_nbuff.push(ls[i].f.no[2]);
+      }
+    }
+  }
+  
+  tri_vbuff = new Float32Array(tri_vbuff);
+  if (recalcflags & MeshRecalcFlags.REGEN_NORS) {
+    tri_nbuff = new Float32Array(tri_nbuff);
+  }
+  
+  var tri_cbuff = new Array<float>();
+  var i = 0;
+  for (var i=0; i<ls.length; i++) {
+    if (ls[i] == undefined || ls[i].v == undefined) {
+      for (var j=0; j<4; j++) {
+        tri_cbuff.push(j == 3 ? 1.0 : 0.0);
+      }
+      continue;
+    }
+    
+    var f = ls[i].f;
+   
+    if ((recalcflags & MeshRecalcFlags.REGEN_COLORS) != 0) {
+      var color = get_element_color(f, mesh.faces.highlight, true);
+      
+      tri_cbuff.push(color[0]);
+      tri_cbuff.push(color[1]);
+      tri_cbuff.push(color[2]);
+      tri_cbuff.push(color[3]);
+    }
+  }
+  tri_cbuff = new Float32Array(tri_cbuff);
+  
+  mesh.render.kill_buf("tri_vbuff");
+  mesh.render.tri_vbuff = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, mesh.render.tri_vbuff);
+  gl.bufferData(gl.ARRAY_BUFFER, tri_vbuff, gl.STATIC_DRAW);
+
+  if ((recalcflags & MeshRecalcFlags.REGEN_COLORS) != 0) {
+    mesh.render.kill_buf("tri_cbuff");
+    mesh.render.tri_cbuff = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, mesh.render.tri_cbuff);
+    gl.bufferData(gl.ARRAY_BUFFER, tri_cbuff, gl.STATIC_DRAW);
+  }
+  
+  if (recalcflags & MeshRecalcFlags.REGEN_NORS) {
+    mesh.render.kill_buf("tri_nbuff");
+    mesh.render.tri_nbuff = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, mesh.render.tri_nbuff);
+    gl.bufferData(gl.ARRAY_BUFFER, tri_nbuff, gl.STATIC_DRAW);
+  }
+  
+  mesh.render.tri_totvert = ls.length;
+}
+
 gen_tris_job.jobtype = new gen_tris_job(undefined);
 gen_tris_job.prototype.jobtype = new gen_tris_job(undefined);
 
@@ -263,6 +354,18 @@ function pack_index(idx, sels, i) {
   sels[i++] = bs[1]/255.0;
   sels[i++] = bs[2]/255.0;
   sels[i++] = bs[3]/255.0;
+  
+  return i;
+}
+
+function pack_index3(idx, sels, i) {
+  var view = _up_i_dview;
+  var bs = _up_i_arr8;
+  
+  view.setInt32(0, idx, true);
+  sels[i++] = bs[0]/255.0;
+  sels[i++] = bs[1]/255.0;
+  sels[i++] = bs[2]/255.0;
   
   return i;
 }
@@ -736,8 +839,8 @@ function gen_mesh_render(WebGLRenderingContext ctx, Mesh mesh, ShaderProgram dra
 }
 
 class ShaderProgram {
-  constructor (WebGLRenderingContext gl, ShaderProgram vshader, 
-               ShaderProgram fshader, Array<String> attribs) 
+  constructor (WebGLRenderingContext gl, String vshader, 
+               String fshader, Array<String> attribs) 
   {
    // create our shaders
       var vertexShader = loadShader(gl, vshader);
@@ -922,6 +1025,13 @@ function render_mesh_elements(WebGLRenderingContext gl, View3DHandler view3d,
 {
   if (draw_edges == undefined)
      draw_edges = true;
+     
+  if (mesh.render.recalc != 0) {
+    if (mesh.render.tri_vbuff == 0)
+      mesh.regen_render()
+    
+    gen_mesh_render(gl, mesh, mesh.render.drawprogram, mesh.render.vertprogram, mesh.render.recalc);
+  }
   
   gl.enableVertexAttribArray(0);
   gl.enableVertexAttribArray(1);

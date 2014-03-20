@@ -1,0 +1,55 @@
+﻿Build started 3/17/2014 4:48:35 AM.
+     1>Project "C:\dev\allshape\cserver\vc10\vc10\vc10.vcxproj" on node 2 (build target(s)).
+     1>InitializeBuildStatus:
+         Creating "Debug\vc10.unsuccessfulbuild" because "AlwaysCreate" was specified.
+       CustomBuildStep:
+         Description: Generating server pages...
+         cd c:\dev\allshape\cserver && python cs_build.py msvc_mode
+         :VCEnd
+         msvc mode
+         [182%]  media.ccs
+       ClCompile:
+         C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin\CL.exe /c /IC:\dev\blender\lib\windows\pthreads\include /ZI /nologo /W3 /WX- /Od /Oy- /D WIN32 /D _MBCS /D _MBCS /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc100.pdb" /Gd /TC /analyze- /errorReport:prompt ..\..\build\pages.c
+         pages.c
+     1>c:\dev\allshape\cserver\build\strutils.h(95): warning C4090: 'return' : different 'const' qualifiers
+     1>c:\dev\allshape\cserver\build\strutils.h(106): warning C4101: 'val' : unreferenced local variable
+     1>c:\dev\allshape\cserver\build\pages.c(183): warning C4047: '=' : 'int' differs in levels of indirection from 'DocPage *'
+     1>c:\dev\allshape\cserver\build\pages.c(211): warning C4101: 'jlen' : unreferenced local variable
+     1>c:\dev\allshape\cserver\build\pages.c(211): warning C4101: 'ilen' : unreferenced local variable
+     1>c:\dev\allshape\cserver\build\pages.c(211): warning C4101: 'j' : unreferenced local variable
+     1>c:\dev\allshape\cserver\build\pages.c(86): warning C4716: '_pg_getpage' : must return a value
+     1>c:\dev\allshape\cserver\build\pages.c(161): warning C4715: '_pg_admin_editor' : not all control paths return a value
+     1>c:\dev\allshape\cserver\build\pages.c(194): warning C4716: '_pg_admin_editor_api' : must return a value
+     1>c:\dev\allshape\cserver\build\pages.c(245): warning C4716: '_pg_admin_admin' : must return a value
+     1>c:\dev\allshape\cserver\build\pages.c(254): warning C4716: '_pg_admin_main' : must return a value
+     1>c:\dev\allshape\cserver\build\pages.c(292): warning C4715: '_pg_admin_pages' : not all control paths return a value
+     1>c:\dev\allshape\cserver\build\pages.c(308): warning C4716: '_pg_admin_media' : must return a value
+     1>c:\dev\allshape\cserver\build\pages.c(351): warning C4716: '_pg_admin_media_upload' : must return a value
+     1>c:\dev\allshape\cserver\build\pages.c(361): warning C4716: '_pg_index' : must return a value
+     1>c:\dev\allshape\cserver\build\pages.c(394): warning C4716: '_pg_header' : must return a value
+     1>c:\dev\allshape\cserver\build\pages.c(402): warning C4716: '_pg_footer' : must return a value
+       Link:
+         C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"C:\dev\allshape\cserver\vc10\Debug\vc10.exe" /NOLOGO /LIBPATH:C:\dev\blender\lib\windows\pthreads\lib pthreadVSE2.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /ManifestFile:"Debug\vc10.exe.intermediate.manifest" /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /DEBUG /PDB:"C:\dev\allshape\cserver\vc10\Debug\vc10.pdb" /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:\dev\allshape\cserver\vc10\Debug\vc10.lib" /MACHINE:X86 Debug\pages.obj
+         Debug\boilerplate.obj
+         Debug\fileutils.obj
+         Debug\hashtable.obj
+         Debug\memalloc.obj
+         Debug\poolalloc.obj
+         Debug\requestlib.obj
+         Debug\server_main.obj
+         Debug\site.obj
+         Debug\strutils.obj
+         Debug\thread.obj
+         Debug\utils.obj
+         LINK : C:\dev\allshape\cserver\vc10\Debug\vc10.exe not found or not built by the last incremental link; performing full link
+         vc10.vcxproj -> C:\dev\allshape\cserver\vc10\Debug\vc10.exe
+       Manifest:
+         C:\Program Files (x86)\Microsoft SDKs\Windows\v7.0A\bin\mt.exe /nologo /verbose /outputresource:"C:\dev\allshape\cserver\vc10\Debug\vc10.exe;#1" /manifest Debug\vc10.exe.intermediate.manifest
+       FinalizeBuildStatus:
+         Deleting file "Debug\vc10.unsuccessfulbuild".
+         Touching "Debug\vc10.lastbuildstate".
+     1>Done Building Project "C:\dev\allshape\cserver\vc10\vc10\vc10.vcxproj" (build target(s)).
+
+Build succeeded.
+
+Time Elapsed 00:00:07.66

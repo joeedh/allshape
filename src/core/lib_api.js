@@ -111,15 +111,21 @@ class DataRef extends Array {
   }
 }
 
-class DataRefListIter {
+class DataRefListIter extends ToolIter {
   constructor(lst, ctx) {
     this.lst = lst;
     this.i = 0;
     this.datalib = ctx.datalib;
-    this.ret = cached_iret();
+    this.ret = undefined : IterRet;
+    this.init = true;
   }
   
   next() {
+    if (this.init) {
+      this.ret = cached_iret();
+      this.init = false;
+    }
+    
     if (this.i < this.lst.length) {
       this.ret.value = this.datalib.get(this.lst[this.i].id);
     } else {
@@ -131,135 +137,10 @@ class DataRefListIter {
     
     return this.ret;
   }
-}
-
-/*
-  DataRefList.  A simple container for block references.
-  Most of the API will accept either a block or a DataRef.
   
-  __iterator__ will use the ids to fetch and return blocks,
-  though.
-*/
-class DataRefList extends GArray {
-  constructor(lst=undefined) {
-    GArray.call(this);
-    
-    this.datalib = undefined;
-    
-    if (lst == undefined)
-      return;
-    
-    if (lst instanceof Array) {
-      for (var i=0; i<lst.length; i++) {
-        if (lst[i] == undefined) continue;
-        
-        this.push(lst[i]);
-      }
-    } else if ("__iterator__" in lst) {
-      for (var b in lst) {
-        this.push(b);
-      }
-    }
-  }
-  
-  __iterator__() : DataRefListIter{
-    return new DataRefListIter(this, new Context());
-  }
-  
-  get(int i, Boolean return_block=true) {
-    if (return_block) {
-      var dl = this.datalib != undefined ? this.datalib : g_app_state.datalib;
-      return dl.get(this[i]);
-    } else {
-      return this[i];
-    }
-  }
-  
-  push(b) {
-    if (!(b = this._b(b))) return;
-    
-    if (b instanceof DataBlock)
-      b = new DataRef(b);
-    
-    GArray.prototype.push.call(this, new DataRef(b));
-  }
-  
-  _b(b) {
-    if (b == undefined) {
-      console.log("WARNING: undefined passed to DataRefList.push()");
-      console.trace();
-      return;
-    }
-    
-    if (b instanceof DataBlock) {
-      return new DataRef(b);
-    } else if (b instanceof DataRef) {
-      return b;
-    } else {
-      console.trace();
-      console.log("WARNING: bad value ", b, " passed to DataRefList._b()");
-    }
-  }
-  
-  remove(b) {
-    if (!(b = this._b(b))) return;
-    var i = this.indexOf(b);
-    
-    if (i < 0) {
-      console.trace();
-      console.log("WARNING: ", b, " not found in this DataRefList");
-      return;
-    }
-    
-    this.pop(i);
-  }
-  
-  pop(int i, Boolean return_block=true) {
-    var ret = GArray.prototype.pop.call(this, i);
-    
-    if (return_block)
-      ret = new Context().datalib.get(ret.id);
-      
-    return ret;
-  }
-  
-  replace(a, b) {
-    if (!(b = this._b(b))) return;
-    
-    var i = this.indexOf(a);
-    if (i < 0) {
-      console.trace();
-      console.log("WARNING: ", b, " not found in this DataRefList");
-      return;
-    }
-    
-    this[i] = b;
-  }
-  
-  indexOf(b) {
-    Array.indexOf.call(this, b);
-    
-    if (!(b = this._b(b))) return;
-    
-    for (var i=0; i<this.length; i++) {
-      if (this[i].id == b.id)
-        return i;
-    }
-    
-    return -1;
-  }
- 
-  //inserts *before* index
-  insert(int index, b) {
-    if (!(b = this._b(b))) return;
-    
-    GArray.prototype.insert.call(this, b);
-  }
-  
-  prepend(b) {
-    if (!(b = this._b(b))) return;
-    
-    GArray.prototype.prepend.call(this, b);
+  reset() {
+    this.i = 0;
+    this.init = true;
   }
 }
 
@@ -456,6 +337,10 @@ class DataBlock {
     
     this.lib_type = type;
     this.lib_users = new GArray();
+    
+    //regardless of whether we continue using ref counting
+    //internally, the users do need to know how many users a given
+    //block has.
     this.lib_refs = 0;
     this.flag = 0;
   }

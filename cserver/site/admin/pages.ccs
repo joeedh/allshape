@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Pages</title>
+  <script type="javascript" src="/js/jquery.js"></script>
+  <link rel="stylesheet" href="/css/style.css"></link>
+  <style type="text/css">
+  .horiz { display: inline; }
+  </style>
+</head>
+<body>
+<# {
+#ifndef PAGES_SRC
+#define PAGES_SRC site_db.pages
+#endif
+
+  DocPage *page;
+  int i, ilen;
+
+  if (!PG_EnsureDB()) {
+    do_out(state, "error!</body></html>");
+    return -1;
+  }
+  #>
+  <div class="content-area">
+    <ul>
+      <li class="horiz"><a href="/admin/editor?page=[new]">New Page</a></li>
+    </ul>
+    <div class="data_list">
+      <p>
+      <#
+      ilen = array_len(PAGES_SRC);
+      for (i=0; i<ilen; i++) {
+        page = PAGES_SRC + i;
+      #>
+      <p><a href="/admin/editor?page=<#=str page->path #>"><#=str page->title #></a></p>
+      <#}
+      #>
+      </p>
+    </div>
+  </div>
+<# } #>
+</body>
+</html>

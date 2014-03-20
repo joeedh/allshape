@@ -186,7 +186,11 @@ FileSaveAsOp.prototype.exec = function(ctx)
       path = path + formacad_file_ext;
     }
     
-    call_api(upload_file, {path:path, data:mesh_data}, finish, error, status);
+    var token = g_app_state.session.tokens.access;
+    var url = "/api/files/upload/start?accessToken="+token+"&path="+path
+    var url2 = "/api/files/upload?accessToken="+token;
+    
+    call_api(upload_file, {data:mesh_data, url:url, chunk_url:url2}, finish, error, status);
   }
   
   file_dialog("SAVE", new Context(), save_callback);
@@ -231,7 +235,10 @@ FileSaveOp.prototype.exec = function(ctx)
       path = path + formacad_file_ext;
     }
     
-    call_api(upload_file, {path:path, data:mesh_data}, finish, error, status);
+    var token = g_app_state.session.tokens.access;
+    var url = "/api/files/upload/start?accessToken="+token+"&path="+path
+    
+    call_api(upload_file, {data:mesh_data, url: url}, finish, error, status);
   }
     
   if (g_app_state.filepath != "") {

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+
+<#{
+	static struct {char path[32]; char name[32];} admin_pages[] = {
+		{"main", "Dashboard"},
+		{"pages", "Pages"},
+		{"media", "Media"}
+	}, *page, *p;
+
+	static int totadmin = sizeof(admin_pages) / sizeof(*admin_pages);
+	char *pageref = RQ_GetQueryKey(state, "page");
+	int curpage = 0; //default to dashboard
+	int i, j, ilen, jlen;
+
+	if (pageref != NULL) {
+		do_out(state, pageref);
+		for (i=0; i<totadmin; i++) {
+			do_out(state, admin_pages[i].path);
+			if (!strcncmp(pageref, admin_pages[i].path, s_len(pageref), 32)) {
+				curpage = i;
+				break;
+			}
+		}
+	}
+
+	page = admin_pages + curpage;
+
+#>
+
+<html>
+<head>
+<title>Admin</title>
+<script type="javascript" src="/js/jquery.js"></script>
+<link rel="stylesheet" href="/css/style.css"></link>
+</head>
+<body>
+	<div class="menu site-navigation main-navigation">
+  	<ul>
+<#
+	for (i=0; i<totadmin; i++) {
+		p = admin_pages+i;
+#>
+	<li><a href="/admin/admin?page=<#=str p->path #>"><#=str p->name #></a></li>
+<# } #>
+	<li>yay</li>
+	</ul>
+	</div>
+	<div id="primary" class="content-area"><div id="content" class="site-content" role="main">
+		<iframe width="800" height="900" src="/admin/<#=str page->path #>" seamless></iframe>
+	</div></div>
+</body>
+</html>
+<# } #>
+

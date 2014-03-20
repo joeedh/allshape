@@ -179,3 +179,65 @@ class ToggleSelectObjOp extends SelectObjAbstract {
     }
   }
 }
+
+class ObjectParentOp extends ToolOp {
+  constructor() {
+    ToolOp.call(this, "set_parent", "Set Parent");
+    
+    this.is_modal = false;
+    
+    this.inputs = {
+      parent : new DataRefProperty(undefined, [DataTypes.OBJECT], "parent", "Parent", "Object to use as parent"),
+      objects : new CollectionProperty(undefined, [ASObject], "objects", "Children", "Child objects"),
+      preserve_child_space : new BoolProperty(true, "preserve_child_space", "Keep Child Space", "Preserve child transformation space")
+    };
+    
+    this.outputs = {
+    };
+  }
+  
+  can_call(Context ctx) {
+    static empty_ret = new GArray([]);
+    
+    var objs = this.inputs.objects.data != undefined ? list(this.inputs.objects.data) : empty_ret;
+    return this.inputs.parent.data != undefined && objs.length > 0;
+  }
+  
+  default_inputs(Context ctx, ToolGetDefaultFunc getdefault) {
+    if (ctx.object == undefined) return;
+    
+    this.inputs.parent.set_data(ctx.object);
+    var obset = new set(ctx.scene.objects.selected);
+    
+    if (obset.has(ctx.object))
+      obset.remove(ctx.object);
+    
+    this.inputs.preserve_child_space.set_data(getdefault("preserve_child_space", true, this.inputs.preserve_child_space));
+    this.inputs.objects.set_data(new DataRefList(obset));
+  }
+  
+  exec(ToolContext ctx) {
+    console.log("in object parent exec", this);
+    var ob = this.inputs.parent.get_block(ctx);
+    var scene = ctx.scene;
+    
+    var i = 0;
+    for (var ob2 in this.inputs.objects) {
+      if (i == 10) break;
+      console.log("setting parent " + ob.lib_id + " for " + ob2.lib_id)
+      console.log(ob2.parent);
+      
+      if (ob2 == ob) {
+        console.trace();
+        console.log("WARNING: bad input in ObjectParentOp.exec()");
+        i++;
+        continue;
+      }
+      
+      if (i == 0)
+        ob2.set_parent(scene, ob, this.inputs.preserve_child_space.data);
+      i++;
+      
+    }
+  }
+}

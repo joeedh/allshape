@@ -1353,7 +1353,7 @@ def replace_instanceof(result, typespace):
       p = p.parent
     
     if p != None and type(p) == FunctionNode and p.name == name:
-      print("ignoring %s implementation in instaneof replacement"%name);
+      #sys.stderr.write("ignoring %s implementation in instaneof replacement\n"%name);
       return
       
     if node.op != "instanceof": return
@@ -1368,7 +1368,7 @@ def replace_instanceof(result, typespace):
     
   traverse(result, BinOpNode, visiti)
   
-  print("\n")
+  #print("\n")
 
 def process_docstrings(result, typespace):
   dprop = glob.g_docstring_propname

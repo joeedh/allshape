@@ -91,6 +91,13 @@ class MeshEditor extends View3DEditor {
     }
   }
   
+  on_tick(ctx) {
+    this.ctx = ctx;
+    this.mesh = ctx.mesh;
+    this.object = ctx.object;
+    this.selectmode = ctx.view3d.selectmode;
+  }
+  
   draw_object(gl, view3d, object, is_active)
   {
     this.ctx = new Context();
@@ -139,7 +146,11 @@ class MeshEditor extends View3DEditor {
       //this.view3d.test_render_selbuf(1|2|8)
     } else {
       this.mesh.flag &= ~MeshFlags.USE_MAP_CO;
-      render_mesh(gl, view3d, object.data, view3d.drawmats, !view3d.use_backbuf_sel); 
+      if (object.csg) {
+        render_mesh_elements(gl, view3d, object.data, view3d.drawmats, 1.0, true);
+      } else {
+        render_mesh(gl, view3d, object.data, view3d.drawmats, !view3d.use_backbuf_sel); 
+      }
     }
   }
 
@@ -190,14 +201,14 @@ class MeshEditor extends View3DEditor {
     col.pos = [0,0] 
     col.size = [view3d.size[0], 35];
     
-    col.prop("object.use_subsurf");
-    
     //col.add(new UIMenuLabel(this.ctx, "File", undefined, gen_file_menu));
-    col.label("  |  Select Mode:  ");
+    col.label("  Select Mode:  ");
     col.prop("view3d.selectmode");
     col.prop("view3d.use_backbuf_sel");
     col.label("  |   ");
     col.prop("view3d.zoomfac");
+    col.label("  |   ");
+    col.prop("object.use_subsurf");
     
     view3d.rows.push(col);
     view3d.add(col);

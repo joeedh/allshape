@@ -1,0 +1,30 @@
+	<meta />
+	<!--<meta http-equiv="X-UA-Compatible" content="IE=10" />-->
+  <script type="javascript" src="/js/jquery.js"></script>
+  <link rel="stylesheet" href="/css/style.css"></link>
+	<link rel="profile" href="http://gmpg.org/xfn/11" />
+	<link rel="pingback" href="" />
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <style type="text/css">
+  .vertical { background-color: yellow; }
+  .horizontal { display: inline; background-color: aqua; }
+  </style>
+</head>
+
+<body>
+  <div class="menu site-navigation main-navigation">
+    <ul>
+      <li><a href="/getpage?page=homepage">AllShape!</a></li>
+      <# {
+        DocPage *page;
+        int i, ilen;
+        PG_EnsureDB();
+        
+        ilen = array_len(site_db.pages);
+        for (i=0; i<ilen; i++) {
+          page = site_db.pages+i;
+          #><li><a href="/getpage?page=<#=str page->path #>"><#=str page->title #></a></li><#
+        }
+      } #>
+    </ul>
+  </div>

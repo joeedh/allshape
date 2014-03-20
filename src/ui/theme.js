@@ -10,8 +10,10 @@ function darken(c, m) {
 
 var colors3d = {
   ActiveObject : [0.8, 0.6, 0.3, 1.0],
-  Selection : [0.9, 0.6, 0.2, 1.0]
+  Selection : [0.7, 0.4, 0.1, 1.0]
 };
+
+var view3d_bg = [0.6, 0.6, 0.9, 1.0];
 
 var lighten = darken
 var uicolors = {

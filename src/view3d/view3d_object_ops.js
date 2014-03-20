@@ -59,8 +59,19 @@ class ObjectEditor extends View3DEditor {
   on_active(view3d) {
   }
   
+  on_tick(ctx) {
+    this.object = ctx.object;
+  }
+  
   draw_object(gl, view3d, object, is_active) {
-    view3d.draw_object_basic(gl, object, is_active);
+    this.object = object;
+    var drawmode = gl.TRIANGELS;
+    
+    if (object.csg) {
+      drawmode = gl.LINES;
+    }
+    
+    view3d.draw_object_basic(gl, object, drawmode, is_active);
   }
   
   build_sidebar1(view3d)
@@ -68,15 +79,16 @@ class ObjectEditor extends View3DEditor {
     var ctx = new Context();
     var row = new RowFrame(ctx);
     
-    row.size = [148, view3d.size[1]-50]
+    row.size = [148, view3d.size[1]-34-30]
     row.draw_background = true
     row.rcorner = 100.0
-    row.pos = [0, 28]
+    row.pos = [0, 33]
     
     view3d.cols.push(row);
     view3d.add(row);
     
     row.toolop("screen.area_split_tool()", PackFlags.INHERIT_WIDTH);
+    row.toolop("object.set_parent()", PackFlags.INHERIT_WIDTH);
     row.label("");
     
     row.label("Last Tool:", false)
@@ -90,16 +102,19 @@ class ObjectEditor extends View3DEditor {
     col.draw_background = true;
     col.rcorner = 100.0
     col.pos = [0,0]
-    col.size = [view3d.size[0], 30];
-    
-    col.prop("object.use_subsurf");
+    col.size = [view3d.size[0], 35];
     
     //col.add(new UIMenuLabel(this.ctx, "File", undefined, gen_file_menu));
-    col.label("  |  Select Mode:  ");
+    col.label(" Select Mode:  ");
     col.prop("view3d.selectmode");
     col.prop("view3d.use_backbuf_sel");
-    col.label("  |   ");
+    col.label("  |  ");
     col.prop("view3d.zoomfac");
+    
+    col.label("  |  ");
+    col.prop("object.use_subsurf");
+    col.prop("object.use_csg");
+    col.prop("object.csg_mode");
     
     view3d.rows.push(col);
     view3d.add(col);

@@ -92,7 +92,8 @@ class Scene extends DataBlock {
   recover_dag_graph(clear_existing=false) {
     console.log("Recovering lost scenegraph relationships...");
 
-    if (clear_existing) {
+    //just clear every time
+    if (1) { //clear_existing || this.graph == undefined) {
       if (this.graph != undefined)
         this.graph.unlink();
       
@@ -100,17 +101,25 @@ class Scene extends DataBlock {
     }
     
     for (var ob in this.objects) {
+      if (ob == undefined) {
+        console.log("error in recover_dag_graph()");
+        continue;
+      }
+      
       var dag_node = new ASObject().dag_node;
+      
       ob.dag_node = dag_node;
-      dag_node.owner = ob;
+      dag_node.set_owner(ob);
       
       this.graph.add(ob);
     }
     
     for (var ob in this.objects) {
       if (ob.parent != undefined) {
+        var parent = ob.parent;
+        
         ob.parent = undefined;
-        ob.set_parent(this, ob.parent, false);
+        ob.set_parent(this, parent, false);
       }
     }
   }

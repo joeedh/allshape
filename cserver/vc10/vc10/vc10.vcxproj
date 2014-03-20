@@ -1,0 +1,126 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{189A026D-84AE-4C5C-8A74-468C0F6DDF93}</ProjectGuid>
+    <RootNamespace>vc10</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <CustomBuildBeforeTargets>BuildCompileTraverse</CustomBuildBeforeTargets>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>C:\dev\blender\lib\windows\pthreads\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>C:\dev\blender\lib\windows\pthreads\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>pthreadVSE2.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+    <CustomBuildStep>
+      <Command>cd c:\dev\allshape\cserver &amp;&amp; python cs_build.py msvc_mode</Command>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Message>Generating server pages...</Message>
+      <Outputs>c:\dev\allshape\cserver\build\pages.c</Outputs>
+      <Inputs>editor.ccs;editor_api.css;index.ccs;getpage.ccs;header.ccs;footer.ccs%(Inputs)</Inputs>
+    </CustomBuildStep>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\build\pages.c" />
+    <ClCompile Include="..\..\intern\boilerplate.c" />
+    <ClCompile Include="..\..\intern\fileutils.c" />
+    <ClCompile Include="..\..\intern\hashtable.c" />
+    <ClCompile Include="..\..\intern\memalloc.c" />
+    <ClCompile Include="..\..\intern\poolalloc.c" />
+    <ClCompile Include="..\..\intern\requestlib.c" />
+    <ClCompile Include="..\..\intern\server_main.c" />
+    <ClCompile Include="..\..\intern\site.c" />
+    <ClCompile Include="..\..\intern\strutils.c" />
+    <ClCompile Include="..\..\intern\thread.c" />
+    <ClCompile Include="..\..\intern\utils.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\intern\boilerplate.h" />
+    <ClInclude Include="..\..\intern\fileutils.h" />
+    <ClInclude Include="..\..\intern\hashtable.h" />
+    <ClInclude Include="..\..\intern\memalloc.h" />
+    <ClInclude Include="..\..\intern\poolalloc.h" />
+    <ClInclude Include="..\..\intern\requestlib.h" />
+    <ClInclude Include="..\..\intern\site_boilerplate.h" />
+    <ClInclude Include="..\..\intern\sock.h" />
+    <ClInclude Include="..\..\intern\strutils.h" />
+    <ClInclude Include="..\..\intern\thread.h" />
+    <ClInclude Include="..\..\intern\types.h" />
+    <ClInclude Include="..\..\intern\utils.h" />
+    <ClInclude Include="..\..\site_config.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\build_local.py" />
+    <None Include="..\..\cs_build.py" />
+    <None Include="..\..\cs_sources.py" />
+    <None Include="..\..\site\admin\admin.ccs" />
+    <None Include="..\..\site\admin\editor.ccs" />
+    <None Include="..\..\site\admin\editor_api.ccs" />
+    <None Include="..\..\site\admin\main.ccs" />
+    <None Include="..\..\site\admin\media.ccs" />
+    <None Include="..\..\site\admin\media_upload.ccs" />
+    <None Include="..\..\site\admin\pages.ccs" />
+    <None Include="..\..\site\footer.ccs" />
+    <None Include="..\..\site\getpage.ccs" />
+    <None Include="..\..\site\header.ccs">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="..\..\site\index.ccs" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
