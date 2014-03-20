@@ -92,7 +92,7 @@ def open_db(path):
   
   path = db_path + path
   db = shelve.open(path)
-  open_dbs[id(db)] = path
+  open_dbs[id(db)] = db
   return db
   
 def close_db(db):

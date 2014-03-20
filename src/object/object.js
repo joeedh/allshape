@@ -9,8 +9,15 @@ var RecalcFlags = {
 var ObFlags = {
   //1 is reserved for BlockFlags.SELECT 
   SUBSURF: 2,
-  DISP_BB: 4
+  DISP_BB: 4,
+  CSG:     8,
 };
+
+var CsgModes = {
+  INTERSECT : 0,
+  SUBTRACT  : 1,
+  UNION     : 2
+}
 
 var RotTypes = {EULER: 0};
 var BBDispTypes = {BOX: 1, SPHERE: 2, CYLINDER: 3, CONE: 4, VIEWCIRCLE: 5};
@@ -28,6 +35,8 @@ class ASObject extends DagNode {
     
     this.scene = undefined : Scene;
     this.recalcflag = 0;
+    
+    this.csg_mode = CsgModes.SUBTRACT;
     
     this.dag_node.add_sockets("i", [
       new DepSocket("parent", this),
@@ -111,6 +120,17 @@ class ASObject extends DagNode {
     return steps;
   }
 
+  get csg() {
+    return !!(this.flag & ObFlags.CSG);
+  }
+  
+  set csg(val) {
+    if (val)
+      this.flag |= ObFlags.CSG;
+    else 
+      this.flag &= ~ObFlags.CSG;
+  }
+  
   get subsurf() {
     return !!(this.flag & ObFlags.SUBSURF);
   }
@@ -124,7 +144,7 @@ class ASObject extends DagNode {
   
   dag_execute() {
     var mat = this.matrix = this.basic_matrix();
-    console.log("executing ASOBject[" +this.lib_id+"] dag_execute");
+    //console.log("executing ASOBject[" +this.lib_id+"] dag_execute");
     
     if (this.parent != undefined) {
       mat.multiply(this.parentinv);
@@ -272,5 +292,6 @@ ASObject.STRUCT = STRUCT.inherit(ASObject, DataBlock) + """
   bb_display  : int;
   scene       : dataref(Scene);
   ss_steps    : int;
+  csg_mode    : int;
 }
 """;

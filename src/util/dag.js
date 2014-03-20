@@ -147,7 +147,7 @@ class DagNodeData {
     reader(nd);
     
     var ins = nd.ins, outs = nd.outs;
-    nd.ins = new GArray(nd.ins); nd.outs = new GArray(nd.outs);
+    nd.ins = new GArray(); nd.outs = new GArray();
     
     nd.add_sockets("i", ins);
     nd.add_sockets("o", outs);
@@ -202,8 +202,9 @@ class DagNode extends DataBlock {
           if (n2 != n) {
             flush(n2);
           } else {
+            /*
             console.log("yeek in dag_update.flush");
-            console.log("----=-->", node, n, e, e.opposite(o));
+            console.log("----=-->", node, n, e, e.opposite(o));*/
           }
         }
       }

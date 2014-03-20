@@ -92,7 +92,8 @@ class Scene extends DataBlock {
   recover_dag_graph(clear_existing=false) {
     console.log("Recovering lost scenegraph relationships...");
 
-    if (clear_existing || this.graph == undefined) {
+    //just clear every time
+    if (1) { //clear_existing || this.graph == undefined) {
       if (this.graph != undefined)
         this.graph.unlink();
       

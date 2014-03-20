@@ -14,6 +14,19 @@ selectmode_enum.ui_value_names = {
   OBJECT : "Object"
  };
 
+var csg_mode_enum = new EnumProperty("SUBTRACT",
+  {
+    SUBTRACT : CsgModes.SUBTRACT,
+    INTERSECT : CsgModes.INTERSECT,
+    UNION : CsgModes.UNION
+  },
+  "csg_mode", "CSG Mode", "CSG Mode");
+csg_mode_enum.ui_value_names = {
+    SUBTRACT : "Subtract",
+    INTERSECT : "Intersect",
+    UNION : "Union"
+}
+
 function api_define_view3d() {
   var selmode = selectmode_enum.copy();
   
@@ -77,6 +90,7 @@ function api_define_mesh() {
                                             "Number of triangles in this mesh", 
                                             [0, 60000000], [0, 60000000]);
 
+                                            
   MeshStruct = new DataStruct([
     new DataPath(totvert, "totvert", "verts.length", true),
     new DataPath(totedge, "totedge", "edges.length", true),
@@ -102,10 +116,18 @@ function api_define_object() {
   
   var name = new StringProperty("", "name", "name", "Name", TPropFlags.LABEL);
   var use_subsurf = new BoolProperty(false, "use_subsurf", "Use Subsurf");
+  var use_csg = new BoolProperty(false, "use_csg", "Enable CSG")
+  var csg_mode = csg_mode_enum.copy();
+  
+  csg_mode.update = function() {
+    this.ctx.object.csg_mode = this.values[this.data];
+  }
   
   var ObjectStruct = new DataStruct([
     new DataPath(name, "name", "name", true),
-    new DataPath(use_subsurf, "use_subsurf", "subsurf", true)
+    new DataPath(use_subsurf, "use_subsurf", "subsurf", true),
+    new DataPath(use_csg, "use_csg", "csg", true),
+    new DataPath(csg_mode, "csg_mode", "csg_mode", true)
   ]);
   
   return ObjectStruct;
