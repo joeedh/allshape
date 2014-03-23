@@ -440,7 +440,7 @@ def build_target(files):
         else:
           ret = p[0].returncode
           if failed_ret(ret):
-            failed_fles.append(p[1])
+            failed_files.append(p[1])
           
       procs = newprocs
       time.sleep(0.75)

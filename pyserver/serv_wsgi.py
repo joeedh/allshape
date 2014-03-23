@@ -133,7 +133,7 @@ class WSGIServerBridge:
   def do_request(self):
     if self.has_handler(self.path):
       self.exec_handler(self.path, self.method)
-    elif self.path in ["", "/"]:
+    elif self.path == "/3dsite": #in ["", "/"]:
       file = open((doc_root+"/src/html/main.html").replace("/", os.path.sep), "rb")
       
       body = file.read()
