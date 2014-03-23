@@ -232,11 +232,19 @@ function DataArrayRem(dst, field, obj) {
 
 function SceneObjRem(scene, obj) {
   function rem() {
+    /*unparent*/
+    for (var e in obj.dag_node.inmap["parent"]) {
+      var node = e.opposite(obj).node;
+      
+      if (node instanceof ASObject)
+        node.unparent(scene);
+    }
+    
     scene.objects.remove(obj);
     scene.graph.remove(obj);
     
     if (scene.active == obj)
-      scene.active = undefined;
+      scene.active = scene.objects.length > 0 ? scene.objects[0] : undefined;
     
     if (scene.selection.has(obj))
       scene.selection.remove(obj);

@@ -241,3 +241,46 @@ class ObjectParentOp extends ToolOp {
     }
   }
 }
+
+//first test of datalib user system!
+//note that, by necessity this will
+//serialize the entire app state
+//for undo
+class ObjectDeleteOp extends ToolOp {
+  constructor() {
+    ToolOp.call(this, "object_delete", "Delete Object");
+    
+    this.is_modal = false;
+    
+    this.inputs = {
+      objects : new CollectionProperty(undefined, [ASObject], "objects", "Objects", "Objects to delete")
+    }
+    
+    this.outputs = {};
+  }
+  
+  can_call(ctx) {
+    console.log("selmode: ", ctx.view3d.selectmode, "ret: ", ctx.view3d.selectmode == EditModes.OBJECT);
+    return ctx.view3d.selectmode == EditModes.OBJECT;
+  }
+  
+  default_inputs(Context ctx, ToolGetDefaultFunc get_default) {  
+    console.log("yay, default input!");
+    this.inputs.objects.ctx = ctx;
+    this.inputs.objects.set_data(new DataRefList(ctx.scene.objects.selected));
+  }
+  
+  exec(ToolContext ctx) {
+    if (this.inputs.objects.data == undefined) {
+      console.trace();
+      console.log("warning: deleteobjectop.exec called with empty input");
+      return;
+    }
+    
+    console.log(list(this.inputs.objects.data));
+    for (var ob in this.inputs.objects.data) {
+      console.log("destroying ob ", ob.lib_id);
+      ctx.datalib.kill_datablock(ob);
+    }
+  }
+}

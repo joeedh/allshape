@@ -390,11 +390,20 @@ function api_define_ops() {
       
       return new MeshToolOp(new BridgeOp(args["edges"]));
     },
+    "mesh.normals_outside" : function(ctx, args) {
+      if (!("faces" in args))
+        throw TinyParserError;
+      
+      return new MeshToolOp(new OutsideNormalsOp(args["faces"]));
+    },
     "view3d.circle_select" : function(ctx, args) {
       return new CircleSelectOp(ctx.view3d.selectmode);
     },
     "appstate.open" : function(ctx, args) {
       return new FileOpenOp();
+    },
+    "appstate.export_stl" : function(ctx, args) {
+      return new FileSaveSTLOp();
     },
     "appstate.save" : function(ctx, args) {
       return new FileSaveOp();
@@ -430,6 +439,14 @@ function api_define_ops() {
     "object.set_parent": function(ctx, args) {
       //XXX someday, will need to support passing in a list of objects too
       var op = new ObjectParentOp();
+      op.flag |= ToolFlags.USE_DEFAULT_INPUT;
+      
+      return op;
+    },
+    
+    //XXX someday, will need to support passing in a list of objects too
+    "object.delete_selected" : function(ctx, args) {
+      var op = new ObjectDeleteOp();
       op.flag |= ToolFlags.USE_DEFAULT_INPUT;
       
       return op;

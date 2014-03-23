@@ -943,6 +943,27 @@ class ExtrudeAllOp extends MeshOp {
   }
 }
 
+//XXX need to add option to only consider selected faces
+class OutsideNormalsOp extends MeshOp {
+  constructor(faceiter) {
+    MeshOp.call(this);
+    
+    this.uiname = "Fix Normals"
+    this.name = "fix_normals";
+    
+    this.inputs = {
+      faces: new CollectionProperty(undefined, [Face], "faces", "Faces", ""),
+    }
+    
+    this.inputs.faces.set_data(faceiter);
+  }
+
+  exec(op, mesh) {
+    mesh.api.consistent_windings();
+    mesh.api.recalc_normals();
+  }
+}
+
 class FlipNormalsOp extends MeshOp {
   constructor(faceiter) {
     MeshOp.call(this);

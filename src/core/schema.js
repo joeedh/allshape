@@ -1154,13 +1154,14 @@ function JSOB(obj) {
   return obj;
 }
 
-function StaticString(s, maxlength) {
-  if (s.length > maxlength)
-    s = s.slice(0, maxlength);
-    
-  String.call(this, s);
+class StaticString extends String {
+  constructor(s, maxlength) {
+    if (s.length > maxlength)
+      s = s.slice(0, maxlength);
+      
+    String.call(this, s);
+  }
 }
-inherit(StaticString, String);
 
 var _basic_types = {
   "StaticString" : "static_string",
@@ -1174,11 +1175,12 @@ var _basic_types = {
   "string" : "string",
 };
 
-function SchemaError(msg) {
-  this.msg = msg;
-  Error.call(this, msg);
+class SchemaError extends Error {
+  constructor(msg) {
+    Error.call(this, msg);
+    this.msg = msg;
+  }
 }
-inherit(SchemaError, Error);
 
 //calc_subschema is optional, defaults to false
 function gen_schema(obj, calc_subschema) {

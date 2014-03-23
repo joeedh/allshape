@@ -223,7 +223,7 @@ class ASObject extends DagNode {
   }
 
   unparent(scene) {
-    scene.graph.socket_clear(this, "parent", "i");
+    scene.graph.socket_clear_str(this, "parent", "i");
     
     if (this.parent != undefined) {
       this.parent.lib_remuser(this, "parent");

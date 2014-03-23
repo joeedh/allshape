@@ -59,6 +59,7 @@ def fetch_file(fileid):
   cur, con = mysql_connect()
   
   try:
+    print("--------------->", fileid);
     qstr = sql_selectall("filedata", ["fileid"], [fileid], [sq.int])
   except SQLParamError:
     do_param_error("fetch_file")

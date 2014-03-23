@@ -21,6 +21,17 @@ class ObjectEditor extends View3DEditor {
     k.add_tool(new KeyHandler("A", [], "Select All"), 
                "object.toggle_select_all()");
                
+    k.add(new KeyHandler("X", [], "Delete Menu"), new FuncKeyHandler(function (ctx) {
+      console.log("delete menu");
+      ctx.view3d.editor.delete_menu(new MyMouseEvent(ctx.keymap_mpos[0], ctx.keymap_mpos[1], 0));
+    }));
+    k.add(new KeyHandler("Delete", [], "Delete Menu"), new FuncKeyHandler(function (ctx) {
+      ctx.view3d.editor.delete_menu(new MyMouseEvent(ctx.keymap_mpos[0], ctx.keymap_mpos[1], 0));
+    }));
+    
+    k.add_tool(new KeyHandler("P", ["CTRL"], "Parent"), 
+               "object.set_parent()");
+    
     /*k.add_tool(new KeyHandler("S", [], "Scale"), 
                "object.scale()");
     k.add_tool(new KeyHandler("R", [], "Rotate"), 
@@ -30,6 +41,22 @@ class ObjectEditor extends View3DEditor {
                "object.duplicate()");
   }
   
+  delete_menu(event) {
+    var view3d = this.view3d;
+    var ctx = new Context();
+    
+    console.log("object delete_menu");
+    var ops = [
+      "object.delete_selected()"
+    ];
+    
+    var menu = view3d.toolop_menu(ctx, "Delete", ops);
+    menu.close_on_right = true
+    menu.swap_mouse_button = 2;
+    
+    view3d.call_menu(menu, view3d, [event.x, event.y]);
+  }
+
   static fromSTRUCT(reader) {
     var obj = new ObjectEditor();
     reader(obj);
@@ -191,8 +218,6 @@ class ObjectEditor extends View3DEditor {
   on_mousemove(event) {
   }
   do_alt_select(event, mpos, view3d) {
-  }
-  delete_menu(event) {
   }
 }
 

@@ -108,15 +108,22 @@ function _pack_rec(type, data) { //data is optional
 /*interface definition*/
 var _static_byte = new Uint8Array([0, 0, 0, 0, 0, 0, 0, 0]);
 var _static_view = new DataView(_static_byte.buffer);
-function pack_int(Array<byte> data, int i)
+function pack_int(Array<byte> data, int i, lendian=false)
 {
   if (_rec_pack) {
     _pack_rec(SchmTypes.INT);
   }
   
   _static_view.setInt32(0, i);
-  for (var j=0; j<4; j++) {
-    data.push(_static_byte[j]);
+  
+  if (lendian) {
+    for (var j=3; j>=0; j--) {
+      data.push(_static_byte[j]);
+    }
+  } else {
+    for (var j=0; j<4; j++) {
+      data.push(_static_byte[j]);
+    }
   }
 }
 
@@ -129,39 +136,51 @@ function pack_byte(Array<byte> data, byte i)
   data.push(i);
 }
 
-function pack_float(Array<byte> data, float f)
+function pack_float(Array<byte> data, float f, Boolean lendian=false)
 {
   if (_rec_pack) {
     _pack_rec(SchmTypes.FLOAT);
   }
   
   _static_view.setFloat32(0, f);
-  for (var j=0; j<4; j++) {
-    data.push(_static_byte[j]);
+  if (lendian) {
+    for (var j=3; j>=0; j--) {
+      data.push(_static_byte[j]);
+    }
+  } else {
+    for (var j=0; j<4; j++) {
+      data.push(_static_byte[j]);
+    }
   }
 }
 
-function pack_double(Array<byte> data, float f)
+function pack_double(Array<byte> data, float f, Boolean lendian)
 {
   if (_rec_pack) {
     _pack_rec(SchmTypes.DOUBLE);
   }
   
   _static_view.setFloat64(0, f);
-  for (var j=0; j<8; j++) {
-    data.push(_static_byte[j]);
+  if (lendian) {
+    for (var j=7; j>=0; j--) {
+      data.push(_static_byte[j]);
+    }
+  } else {
+    for (var j=0; j<8; j++) {
+      data.push(_static_byte[j]);
+    }
   }
 }
 
-function pack_vec2(Array<byte> data, Vector2 vec)
+function pack_vec2(Array<byte> data, Vector2 vec, Boolean lendian=false)
 {
   if (_rec_pack) {
     _pack_rec(SchmTypes.VEC2);
     push_pack_stack();
   }
   
-  pack_float(data, vec[0]);
-  pack_float(data, vec[1]);
+  pack_float(data, vec[0], lendian);
+  pack_float(data, vec[1], lendian);
   
   //discard pack records from composite pack
   if (_rec_pack) {
@@ -169,16 +188,16 @@ function pack_vec2(Array<byte> data, Vector2 vec)
   }
 }
 
-function pack_vec3(Array<byte> data, Vector3 vec)
+function pack_vec3(Array<byte> data, Vector3 vec, lendian=false)
 {
   if (_rec_pack) {
     _pack_rec(SchmTypes.VEC3);
     push_pack_stack();
   }
   
-  pack_float(data, vec[0]);
-  pack_float(data, vec[1]);
-  pack_float(data, vec[2]);
+  pack_float(data, vec[0], lendian);
+  pack_float(data, vec[1], lendian);
+  pack_float(data, vec[2], lendian);
   
   //discard pack records from composite pack
   if (_rec_pack) {
@@ -186,17 +205,17 @@ function pack_vec3(Array<byte> data, Vector3 vec)
   }
 }
 
-function pack_vec4(Array<byte> data, Vector4 vec)
+function pack_vec4(Array<byte> data, Vector4 vec, lendian=false)
 {
   if (_rec_pack) {
     _pack_rec(SchmTypes.VEC4);
     push_pack_stack();
   }
   
-  pack_float(data, vec[0]);
-  pack_float(data, vec[1]);
-  pack_float(data, vec[2]);
-  pack_float(data, vec[3]);
+  pack_float(data, vec[0], lendian);
+  pack_float(data, vec[1], lendian);
+  pack_float(data, vec[2], lendian);
+  pack_float(data, vec[3], lendian);
   
   //discard pack records from composite pack
   if (_rec_pack) {
@@ -205,17 +224,17 @@ function pack_vec4(Array<byte> data, Vector4 vec)
 }
 
 
-function pack_quat(Array<byte> data, Quat vec)
+function pack_quat(Array<byte> data, Quat vec, lendian=false)
 {
   if (_rec_pack) {
     _pack_rec(SchmTypes.VEC4);
     push_pack_stack();
   }
   
-  pack_float(data, vec[0]);
-  pack_float(data, vec[1]);
-  pack_float(data, vec[2]);
-  pack_float(data, vec[3]);
+  pack_float(data, vec[0], lendian);
+  pack_float(data, vec[1], lendian);
+  pack_float(data, vec[2], lendian);
+  pack_float(data, vec[3], lendian);
   
   //discard pack records from composite pack
   if (_rec_pack) {
@@ -223,16 +242,16 @@ function pack_quat(Array<byte> data, Quat vec)
   }
 }
 
-function pack_mat4(Array<byte> data, Matrix4 mat)
+function pack_mat4(Array<byte> data, Matrix4 mat, lendian=false)
 {
   var m = mat.getAsArray();
   
   for (var i=0; i<16; i++) {
-    pack_float(data, m[i]);
+    pack_float(data, m[i], lendian);
   }
 }
 
-function pack_dataref(Array<byte> data, DataBlock b)
+function pack_dataref(Array<byte> data, DataBlock b, lendian=false)
 {
   if (_rec_pack) {
     _pack_rec(SchmTypes.DATAREF);
@@ -240,15 +259,15 @@ function pack_dataref(Array<byte> data, DataBlock b)
   }
   
   if (b != undefined) {
-    pack_int(data, b.lib_id);
+    pack_int(data, b.lib_id, lendian);
     
     if (b.lib_lib != undefined)
-      pack_int(data, b.lib_lib.id);
+      pack_int(data, b.lib_lib.id, lendian);
     else
-      pack_int(data, -1);
+      pack_int(data, -1, lendian);
   } else {
-    pack_int(data, -1);
-    pack_int(data, -1);
+    pack_int(data, -1, lendian);
+    pack_int(data, -1, lendian);
   }
   
   //discard pack records from composite pack

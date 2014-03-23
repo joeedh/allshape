@@ -52,7 +52,8 @@ for (var k in DataTypes) {
 //use by subclasses.  
 var BlockFlags = {
   SELECT : 1,
-  FAKE_USER : (1<<16)
+  FAKE_USER : (1<<16),
+  DELETED : (1<<17)
 };
 
 //this function shouldn't be manual; need to automate it
@@ -188,6 +189,25 @@ class DataLib {
   
   get meshes() : DataList<Mesh> {
     return this.get_datalist(DataTypes.MESH);
+  }
+  
+  //tries to completely kill a datablock,
+  //clearing all references to it
+  kill_datablock(DataBlock block) {
+    block.unlink();
+    
+    var list = this.datalists.get(block.lib_type);
+    list.remove(block);
+    block.lib_flag |= BlockFlags.DELETED;
+    
+    //paranoid check
+    if (RELEASE) {
+      for (var sce in this.scenes) {
+        if (block in sce.objects) {
+          sce.remove(block);
+        }
+      }
+    }
   }
   
   search(int type, String prefix) : GArray<DataBlock> {
@@ -460,6 +480,10 @@ class DataBlock {
       }
       
       this.user_rem(users[i]);
+    }
+    
+    if (this.lib_refs != 0) {
+      console.log("Ref count error when deleting a datablock!", this.lib_refs,  this);
     }
   }
 }

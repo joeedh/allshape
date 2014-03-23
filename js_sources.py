@@ -53,6 +53,7 @@ js_targets = {"app.js" : [
 	"src/mesh/meshtools_loop.js",
 	"src/mesh/meshtools_create.js",
 
+  "src/exporters/export_stl.js",
   "src/view3d/transform.js",
 	"src/view3d/trans_ops.js",
 	"src/view3d/trans_ops_special.js",

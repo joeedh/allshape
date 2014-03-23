@@ -1,22 +1,6 @@
 "use strict";
 
-function ContextCreateOp(vertiter) {
-  MeshOp.call(this);
-  
-  this.uiname = "Create Face"
-  this.name = "ContextCreate";
-  
-  //this.flag |= ToolFlags.USE_PARTIAL_UNDO;
-    
-  this.inputs = {
-    verts: new CollectionProperty(undefined, [Vertex], "verts", "Vertices", "")
-  }
- 
-  this.inputs.verts.set_data(vertiter);
-}
-inherit(ContextCreateOp, MeshOp);
-
-function do_hull_points(vset, mesh) {
+function do_hull_points(set<Vertex> vset, Mesh mesh) {
   /*this function creates faces from various
     *simple* geometric cases*/
   
@@ -282,24 +266,41 @@ function do_hull_points(vset, mesh) {
 function do_frame_dill(vset, mesh) {
 }
 
-ContextCreateOp.prototype.exec = function(op, mesh) {
-  var vset = new set(op.inputs.verts);
-  
-  console.log("face creation tool");
-  
-  if (vset.length < 2)
-    return;
-  
-  if (vset.length == 2) {
-    var verts = list(vset);
+class ContextCreateOp extends MeshOp {
+  constructor(vertiter) {
+    MeshOp.call(this);
     
-    var e = mesh.make_edge(verts[0], verts[1]);
-    return;
+    this.uiname = "Create Face"
+    this.name = "ContextCreate";
+    
+    //this.flag |= ToolFlags.USE_PARTIAL_UNDO;
+      
+    this.inputs = {
+      verts: new CollectionProperty(undefined, [Vertex], "verts", "Vertices", "")
+    }
+   
+    this.inputs.verts.set_data(vertiter);
   }
-  
-  if (do_hull_points(vset, mesh))
-    return;
-  
-  if (do_frame_fill(vset, mesh))
-    return;
+
+  exec(op, mesh) {
+    var vset = new set(op.inputs.verts);
+    
+    console.log("face creation tool");
+    
+    if (vset.length < 2)
+      return;
+    
+    if (vset.length == 2) {
+      var verts = list(vset);
+      
+      var e = mesh.make_edge(verts[0], verts[1]);
+      return;
+    }
+    
+    if (do_hull_points(vset, mesh))
+      return;
+    
+    if (do_frame_fill(vset, mesh))
+      return;
+  }
 }

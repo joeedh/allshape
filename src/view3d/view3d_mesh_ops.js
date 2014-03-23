@@ -246,6 +246,8 @@ class MeshEditor extends View3DEditor {
                });
     k.add_tool(new KeyHandler("C", [], "Circle Select"), 
                "view3d.circle_select()");
+    k.add_tool(new KeyHandler("R", ["CTRL"], "Fix Normals"), 
+               "mesh.normals_outside(faces=mesh_selected(f))");
     k.add(new KeyHandler("X", [], "Delete Menu"), new FuncKeyHandler(function (ctx) {
       ctx.view3d.editor.delete_menu(new MyMouseEvent(ctx.keymap_mpos[0], ctx.keymap_mpos[1], 0));
     }));

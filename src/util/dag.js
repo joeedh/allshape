@@ -31,7 +31,7 @@ class DagSocket {
 
   find_node(DagNode node) {
     for (var e in this.edges) {
-      if (e.src == node || e.dst == node) {
+      if (e.src.node == node || e.dst.node == node) {
         return e;
       }
     }
@@ -85,7 +85,7 @@ class DagEdge {
 
   /*grabs the node connected to this edge that isn't src.
     src is optional, defaults to the node opposite to Edge.node*/
-  opposite(Node src) {
+  opposite(DagSocket src) {
     return this.src == src ? this.dst : this.src;
   }
   
@@ -391,12 +391,13 @@ class Dag {
     for (var s in list(node.dag_node.ins)) {
       this.socket_clear(node, s, "i");
     }
+    
     for (var s in list(node.dag_node.outs)) {
       this.socket_clear(node, s, "o");
     }
     
     if (node instanceof DataBlock) {
-      node.lib_remuser(this, "DAG"); //should execute this.nodes.remove(node) itself
+      node.lib_remuser(this, "DAG"); //should execute this.nodes.remove(node) itself?
     } else {
       this.nodes.remove(node);
     }
@@ -435,15 +436,26 @@ class Dag {
     
     this.flag |= DagFlags.SORTDIRTY;
   }
-
-  //socktype must be one of ['i', 'o'], input/output
-  socket_clear(node, sockname, socktype) {
+  
+  socket_clear_str(node, sockname, socktype) {
     var sock;
     
     if (socktype == 'i')
       sock = node.dag_node.inmap[sockname];
     else
       sock = node.dag_node.outmap[sockname];
+      
+    if (sock == undefined) {
+      console.trace();
+      console.log("WARNING: bad socket name ", sockname, " passed to socket_clear_string!", node, sockname, socktype);
+      return;
+    }
+    
+    this.socket_clear(node, sock, socktype);
+  }
+  
+  //socktype must be one of ['i', 'o'], input/output
+  socket_clear(node, sock, socktype) {
       
     for (var e in sock.edges) {
       if (e.killfunc != undefined)

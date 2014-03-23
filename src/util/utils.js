@@ -925,11 +925,12 @@ function is_obj_lit(obj) {
   return false;
 }
 
-function UnitTestError(msg) {
-  Error.call(this, msg);
-  this.msg = msg;
+class UnitTestError extends Error {
+  constructor(msg) {
+    Error.call(this, msg);
+    this.msg = msg;
+  }
 }
-inherit(UnitTestError, Error);
 
 function utest(func) {
   try {

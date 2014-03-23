@@ -946,7 +946,11 @@ class View3DHandler extends Area {
 
   gen_file_menu(ctx, uimenulabel)
   {
-    return toolop_menu(ctx, "", ["appstate.save_as()", "appstate.save()", "appstate.open()"]);
+    return toolop_menu(ctx, "", 
+      ["appstate.export_stl()",
+      "appstate.save_as()", 
+      "appstate.save()", 
+      "appstate.open()"]);
   }
 
   gen_tools_menu(ctx, uimenulabel)
