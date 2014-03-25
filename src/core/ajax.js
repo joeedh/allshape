@@ -63,6 +63,7 @@ function get_endian() {
 
 var little_endian = get_endian()
 
+//this seems suspect
 function str_to_uint8(String str) : Uint8Array
 {
   var uint8 = [];

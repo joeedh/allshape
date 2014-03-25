@@ -8,6 +8,7 @@
 # This module implements an ANSI-C style lexical preprocessor for PLY. 
 # -----------------------------------------------------------------------------
 from __future__ import generators
+import sys
 
 # -----------------------------------------------------------------------------
 # Default preprocessor lexer definitions.   These tokens are enough to get
@@ -291,6 +292,13 @@ class Preprocessor(object):
     # 
     # Remove leading/trailing whitespace tokens from a token list
     # ----------------------------------------------------------------------
+
+    def kill_ws(self,tokens):
+      tokens2 = []
+      for t in tokens:
+        if t.type not in self.t_WS:
+          tokens2.append(t)
+      return tokens2
 
     def tokenstrip(self,tokens):
         i = 0
@@ -607,8 +615,16 @@ class Preprocessor(object):
         enable = True
         iftrigger = False
         ifstack = []
-
-        for x in lines:
+        unrollstack = []
+        
+        nvar = nvl = ntype = nmin = nmax = None
+        
+        xi = -1
+        lines = list(lines)
+        while xi < len(lines)-1:
+            xi += 1
+            x = lines[xi]
+            
             for i,tok in enumerate(x):
                 if tok.type not in self.t_WS: break
             if tok.value == '#':
@@ -664,6 +680,86 @@ class Preprocessor(object):
                             iftrigger = False
                         else:
                             iftrigger = True
+                elif name == 'unroll':
+                  for tok in self.expand_macros(chunk):
+                      yield tok
+                  chunk = []
+                  
+                  print("yay, unroll")
+                  toks = self.kill_ws(x[i+2:])
+                  
+                  print(toks)
+                  if len(toks) < 3:
+                    self.error(self.source,dirtokens[0].lineno,"Bad #unroll")
+                    continue
+                  
+                  if toks[0].type != "CPP_ID":
+                    self.error(self.source,dirtokens[0].lineno,"Bad #unroll, expected ID")
+                    continue
+                  
+                  if toks[1].type != "=":
+                    self.error(self.source,dirtokens[0].lineno,"Bad #unroll, expected '='")
+                    continue
+                    
+                  if toks[2].type != "CPP_INTEGER":
+                    self.error(self.source,dirtokens[0].lineno,"Bad #unroll, expected integer constant")
+                    continue
+                  
+                  if toks[3].type not in ["<", ">"]:
+                    self.error(self.source,dirtokens[0].lineno,"Bad #unroll, expected < or >")
+                    continue
+                  
+                  ntype = toks[3].value
+                  nmin = toks[2]
+                  if toks[4].type == "=":
+                    ntype += "="
+                    nmax = toks[5]
+                  else:
+                    nmax = toks[4]
+                  
+                  nmin = self.expand_macros([nmin])
+                  nmax = self.expand_macros([nmax])
+                  
+                  nmin = int(nmin[0].value)
+                  nmax = int(nmax[0].value)
+                  
+                  nvar = toks[0]
+                  nval = nmin
+                  
+                  self.define("%s %s" % (nvar.value, nval))
+                  unrollstack.append([xi, nvar, nval, ntype, nmin, nmax])
+                elif name == "endroll":
+                  startxi, nvar, nval, ntype, nmin, nmax = unrollstack[-1]
+                  sign = 1 if nmin < nmax else -1
+                  nstop = 0
+                  
+                  if ntype == ">" and not (nval > nmax):
+                    nstop = 1
+                  elif ntype == "<" and not (nval < nmax):
+                    nstop = 1
+                  elif ntype == ">=" and not (nval >= nmax):
+                    nstop = 1
+                  elif ntype == "<=" and not (nval <= nmax):
+                    nstop = 1
+                  
+                  if not nstop:
+                    self.undef([nvar])
+                    self.define("%s %s" % (nvar.value, nval))
+                    
+                    print(nvar.value, "=", nval)
+                    for tok in self.expand_macros(chunk):
+                        yield tok
+                    chunk = []
+
+                    nval += sign
+                    unrollstack[-1][2] = nval
+                    
+                    xi = startxi
+                  else:
+                    self.undef([nvar])
+                    unrollstack.pop(-1)
+                    chunk = []
+                    
                 elif name == 'if':
                     ifstack.append((enable,iftrigger))
                     if enable:

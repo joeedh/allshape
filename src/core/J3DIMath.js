@@ -1421,6 +1421,7 @@ class Vector3 extends Array {
   {
     static _v3nd4_n1 = new Vector3();
     static _v3nd4_n2 = new Vector3();
+    
     _v3nd4_n1.load(v2).sub(v1).normalize();
     _v3nd4_n2.load(v4).sub(v3).normalize();
     
