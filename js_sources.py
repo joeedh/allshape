@@ -10,6 +10,8 @@ js_targets = {"app.js" : [
   "src/core/startup_file.js",
 	"src/core/webgl-debug.js",
 	"src/core/webgl-utils.js",
+  "src/util/base_vector.js",
+  "src/util/vector.js",
 	"src/core/J3DIMath.js",
 	"src/core/J3DI.js",
 	"src/util/utils.js",

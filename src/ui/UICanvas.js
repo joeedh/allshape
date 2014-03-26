@@ -103,9 +103,15 @@ class TriList {
   }
   
   line_strip(lines, colors, texcos, width=2.0, half=false) {//width, width are optional
+    static black = new Vector4([0.0, 0.0, 0.0, 1.0]);
+    
     for (var i =0; i<lines.length; i++) {
+      var lc1 = colors[i][0], lc2 = colors[i][1];
+      
       if (lines[i][0].length == 2) lines[i][0].push(0);
       if (lines[i][1].length == 2) lines[i][1].push(0);
+      if (lc1 == undefined) lc1 = black;
+      if (lc2 == undefined) lc2 = black;
       
       var v1 = _trilist_v5.load(lines[i][0])
       var v2 = _trilist_v6.load(lines[i][1])
@@ -176,8 +182,8 @@ class TriList {
       v3.load(lines[i][0]);
       v3.add(n2);
       
-      var c1 = _trilist_c1.load(colors[i][0]); var c2 = _trilist_c2.load(colors[i][1]);
-      var c3 = _trilist_c3.load(colors[i][1]); var c4 = _trilist_c4.load(colors[i][0]);
+      var c1 = _trilist_c1.load(lc1); var c2 = _trilist_c2.load(lc2);
+      var c3 = _trilist_c3.load(lc2); var c4 = _trilist_c4.load(lc1);
       
       c3[3] = 0.0; c4[3] = 0.0;
       n1.mulScalar(2.0);

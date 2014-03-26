@@ -681,85 +681,86 @@ class Preprocessor(object):
                         else:
                             iftrigger = True
                 elif name == 'unroll':
-                  for tok in self.expand_macros(chunk):
-                      yield tok
-                  chunk = []
-                  
-                  print("yay, unroll")
-                  toks = self.kill_ws(x[i+2:])
-                  
-                  print(toks)
-                  if len(toks) < 3:
-                    self.error(self.source,dirtokens[0].lineno,"Bad #unroll")
-                    continue
-                  
-                  if toks[0].type != "CPP_ID":
-                    self.error(self.source,dirtokens[0].lineno,"Bad #unroll, expected ID")
-                    continue
-                  
-                  if toks[1].type != "=":
-                    self.error(self.source,dirtokens[0].lineno,"Bad #unroll, expected '='")
-                    continue
-                    
-                  if toks[2].type != "CPP_INTEGER":
-                    self.error(self.source,dirtokens[0].lineno,"Bad #unroll, expected integer constant")
-                    continue
-                  
-                  if toks[3].type not in ["<", ">"]:
-                    self.error(self.source,dirtokens[0].lineno,"Bad #unroll, expected < or >")
-                    continue
-                  
-                  ntype = toks[3].value
-                  nmin = toks[2]
-                  if toks[4].type == "=":
-                    ntype += "="
-                    nmax = toks[5]
-                  else:
-                    nmax = toks[4]
-                  
-                  nmin = self.expand_macros([nmin])
-                  nmax = self.expand_macros([nmax])
-                  
-                  nmin = int(nmin[0].value)
-                  nmax = int(nmax[0].value)
-                  
-                  nvar = toks[0]
-                  nval = nmin
-                  
-                  self.define("%s %s" % (nvar.value, nval))
-                  unrollstack.append([xi, nvar, nval, ntype, nmin, nmax])
-                elif name == "endroll":
-                  startxi, nvar, nval, ntype, nmin, nmax = unrollstack[-1]
-                  sign = 1 if nmin < nmax else -1
-                  nstop = 0
-                  
-                  if ntype == ">" and not (nval > nmax):
-                    nstop = 1
-                  elif ntype == "<" and not (nval < nmax):
-                    nstop = 1
-                  elif ntype == ">=" and not (nval >= nmax):
-                    nstop = 1
-                  elif ntype == "<=" and not (nval <= nmax):
-                    nstop = 1
-                  
-                  if not nstop:
-                    self.undef([nvar])
-                    self.define("%s %s" % (nvar.value, nval))
-                    
-                    print(nvar.value, "=", nval)
+                  if enable:
                     for tok in self.expand_macros(chunk):
                         yield tok
                     chunk = []
+                    
+                    #print("yay, unroll")
+                    toks = self.kill_ws(x[i+2:])
+                    
+                    #print(toks)
+                    if len(toks) < 3:
+                      self.error(self.source,dirtokens[0].lineno,"Bad #unroll")
+                      continue
+                    
+                    if toks[0].type != "CPP_ID":
+                      self.error(self.source,dirtokens[0].lineno,"Bad #unroll, expected ID")
+                      continue
+                    
+                    if toks[1].type != "=":
+                      self.error(self.source,dirtokens[0].lineno,"Bad #unroll, expected '='")
+                      continue
+                      
+                    if toks[2].type != "CPP_INTEGER":
+                      self.error(self.source,dirtokens[0].lineno,"Bad #unroll, expected integer constant")
+                      continue
+                    
+                    if toks[3].type not in ["<", ">"]:
+                      self.error(self.source,dirtokens[0].lineno,"Bad #unroll, expected < or >")
+                      continue
+                    
+                    ntype = toks[3].value
+                    nmin = toks[2]
+                    if toks[4].type == "=":
+                      ntype += "="
+                      nmax = toks[5]
+                    else:
+                      nmax = toks[4]
+                    
+                    nmin = self.expand_macros([nmin])
+                    nmax = self.expand_macros([nmax])
+                    
+                    nmin = int(nmin[0].value)
+                    nmax = int(nmax[0].value)
+                    
+                    nvar = toks[0]
+                    nval = nmin
+                    
+                    self.define("%s %s" % (nvar.value, nval))
+                    unrollstack.append([xi, nvar, nval, ntype, nmin, nmax])
+                elif name == "endroll":
+                  if enable:
+                    startxi, nvar, nval, ntype, nmin, nmax = unrollstack[-1]
+                    sign = 1 if nmin < nmax else -1
+                    nstop = 0
+                    
+                    if ntype == ">" and not (nval > nmax):
+                      nstop = 1
+                    elif ntype == "<" and not (nval < nmax):
+                      nstop = 1
+                    elif ntype == ">=" and not (nval >= nmax):
+                      nstop = 1
+                    elif ntype == "<=" and not (nval <= nmax):
+                      nstop = 1
+                    
+                    if not nstop:
+                      #print(nvar.value, "=", nval)
+                      for tok in self.expand_macros(chunk):
+                          yield tok
+                      chunk = []
 
-                    nval += sign
-                    unrollstack[-1][2] = nval
-                    
-                    xi = startxi
-                  else:
-                    self.undef([nvar])
-                    unrollstack.pop(-1)
-                    chunk = []
-                    
+                      nval += sign
+                      unrollstack[-1][2] = nval
+                      
+                      self.undef([nvar])
+                      self.define("%s %i" % (nvar.value, nval))
+                      
+                      xi = startxi
+                    else:
+                      self.undef([nvar])
+                      unrollstack.pop(-1)
+                      chunk = []                    
                 elif name == 'if':
                     ifstack.append((enable,iftrigger))
                     if enable:
