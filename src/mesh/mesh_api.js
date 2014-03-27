@@ -372,7 +372,7 @@ function recalc_normals_job_intern(Mesh m2, Boolean use_sco) //use_sco is option
     yield;
     
     if (i > 80000) {
-      console.log("Infinite loop");
+      console.log("Infinite loop in normals calc");
       console.trace();
       break;
     }

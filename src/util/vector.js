@@ -1,23 +1,46 @@
+#if 0
+"use strict";
+
+var M_SQRT2 = Math.sqrt(2.0);
+var FLT_EPSILON = 2.22e-16;
+
+function saacos(float fac)
+{
+	if (fac <= -1.0) return Math.pi;
+	else if (fac >=  1.0) return 0.0;
+	else return Math.acos(fac);
+}
+
+function saasin(float fac)
+{
+	if (fac <= -1.0) return -Math.pi / 2.0;
+	else if (fac >=  1.0) return  Math.pi / 2.0;
+	else return Math.asin(fac);
+}
+
 /******************* Vector2 ******************/
 
 #define VLEN 2
+#define VLENM1 1
+
 #define VECTORNAME Vector2
-#define VECTOR_EXTRA_METHODS
-
-#include "src/util/base_vector.js"
-
-#undef VLEN
-#undef VECTORNAME
-#undef VECTOR_EXTRA_METHODS \
+#define VECTOR_EXTRA_METHODS \
   multVecMatrix(Matrix4 mat) {\
     var v3 = _v2_static_mvm_co;\
-    v3.load(self)\
+    v3.load(self);\
     v3[2] = 0.0;\
     v3.multVecMatrix(mat);\
     this[0] = v3[0];\
     this[1] = v3[1];\
     return this;\
   }
+
+#include "src/util/base_vector.js"
+
+#undef VLEN
+#undef VLENM1
+#undef VECTORNAME
+#undef VECTOR_EXTRA_METHODS
 
 var _temp_xyz_vecs = []
 for (var i=0; i<32; i++) {
@@ -28,6 +51,7 @@ var _temp_xyz_cur = 0;
 
 /******************* Vector3 ******************/
 #define VLEN 3
+#define VLENM1 2
 #define VECTORNAME Vector3
 #define VECTOR_EXTRA_METHODS \
   cross(Vector3 v) { \
@@ -82,12 +106,14 @@ var _temp_xyz_cur = 0;
 #include "src/util/base_vector.js"
 
 #undef VLEN
+#undef VLENM1
 #undef VECTOR_EXTRA_METHODS
 #undef VECTORNAME
 
 
 /******************* Vector4 ******************/
 #define VLEN 4
+#define VLENM1 3
 #define VECTORNAME Vector4
 #define VECTOR_EXTRA_METHODS\
   multVecMatrix(mat) {\
@@ -112,3 +138,5 @@ var _temp_xyz_cur = 0;
 #undef VLEN
 #undef VECTORNAME
 #undef VECTOR_EXTRA_METHODS
+
+#endif

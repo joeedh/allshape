@@ -659,6 +659,108 @@ def gen_source_map(src, gensrc, map):
     file.close()
   return js
   
+def process_comments(node, typespace):
+  #move comments that are too deep in the ast tree up
+  def recurse(n):
+    for c in n:
+      recurse(c)
+      
+    if n.comment == None: return
+    
+    n2 = n
+    #find top-most node with same lineno 
+    while type(n2.parent) != StatementList and n2.parent != None and n2.parent.line == n2.line and n2.parent.comment == None:
+      n2 = n2.parent
+    
+    if n2 == n: return
+    n2.comment = n.comment
+    n2.commentline = n.commentline
+    n.comment = None
+  
+  #move comments that are too high in the ast tree downwards
+  def recurse_down(n):
+    def visit(n2, state):
+      if abs(n2.line-state[0]) < state[1]:
+        state[1] = abs(n2.line-state[0])
+        state[2] = n2
+      for c in n2:
+        visit(c, state)
+      
+    for c in n:
+      recurse_down(c)
+      
+    if n.comment == None: return
+    if n.commentline == n.line: return
+    
+    state = [n.commentline, n.line, n]
+    visit(n, state)
+    
+    n2 = state[2]
+    if n2 == n: return
+    
+    n2.comment = n.comment
+    n2.commentline = n.commentline
+    n.comment = None
+    
+  recurse(node)
+  recurse_down(node)
+  
+def parse_intern_es6(data):
+  glob.g_lines = data.split("\n")
+  
+  if glob.g_preprocess_code:
+    data = preprocess_text(data, glob.g_file)
+    
+  if glob.g_print_tokens:
+    print("printing tokens")
+    plexer.input(data)
+    tok = plexer.token()
+    while tok != None:
+      print(tok)
+      tok = plexer.token()
+    plexer.input(data)
+  
+  glob.g_lexer = plexer
+  result = parser.parse(data, lexer=plexer)
+  
+  if result == None:
+    if glob.g_error_pre != None:
+      glob.g_error = True
+    
+    result = StatementList()
+
+  if glob.g_error:
+    print_err(glob.g_error_pre)
+  
+  if glob.g_print_nodes:
+    print(result)
+   
+  typespace = JSTypeSpace()
+  
+  if len(result) > 0 and type(result[0]) == StrLitNode and result[0].val == '"use strict"':
+    glob.g_force_global_strict = True
+  if glob.g_force_global_strict:
+    kill_bad_globals(result, typespace)
+  
+  if glob.g_write_manifest and glob.g_outfile != "":
+    buf = gen_manifest_file(result, typespace);
+    file = open(glob.g_outfile+".manifest", "w")
+    file.write(buf)
+    file.close()
+  
+  process_comments(result, typespace)
+  
+  if glob.g_enable_static_vars:
+    process_static_vars(result, typespace)
+  
+  from js_format import format_es6
+  buf = format_es6(result, typespace)
+ 
+  if glob.g_outfile == "":
+    print(buf)
+  
+  return buf, result
+  
 f_id = [0]
 def parse_intern(data, create_logger=False, expand_loops=True, expand_generators=True):
   glob.g_lines = data.split("\n")
@@ -673,7 +775,7 @@ def parse_intern(data, create_logger=False, expand_loops=True, expand_generators
       print(tok)
       tok = plexer.token()
     plexer.input(data)
-    
+  
   glob.g_lexer = plexer
   result = parser.parse(data, lexer=plexer)
   
@@ -1124,7 +1226,10 @@ def parse(data, file=None, create_logger=False, expand_loops=True, expand_genera
       return data, StatementList()
       
     try:
-      return parse_intern(data, create_logger=create_logger, expand_loops=expand_loops, expand_generators=expand_generators)
+      if glob.g_gen_es6:
+        return parse_intern_es6(data)
+      else:
+        return parse_intern(data, create_logger=create_logger, expand_loops=expand_loops, expand_generators=expand_generators)
     except JSError:
       if glob.g_print_stack:
         traceback.print_stack()

@@ -87,7 +87,22 @@ class Node:
     self.lexpos = glob.g_lexpos
     self.final_type = None
     self.smap = None
+    if glob.g_comment != None and glob.g_comment != "":
+      self.comment = glob.g_comment
+      self.commentline = glob.g_comment_line
+      glob.g_comment = None
+    else:
+      self.comment = None
+      self.commentline = -1
   
+  def c(self):
+    if self.comment == None: return ""
+    
+    print("------------------------->", self.comment)
+    if self.comment.strip().startswith("//"):
+      self.comment = "/*" + self.comment[self.comment.find("//"):] + "*/"
+    return self.comment
+    
   #inc is how much to increment self.lexpos
   def s(self, str1):
     if (self.smap != None):
@@ -1858,7 +1873,10 @@ class MethodNode(FunctionNode):
     #self[1] : statementlist
     
   def gen_js(self, tlevel):
-    s = self.s(self.name + "(")
+    s = ""
+    if self.is_static:
+      s += "static "
+    s += self.s(self.name + "(")
     
     for i, c in enumerate(self[0]):
       if i > 0: s += c.s(", ")

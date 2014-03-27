@@ -561,16 +561,40 @@ def t_instr_ALL(t):
 def t_SLASHR(t):
   r'\r+'
 
+comment_str = ""
+comment_startline = -1
 def t_OPENCOM(t):
   r'/\*'
+  
+  global comment_str, comment_startline
   t.lexer.push_state("incomment")
+  comment_str = t.value
+  comment_startline = t.lexer.lineno if t.lexer.lineno != -1 else 0
   
 def t_incomment_CLOSECOM(t):
   r'\*/'
+  
+  global comment_str
+  comment_str += t.value
   t.lexer.pop_state()
-
+  
+  i = t.lexer.lexpos
+  ld = t.lexer.lexdata
+  while i < len(ld):
+    if ld[i] not in [" ", "\t", "\n", "\r"]: break
+    if ld[i] == "\n":
+      comment_str += "\n"
+      break
+    i += 1
+  t.lexer.comment = comment_str
+  t.lexer.comments[t.lexer.comment_id] = [comment_str, comment_startline]
+  t.lexer.comment_id += 1
+  
 def t_incomment_ALL(t):
   r'[^/\*]+';
+  
+  global comment_str
+  comment_str += t.value
   
   t.lexer.lineno += t.value.count("\n")
 
@@ -594,9 +618,13 @@ def t_mlstr_error(t):
   
 def t_COMMENT(t):
   r'//.*\n'
-  
+  global comment_startline, comment_str
   #r'(/\*(.|\n|\r)*\*/)|'
 
+  t.lexer.comment = t.value
+  t.lexer.comments[t.lexer.comment_id] = [t.lexer.comment, t.lexer.lineno]
+  t.lexer.comment_id += 1
+  
   t.lexer.lineno += t.value.count("\n")
 
 @TOKEN(r'[\$a-zA-Z_][\$a-zA-Z_0-9]*')
@@ -665,14 +693,29 @@ class LexWithPrev():
     self.peeks = []
     self.rawlines = []
     self.prev_lexpos = 0
+
+    self.comment = None
+    self.comment_id = 0
+    self.comments = {}
+    
+    lexer.comment = None
+    lexer.comment_id = 0
+    lexer.comments = {}
     
   def next(self):
-    return self.lexer.next()
+    t = self.token()
+    if t == None: raise StopIteration
+    
+    return t
   
   def peek(self):
     p = self.lexer.token()
     
     if p == None: return p
+    
+    self.comments = self.lexer.comments
+    self.comment = self.lexer.comment
+    self.commend_id = self.lexer.comment_id
     
     p.lineno = self.lexer.lineno;
     p.lexer = self;
@@ -703,6 +746,9 @@ class LexWithPrev():
       self.cur.lexer = self
       self.cur.lineno = self.lexer.lineno
       self.cur.prev_lexpos = self.prev_lexpos
+      self.comments = self.lexer.comments
+      self.comment = self.lexer.comment
+      self.commend_id = self.lexer.comment_id
     else:
       #reset state
       """
@@ -721,6 +767,7 @@ class LexWithPrev():
     return self.cur
     
   def input(self, data):
+    self.comment_id = 0
     if not in_lthan_test:
       global tgthan_lexposes, gthan_ignores, lthan_ignores
       tgthan_lexposes = set()
@@ -729,6 +776,7 @@ class LexWithPrev():
 
     self.lineno = self.lexer.lineno = 0
     
+    """
     #ensure all return statements end with ";"
     d2 = ""
     rlen = len("return")
@@ -765,6 +813,8 @@ class LexWithPrev():
       i += 1
       
     data = d2
+    #"""
+    
     self.lexer.lineno = self.lineno
     self.lexer.input(data)
     self.rawlines = data.replace("\r\n", "\n").split("\n")
@@ -784,3 +834,6 @@ class LexWithPrev():
     
 plexer = LexWithPrev(lex.lex())
 tmp_lexer = LexWithPrev(lex.lex())
+plexer.lexer.comments = {}
+plexer.lexer.comment = None
+plexer.lexer.comment_id = 0

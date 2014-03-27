@@ -14,7 +14,7 @@ glob_cmd_short_override = {}
 
 glob_cmd_parse_exclude = set(["infile", "outfile", "nfile"])
 glob_cmd_advanced = set(["g_error", "g_line", "g_file", "g_tried_semi", "g_error_pre", "g_lexpos", "g_clear_slashr", "g_lexer"])
-glob_cmd_exclude = set(["g_lexer", "g_error_pre", "g_outfile", "g_lines", "g_lexdata"])
+glob_cmd_exclude = set(["g_comment_line", "g_comment", "g_comment_id", "g_lexer", "g_error_pre", "g_outfile", "g_lines", "g_lexdata"])
 glob_long_word_shorten = {"generators": "gens", "error": "err", "warnings": "warn", "production": "prod"}
 
 gcs = glob_cmd_short_override
@@ -37,6 +37,7 @@ gcs["g_enable_static_vars"] = "esv"
 gcs["g_write_manifest"] = "wm"
 gcs["g_warn_types"] = "WT"
 gcs["g_debug_print_calls"] = "dpr"
+gcs["g_gen_es6"] = "es6"
 
 def argv_to_argline():
   s = ""
@@ -230,6 +231,9 @@ class Glob(AbstractGlob):
     g_validate_mode = False
     g_lex_templates = True
     g_lexdata = None
+    g_comment_id = -1
+    g_comment_line = -1
+    g_comment = ""
     g_lines = None
     g_emit_code = False
     g_include_dirs=None
@@ -250,5 +254,6 @@ class Glob(AbstractGlob):
     g_write_manifest = True
     g_warn_types = False
     g_debug_print_calls = False
+    g_gen_es6 = False
     
 glob = Glob()

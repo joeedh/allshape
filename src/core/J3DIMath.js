@@ -129,20 +129,6 @@ if ("WebKitCSSMatrix" in window && ("media" in window && window.media.matchMediu
 var M_SQRT2 = Math.sqrt(2.0);
 var FLT_EPSILON = 2.22e-16;
 
-function saacos(float fac)
-{
-	if (fac <= -1.0) return Math.pi;
-	else if (fac >=  1.0) return 0.0;
-	else return Math.acos(fac);
-}
-
-function saasin(float fac)
-{
-	if (fac <= -1.0) return -Math.pi / 2.0;
-	else if (fac >=  1.0) return  Math.pi / 2.0;
-	else return Math.asin(fac);
-}
-
 function internal_matrix() {
   this.m11 = 0.0; this.m12 = 0.0; this.m13 = 0.0; this.m14 = 0.0;
   this.m21 = 0.0; this.m22 = 0.0; this.m23 = 0.0; this.m24 = 0.0;
@@ -1024,14 +1010,712 @@ class Matrix4 {
   }
 }
 
-//Quaternion
-function Quat(float x, float y, float z, float w)
-{
-  Vector4.call(this, x, y, z, w);
-}
-inherit(Quat, Vector4);
+#define USE_OLD_VECLIB
+#ifdef USE_OLD_VECLIB
+var M_SQRT2 = Math.sqrt(2.0);
+var FLT_EPSILON = 2.22e-16;
 
-Quat.prototype.load = function(x,y,z,w)
+function saacos(float fac)
+{
+	if (fac <= -1.0) return Math.pi;
+	else if (fac >=  1.0) return 0.0;
+	else return Math.acos(fac);
+}
+
+function saasin(float fac)
+{
+	if (fac <= -1.0) return -Math.pi / 2.0;
+	else if (fac >=  1.0) return  Math.pi / 2.0;
+	else return Math.asin(fac);
+}
+
+var _temp_xyz_vecs = []
+for (var i=0; i<32; i++) {
+  _temp_xyz_vecs.push(null);
+}
+
+var _temp_xyz_cur = 0;
+
+//
+// Vector3
+//
+class Vector3 extends Array {
+  constructor(Array<float> vec) {
+    static init = [0, 0, 0];
+    
+    if (init == undefined)
+      init = [0, 0, 0];
+    if (vec == undefined)
+      vec = init;
+      
+    if (vec[0] == undefined) vec[0] = 0;
+    if (vec[1] == undefined) vec[1] = 0;
+    if (vec[2] == undefined) vec[2] = 0;
+    
+    if (typeof(vec) == "number" || typeof(vec[0]) != "number")
+      throw new Error("Invalid argument to new Vector3(vec)")
+    
+    this.length = 3;
+    
+    this[0] = vec[0];
+    this[1] = vec[1];
+    this[2] = vec[2];
+  }
+
+  toJSON() {
+    var arr = new Array(this.length);
+    
+    var i = 0;
+    for (var i=0; i<this.length; i++) {
+      arr[i] = this[i];
+    }
+    
+    return arr;
+  }
+
+  zero()
+  {
+    this[0] = 0.0;
+    this[1] = 0.0;
+    this[2] = 0.0;
+    
+    return this;
+  }
+
+  floor() {
+    this[0] = Math.floor(this[0]);
+    this[1] = Math.floor(this[1]);
+    this[2] = Math.floor(this[2]);
+    
+    return this;
+  }
+
+  ceil() {
+    this[0] = Math.ceil(this[0]);
+    this[1] = Math.ceil(this[1]);
+    this[2] = Math.ceil(this[2]);
+    
+    return this;
+  }
+
+  load(Array<float> vec3)
+  {
+    this[0] = vec3[0];
+    this[1] = vec3[1];
+    this[2] = vec3[2];
+    
+    return this;
+  }
+
+  loadXYZ(float x, float y, float z)
+  {
+    this[0] = x;
+    this[1] = y;
+    this[2] = z;
+    
+    return this;
+  }
+
+  static temp_xyz(float x, float y, float z)
+  {
+    var vec = _temp_xyz_vecs[_temp_xyz_cur];
+    
+    if (vec == null) {
+      vec = new Vector3();
+      _temp_xyz_vecs[_temp_xyz_cur] = vec;
+    }
+    
+    _temp_xyz_cur = (_temp_xyz_cur+1) % _temp_xyz_vecs.length;
+    
+    vec.loadXYZ(x, y, z);
+    
+    return vec;
+  }
+
+  getAsArray() : Array<float>
+  {
+      return [ this[0], this[1], this[2] ];
+  }
+
+  min(Vector3 b)
+  {
+    this[0] = Math.min(this[0], b[0]);
+    this[1] = Math.min(this[1], b[1]);
+    this[2] = Math.min(this[2], b[2]);
+    
+    return this;
+  }
+
+  max(Vector3 b)
+  {
+    this[0] = Math.max(this[0], b[0]);
+    this[1] = Math.max(this[1], b[1]);
+    this[2] = Math.max(this[2], b[2]);
+    
+    return this;
+  }
+
+  floor(Vector3 b)
+  {
+    this[0] = Math.floor(this[0], b[0]);
+    this[1] = Math.floor(this[1], b[1]);
+    this[2] = Math.floor(this[2], b[2]);
+    
+    return this;
+  }
+
+  ceil(Vector3 b)
+  {
+    this[0] = Math.ceil(this[0], b[0]);
+    this[1] = Math.ceil(this[1], b[1]);
+    this[2] = Math.ceil(this[2], b[2]);
+    
+    return this;
+  }
+
+  round(Vector3 b)
+  {
+    this[0] = Math.round(this[0], b[0]);
+    this[1] = Math.round(this[1], b[1]);
+    this[2] = Math.round(this[2], b[2]);
+    
+    return this;
+  }
+
+  getAsFloat32Array()
+  {
+      return new Float32Array(this.getAsArray());
+  }
+
+  vectorLength()
+  {
+      return Math.sqrt(this[0] * this[0] + this[1] * this[1] + this[2] * this[2]);
+  }
+
+  normalize()
+  {
+    var len = this.vectorLength();
+    if (len > FLT_EPSILON*2) this.mulScalar(1.0/len);
+    
+    return this;
+  }
+
+  negate()
+  {
+    this[0] = -this[0];
+    this[1] = -this[1];
+    this[2] = -this[2];
+    
+    return this;
+  }
+
+  fast_normalize()
+  {
+    var d = this[0]*this[0] + this[1]*this[1] + this[2]*this[2];
+    //var n = d > 1.0 ? d*0.5 : d*2;
+    //var n2=n*n, n4=n2*n2, n8=n4*n4;
+    //var n6=n4*n2;
+    
+    var len = Math.sqrt(d); //n*n*n*n + 6*n*n*d + d*d;
+    if (len > FLT_EPSILON) 
+      return 0;
+      
+    //var div = 4*n*(n*n + d);
+    //len = len / div;
+    
+    this[0] /= len;
+    this[1] /= len;
+    this[2] /= len;
+    
+    return this;
+  }
+
+  divide(float divisor)
+  {
+      this[0] /= divisor; this[1] /= divisor; this[2] /= divisor;
+      
+      return this;
+  }
+
+  divideScalar(float divisor)
+  {
+      this[0] /= divisor; this[1] /= divisor; this[2] /= divisor;
+      
+      return this;
+  }
+
+  divScalar(float divisor)
+  {
+      this[0] /= divisor; this[1] /= divisor; this[2] /= divisor;
+      
+      return this;
+  }
+
+  divVector(Vector3 vec)
+  {
+      this[0] /= vec[0]; this[1] /= vec[1]; this[2] /= vec[2];
+      
+      return this;
+  }
+
+  mulScalar(float scalar)
+  {
+      this[0] *= scalar; this[1] *= scalar; this[2] *= scalar;
+      
+      return this;
+  }
+
+  mul(Vector3 v)
+  {
+      this[0] =  this[0] * v[0];
+      this[1] =  this[1] * v[1];
+      this[2] =  this[2] * v[2];
+      
+      return this;
+  }
+
+  cross(Vector3 v)
+  {
+    static _tmp = [0, 0, 0];
+    _tmp[0] = this[1] * v[2] - this[2] * v[1];
+    _tmp[1] = this[2] * v[0] - this[0] * v[2];
+    _tmp[2] = this[0] * v[1] - this[1] * v[0];
+
+    this[0] = _tmp[0]; this[1] = _tmp[1]; this[2] = _tmp[2];
+
+    return this;
+  }
+
+  vectorDistance(Vector3 v2) {
+    static vec = new Vector3();
+    
+    vec.load(this);
+    vec.sub(v2);
+    
+    return vec.vectorLength();
+  }
+
+  vectorDotDistance(Vector3 v2) {
+    static vec = new Vector3();
+    
+    vec.load(this);
+    vec.sub(v2);
+    
+    return vec.dot(vec);
+  }
+
+  sub(Vector3 v)
+  {
+    if (v == null || v == undefined)
+      console.trace()
+      
+    this[0] =  this[0] - v[0];
+    this[1] =  this[1] - v[1];
+    this[2] =  this[2] - v[2];
+    
+    return this;
+  }
+
+  add(Vector3 v)
+  {
+      this[0] =  this[0] + v[0];
+      this[1] =  this[1] + v[1];
+      this[2] =  this[2] + v[2];
+      
+      return this;
+  }
+
+  static_add(Vector3 v)
+  {
+    static add = new Vector3();
+    
+    add[0] =  this[0] + v[0];
+    add[1] =  this[1] + v[1];
+    add[2] =  this[2] + v[2];
+    
+    return add;
+  }
+
+  static_sub(Vector3 v)
+  {
+    static _static_sub = new Vector3();
+    _static_sub[0] =  this[0] - v[0];
+    _static_sub[1] =  this[1] - v[1];
+    _static_sub[2] =  this[2] - v[2];
+
+    return _static_sub;
+  }
+
+  static_mul(Vector3 v)
+  {
+    static _static_mul = new Vector3();
+    _static_mul[0] =  this[0] * v[0];
+    _static_mul[1] =  this[1] * v[1];
+    _static_mul[2] =  this[2] * v[2];
+    
+    return _static_mul;
+  }
+
+  static_divide(Vector3 v)
+  {
+      static _static_divide = new Vector3();
+      _static_divide[0] =  this[0] / v[0];
+      _static_divide[1] =  this[1] / v[1];
+      _static_divide[2] =  this[2] / v[2];
+      
+      return _static_divide;
+  }
+
+  static_addScalar(float s)
+  {
+      static _static_addScalar = new Vector3();
+      _static_addScalar[0] =  this[0] + s;
+      _static_addScalar[1] =  this[1] + s;
+      _static_addScalar[2] =  this[2] + s;
+      
+      return _static_addScalar;
+  }
+
+  static_subScalar(float s)
+  {
+      static _static_subScalar = new Vector3();
+      _static_subScalar[0] =  this[0] - s;
+      _static_subScalar[1] =  this[1] - s;
+      _static_subScalar[2] =  this[2] - s;
+      
+      return _static_subScalar;
+  }
+
+  static_mulScalar(float s)
+  {
+      static _static_mulScalar = new Vector3();
+      _static_mulScalar[0] =  this[0] * s;
+      _static_mulScalar[1] =  this[1] * s;
+      _static_mulScalar[2] =  this[2] * s;
+      
+      return _static_mulScalar;
+  }
+
+  _static_divideScalar(float s)
+  {
+      static _static_divideScalar = new Vector3();
+      _static_divideScalar[0] =  this[0] / s;
+      _static_divideScalar[1] =  this[1] / s;
+      _static_divideScalar[2] =  this[2] / s;
+      
+      return _static_divideScalar;
+  }
+
+  dot(Vector3 v)
+  {
+      return this[0] * v[0] + this[1] * v[1] + this[2] * v[2];
+  }
+
+  normalizedDot(Vector3 v)
+  {
+    static _v3nd_n1 = new Vector3()
+    static _v3nd_n2 = new Vector3()
+    _v3nd_n1.load(this);
+    _v3nd_n2.load(v);
+    
+    _v3nd_n1.normalize();
+    _v3nd_n2.normalzie();
+    
+    return _v3nd_n1.dot(_v3nd_n2);
+  }
+
+  static normalizedDot4(Vector3 v1, Vector3 v2, Vector3 v3, Vector3 v4)
+  {
+    static _v3nd4_n1 = new Vector3();
+    static _v3nd4_n2 = new Vector3();
+    
+    _v3nd4_n1.load(v2).sub(v1).normalize();
+    _v3nd4_n2.load(v4).sub(v3).normalize();
+    
+    return _v3nd4_n1.dot(_v3nd4_n2);
+  }
+
+  preNormalizedAngle(Vector3 v2)
+  {
+    /* this is the same as acos(dot_v3v3(this, v2)), but more accurate */
+    if (this.dot(v2) < 0.0) {
+      var vec = new Vector3();
+
+      vec[0] = -v2[0];
+      vec[1] = -v2[1];
+      vec[2] = -v2[2];
+
+      return Math.pi - 2.0 * saasin(vec.vectorDistance(this) / 2.0);
+    }
+    else
+      return 2.0 * saasin(v2.vectorDistance(this) / 2.0);
+  }
+
+  combine(Vector3 v, float ascl, float bscl)
+  {
+      this[0] = (ascl * this[0]) + (bscl * v[0]);
+      this[1] = (ascl * this[1]) + (bscl * v[1]);
+      this[2] = (ascl * this[2]) + (bscl * v[2]);
+  }
+
+  mulVecQuat(Vector4 q)
+  {
+    var t0 = -this[1] * this[0] - this[2] * this[1] - this[3] * this[2];
+    var t1 = this[0] * this[0] + this[2] * this[2] - this[3] * this[1];
+    var t2 = this[0] * this[1] + this[3] * this[0] - this[1] * this[2];
+    this[2] = this[0] * this[2] + this[1] * this[1] - this[2] * this[0];
+    this[0] = t1;
+    this[1] = t2;
+
+    t1 = t0 * -this[1] + this[0] * this[0] - this[1] * this[3] + this[2] * this[2];
+    t2 = t0 * -this[2] + this[1] * this[0] - this[2] * this[1] + this[0] * this[3];
+    this[2] = t0 * -this[3] + this[2] * this[0] - this[0] * this[2] + this[1] * this[1];
+    this[0] = t1;
+    this[1] = t2;
+  }
+
+  multVecMatrix(Matrix4 matrix)
+  {
+      var x = this[0];
+      var y = this[1];
+      var z = this[2];
+
+      this[0] = matrix.$matrix.m41 + x * matrix.$matrix.m11 + y * matrix.$matrix.m21 + z * matrix.$matrix.m31;
+      this[1] = matrix.$matrix.m42 + x * matrix.$matrix.m12 + y * matrix.$matrix.m22 + z * matrix.$matrix.m32;
+      this[2] = matrix.$matrix.m43 + x * matrix.$matrix.m13 + y * matrix.$matrix.m23 + z * matrix.$matrix.m33;
+      var w = matrix.$matrix.m44 + x * matrix.$matrix.m14 + y * matrix.$matrix.m24 + z * matrix.$matrix.m34;
+      if (w != 1 && w != 0 && matrix.isPersp) {
+          this[0] /= w;
+          this[1] /= w;
+          this[2] /= w;
+      }
+  }
+
+  interp(Vector3 b, Number t) {
+    this[0] += (b[0]-this[0])*t;
+    this[1] += (b[1]-this[1])*t;
+    this[2] += (b[2]-this[2])*t;
+  }
+
+  toString() : String
+  {
+      return "["+this[0]+","+this[1]+","+this[2]+"]";
+  }
+}
+
+var _vec2_init = [0, 0];
+function Vector2(Array<float> vec) {
+  Array<float>.call(this, 2);
+  
+  if (vec == undefined)
+    vec = _vec2_init;
+  
+  if (vec[0] == undefined) vec[0] = 0;
+  if (vec[1] == undefined) vec[1] = 0;
+  
+  if (typeof(vec) == "number" || typeof(vec[0]) != "number")
+    throw new Error("Invalid argument to new Vector2(vec)")
+  
+  this[0] = vec[0];
+  this[1] = vec[1];
+  
+  this.length = 2;
+}
+inherit(Vector2, Array);
+
+Vector2.prototype.toJSON = function() {
+  var arr = new Array(this.length);
+  
+  var i = 0;
+  for (var i=0; i<this.length; i++) {
+    arr[i] = this[i];
+  }
+  
+  return arr;
+}
+
+Vector2.prototype.dot = function(b) {
+  return this[0]*b[0] + this[1]*b[1]
+}
+
+Vector2.prototype.load = function(b) {
+  this[0] = b[0];
+  this[1] = b[1];
+  
+  return this;
+}
+
+Vector2.prototype.zero = function() {
+  this[0] = this[1] = 0.0;
+  
+  return this;
+}
+
+Vector2.prototype.floor = function() {
+  this[0] = Math.floor(this[0]);
+  this[1] = Math.floor(this[1]);
+  
+  return this;
+}
+
+Vector2.prototype.ceil = function() {
+  this[0] = Math.ceil(this[0]);
+  this[1] = Math.ceil(this[1]);
+  
+  return this;
+}
+
+Vector2.prototype.vectorDistance = function(b) {
+  var x, y;
+  
+  x = this[0]-b[0]
+  y = this[1]-b[1];
+  return Math.sqrt(x*x + y*y);
+}
+
+
+Vector2.prototype.vectorLength = function() {
+  return Math.sqrt(this[0]*this[0] + this[1]*this[1]);
+}
+
+Vector2.prototype.sub = function(b) {
+  this[0] -= b[0];
+  this[1] -= b[1];
+  
+  return this;
+}
+
+Vector2.prototype.add = function(b) {
+  this[0] += b[0];
+  this[1] += b[1];
+  
+  return this;
+}
+
+Vector2.prototype.mul = function(b) {
+  this[0] *= b[0];
+  this[1] *= b[1];
+  
+  return this;
+}
+
+Vector2.prototype.divide = function(b) {
+  this[0] /= b[0];
+  this[1] /= b[1];
+  
+  return this;
+}
+
+Vector2.prototype.divideScalar = function(b) {
+  this[0] /= b;
+  this[1] /= b;
+  
+  return this;
+}
+
+Vector2.prototype.negate = function()
+{
+  this[0] = -this[0];
+  this[1] = -this[1];
+  
+  return this;
+}
+
+Vector2.prototype.mulScalar = function(b) {
+  this[0] *= b;
+  this[1] *= b;
+  
+  return this;
+}
+
+Vector2.prototype.addScalar = function(b) {
+  this[0] += b;
+  this[1] += b;
+  
+  return this;
+}
+
+Vector2.prototype.subScalar = function(b) {
+  this[0] -= b;
+  this[1] -= b;
+  
+  return this;
+}
+
+var _v2_static_mvm_co = new Vector3();
+Vector2.prototype.multVecMatrix = function(mat) {
+  var v3 = _v2_static_mvm_co;
+  
+  v3.load(self)
+  v3[2] = 0.0;
+  v3.multVecMatrix(mat);
+  
+  this[0] = v3[0];
+  this[1] = v3[1];
+  
+  return this;
+}
+
+Vector2.prototype.normalize = function() {
+  var vlen = this.vectorLength();
+  if (vlen < FLT_EPSILON) {
+    this[0] = this[1] = 0.0;
+    return;
+  }
+  
+  this[0] /= vlen;
+  this[1] /= vlen;
+  
+  return this;
+}
+
+Vector2.prototype.toSource = function() {
+  return "new Vector2([" + this[0] + ", " + this[1] + "])";
+}
+
+Vector2.prototype.toString = function() {
+  return "[" + this[0] + ", " + this[1] + "]";
+}
+
+Vector2.prototype.interp = function(Vector2 b, Number t) {
+  this[0] += (b[0]-this[0])*t;
+  this[1] += (b[1]-this[1])*t;
+}
+
+//XX Kill this function!
+function Color(Array<float> color) {
+  var c = new Array<float>();
+  c[0] = color[0]
+  c[1] = color[1]
+  c[2] = color[2]
+  c[3] = color[3]
+  
+  return c;
+}
+
+
+//
+// Vector4
+//
+function Vector4(float x, float y, float z, float w)
+{
+    this.length = 4;
+    this.load(x,y,z,w);
+}
+inherit(Vector4, Array);
+
+Vector4.prototype.toJSON = function() {
+  var arr = new Array(this.length);
+  
+  var i = 0;
+  for (var i=0; i<this.length; i++) {
+    arr[i] = this[i];
+  }
+  
+  return arr;
+}
+
+Vector4.prototype.load = function(x,y,z,w)
 {
     if (typeof x == 'object' && "length" in x) {
         this[0] = x[0];
@@ -1051,272 +1735,447 @@ Quat.prototype.load = function(x,y,z,w)
         this[2] = 0;
         this[3] = 0;
     }
+    
+    return this;
 }
 
-Quat.prototype.makeUnitQuat = function()
-{
-	this[0] = 1.0;
-	this[1] = this[2] = this[3] = 0.0;
-}
-
-Quat.prototype.isZero = function() : Boolean
-{
-	return (this[0] == 0 && this[1] == 0 && this[2] == 0 && this[3] == 0);
-}
-
-Quat.prototype.mulQuat = function(Quat q2)
-{
-	var t0 = this[0] * q2[0] - this[1] * q2[1] - this[2] * q2[2] - this[3] * q2[3];
-	var t1 = this[0] * q2[1] + this[1] * q2[0] + this[2] * q2[3] - this[3] * q2[2];
-	var t2 = this[0] * q2[2] + this[2] * q2[0] + this[3] * q2[1] - this[1] * q2[3];
-	this[3] = this[0] * q2[3] + this[3] * q2[0] + this[1] * q2[2] - this[2] * q2[1];
-	this[0] = t0;
-	this[1] = t1;
-	this[2] = t2;
-}
-
-Quat.prototype.conjugate = function()
-{
-	this[1] = -this[1];
-	this[2] = -this[2];
-	this[3] = -this[3];
-}
-
-Quat.prototype.dotWithQuat = function(Quat q2)
-{
-	return this[0] * q2[0] + this[1] * q2[1] + this[2] * q2[2] + this[3] * q2[3];
-}
-
-Quat.prototype.invert = function()
-{
-	var f = this.dot();
-
-	if (f == 0.0)
-		return;
-
-	conjugate_qt(q);
-  this.mulscalar(1.0 / f);
-}
-
-Quat.prototype.sub = function(Quat q2)
-{
-	var nq2 = new Quat();
-
-	nq2[0] = -q2[0];
-	nq2[1] = q2[1];
-	nq2[2] = q2[2];
-	nq2[3] = q2[3];
-  
-  this.mul(nq2);
-}
-
-Quat.prototype.mulScalarWithFactor = function(float fac)
-{
-	var angle = fac * saacos(this[0]);
-	var co = Math.cos(angle);
-	var si = Math.sin(angle);
-	this[0] = co;
-  
-  var last3 = Vector3([this[1], this[2], this[3]]);
-  last3.normalize();
-  
-  last3.mulScalar(si);
-  this[1] = last3[0];
-  this[2] = last3[1];
-  this[3] = last3[2];
+Vector4.prototype.floor = function() {
+  this[0] = Math.floor(this[0]);
+  this[1] = Math.floor(this[1]);
+  this[2] = Math.floor(this[2]);
+  this[3] = Math.floor(this[3]);
   
   return this;
 }
 
-Quat.prototype.toMatrix = function()
-{
-  var m = new Matrix4()
+Vector4.prototype.ceil = function() {
+  this[0] = Math.ceil(this[0]);
+  this[1] = Math.ceil(this[1]);
+  this[2] = Math.ceil(this[2]);
+  this[3] = Math.ceil(this[3]);
   
-	var q0 = M_SQRT2 * this[0];
-	var q1 = M_SQRT2 * this[1];
-	var q2 = M_SQRT2 * this[2];
-	var q3 = M_SQRT2 * this[3];
-
-	var qda = q0 * q1;
-	var qdb = q0 * q2;
-	var qdc = q0 * q3;
-	var qaa = q1 * q1;
-	var qab = q1 * q2;
-	var qac = q1 * q3;
-	var qbb = q2 * q2;
-	var qbc = q2 * q3;
-	var qcc = q3 * q3;
-  
-	m.$matrix.m11 = (1.0 - qbb - qcc);
-	m.$matrix.m12 = (qdc + qab);
-	m.$matrix.m13 = (-qdb + qac);
-	m.$matrix.m14 = 0.0;
-
-	m.$matrix.m21 = (-qdc + qab);
-	m.$matrix.m22 = (1.0 - qaa - qcc);
-  m.$matrix.m23 = (qda + qbc);
-	m.$matrix.m24 = 0.0;
-
-	m.$matrix.m31 = (qdb + qac);
-	m.$matrix.m32 = (-qda + qbc);
-	m.$matrix.m33 = (1.0 - qaa - qbb);
-	m.$matrix.m34 = 0.0;
-
-  m.$matrix.m41 = m.$matrix.m42 = m.$matrix.m43 = 0.0;
-  m.$matrix.m44 = 1.0;
-  
-  return m;
+  return this;
 }
 
-Quat.prototype.matrixToQuat = function(Matrix4 wmat)
+Vector4.prototype.getAsArray = function() : Array<float>
 {
-  var mat = new Matrix4(wmat);
-  
-	/* work on a copy */
-  
-  /*normalize the input matrix, as if it were a 3x3 mat. This is needed AND a 'normalize_qt' in the end */
-  mat.$matrix.m41 = mat.$matrix.m42 = mat.$matrix.m43 = 0;
-  mat.$matrix.m44 = 1.0;
-  
-  var r1 = new Vector3([mat.$matrix.m11, mat.$matrix.m12, mat.$matrix.m13]);
-  var r2 = new Vector3([mat.$matrix.m21, mat.$matrix.m22, mat.$matrix.m23]);
-  var r3 = new Vector3([mat.$matrix.m31, mat.$matrix.m32, mat.$matrix.m33]);
-  r1.normalize();
-  r2.normalize();
-  r3.normalize();
-
-  mat.$matrix.m11 = r1[0]; mat.$matrix.m12 = r1[1]; mat.$matrix.m13 = r1[2]; 
-  mat.$matrix.m21 = r2[0]; mat.$matrix.m22 = r2[1]; mat.$matrix.m23 = r2[2]; 
-  mat.$matrix.m31 = r3[0]; mat.$matrix.m32 = r3[1]; mat.$matrix.m33 = r3[2]; 
-  
-  /*now for the main calculations*/
-	var tr = 0.25 * (1.0 + mat[0][0] + mat[1][1] + mat[2][2]);
-  var s = 0;
-  
-	if (tr > FLT_EPSILON) {
-		s = Math.sqrt(tr);
-		this[0] = s;
-		s = 1.0 / (4.0 * s);
-		this[1] = ((mat[1][2] - mat[2][1]) * s);
-		this[2] = ((mat[2][0] - mat[0][2]) * s);
-		this[3] = ((mat[0][1] - mat[1][0]) * s);
-	}
-	else {
-		if (mat[0][0] > mat[1][1] && mat[0][0] > mat[2][2]) {
-			s = 2.0 * Math.sqrt(1.0 + mat[0][0] - mat[1][1] - mat[2][2]);
-			this[1] = (0.25 * s);
-
-			s = 1.0 / s;
-			this[0] = ((mat[2][1] - mat[1][2]) * s);
-			this[2] = ((mat[1][0] + mat[0][1]) * s);
-			this[3] = ((mat[2][0] + mat[0][2]) * s);
-		}
-		else if (mat[1][1] > mat[2][2]) {
-			s = 2.0 * Math.sqrt(1.0 + mat[1][1] - mat[0][0] - mat[2][2]);
-			this[2] = (0.25 * s);
-
-			s = 1.0 / s;
-			this[0] = ((mat[2][0] - mat[0][2]) * s);
-			this[1] = ((mat[1][0] + mat[0][1]) * s);
-			this[3] = ((mat[2][1] + mat[1][2]) * s);
-		}
-		else {
-			s = 2.0 * Math.sqrt(1.0 + mat[2][2] - mat[0][0] - mat[1][1]);
-			this[3] = (0.25 * s);
-
-			s = 1.0 / s;
-			this[0] = ((mat[1][0] - mat[0][1]) * s);
-			this[1] = ((mat[2][0] + mat[0][2]) * s);
-			this[2] = ((mat[2][1] + mat[1][2]) * s);
-		}
-	}
-
-	this.normalize();
+    return [ this[0], this[1], this[2], this[3] ];
 }
 
-Quat.prototype.normalize = function() : float
+Vector4.prototype.getAsFloat32Array = function() : Float32Array
 {
-
-	var len = Math.sqrt(this.dot())
-	if (len != 0.0) {
-    this.mulScalar(1.0 / len);
-	}
-	else {
-		this[1] = 1.0;
-		this[0] = this[2] = this[3] = 0.0;
-	}
-
-	return len;
+    return new Float32Array(this.getAsArray());
 }
 
-/* Axis angle to Quaternions */
-Quat.prototype.axisAngleToQuat = function(Vector3 axis, float angle)
+Vector4.prototype.vectorLength = function() : float
 {
-  var nor = new Vector3(axis);
-  
-	if (nor.normalize() != 0.0) {
-		var phi = angle / 2.0;
-		var si = Math.sin(phi);
-		this[0] = Math.cos(phi);
-		this[1] = nor[0] * si;
-		this[2] = nor[1] * si;
-		this[3] = nor[2] * si;
-	}
-	else {
-		this.makeUnitQuat();
-	}
+    return Math.sqrt(this[0] * this[0] + this[1] * this[1] + this[2] * this[2] + this[3] * this[3]);
 }
 
-Quat.prototype.rotationBetweenVecs = function(Vector3 v1, Vector3 v2) 
+Vector4.prototype.normalize = function()
 {
-  v1 = new Vector3(v1);
-  v2 = new Vector3(v2);
-  v1.normalize();
-  v2.normalize();
+  var len = this.vectorLength();
+  if (len > FLT_EPSILON) this.mulScalar(1.0/len);
   
-  var axis = new Vector3(v1);
-  axis.cross(v2);
-
-	var angle = v1.preNormalizedAngle(v2);
-  
-  this.axisAngleToQuat(axis, angle);
+  return len;
 }
 
-Quat.prototype.quatInterp = function(Quat quat2, float t)
+Vector4.prototype.divide = function(float divisor)
 {
-  var quat = new Quat();
-  
-	var cosom = this[0] * quat2[0] + this[1] * quat2[1] + this[2] * quat2[2] + this[3] * quat2[3];
+    this[0] /= divisor; this[1] /= divisor; this[2] /= divisor; this[3] /= divisor;
+}
 
-	/* rotate around shortest angle */
-	if (cosom < 0.0) {
-		cosom = -cosom;
-		quat[0] = -this[0];
-		quat[1] = -this[1];
-		quat[2] = -this[2];
-		quat[3] = -this[3];
-	}
-	else {
-		quat[0] = this[0];
-		quat[1] = this[1];
-		quat[2] = this[2];
-		quat[3] = this[3];
-	}
+Vector4.prototype.negate = function()
+{
+  this[0] = -this[0];
+  this[1] = -this[1];
+  this[2] = -this[2];
+  this[3] = -this[3];
   
-  var omega, sinom, sc1, sc2;
-	if ((1.0 - cosom) > 0.0001) {
-		omega = Math.acos(cosom);
-		sinom = Math.sin(omega);
-		sc1 = Math.sin((1.0 - t) * omega) / sinom;
-		sc2 = Math.sin(t * omega) / sinom;
-	}
-	else {
-		sc1 = 1.0 - t;
-		sc2 = t;
-	}
+  return this;
+}
 
-	this[0] = sc1 * quat[0] + sc2 * quat2[0];
-	this[1] = sc1 * quat[1] + sc2 * quat2[1];
-	this[2] = sc1 * quat[2] + sc2 * quat2[2];
-	this[3] = sc1 * quat[3] + sc2 * quat2[3];
+Vector4.prototype.mulScalar = function(float scalar)
+{
+    this[0] *= scalar; this[1] *= scalar; this[2] *= scalar; this[3] *= scalar;
+    
+    return this;
+}
+
+Vector4.prototype.mul = function(float scalar)
+{
+    this[0] =  this[0] * v[0];
+    this[1] =  this[1] * v[1];
+    this[2] =  this[2] * v[2];
+    this[3] =  this[3] * v[3];
+}
+
+Vector4.prototype.cross = function(Vector4 v)
+{
+    this[0] =  this[1] * v[2] - this[2] * v[1];
+    this[1] = -this[0] * v[2] + this[2] * v[0];
+    this[2] =  this[0] * v[1] - this[1] * v[0];
+    //what do I do with the fourth component?
+}
+
+Vector4.prototype.sub = function(Vector4 v)
+{
+    this[0] =  this[0] - v[0];
+    this[1] =  this[1] - v[1];
+    this[2] =  this[2] - v[2];
+    this[3] =  this[3] - v[3];
+}
+
+Vector4.prototype.add = function(Vector4 v)
+{
+    this[0] =  this[0] + v[0];
+    this[1] =  this[1] + v[1];
+    this[2] =  this[2] + v[2];
+    this[3] =  this[3] + v[3];
+}
+
+Vector4.prototype.dot = function(Vector4 v)
+{
+    return this[0] * v[0] + this[1] * v[1] + this[2] * v[2] + this[3] * v[3];
+}
+
+Vector4.prototype.combine = function(Vector4 v, float ascl, float bscl)
+{
+    this[0] = (ascl * this[0]) + (bscl * v[0]);
+    this[1] = (ascl * this[1]) + (bscl * v[1]);
+    this[2] = (ascl * this[2]) + (bscl * v[2]);
+    this[3] = (ascl * this[3]) + (bscl * v[3]);
+}
+
+Vector4.prototype.multVecMatrix = function(Matrix4 matrix)
+{
+    var x = this[0];
+    var y = this[1];
+    var z = this[2];
+    var w = this[3];
+
+    this[0] = matrix.$matrix.m41 + x * matrix.$matrix.m11 + y * matrix.$matrix.m21 + z * matrix.$matrix.m31 + w*matrix.$matrix.m41;
+    this[1] = matrix.$matrix.m42 + x * matrix.$matrix.m12 + y * matrix.$matrix.m22 + z * matrix.$matrix.m32 + w*matrix.$matrix.m42;
+    this[2] = matrix.$matrix.m43 + x * matrix.$matrix.m13 + y * matrix.$matrix.m23 + z * matrix.$matrix.m33 + w*matrix.$matrix.m43;
+    this[3] = w*matrix.$matrix.m44 + x * matrix.$matrix.m14 + y * matrix.$matrix.m24 + z * matrix.$matrix.m34;
+}
+
+Vector4.prototype.interp = function(Vector4 b, Number t) {
+  this[0] += (b[0]-this[0])*t;
+  this[1] += (b[1]-this[1])*t;
+  this[2] += (b[2]-this[2])*t;
+  this[3] += (b[3]-this[3])*t;  
+}
+
+Vector4.prototype.toString = function() : String
+{
+    return "["+this[0]+","+this[1]+","+this[2]+","+this[3]+"]";
+}
+#endif
+
+//Quaternion
+class Quat extends Vector4 {
+  constructor(float x, float y, float z, float w)
+  {
+    static v4init = [0, 0, 0, 0]
+    var vec = v4init;
+    
+    if (typeof(x) == "number") {
+      v4init[0] = x; v4init[1] = y; v4init[2] = z; v4init[3] = w;
+    } else {
+      vec = x;
+    }
+    
+    Vector4.call(this, vec);
+  }
+
+  load(x,y,z,w)
+  {
+      if (typeof x == 'object' && "length" in x) {
+          this[0] = x[0];
+          this[1] = x[1];
+          this[2] = x[2];
+          this[3] = x[3];
+      }
+      else if (typeof x == 'number') {
+          this[0] = x;
+          this[1] = y;
+          this[2] = z;
+          this[3] = w;
+      }
+      else {
+          this[0] = 0;
+          this[1] = 0;
+          this[2] = 0;
+          this[3] = 0;
+      }
+  }
+
+  makeUnitQuat()
+  {
+    this[0] = 1.0;
+    this[1] = this[2] = this[3] = 0.0;
+  }
+
+  isZero() : Boolean
+  {
+    return (this[0] == 0 && this[1] == 0 && this[2] == 0 && this[3] == 0);
+  }
+
+  mulQuat(Quat q2)
+  {
+    var t0 = this[0] * q2[0] - this[1] * q2[1] - this[2] * q2[2] - this[3] * q2[3];
+    var t1 = this[0] * q2[1] + this[1] * q2[0] + this[2] * q2[3] - this[3] * q2[2];
+    var t2 = this[0] * q2[2] + this[2] * q2[0] + this[3] * q2[1] - this[1] * q2[3];
+    this[3] = this[0] * q2[3] + this[3] * q2[0] + this[1] * q2[2] - this[2] * q2[1];
+    this[0] = t0;
+    this[1] = t1;
+    this[2] = t2;
+  }
+
+  conjugate()
+  {
+    this[1] = -this[1];
+    this[2] = -this[2];
+    this[3] = -this[3];
+  }
+
+  dotWithQuat(Quat q2)
+  {
+    return this[0] * q2[0] + this[1] * q2[1] + this[2] * q2[2] + this[3] * q2[3];
+  }
+
+  invert()
+  {
+    var f = this.dot();
+
+    if (f == 0.0)
+      return;
+
+    conjugate_qt(q);
+    this.mulscalar(1.0 / f);
+  }
+
+  sub(Quat q2)
+  {
+    var nq2 = new Quat();
+
+    nq2[0] = -q2[0];
+    nq2[1] = q2[1];
+    nq2[2] = q2[2];
+    nq2[3] = q2[3];
+    
+    this.mul(nq2);
+  }
+
+  mulScalarWithFactor(float fac)
+  {
+    var angle = fac * saacos(this[0]);
+    var co = Math.cos(angle);
+    var si = Math.sin(angle);
+    this[0] = co;
+    
+    var last3 = Vector3([this[1], this[2], this[3]]);
+    last3.normalize();
+    
+    last3.mulScalar(si);
+    this[1] = last3[0];
+    this[2] = last3[1];
+    this[3] = last3[2];
+    
+    return this;
+  }
+
+  toMatrix()
+  {
+    var m = new Matrix4()
+    
+    var q0 = M_SQRT2 * this[0];
+    var q1 = M_SQRT2 * this[1];
+    var q2 = M_SQRT2 * this[2];
+    var q3 = M_SQRT2 * this[3];
+
+    var qda = q0 * q1;
+    var qdb = q0 * q2;
+    var qdc = q0 * q3;
+    var qaa = q1 * q1;
+    var qab = q1 * q2;
+    var qac = q1 * q3;
+    var qbb = q2 * q2;
+    var qbc = q2 * q3;
+    var qcc = q3 * q3;
+    
+    m.$matrix.m11 = (1.0 - qbb - qcc);
+    m.$matrix.m12 = (qdc + qab);
+    m.$matrix.m13 = (-qdb + qac);
+    m.$matrix.m14 = 0.0;
+
+    m.$matrix.m21 = (-qdc + qab);
+    m.$matrix.m22 = (1.0 - qaa - qcc);
+    m.$matrix.m23 = (qda + qbc);
+    m.$matrix.m24 = 0.0;
+
+    m.$matrix.m31 = (qdb + qac);
+    m.$matrix.m32 = (-qda + qbc);
+    m.$matrix.m33 = (1.0 - qaa - qbb);
+    m.$matrix.m34 = 0.0;
+
+    m.$matrix.m41 = m.$matrix.m42 = m.$matrix.m43 = 0.0;
+    m.$matrix.m44 = 1.0;
+    
+    return m;
+  }
+
+  matrixToQuat(Matrix4 wmat)
+  {
+    var mat = new Matrix4(wmat);
+    
+    /* work on a copy */
+    
+    /*normalize the input matrix, as if it were a 3x3 mat. This is needed AND a 'normalize_qt' in the end */
+    mat.$matrix.m41 = mat.$matrix.m42 = mat.$matrix.m43 = 0;
+    mat.$matrix.m44 = 1.0;
+    
+    var r1 = new Vector3([mat.$matrix.m11, mat.$matrix.m12, mat.$matrix.m13]);
+    var r2 = new Vector3([mat.$matrix.m21, mat.$matrix.m22, mat.$matrix.m23]);
+    var r3 = new Vector3([mat.$matrix.m31, mat.$matrix.m32, mat.$matrix.m33]);
+    r1.normalize();
+    r2.normalize();
+    r3.normalize();
+
+    mat.$matrix.m11 = r1[0]; mat.$matrix.m12 = r1[1]; mat.$matrix.m13 = r1[2]; 
+    mat.$matrix.m21 = r2[0]; mat.$matrix.m22 = r2[1]; mat.$matrix.m23 = r2[2]; 
+    mat.$matrix.m31 = r3[0]; mat.$matrix.m32 = r3[1]; mat.$matrix.m33 = r3[2]; 
+    
+    /*now for the main calculations*/
+    var tr = 0.25 * (1.0 + mat[0][0] + mat[1][1] + mat[2][2]);
+    var s = 0;
+    
+    if (tr > FLT_EPSILON) {
+      s = Math.sqrt(tr);
+      this[0] = s;
+      s = 1.0 / (4.0 * s);
+      this[1] = ((mat[1][2] - mat[2][1]) * s);
+      this[2] = ((mat[2][0] - mat[0][2]) * s);
+      this[3] = ((mat[0][1] - mat[1][0]) * s);
+    }
+    else {
+      if (mat[0][0] > mat[1][1] && mat[0][0] > mat[2][2]) {
+        s = 2.0 * Math.sqrt(1.0 + mat[0][0] - mat[1][1] - mat[2][2]);
+        this[1] = (0.25 * s);
+
+        s = 1.0 / s;
+        this[0] = ((mat[2][1] - mat[1][2]) * s);
+        this[2] = ((mat[1][0] + mat[0][1]) * s);
+        this[3] = ((mat[2][0] + mat[0][2]) * s);
+      }
+      else if (mat[1][1] > mat[2][2]) {
+        s = 2.0 * Math.sqrt(1.0 + mat[1][1] - mat[0][0] - mat[2][2]);
+        this[2] = (0.25 * s);
+
+        s = 1.0 / s;
+        this[0] = ((mat[2][0] - mat[0][2]) * s);
+        this[1] = ((mat[1][0] + mat[0][1]) * s);
+        this[3] = ((mat[2][1] + mat[1][2]) * s);
+      }
+      else {
+        s = 2.0 * Math.sqrt(1.0 + mat[2][2] - mat[0][0] - mat[1][1]);
+        this[3] = (0.25 * s);
+
+        s = 1.0 / s;
+        this[0] = ((mat[1][0] - mat[0][1]) * s);
+        this[1] = ((mat[2][0] + mat[0][2]) * s);
+        this[2] = ((mat[2][1] + mat[1][2]) * s);
+      }
+    }
+
+    this.normalize();
+  }
+
+  normalize() : float
+  {
+
+    var len = Math.sqrt(this.dot())
+    if (len != 0.0) {
+      this.mulScalar(1.0 / len);
+    }
+    else {
+      this[1] = 1.0;
+      this[0] = this[2] = this[3] = 0.0;
+    }
+
+    return len;
+  }
+
+  /* Axis angle to Quaternions */
+  axisAngleToQuat(Vector3 axis, float angle)
+  {
+    var nor = new Vector3(axis);
+    
+    if (nor.normalize() != 0.0) {
+      var phi = angle / 2.0;
+      var si = Math.sin(phi);
+      this[0] = Math.cos(phi);
+      this[1] = nor[0] * si;
+      this[2] = nor[1] * si;
+      this[3] = nor[2] * si;
+    }
+    else {
+      this.makeUnitQuat();
+    }
+  }
+
+  rotationBetweenVecs(Vector3 v1, Vector3 v2) 
+  {
+    v1 = new Vector3(v1);
+    v2 = new Vector3(v2);
+    v1.normalize();
+    v2.normalize();
+    
+    var axis = new Vector3(v1);
+    axis.cross(v2);
+
+    var angle = v1.preNormalizedAngle(v2);
+    
+    this.axisAngleToQuat(axis, angle);
+  }
+
+  quatInterp(Quat quat2, float t)
+  {
+    var quat = new Quat();
+    
+    var cosom = this[0] * quat2[0] + this[1] * quat2[1] + this[2] * quat2[2] + this[3] * quat2[3];
+
+    /* rotate around shortest angle */
+    if (cosom < 0.0) {
+      cosom = -cosom;
+      quat[0] = -this[0];
+      quat[1] = -this[1];
+      quat[2] = -this[2];
+      quat[3] = -this[3];
+    }
+    else {
+      quat[0] = this[0];
+      quat[1] = this[1];
+      quat[2] = this[2];
+      quat[3] = this[3];
+    }
+    
+    var omega, sinom, sc1, sc2;
+    if ((1.0 - cosom) > 0.0001) {
+      omega = Math.acos(cosom);
+      sinom = Math.sin(omega);
+      sc1 = Math.sin((1.0 - t) * omega) / sinom;
+      sc2 = Math.sin(t * omega) / sinom;
+    }
+    else {
+      sc1 = 1.0 - t;
+      sc2 = t;
+    }
+
+    this[0] = sc1 * quat[0] + sc2 * quat2[0];
+    this[1] = sc1 * quat[1] + sc2 * quat2[1];
+    this[2] = sc1 * quat[2] + sc2 * quat2[2];
+    this[3] = sc1 * quat[3] + sc2 * quat2[3];
+  }
 }

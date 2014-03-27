@@ -434,7 +434,7 @@ class NodeVisit:
   
   def traverse(self, node, scope={}, tlevel=0):
     if scope == None and tlevel != 0:
-      raise RuntimeError("emit called without scope")
+      raise RuntimeError("NodeVisit.traverse called without scope")
       
     if scope == None: scope = NodeScope()
     

@@ -1461,8 +1461,8 @@ function face_fill(f, looptris) {
             }
             
             i1++;
-            if (i1 > 10000) {
-              console.log("infinite loop")
+            if (i1 > 50000) {
+              console.log("infinite loop in triangulate")
               return [tris, edges, 0];
             }
             

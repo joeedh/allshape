@@ -6,7 +6,7 @@ import traceback
 from js_global import glob
 
 from js_ast import *
-from js_lex import tokens, StringLit, HexInt
+from js_lex import tokens, StringLit, HexInt, LexWithPrev
 from ply.lex import LexToken, Lexer
 
 #AST nodes that are used in intermediate stages of parsing,
@@ -215,6 +215,11 @@ def handle_semi_error(p):
   return ret
   
 def set_parse_globals_error(p):
+  c, cid = [p.lexer.comment, p.lexer.comment_id]
+  if cid != glob.g_comment_id:
+    glob.g_comment_id = cid
+    print(c)
+    
   if glob.g_production_debug:
     print("in %s" % get_production()[0])
   #prodname_log.append(get_production()[0])
@@ -232,6 +237,16 @@ def set_parse_globals_error(p):
 def set_parse_globals(p, extra_str=""):
   global prodname_log
   
+  lexer = p.lexer
+  if type(lexer) == LexWithPrev:
+    lexer = lexer.lexer
+    
+  c, cid = [lexer.comment, lexer.comment_id]
+  if c != None and cid-1 != glob.g_comment_id and c != "":
+    glob.g_comment_id = cid-1
+    glob.g_comment = c
+    glob.g_comment_line = lexer.comments[lexer.comment_id-1][1]
+    
   glob.g_tried_semi = False
   if glob.g_production_debug:
     print("in %s %s" % (get_production()[0], extra_str))

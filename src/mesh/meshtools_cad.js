@@ -204,7 +204,7 @@ function inset_make_holes(op, mesh) {
         }
         
         i++;
-        if (i > 1000) { //XXX should be bigger value
+        if (i > 5000) { //XXX should be bigger value
           console.log("infinite loop");
           break;
         }

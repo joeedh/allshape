@@ -109,7 +109,7 @@ class VECTORNAME extends Array {
     return this;
   }
 
-  floor(VECTORNAME b)
+  floor(VECTORNAME b=this)
   {
     #unroll i=0<VLEN
     this[i] = Math.floor(this[i], b[i]);
@@ -118,7 +118,7 @@ class VECTORNAME extends Array {
     return this;
   }
 
-  ceil(VECTORNAME b)
+  ceil(VECTORNAME b=this)
   {
     #unroll i=0<VLEN
     this[i] = Math.ceil(this[i], b[i]);
@@ -127,7 +127,7 @@ class VECTORNAME extends Array {
     return this;
   }
 
-  round(VECTORNAME b)
+  round(VECTORNAME b=this)
   {
     #unroll i=0<VLEN
     this[i] = Math.round(this[i], b[i]);
@@ -144,23 +144,23 @@ class VECTORNAME extends Array {
   vectorLength()
   {
     return Math.sqrt(
-    #unroll i=0<VLEN
+    #unroll i=0<VLENM1
       this[i]*this[i] +
     #endroll
-      0.0);
+      this[VLENM1]*this[VLENM1]);
   }
 
   normalize()
   {
     var len = Math.sqrt(
-    #unroll i=0<VLEN
+    #unroll i=0<VLENM1
       this[i]*this[i] +
     #endroll
-      0.0);
+      this[VLENM1]*this[VLENM1]);
     
-    if (len > FLT_EPSILON*2) this.mulScalar(1.0/len);
+    if (len > FLT_EPSILON) this.mulScalar(1.0/len);
     
-    return this;
+    return len;
   }
 
   negate()
@@ -175,17 +175,17 @@ class VECTORNAME extends Array {
   fast_normalize()
   {
     var d = 
-    #unroll i=0<VLEN
+    #unroll i=0<VLENM1
     this[i]*this[i] + 
     #endroll
-    0.0;
+    this[VLENM1]*this[VLENM1];
     
     //var n = d > 1.0 ? d*0.5 : d*2;
     //var n2=n*n, n4=n2*n2, n8=n4*n4;
     //var n6=n4*n2;
     
     var len = Math.sqrt(d); //n*n*n*n + 6*n*n*d + d*d;
-    if (len > FLT_EPSILON) 
+    if (len <= FLT_EPSILON*5) 
       return 0;
       
     //var div = 4*n*(n*n + d);
@@ -196,13 +196,13 @@ class VECTORNAME extends Array {
     this[i] *= len;
     #endroll
     
-    return this;
+    return len;
   }
 
-  divide(float divisor)
+  divide(VECTORNAME v)
   {
       #unroll i=0<VLEN
-      this[i] /= divisor; 
+      this[i] /= v[i]; 
       #endroll
       
       return this;
@@ -221,15 +221,6 @@ class VECTORNAME extends Array {
   {
       #unroll i=0<VLEN
       this[i] /= divisor; 
-      #endroll
-      
-      return this;
-  }
-
-  divVector(VECTORNAME vec)
-  {
-      #unroll i=0<VLEN
-      this[i] /= vec[i];
       #endroll
       
       return this;
@@ -379,11 +370,11 @@ class VECTORNAME extends Array {
 
   dot(VECTORNAME v)
   {
-      return 
-      #unroll i=0<VLEN
+      return
+      #unroll i=0<VLENM1
       this[i]*this[i]+
       #endroll
-      0.0;
+      this[VLENM1]*this[VLENM1];
   }
 
   normalizedDot(VECTORNAME v)
