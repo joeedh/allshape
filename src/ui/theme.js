@@ -75,7 +75,7 @@ var uicolors = {
   "SelectLine" : [0.7, 0.7, 0.7, 1.0],
   "Check" : [0.9, 0.7, 0.4, 1],
   "Arrow" : [0.4, 0.4, 0.4, 1],
-  "DefaultText" : [0.7, 0.7, 0.7, 1.0],
+  "DefaultText" : [0.2, 0.2, 0.2, 1.0],
   "BoxText" : [0.2, 0.2, 0.2, 1.0],
   "HotkeyText" : [0.4, 0.4, 0.4, 0.9],
   "HighlightCursor" : [0.9, 0.9, 0.9, 0.875],

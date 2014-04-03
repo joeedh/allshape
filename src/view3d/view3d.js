@@ -818,7 +818,8 @@ class View3DHandler extends Area {
       console.log("toolstack serialized: ", d, d.length);
       */
       
-      g_app_state.load_undo_file(g_app_state.create_undo_file());
+      //g_app_state.load_undo_file(g_app_state.create_undo_file());
+      console.log(sort_csg(ctx.scene).toString());
       
       //new Context().scene.graph.exec();
     }));

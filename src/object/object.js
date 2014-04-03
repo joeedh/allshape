@@ -19,6 +19,12 @@ var CsgModes = {
   UNION     : 2
 }
 
+var csg_debug_names = {
+  0 : "isc",
+  1 : "sub",
+  2 : "uni"
+}
+
 var RotTypes = {EULER: 0};
 var BBDispTypes = {BOX: 1, SPHERE: 2, CYLINDER: 3, CONE: 4, VIEWCIRCLE: 5};
 
