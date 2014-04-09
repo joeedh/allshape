@@ -56,13 +56,15 @@ class MeshEditor extends View3DEditor {
   }
 
   render_selbuf(gl, view3d, typemask) {
-      if (this.object.ss_mesh) 
-        subsurf_selbuf_render(this.gl, this.object.ss_mesh, this.mesh, view3d.drawmats, 
-                              (this.selectmode|MeshTypes.FACE|typemask));
-      else
-        render_mesh_selbuf(this.gl, this.mesh, view3d.drawmats, 
-                         (this.selectmode|MeshTypes.FACE|typemask));
-  }
+    if (this.object == undefined) return;
+
+    if (this.object.ss_mesh) 
+      subsurf_selbuf_render(this.gl, this.object.ss_mesh, this.mesh, view3d.drawmats, 
+                            (this.selectmode|MeshTypes.FACE|typemask));
+    else
+      render_mesh_selbuf(this.gl, this.mesh, view3d.drawmats, 
+                       (this.selectmode|MeshTypes.FACE|typemask));
+}
 
   selbuf_changed(typemask) {
     return this.last_selectmode != (this.selectmode|typemask);
