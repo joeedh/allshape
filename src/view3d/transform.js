@@ -225,11 +225,16 @@ class TransData {
     }
     
     //XXX hack bugfix
-    if (datamode == undefined)
-      datamode = top.datamode;
-      
+    if (datamode == undefined) {
+      this.datamode = top.datamode;
+    } else {
+      if (datamode & EditModes.GEOMETRY)
+        this.datamode = TransMeshType;
+      else
+        this.datamode = TransObjectType;
+    }
+    
     this.length = 0;
-    this.datamode = datamode;
     this.center = new Vector3([0, 0, 0]);
     this.ctx = ctx;
     
@@ -371,13 +376,15 @@ var zclr = [0.0, 0.0, c, 0.5]
 var axclrs = [xclr, yclr, zclr]
 
 class TransformOp extends ToolOp {
-  constructor(String apiname, String uiname, TransDataType datatype, int mode) {
+  constructor(String apiname, String uiname, int mode) {
     ToolOp.call(this, apiname, uiname);
     
     if (mode & EditModes.GEOMETRY)
       this.datatype = TransMeshType;
     else
       this.datatype = TransObjectType;
+    
+    console.log("------=---------->", mode, EditModes.GEOMETRY, this.datatype);
     
     this.selecting_axis = false;
     this.constrain_plane = false;

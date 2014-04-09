@@ -72,6 +72,8 @@ class InsetOp extends TransformOp {
     this.inputs.SCALE.range = [-2.0, 2.0];
     this.inputs.SCALE.ui_range = [-1.0, 1.0];
     
+    TransformOp.default_slots(this, EditModes.GEOMETRY);
+    
     this.outputs = {SCALE: new Vec4Property(new Vector3(), "inset", "Inset", "Amount of insetting, in -1..1 range.")}
     
     this._loops = new GArray();

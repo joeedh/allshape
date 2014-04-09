@@ -1,7 +1,7 @@
 "use strict";
 
 class TranslateOp extends TransformOp {
-  constructor(mode, ob_active=undefined) {
+  constructor(int mode, Object ob_active=undefined) {
     TransformOp.call(this, "translate", "Translate", mode);
     
     this.transdata = null;
