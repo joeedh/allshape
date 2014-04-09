@@ -1,19 +1,5 @@
 "use strict";
 
-typed class TypedClass {
-  int type, flag, eid, value;
-  float co[3], rot[3];
-  
-  constructor() {
-    int a = 0;
-  }
-}
-
-var TypedClass tst = new TypedClass();
-
-var a = tst.type;
-var b = tst.co[0];
-
 class CSGNode extends GArray {
   constructor(ASObject ob, CSGNode par=undefined) {
     GArray.call(this);

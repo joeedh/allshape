@@ -371,6 +371,14 @@ class VarDeclNode(IdentNode):
         return n.get_type_str()
       elif isinstance(n, TypeNode):
         return get_type(n.type, visit)
+      elif type(n) == TypedClassNode:
+        return n.name
+      elif type(n) == TypeRefNode:
+        return get_type(n.type)
+      elif type(n) == TypedClassRef:
+        return n.type
+      else:
+        return self.val
       
     if self.type == self:
       return self.val
@@ -436,6 +444,40 @@ class TypeNode(Node):
     s = str(type(self))
     return s[s.find("<"):s.find(">")]
 
+class StaticArrNode(Node):
+  def __init__(self, name_node, size):
+    """
+    layout: self[0] is array name node
+            self[1] is array type
+            parent should be a var decl node
+    """
+    Node.__init__(self)
+    
+    self.size = size
+    self.add(name_node)
+  
+  def extra_str(self):
+    return str(self.size)
+    
+  def copy(self):
+    n = StaticArrNode(Node(), self.size)
+    
+    n.remove(n[0])
+    
+    self.copy_basic(n)
+    self.copy_children(n)
+    
+    return n
+    
+  def get_type_str(self):
+    t = self[0]
+    if type(t) != str: t = t.get_type_str()
+    
+    return "%s[%i]" % (t, self.size)
+  
+  def get_type_name(self):
+    return self.get_type_str()
+    
 class FuncRefNode(TypeNode):
   def __init__(self, name):
     super(FuncRefNode, self).__init__(UndefinedTypeNode())
@@ -1138,6 +1180,12 @@ class InitCallNode (FuncCallNode):
     self.copy_children(n2)
     
     return n2
+
+class TypedClassRef (Node):
+  def __init__(self, cls):
+    Node.__init__(self)
+    
+    self.type = cls
     
 class FunctionNode (StatementList):
   def copy(self):
@@ -1951,6 +1999,72 @@ class ClassNode(Node):
     s += "}"
     
     return s
+
+class TypedClassNode(Node):
+  def __init__(self, name, parent=None):
+    Node.__init__(self)
+    
+    self.name = name
+    self.cls_parent = parent  
+    self.getters = {}
+    self.setters = {}
+    self.methods = {}
+    self.props = {}
+    self.childmap = {}
+    
+    self.size = None
+    
+  def start(self, typespace):
+    """
+    propegate self.getters/setters/methods/props
+    """
+    for c in self.children:
+      if type(c) == VarDeclNode:
+        if c.val in self.props:
+          typespace.error("duplicate property " + c.val, c)
+        self.props[c.val] = c
+        self.childmap[c.val] = c
+      elif type(c) == MethodNode:
+        if c.name in self.methods:
+          typespace.error("duplicate method " + c.name, c)
+        self.methods[c.name] = c
+        self.childmap[c.name] = c
+      elif type(c) == MethodGetter:
+        if c.name in self.getters:
+          typespace.error("duplicate getter " + c.name, c)
+        self.getters[c.name] = c
+        self.childmap[c.name] = c
+      elif type(c) == MethodSetter:
+        if c.name in self.setters:
+          typespace.error("duplicate setter " + c.name, c)
+        self.setters[c.name] = c
+        self.childmap[c.name] = c
+      
+    g = self.getters; s = self.setters; m = self.methods; p = self.props
+    for k in g:
+      if k in m or k in p:
+        typespace.error(k + " is already defined", g[k])
+    
+    for k in s:
+      if k in m or k in p:
+        typespace.error(k + " is already defined", s[k])
+        
+    for k in m:
+      if k in g or k in s or k in p:
+        typespace.error(k + " is already defined", m[k])
+    
+    for k in p:
+      if k in s or k in m or k in g:
+        typespace.error(k + " is already defined", p[k])
+        
+  def extra_str(self):
+    if self.cls_parent != None:
+      return ("%s extends %s" % (self.name, self.cls_parent))
+    else:
+      return self.name
+      
+  def gen_js(self, tlevel):
+    return ""
     
 def node_is_class(node):
   if type(node) != FunctionNode:

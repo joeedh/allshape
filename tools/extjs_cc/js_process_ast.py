@@ -432,9 +432,12 @@ class NodeVisit:
   def __init__(self):
     pass
   
-  def traverse(self, node, scope={}, tlevel=0):
+  def traverse(self, node, scope=None, tlevel=0):
     if scope == None and tlevel != 0:
       raise RuntimeError("NodeVisit.traverse called without scope")
+      
+    if scope == None:
+      scope = {}
       
     if scope == None: scope = NodeScope()
     
@@ -447,7 +450,7 @@ class NodeVisit:
         self.traverse(c, scope, tlevel)
     else:
       getattr(self, typestr)(node, scope, self.traverse, tlevel)
-
+  
 def handle_nodescope_pre(n, scope):
     if type(n) in [IdentNode, VarDeclNode]:
       """
@@ -647,7 +650,10 @@ def add_func_opt_code(result, typespace):
     codelist = []
     
     for p in node[0]:
-      is_opt = p[0].gen_js(0).strip() != "";
+      if type(p) == IdentNode:
+        is_opt = False
+      else:
+        is_opt = p[0].gen_js(0).strip() != "";
       
       if not is_opt and was_opt:
         typespace.error("Cannot have required parameter after an optional one", node)

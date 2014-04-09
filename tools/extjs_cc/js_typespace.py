@@ -196,56 +196,6 @@ class JSTypeSpace:
     
     raise JSError("%s:(%s): error: %s\n"%(srcnode.file, srcnode.line+1, msg))
   
-  def hash_record(self, n):
-    return "%s|%d" % (n.file, n.line)
-  
-  def get_record(self, n):
-    h = self.hash_record(n)
-    n2 = Node()
-    
-    lst = []
-    #"""
-    if h in self.logmap:
-      lst += self.logmap[h]
-    #"""
-    
-    """
-    n2.line = n.line-1
-    n2.file = n.file
-    h = self.hash_record(n2)
-
-    if h in self.logmap:
-      lst += self.logmap[h]
-    #"""
-    
-    """
-    n2.line = n.line+1
-    n2.file = n.file
-    h = self.hash_record(n2)
-
-    if h in self.logmap:
-      lst += self.logmap[h]
-    #"""
-    
-    lst2 = []
-    for en in lst:
-      if en.func.strip() == n.origname.strip():
-        lst2.append(en)
-    
-    if len(lst2) == 0: return None
-
-    return lst2
-      
-  def add_records(self, records):
-    self.logrec += records
-    
-    for r in records:
-      h = self.hash_record(r)
-      if h not in self.logmap:
-        self.logmap[h] = []
-        
-      self.logmap[h].append(r)
-      
   def get_type(self, type, scope={}):
     print("typespace.get_type call:", type)
     if type in scope:
@@ -304,6 +254,7 @@ class JSTypeSpace:
         
         return self.member_lookup(var, node.children[1])
   
+  """
   def member_add(self, node, mname, member):
     if type(node) == FunctionNode:
       node.members[mname] = member
@@ -322,7 +273,7 @@ class JSTypeSpace:
         mname = self.limited_eval(m.children[0])
         if mname == member:
           return m.children[1]
-  
+  """
   
   def build_type(self, node, locals, func):
     is_class = func != None and func_is_class(func)

@@ -272,17 +272,8 @@ from js_process_ast import traverse, traverse_i, null_node, \
                            find_node, flatten_statementlists, \
                            kill_bad_globals, expand_harmony_classes
 
-tst_js_arg_fmt = False
+from js_typed_classes import expand_typed_classes
 
-if tst_js_arg_fmt:
-  n = js_parse("""
-    for (var $n=0; $s<2; $n1++) {
-      console.log("$x3 $i3 $f3");
-    }
-  """, args=(IdentNode("i"), "i", 1234), flatten=False, print_stack=False);
-  #print(n.gen_js(0))
-  raise "e"
- 
 b64tab = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
 def b64chr(n):
   global b64tab
@@ -519,29 +510,6 @@ def concat_smaps(files):
   
   return ret
     
-"""
-f = open("out.js.map", "r")
-smap = f.read()
-
-f.close()
-
-ret = json.loads(encode_smap(parse_smap(smap)))
-smap = json.loads(smap)
-print(type(smap), type(ret))
-print(ret["mappings"] == smap["mappings"])
-
-sys.exit(-1)
-#"""
-
-"""
-buf = vlq_encode(234)
-print(buf)
-ret, i = vlq_decode(buf)
-print(ret, i)
-
-sys.exit(-1)
-#"""
-
 def gen_source_map(src, gensrc, map):
   #"""
   gensrc2 = ""
@@ -760,6 +728,81 @@ def parse_intern_es6(data):
     print(buf)
   
   return buf, result
+
+def expand_mozilla_forloops_new(node, scope):
+  func = node.parent
+  while not null_node(func) and type(func) != FunctionNode: 
+    func = func.parent
+    
+  if not null_node(func):
+    if func.name in forloop_expansion_exclude: return
+  
+  def prop_ident_change(node, oldid, newid):
+    if type(node) in [IdentNode, VarDeclNode] and node.val == oldid:
+      if type(node.parent) == BinOpNode and node.parent.op == ".":
+        if node != node.parent[1]:
+          node.val = newid
+      else:
+          node.val = newid
+      
+    for c in node.children:
+      if type(c) == FunctionNode:
+        continue
+      prop_ident_change(c, oldid, newid)
+  
+  #for-in-loops don't seem to behave like for-C-loops,
+  #the iteration variable is in it's own scope, and 
+  #doesn't seem to affect the parent scope.
+  val = node[0].val
+  di = 0
+  while node[0].val in scope:
+    node[0].val = "%s_%d" % (val, di)
+    di += 1
+    
+    #print(node[0].val)
+  
+  if node[0].val != val:
+    scope[node[0].val] = node[0]
+    prop_ident_change(node.parent, val, node[0].val)
+  
+  slist = node.parent.children[1]
+  if type(slist) != StatementList:
+    s = StatementList()
+    s.add(slist)
+    slist = s
+  
+  itername = node[0].val
+  objname = node[1].gen_js(0)
+  n2 = js_parse("""
+    var __iter_$s1 = __get_iter($s2);
+    var $s1;
+    while (1) {
+      var __ival_$s1 = __iter_$s1.next();
+      if (__ival_$s1.done) {
+        break;
+      }
+      
+      $s1 = __ival_$s1.value;
+    }
+  """, (itername, objname));
+  
+  def set_line(n, slist, line, lexpos):
+    n.line = line
+    n.lexpos = lexpos
+    
+    for c in n.children:
+        set_line(c, slist, line, lexpos)
+  
+  #preserving line info is a bit tricky.
+  #slist goes through a js->gen_js->js cycle,
+  #so make sure we still have it (and its
+  #line/lexpos information).
+  
+  set_line(n2, slist, node.line, node.lexpos)
+  for c in slist:
+    n2[2][1].add(c)
+  
+  node.parent.parent.replace(node.parent, n2)
   
 f_id = [0]
 def parse_intern(data, create_logger=False, expand_loops=True, expand_generators=True):
@@ -804,6 +847,7 @@ def parse_intern(data, create_logger=False, expand_loops=True, expand_generators
     file.close()
     
   expand_harmony_classes(result, typespace);
+  expand_typed_classes(result, typespace)
   
   if glob.g_clear_slashr:
     print("\n")
@@ -814,228 +858,12 @@ def parse_intern(data, create_logger=False, expand_loops=True, expand_generators
     #sys.stdout.write("Error: empty compilation\n");
     #raise JSError("Empty compilation");
   
-  def expand_mozilla_forloops_new(node, scope):
-    func = node.parent
-    while not null_node(func) and type(func) != FunctionNode: 
-      func = func.parent
-      
-    if not null_node(func):
-      if func.name in forloop_expansion_exclude: return
-    
-    def prop_ident_change(node, oldid, newid):
-      if type(node) in [IdentNode, VarDeclNode] and node.val == oldid:
-        if type(node.parent) == BinOpNode and node.parent.op == ".":
-          if node != node.parent[1]:
-            node.val = newid
-        else:
-            node.val = newid
-        
-      for c in node.children:
-        if type(c) == FunctionNode:
-          continue
-        prop_ident_change(c, oldid, newid)
-    
-    #for-in-loops don't seem to behave like for-C-loops,
-    #the iteration variable is in it's own scope, and 
-    #doesn't seem to affect the parent scope.
-    val = node[0].val
-    di = 0
-    while node[0].val in scope:
-      node[0].val = "%s_%d" % (val, di)
-      di += 1
-      
-      #print(node[0].val)
-    
-    if node[0].val != val:
-      scope[node[0].val] = node[0]
-      prop_ident_change(node.parent, val, node[0].val)
-    
-    slist = node.parent.children[1]
-    if type(slist) != StatementList:
-      s = StatementList()
-      s.add(slist)
-      slist = s
-    
-    itername = node[0].val
-    objname = node[1].gen_js(0)
-    n2 = js_parse("""
-      var __iter_$s1 = __get_iter($s2);
-      var $s1;
-      while (1) {
-        var __ival_$s1 = __iter_$s1.next();
-        if (__ival_$s1.done) {
-          break;
-        }
-        
-        $s1 = __ival_$s1.value;
-      }
-    """, (itername, objname));
-    
-    def set_line(n, slist, line, lexpos):
-      n.line = line
-      n.lexpos = lexpos
-      
-      for c in n.children:
-          set_line(c, slist, line, lexpos)
-    
-    #preserving line info is a bit tricky.
-    #slist goes through a js->gen_js->js cycle,
-    #so make sure we still have it (and its
-    #line/lexpos information).
-    
-    set_line(n2, slist, node.line, node.lexpos)
-    for c in slist:
-      n2[2][1].add(c)
-    
-    node.parent.parent.replace(node.parent, n2)
-    
-  def expand_mozilla_forloops(node, scope):
-    func = node.parent
-    while not null_node(func) and type(func) != FunctionNode: 
-      func = func.parent
-      
-    if not null_node(func):
-      if func.name in forloop_expansion_exclude: return
-    
-    def prop_ident_change(node, oldid, newid):
-      if type(node) in [IdentNode, VarDeclNode] and node.val == oldid:
-        if type(node.parent) == BinOpNode and node.parent.op == ".":
-          if node != node.parent[1]:
-            node.val = newid
-        else:
-            node.val = newid
-        
-      for c in node.children:
-        if type(c) == FunctionNode:
-          continue
-        prop_ident_change(c, oldid, newid)
-          
-    whilenode = WhileNode(NumLitNode(1))
-    slist = node.parent.children[1]
-  
-    #for-in-loops don't seem to behave like for-C-loops,
-    #the iteration variable is in it's own scope, and 
-    #doesn't seem to affect the parent scope.
-    val = node[0].val
-    di = 0
-    while node[0].val in scope:
-      node[0].val = "%s_%d" % (val, di)
-      di += 1
-      
-      #print(node[0].val)
-    
-    if node[0].val != val:
-      scope[node[0].val] = node[0]
-      prop_ident_change(node.parent, val, node[0].val)
-    
-    itername = "__iter_%s"%(node.children[0].val);
-    
-    n = js_parse("var $s;", node.children[0].val, start_node=VarDeclNode)
-    
-    n2 = FuncCallNode(BinOpNode(IdentNode(itername), IdentNode("next"), "."))
-    
-    if type(slist) != StatementList:
-      s = StatementList()
-      s.add(slist)
-      slist = s
-    
-    slist.prepend(AssignNode(n, n2))
-    
-    slist2 = StatementList()
-    trynode = TryNode()
-    trynode.add(slist)
-    slist2.add(trynode)
-    
-    catch = CatchNode(IdentNode("_for_err"))
-    slist3 = StatementList()
-    slist3.add(js_parse("""
-      if (_for_err !== StopIteration) {
-        if (_do_iter_err_stacktrace) print_stack(_for_err);
-        throw _for_err;
-        break;
-      }
-      """)[0]);
-    
-    slist3.add(BreakNode());
-    catch.add(slist3)
-    
-    slist2.add(catch)
-    whilenode.add(slist2)
-    
-    slist4 = StatementList()
-    n = js_parse("var $s;", itername, start_node=VarDeclNode)
-    n2 = node.children[1]
-    
-    fn = FuncCallNode(IdentNode("__get_iter"))
-    fn.add(ExprListNode([n2]))
-    
-    slist4.add(AssignNode(n, fn))
-    slist4.add(whilenode)
-    
-    node.parent.parent.replace(node.parent, slist4)
-  
   global f_id  
-
   f_id = [0]
-  def create_type_logger(node):
-    if node.name == "server_log": return
-    line = node.line
-    
-    for c in node.children[0].children:
-      file = c.file.replace("\\", "/")
-      
-      n1 = js_parse("""
-      if (%s != undefined) {
-        server_log(\"p|%s|%s:%s|%s:\" + get_type_name(%s));
-      } else {
-        server_log(\"p|%s|%s:%s|%s:undefined");
-      }""" % (c.val, node.name, file, line, c.val, c.val, node.name, file, line, c.val),
-      flatten=False)
-      
-      node.insert(1, n1)
-    
-    doneset = set()
-    def set_return_code(n):
-    
-      if n in doneset: return
-      doneset.add(n)
-      
-      global f_id
-      
-      i = f_id[0]
-      f_id[0] += 1
-      
-      file = n.file.replace("\\", "/")
-      ret = "__ret_%d" % i
-      rstr = "r|%s|%s:%s|__ret:" % (node.name, file, n.line)
-      
-      n2 = js_parse("""
-      var RET = undefined;
-      server_log(\"RSTR\"+get_type_name(RET));
-      return RET;
-      """.replace("RET", ret).replace("RSTR", rstr),
-      flatten=False)
-      
-      if n2 != None:
-        if len(n) > 0:
-          n3 = find_node(n2, VarDeclNode)
-          doneset.add(n3)
-          
-          n3.replace(n3[0], n[0])
-          
-          n.parent.replace(n, n2)
-      
-    traverse(node, ReturnNode, set_return_code, exclude=[FunctionNode])
-  
-  
   flatten_statementlists(result, typespace)
   
   if expand_loops:
-    if glob.g_harmony_iterators:
-      traverse(result, ForInNode, expand_mozilla_forloops_new, use_scope=True)
-    else:
-      traverse(result, ForInNode, expand_mozilla_forloops, use_scope=True)
-    #combine_try_nodes(result);
+    traverse(result, ForInNode, expand_mozilla_forloops_new, use_scope=True)
   
   #combine_try_nodes may have nested statementlists again, so better reflatten
   flatten_statementlists(result, typespace)
@@ -1313,6 +1141,6 @@ if __name__ == "__main__":
     except:
       traceback.print_stack()
       traceback.print_exc()
-      
       ret = -1
+    
     sys.exit(ret)

@@ -9,6 +9,12 @@ class TransDataType {
   static reset(tdata, i) {
   }
   
+  static undo_pre(top, tdata, ctx) {
+  }
+  
+  static undo(top, tdata, ctx) {
+  }
+  
   static get_co(tdata, i) {
   }
   
@@ -41,6 +47,47 @@ class TransMeshType extends TransDataType {
     }
     
     return ret;
+  }
+  
+  static undo_pre(top, tdata, ctx) {
+    var mesh = ctx.mesh
+    
+    top._undo = {}
+    for (var v in mesh.verts.selected) {
+      top._undo[v.eid] = new Vector3(v.co);
+    }
+  }
+
+  static undo(top, tdata, ctx) {
+    var mesh = ctx.mesh
+    
+    var _undo = top._undo;
+    for (var k in _undo) {
+      var v = mesh.verts.get(k)
+      
+      if (v == undefined) {
+        console.log("undefined vert in undo!")
+        continue;
+      }
+      
+      v.co.load(_undo[k]);
+      
+      if (mesh.flag & MeshFlags.USE_MAP_CO) {
+        v.flag |= Flags.DIRTY;
+        for (var l in v.loops) {
+          l.e.flag |= Flags.DIRTY;
+          l.f.flag |= Flags.DIRTY;        
+        }
+      }
+    }
+    
+    mesh.regen_positions();
+    mesh.regen_normals();
+    
+    var iter = new recalc_normals_job(mesh, false);
+    var job = new Joblet(mesh, iter, function() { }, 1);
+    
+    g_app_state.jobs.queue_replace(job);
   }
   
   static get_rot_euler(tdata, i) {
@@ -94,6 +141,52 @@ class TransObjectType {
   
   static get_rot_euler(tdata, i) {
     return tdata.objects[i].rot_euler;
+  }
+  
+  static undo_pre(top, tdata, ctx) {
+    var undo;
+    top._undo = undo = [new GArray(), new GArray()];
+    var active = top.inputs.OBJECT.data;
+    
+    if (active != undefined) 
+      active = ctx.datalib.get(active);
+      
+    for (var ob in top.inputs.OBJECTS.data) {
+      if (ob == active)
+        continue;
+      
+      undo[0].push(ob)
+    }
+    
+    //make sure active object goes last
+    if (top.inputs.OBJECT.data)
+      undo[0].push(active);
+    
+    //store vectors in a flat array, this lets us avoid
+    //one level of object caching
+    for (var ob in undo[0]) {
+      undo[1].push(new Vector3(ob.loc));
+      undo[1].push(new Vector3(ob.rot_euler));
+      undo[1].push(new Vector3(ob.size));
+    }
+    
+    for (var i=0; i<undo[0].length; i++) {
+      undo[0][i] = new DataRef(undo[0][i]);
+    }
+  }
+  
+  static undo(top, tdata, ctx) {
+    var undo = top._undo;
+    
+    for (var i=0; i<undo[0].length; i++) {
+      var ob = ctx.datalib.get(undo[0][i]);
+      
+      ob.loc.load(undo[1][i*3]);
+      ob.rot_euler.load(undo[1][i*3+1]);
+      ob.size.load(undo[1][i*3+2]);
+      
+      ob.dag_update();
+    }
   }
   
   static get_size(tdata, i) {
@@ -160,8 +253,6 @@ class TransData {
   load_objects(ctx, active_ob, objlist) {
     //load passed in obj, as well as the objects in ctx.scene.selected
     
-    this.datatype = TransObjectType;
-    
     var obj = active_ob;
     
     //passed in (active) object always goes first
@@ -219,8 +310,6 @@ class TransData {
   }
   
   load_mesh(ctx, obj) {
-    this.datatype = TransMeshType;
-    
     this.mesh = obj.data;
     this.verts = new GArray<Vertex>();
     this.startcos = new GArray<Vector3>();
@@ -278,9 +367,14 @@ var zclr = [0.0, 0.0, c, 0.5]
 var axclrs = [xclr, yclr, zclr]
 
 class TransformOp extends ToolOp {
-  constructor(String apiname, String uiname) {
+  constructor(String apiname, String uiname, TransDataType datatype, int mode) {
     ToolOp.call(this, apiname, uiname);
-   
+    
+    if (mode & EditModes.GEOMETRY)
+      this.datatype = TransMeshType;
+    else
+      this.datatype = TransObjectType;
+    
     this.selecting_axis = false;
     this.constrain_plane = false;
     
@@ -293,6 +387,7 @@ class TransformOp extends ToolOp {
 
   static default_slots(obj, mode, asob) {
     obj.inputs["DATAMODE"] = selectmode_enum.copy();
+    obj.inputs["DATAMODE"].flag |= TPropFlags.PRIVATE;
     obj.inputs["OBJECT"] = new DataRefProperty(asob, DataTypes.OBJECT, "object", "Object", "Object to transform", undefined);
     obj.inputs["OBJECTS"] = new RefListProperty([], DataTypes.OBJECT, "objects", "Objects", "Objects to transform, if applicable", undefined);
     
@@ -311,44 +406,11 @@ class TransformOp extends ToolOp {
   }
  
   undo_pre(ctx) {
-    var mesh = ctx.mesh
-    
-    this._undo = {}
-    for (var v in mesh.verts.selected) {
-      this._undo[v.eid] = new Vector3(v.co);
-    }
+    this.datatype.undo_pre(this, this.transdata, ctx);
   }
 
   undo(ctx) {
-    var mesh = ctx.mesh
-    
-    var _undo = this._undo;
-    for (var k in _undo) {
-      var v = mesh.verts.get(k)
-      
-      if (v == undefined) {
-        console.log("undefined vert in undo!")
-        continue;
-      }
-      
-      v.co.load(_undo[k]);
-      
-      if (mesh.flag & MeshFlags.USE_MAP_CO) {
-        v.flag |= Flags.DIRTY;
-        for (var l in v.loops) {
-          l.e.flag |= Flags.DIRTY;
-          l.f.flag |= Flags.DIRTY;        
-        }
-      }
-    }
-    
-    mesh.regen_positions();
-    mesh.regen_normals();
-    
-    var iter = new recalc_normals_job(mesh, false);
-    var job = new Joblet(mesh, iter, function() { }, 1);
-    
-    g_app_state.jobs.queue_replace(job);
+    this.datatype.undo(this, this.transdata, ctx);
   }
   
   do_normals(ctx) {

@@ -1,8 +1,8 @@
 "use strict";
 
 class TranslateOp extends TransformOp {
-  constructor(mode=0, ob_active=undefined) {
-    TransformOp.call(this, "translate", "Translate");
+  constructor(mode, ob_active=undefined) {
+    TransformOp.call(this, "translate", "Translate", mode);
     
     this.transdata = null;
     this.is_modal = true;
@@ -217,8 +217,8 @@ class TranslateOp extends TransformOp {
   }
 }
 
-function RotateOp(mode=0) {
-  TransformOp.call(this, "rotate", "Rotate");
+function RotateOp(int mode) {
+  TransformOp.call(this, "rotate", "Rotate", mode);
   
   this.transdata = null;
   this.is_modal = true;
@@ -427,8 +427,8 @@ RotateOp.prototype.exec = function(ctx) {
   ctx.mesh.regen_normals();
 }
 
-function ScaleOp(mode=0) {
-  TransformOp.call(this, "scale", "Scale");
+function ScaleOp(int mode) {
+  TransformOp.call(this, "scale", "Scale", mode);
   
   this.transdata = null;
   this.is_modal = true;

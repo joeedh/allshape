@@ -319,7 +319,7 @@ function api_define_ops() {
       
       macro.add_tool(op);
       
-      var transop = new TranslateOp()
+      var transop = new TranslateOp(EditModes.GEOMETRY)
       macro.add_tool(transop);
 
       macro.connect_tools(op.outputs.group_no, transop.inputs.AXIS);
@@ -337,7 +337,7 @@ function api_define_ops() {
       
       macro.add_tool(op);
       
-      var transop = new TranslateOp()
+      var transop = new TranslateOp(EditModes.GEOMETRY)
       macro.add_tool(transop);
       
       return macro;

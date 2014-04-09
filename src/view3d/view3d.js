@@ -600,7 +600,7 @@ class View3DHandler extends Area {
     
       /*handle drag translate*/
       if (vec.vectorLength() > 10) {
-        g_app_state.toolstack.exec_tool(new TranslateOp());
+        g_app_state.toolstack.exec_tool(new TranslateOp(EditModes.GEOMETRY));
         this._mstart = null;
         return;
       }

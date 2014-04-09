@@ -55,7 +55,7 @@ function inset_loop(loop, ispartial, no, fac)
 
 class InsetOp extends TransformOp {
   constructor() {
-    TransformOp.call(this);
+    TransformOp.call(this, EditModes.GEOMETRY);
     
     this.uiname = "Inset"
     this.name = "inset"

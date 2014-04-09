@@ -327,6 +327,7 @@ def p_assign_statement(p):
 def p_statement(p):
   ''' statement : function
                 | class
+                | typed_class
                 | if
                 | else
                 | while
@@ -654,7 +655,78 @@ def p_var_decl(p):
     
     p[0] = p[1]
     p[0].add(p[3])
+
+def p_ident_arr(p):
+  '''ident_arr : ID
+               | ident_arr LSBRACKET NUMBER RSBRACKET
+  '''
+  set_parse_globals(p)
   
+  if len(p) == 2:
+    p[0] = IdentNode(p[1])
+  elif len(p) == 5:
+    p[0] = StaticArrNode(p[1], p[3])
+  
+def p_var_decl_with_arr(p):
+  '''var_decl_with_arr : type_modifiers var_type ident_arr
+                       | var_decl_with_arr ASSIGN expr
+                       | var_decl_with_arr COMMA ident_arr
+                       | var_decl_with_arr COMMA ident_arr ASSIGN expr
+  '''
+  set_parse_globals(p)
+  
+  #always call this *before* adding p[0].type to p[0]!!
+  def build_vdecl(r, t, n):
+    r.type = t
+    
+    name = n
+    while type(name) == StaticArrNode:
+      name = name[0]
+    
+    if type(n) == StaticArrNode:
+      name.parent.replace(name, t)
+      r.type = n
+      
+    r.val = name.val
+    
+  if len(p) == 4 and p[2] not in ["=", ","]:
+    p[0] = VarDeclNode(ExprListNode([]))
+    build_vdecl(p[0], p[2], p[3])
+    p[0].add(p[0].type)
+  elif len(p) == 4 and p[2] == "=":
+    p[0] = p[1]
+    p[0].replace(p[0][0], p[3])
+  elif len(p) == 4 and p[2] == ",":
+    p[0] = p[1]
+    n = p[0].copy()
+    p[0].add(n)
+    
+    while len(n) > 0:
+      n.remove(n[0])
+    n.add(ExprNode([]))
+    
+    t = p[0].type
+    while type(t) == StaticArrNode:
+      t = t[0]
+    
+    build_vdecl(n, t, p[3])
+    n.add(n.type)
+  elif len(p) == 6:
+    p[0] = p[1]
+    n = p[0].copy()
+    p[0].add(n)
+    
+    while len(n) > 0:
+      n.remove(n[0])
+    n.add(p[5])
+    
+    t = p[0].type
+    while type(t) == StaticArrNode:
+      t = t[0]
+    
+    build_vdecl(n, t, p[3])
+    n.add(n.type)
+    
 def p_id_var_type(p):
   '''id_var_type : ID 
   '''
@@ -889,9 +961,82 @@ def p_exprlist(p):
     p[0] = p[1]
     p[0].add(AssignNode(p[3], p[5]))
 
-#the class->function/prototype transformation
-#HAPPENS AT PARSE TIME
+"""
+typedclasses are kindof like c structors or c++ objects.
+their a bit different from harmony classes, which are also
+supported.
+"""
 
+def p_typed_class(p):
+    '''typed_class : TYPED CLASS ID template_opt typed_class_tail
+    '''
+    set_parse_globals(p)
+    
+    if p[5][0] != None:
+      parent = p[5][0]
+    else:
+      parent = None
+    name = p[3]
+    
+    p[0] = TypedClassNode(name, parent)
+    for c in p[5][1]:
+      p[0].add(c)
+    
+def p_typed_class_tail(p):
+  '''typed_class_tail : typed_inherit_opt LBRACKET typed_class_body_opt RBRACKET
+  '''
+  set_parse_globals(p)
+  p[0] = [p[1], p[3]]
+  
+def p_typed_class_body_opt(p):
+  '''typed_class_body_opt : typed_class_list
+                          |
+  '''
+  set_parse_globals(p)
+  if len(p) == 2: p[0] = p[1]
+    
+def p_typed_class_list(p):
+  '''typed_class_list : typed_class_element
+                      | typed_class_list typed_class_element
+  '''
+  set_parse_globals(p)
+  
+  if len(p) == 2:
+    p[0] = StatementList()
+    c = p[1]
+  else:
+    p[0] = p[1]
+    c = p[2]
+  
+  if type(c) == VarDeclNode:
+    #unnest var decl nodes
+    p[0].add(c)
+    
+    while len(c) > 2:
+      c2 = c[2]
+      c.remove(c2)
+      p[0].add(c2)
+  else:
+    p[0].add(c)
+    
+def p_typed_class_element(p):
+  '''typed_class_element : class_element
+                         | var_decl_with_arr SEMI
+  '''
+  set_parse_globals(p)
+  p[0] = p[1]
+
+def p_typed_inherit_opt(p):
+  '''typed_inherit_opt : EXTENDS ID
+                       |
+  '''
+  set_parse_globals(p)
+
+  if len(p) == 3:
+    p[0] = p[2]
+  else:
+    p[0] = None
+    
 #page 239 of january2014 draft harmony spec (page 257 as chrome sees it)
 def p_class(p):
   '''class : CLASS ID template_opt class_tail'''
@@ -1034,7 +1179,6 @@ def p_method_def(p):
                 | ID getset_id LPAREN RPAREN func_type_opt LBRACKET statementlist_opt RBRACKET
                 | ID getset_id LPAREN setter_param_list RPAREN func_type_opt LBRACKET statementlist_opt RBRACKET
   '''
-  set_parse_globals(p)
   
   if len(p) == 2:
     p[0] = p[1]
@@ -1043,6 +1187,7 @@ def p_method_def(p):
     p[0] = MethodGetter(name)
     if p[7] == None: p[7] = StatementList()
     p[0].add(p[7])
+    
     if p[5] != None:
       p[0].type = p[5]
   elif p[1] == "set" and len(p) == 10:
@@ -1061,12 +1206,25 @@ def p_method_def(p):
   
 def p_setter_param_list(p):
   '''
-    setter_param_list : ID
+    setter_param_list : var_type_opt ID
+                      | var_type
   '''
   set_parse_globals(p)
   
-  p[0] = ExprListNode([VarDeclNode(ExprNode([]), name=p[1])])
-  return
+  if len(p) == 3 and p[1] != None:
+    p[0] = ExprListNode([VarDeclNode(ExprNode([]), name=p[2])])
+    n = p[0][0]
+    n.type = p[1]
+    if len(n) > 1:
+      n.replace(n[1], n.type)
+    else:
+      n.add(n.type)
+  else:
+    if type(p[1]) not in [IdentNode, VarDeclNode]:
+      raise SyntaxError
+    
+    p[0] = ExprListNode([p[1]])
+    
 
 def p_template_ref_opt(p):
   '''template_ref_opt : template_ref
