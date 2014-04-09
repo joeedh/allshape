@@ -210,7 +210,7 @@ class TransObjectType {
 
 class TransData {
   //objlist is only valid for objectmode transforms
-  constructor(Context ctx, Object obj, Object objlist, int datamode) {
+  constructor(Context ctx, TransformOp top, Object obj, Object objlist, int datamode) {
     if (ctx.constructor == Context) {
       this.projmat = new Matrix4(ctx.view3d.drawmats.rendermat);
       this.iprojmat = new Matrix4(this.projmat);
@@ -224,6 +224,10 @@ class TransData {
       this.start_mpos = [0, 0];
     }
     
+    //XXX hack bugfix
+    if (datamode == undefined)
+      datamode = top.datamode;
+      
     this.length = 0;
     this.datamode = datamode;
     this.center = new Vector3([0, 0, 0]);
@@ -401,7 +405,7 @@ class TransformOp extends ToolOp {
       console.log("2-", this.inputs.OBJECT.data);
       console.log("3-", this.inputs.OBJECT.get_block(ctx));
     }
-    return new TransData(ctx, this.inputs.OBJECT.get_block(ctx), 
+    return new TransData(ctx, this, this.inputs.OBJECT.get_block(ctx), 
                           this.inputs.OBJECTS.data, this.inputs.DATAMODE.data);
   }
  

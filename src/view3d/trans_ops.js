@@ -61,13 +61,13 @@ class TranslateOp extends TransformOp {
   cancel(ctx) {
     var td = this.transdata;
     
-    if (td.datatype.reset) {
+    if (this.datatype.reset) {
       for (var i=0; i<td.length; i++) {
-        td.datatype.reset(td, i);
+        this.datatype.reset(td, i);
       }
     }
     
-    td.datatype.update(td);
+    this.datatype.update(td);
   }
 
   exec(ctx) {
@@ -88,7 +88,7 @@ class TranslateOp extends TransformOp {
       
       this.do_normals(ctx);
       
-      td.datatype.update(td);
+      this.datatype.update(td);
     } else if (this.inputs.DATAMODE.data == EditModes.OBJECT) {
       for (var i=0; i<td.objects.length; i++) {
         var obj = td.objects[i];
