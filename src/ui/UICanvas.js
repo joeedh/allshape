@@ -810,7 +810,23 @@ class UICanvas {
     else
       return this.box1(pos, size, clr, rfac, outline_only);
   }
-
+  
+  /* I think this word is Dutch.  it comes from photography,
+     it means to dim the screen around a rectangle of
+     interest.  need to look up the english word.
+     and no, I'm not Dutch.
+   */
+  passpart(pos, size, clr=[0,0,0,0.5]) {
+    var p = this.viewport[0];
+    var s = this.viewport[1];
+    
+    console.log(p, s, pos);
+    this.box2([p[0], p[1]], [pos[0], s[1]], clr);
+    this.box2([p[0]+pos[0]+size[0], p[1]], [s[0]-pos[0]-size[0], s[1]], clr);
+    this.box2([pos[0]+p[0], pos[1]+p[1]+size[1]], [size[0], s[1]-size[1]-p[1]], clr);
+    this.box2([pos[0]+p[0], p[1]], [size[0], pos[1]], clr)
+  }
+  
   box2(pos, size, clr, rfac, outline_only) {
     var cs = uicolors["Box"];
     
@@ -937,6 +953,8 @@ class UICanvas {
     
     if (size == undefined) {
       size = objcache.getarr(default_ui_font_size, default_ui_font_size, default_ui_font_size);
+    } else if (typeof(size) == "number") {
+      size = objcache.getarr(size, size, size);
     }
     
     if (color == undefined) {

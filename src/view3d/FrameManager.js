@@ -1602,6 +1602,8 @@ function gen_screen(WebGLRenderingContext gl, View3DHandler view3d, int width, i
   view3d.screen = scr;
   
   g_app_state.screen = scr;
+  g_app_state.eventhandler = scr;
+  
   g_app_state.gl = gl;
   
   if (1) { //localStorage.screen == undefined) {

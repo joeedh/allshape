@@ -162,8 +162,10 @@ function gen_default_file(size) {
 }
 
 class AppState {
-  constructor(screen, mesh, gl) {
+  constructor(FrameManager screen, Mesh mesh, WebGLRenderingContext gl) {
     this.screen = screen;
+    this.eventhandler = screen : EventHandler;
+    
     this.toolstack = new ToolStack(this);
     this.active_view3d = undefined;
     this.api = new DataAPI(this);
@@ -295,6 +297,8 @@ class AppState {
     
     //this.load_user_file_new(undofile);
     this.screen = screen;
+    this.eventhandler = screen;
+    
     this.toolstack = toolstack;
     
     this.screen.ctx = new Context();
@@ -635,6 +639,7 @@ class AppState {
         this2.screen.canvas = new UICanvas(this2.active_view3d, [new Vector2(this2.screen.pos), new Vector2(this2.screen.size)])
       }
       
+      this2.eventhandler = this2.screen;
       this2.screen.on_resize(this2.size);
       this2.screen.size = this2.size;
       
@@ -808,27 +813,6 @@ class AppState {
       screen.on_resize(this.size);
       screen.size = this.size;
     }
-  }
-
-  create_user_file_old(Mesh different_mesh) : ArrayBuffer {
-    //we save a json part and a binary part
-    var obj = {}
-    
-    var mesh = different_mesh != undefined ? different_mesh : this.mesh;
-    
-    obj["screen"] = this.screen.toJSON();
-    
-    var str = JSON.stringify(obj);
-    
-    var data = []
-    pack_string(data, str);
-    
-    mesh.pack(data);
-    pack_float(data, this.version);
-    
-    data = new Uint8Array(data).buffer;
-    
-    return new DataView(data);
   }
 
   load_user_file_old(data) : ArrayBuffer {

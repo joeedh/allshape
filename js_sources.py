@@ -63,6 +63,7 @@ js_targets = {"app.js" : [
 	"src/view3d/grid.js",
   "src/ui/theme.js",
 	"src/view3d/draw.js",
+  "src/view3d/tutorial_mode.js",
 	"src/ui/UIElement.js",
   "src/ui/UICanvas.js",
   "src/ui/UIFrame.js",

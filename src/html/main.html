@@ -1318,7 +1318,7 @@ function toJSON_intern (ob, tlevel) {
         g.size = new Vector2(newsize);
         
         if (g.screen != undefined) {
-          g.screen.on_resize(newsize, oldsize);
+          g.eventhandler.on_resize(newsize, oldsize);
         }
     }
 
@@ -1332,8 +1332,8 @@ function toJSON_intern (ob, tlevel) {
         var canvas;
         g.canvas = canvas = document.getElementById('example');
 		
-        if (g != undefined && g.screen != undefined) {
-          g.screen.on_draw(gl);
+        if (g != undefined && g.eventhandler != undefined) {
+          g.eventhandler.on_draw(gl);
           
           gl.colorMask(false, false, false, true);
           gl.clear(gl.COLOR_BUFFER_BIT);
@@ -1414,7 +1414,7 @@ function toJSON_intern (ob, tlevel) {
         function handleTouchMove(e) {
           stop_event_propegation(e);
             
-          if (g_app_state.screen != undefined) {
+          if (g_app_state.eventhandler != undefined) {
             var x, y;
             
             var t = e.targetTouches[0];
@@ -1426,13 +1426,13 @@ function toJSON_intern (ob, tlevel) {
               y = t.pageY;
             }
             
-            g_app_state.screen._on_mousemove(new MyMouseEvent(x, g_app_state.screen.size[1] - y, 0, MyMouseEvent.MOUSEMOVE));
+            g_app_state.eventhandler._on_mousemove(new MyMouseEvent(x, g_app_state.screen.size[1] - y, 0, MyMouseEvent.MOUSEMOVE));
           }
         }
         
         function handleMouseMove(e) {
-          if (g_app_state.screen != undefined) {
-            g_app_state.screen._on_mousemove(new MyMouseEvent(e.pageX, g_app_state.screen.size[1] - e.pageY, 0, MyMouseEvent.MOUSEMOVE));
+          if (g_app_state.eventhandler != undefined) {
+            g_app_state.eventhandler._on_mousemove(new MyMouseEvent(e.pageX, g_app_state.screen.size[1] - e.pageY, 0, MyMouseEvent.MOUSEMOVE));
           }
         }
 
@@ -1468,7 +1468,7 @@ function toJSON_intern (ob, tlevel) {
             event.x = event.pageX;
             event.y = g_app_state.screen.size[1] - event.pageY;
             
-            g_app_state.screen._on_mousewheel(event, delta);
+            g_app_state.eventhandler._on_mousewheel(event, delta);
           }
         }
         
@@ -1497,7 +1497,7 @@ function toJSON_intern (ob, tlevel) {
             e2.altKey = e.altKey;
             e2.ctrlKey = e.ctrlKey;
             
-            g_app_state.screen._on_mouseup(e2);
+            g_app_state.eventhandler._on_mouseup(e2);
           }
          }
          
@@ -1524,7 +1524,7 @@ function toJSON_intern (ob, tlevel) {
               e2.altKey = e.altKey;
               e2.ctrlKey = e.ctrlKey;
               
-              g_app_state.screen._on_mousedown(e2);
+              g_app_state.eventhandler._on_mousedown(e2);
            }
          }
           
@@ -1551,7 +1551,7 @@ function toJSON_intern (ob, tlevel) {
             e2.altKey = e.altKey;
             e2.ctrlKey = e.ctrlKey;
 
-            g_app_state.screen._on_mouseup(e2);
+            g_app_state.eventhandler._on_mouseup(e2);
           }
         }
         
@@ -1563,7 +1563,7 @@ function toJSON_intern (ob, tlevel) {
             e2.altKey = e.altKey;
             e2.ctrlKey = e.ctrlKey;
             
-            g_app_state.screen._on_mousedown(e2);
+            g_app_state.eventhandler._on_mousedown(e2);
           }
           
           if (e.button == 2) {
@@ -1580,7 +1580,7 @@ function toJSON_intern (ob, tlevel) {
             e2.altKey = e.altKey;
             e2.ctrlKey = e.ctrlKey;
 
-            g_app_state.screen._on_mouseup(e2);
+            g_app_state.eventhandler._on_mouseup(e2);
           }
           
           if (e.button == 2) {
@@ -1640,14 +1640,14 @@ function toJSON_intern (ob, tlevel) {
           
           
           if (g_app_state.screen != undefined)
-            g_app_state.screen._on_keydown(e)
+            g_app_state.eventhandler._on_keydown(e)
         }
         
         function handleKeyUp(e) {
           handle_key_exclude(e);
           
           if (g_app_state.screen != undefined)
-            g_app_state.screen._on_keyup(e);
+            g_app_state.eventhandler._on_keyup(e);
         }
         
         function handleKeyPress(e) {
@@ -1658,7 +1658,7 @@ function toJSON_intern (ob, tlevel) {
               return;
               
             e.char = String.fromCharCode(e.charCode);
-            g_app_state.screen._on_charcode(e);
+            g_app_state.eventhandler._on_charcode(e);
           }
         }
         
@@ -1667,7 +1667,7 @@ function toJSON_intern (ob, tlevel) {
           
           uevt = e;
           if (g_app_state.screen != undefined)
-            g_app_state.screen._on_keyinput(e);
+            g_app_state.eventhandler._on_keyinput(e);
         }
         
         function handleContextLost(e) {

@@ -316,9 +316,6 @@ function toolop_menu(ctx, name, oplist) {
     var hotkey;
     hotkey = ctx.api.get_op_keyhandler(ctx, opstr);
     
-    if (ctx.screen == null)
-      ctx.screen = ctx.screen;
-    
     if (DEBUG.ui_menus)
       console.log("---------", hotkey, opstr, ctx.screen)
     

@@ -819,7 +819,8 @@ class View3DHandler extends Area {
       */
       
       //g_app_state.load_undo_file(g_app_state.create_undo_file());
-      console.log(sort_csg(ctx.scene).toString());
+      //console.log(sort_csg(ctx.scene).toString());
+      test_tutorial_mode();
       
       //new Context().scene.graph.exec();
     }));
