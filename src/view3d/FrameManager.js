@@ -1064,7 +1064,9 @@ class Screen extends UIFrame {
   }
 
   handle_active_view3d() {
-    g_app_state.active_view3d = this.get_active_view3d();
+    var view3d = this.get_active_view3d();
+    if (view3d != undefined)
+      g_app_state.active_view3d = view3d;
   }
 
   _on_mousedown(MouseEvent e)

@@ -1142,10 +1142,10 @@ class ToolStack {
     if (this.appstate.screen.active instanceof ScreenArea && this.appstate.screen.active.area instanceof View3DHandler)
       this.appstate.active_view3d = this.appstate.screen.active.area;
     
-    if (this.appstate.active_view3d == null) {
+    if (this.appstate.active_view3d == undefined) {
       for (var s in this.appstate.screen.children) {
         if (s instanceof ScreenArea && s.area instanceof View3DHandler) {
-          this.appstate.active_view3d = s;
+          this.appstate.active_view3d = s.area;
           break;
         }
       }

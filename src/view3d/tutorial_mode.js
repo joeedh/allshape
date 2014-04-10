@@ -305,9 +305,15 @@ class TutorialHandler extends EventHandler {
 }
 
 function test_tutorial_mode() {
+  /*tutorial mode uses a scripting language
+    that's a subset of JS.  to facilitate that,
+    we use fatory functions to cut out new operators*/
   function factory(cls) {
     function ret(arg) {
-      return new cls(arg);
+      var obj = Object.create(cls.prototype);
+      cls.apply(obj, arguments);
+      
+      return obj;
     }
     return ret;
   }
@@ -317,15 +323,19 @@ function test_tutorial_mode() {
   var MouseDown = factory(TutMouseDown);
   var KeyDown = factory(TutKeyDown);
   var KeyUp = factory(TutKeyUp);
+  var Page = factory(TutorialPage);
   
   var handler = new TutorialHandler(g_app_state.screen);
+  
   handler.load_pages([
-    new TutorialPage([
+    /*tutorial script*/
+    Page([
       MouseUp(PathSpot("view3d.zoomfac"))
     ], 'Click And Drag "Zoom" Button'),
-    new TutorialPage([
+    Page([
       MouseUp(PathSpot("view3d.use_backbuf_sel"))
     ], 'Click "Cull Select" Button')
+    /*end tutorial script*/
   ]);
   
   console.log("hotspot test", handler.pages);

@@ -92,15 +92,19 @@ class InsetOp extends TransformOp {
   }
 
   end_modal() {
+    console.log(g_app_state.active_view3d);
+    console.log(this.modal_ctx.view3d);
+    
     this.modal_ctx.view3d.kill_drawline(this.drawline1);
     this.modal_ctx.view3d.kill_drawline(this.drawline2);
+    
     TransformOp.prototype.end_modal.call(this);
   }
 
   modal_init(ctx) {
     prior(InsetOp, this).modal_init.call(this, ctx);
     
-    this.transdata = new TransData(ctx);
+    this.transdata = this.gen_transdata(ctx);
     this.first_call = true;
     
     this.drawline1 = ctx.view3d.new_drawline(new Vector3(), new Vector3());
@@ -286,7 +290,7 @@ class InsetOp extends TransformOp {
 
   exec(ctx) {
     if (!this.is_modal) {
-      this.transdata = new TransData(ctx);
+      this.transdata = this.gen_transdata(ctx);
       this.find_loops(ctx);
     }
     
@@ -310,7 +314,7 @@ class InsetOp extends TransformOp {
       inset_loop(loop, is_partial, no, fac)
     }
     
-    this.do_normals();
+    this.do_normals(ctx);
     
     ctx.mesh.regen_positions();
     ctx.mesh.regen_normals();
