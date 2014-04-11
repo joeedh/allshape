@@ -12,7 +12,7 @@ var _v3d_static_mat = new Matrix4();
 var bleh_bleh = 0;
 
 class View3DEditor {
-  constructor(name, type, lib_type, keymap) {
+  constructor(String name, int type, int lib_type, keymap) {
     this.name = name;
     this.type = type;
     this.lib_type = lib_type;
@@ -22,46 +22,47 @@ class View3DEditor {
   //objecteditor is an abstract class,
   //but struct system does require the presence
   //of fromSTRUCT.  need to review that.
-  static fromSTRUCT(reader) {
+  static fromSTRUCT(Function reader) {
     var obj = {};
     reader(obj);
     
     return obj;
   }
 
-  on_area_inactive(view3d) {}
+  on_area_inactive(View3DHandler view3d) {}
   
-  on_inactive(view3d) {}
-  on_active(view3d) {}
+  on_inactive(View3DHandler view3d) {}
+  on_active(View3DHandler view3d) {}
   
-  data_link(block, getblock, getblock_us) {}
+  data_link(DataBlock block, Function getblock, Function getblock_us) {}
   
   //returns new copy
-  editor_duplicate(view3d) {}
-  render_selbuf(gl, view3d, typemask) {}
-  selbuf_changed(typemask) {}
-  reset_selbuf_changed(typemask) {}
-  add_menu(view3d, mpos) {}
-  draw_object(gl, view3d, object, is_active) {}
-  build_sidebar1(view3d) {}
-  build_bottombar(view3d) {}
+  editor_duplicate(View3DHandler view3d) {}
+  render_selbuf(WebGLRenderingContext gl, View3DHandler view3d, int typemask) {}
+  selbuf_changed(int typemask) {}
+  reset_selbuf_changed(int typemask) {}
+  add_menu(View3DHandler view3d, Array<float> mpos) {}
+  draw_object(WebGLRenderingContext gl, View3DHandler view3d, ASObject object, Boolean is_active) {}
+  build_sidebar1(View3DHandler view3d) {}
+  build_bottombar(View3DHandler view3d) {}
   set_selectmode(int mode) {}
 
   //returns number of selected items
-  do_select(event, mpos, view3d) {}
-  tools_menu(event, view3d) {}
-  rightclick_menu(event, view3d) {}
-  on_mousemove(event) {}
-  do_alt_select(event, mpos, view3d) {}
-  delete_menu(event) {}
+  do_select(MouseEvent event, Array<float> mpos, View3DHandler view3d) {}
+  tools_menu(MouseEvent event, View3DHandler view3d) {}
+  rightclick_menu(MouseEvent event, View3DHandler view3d) {}
+  on_mousemove(MouseEvent event) {}
+  do_alt_select(MouseEvent event, Array<float> mpos, View3DHandler view3d) {}
+  delete_menu(MouseEvent event) {}
 }
+
 View3DEditor.STRUCT = """
   View3DEditor {
   }
 """;
 
 class drawline {
-  constructor(co1, co2) {
+  constructor(Vector3 co1, Vector3 co2) {
     this.v1 = co1;
     this.v2 = co2;
     this.clr = [0.9, 0.9, 0.9, 1.0];
@@ -73,7 +74,7 @@ class drawline {
 }
 
 class IndexBufItem {
-  constructor(id, owner) {
+  constructor(int id, Object owner) {
     this.user_id = id;
   }
 }
@@ -159,7 +160,7 @@ class View3DHandler extends Area {
     this.editors = new GArray([this.editor]);
   }
   
-  check_subsurf(Context ctx, ob) {
+  check_subsurf(Context ctx, ASObject ob) {
     if (!(ob.data instanceof Mesh))
       return;
     
@@ -190,11 +191,11 @@ class View3DHandler extends Area {
     return this._can_select;
   }
   
-  set can_select(val) {
+  set can_select(int val) {
     this._can_select = !!val;
   }
   
-  static fromSTRUCT(reader) {
+  static fromSTRUCT(Function reader) {
     var v3d = new View3DHandler(g_app_state.gl)
     v3d._in_from_struct = true;
     
@@ -214,7 +215,9 @@ class View3DHandler extends Area {
     return v3d;
   }
   
-  draw_rect(gl, pos, size, color) {
+  draw_rect(WebGLRenderingContext gl, Vector3 pos, 
+            Vector3 size, Array<float> color) 
+  {
     static verts = undefined;
     
     if (verts == undefined) {
@@ -280,14 +283,14 @@ class View3DHandler extends Area {
     return this._selectmode;
   }
   
-  set selectmode(val) {
+  set selectmode(Boolean val) {
     this._selectmode = val;
     
     if (!this._in_from_struct)
       this.set_selectmode(val);
   }
   
-  data_link(block, getblock, getblock_us) {
+  data_link(DataBlock block, Function getblock, Function getblock_us) {
     this.mesh = this.ctx.mesh;
     
     //make dummy mesh, if necassary
@@ -316,7 +319,7 @@ class View3DHandler extends Area {
     this.ctx = new Context();
   }
 
-  get_framebuffer()
+  get_framebuffer() : FrameBuffer
   {
     if (View3DHandler.framebuffer == undefined)
       View3DHandler.framebuffer = new FrameBuffer(this.gl, this.size);
@@ -338,7 +341,7 @@ class View3DHandler extends Area {
     this.drawlines.remove(dl, true);
   }
 
-  new_drawline(Vector3 v1, Vector3 v2) { //v1 and v2 are optional
+  new_drawline(Vector3 v1, Vector3 v2) : drawline { //v1 and v2 are optional
     if (v1 == undefined) {
       v1 = new Vector3();
       v2 = new Vector3();
@@ -401,7 +404,7 @@ class View3DHandler extends Area {
     co[2] = 0.0;
   }
   
-  test_render_selbuf(typemask) {
+  test_render_selbuf(int typemask) {
     var gl = this.gl;
     
     gl.colorMask(true, true, true, true);
@@ -444,7 +447,7 @@ class View3DHandler extends Area {
     gl.enable(gl.DITHER);
   }
   
-  ensure_selbuf(typemask) {//typemask is optional, additional type masks to this.select
+  ensure_selbuf(int typemask) {//typemask is optional, additional type masks to this.select
     var gl = this.gl;
     var fbuf = this.get_framebuffer();
     
@@ -502,7 +505,7 @@ class View3DHandler extends Area {
     }
   }
 
-  read_selbuf(pos, size)
+  read_selbuf(Array<float> pos, Array<float> size) : Uint8Array
   {
     var gl = this.gl;
     
@@ -518,20 +521,22 @@ class View3DHandler extends Area {
     return pixels;
   }
 
-  do_select(event, mpos, view3d, do_multiple=false) {
+  do_select(MouseEvent event, Array<float> mpos, 
+            View3DHandler view3d, Boolean do_multiple=false) 
+  {
     return this.editor.do_select(event, mpos, view3d, do_multiple);
   }
   
-  do_alt_select(event, mpos, view3d) {
+  do_alt_select(MouseEvent event, Array<float> mpos, View3DHandler view3d) {
     return this.editor.do_alt_select(event, mpos, view3d);
   }
   
-  tools_menu(event) {
+  tools_menu(MouseEvent event) {
     this.editor.tools_menu(event, this);
   }
 
 
-  toolop_menu(ctx, name, ops) {
+  toolop_menu(Context ctx, String name, Array<String> ops) {
     if (ops.length > 1 && this.use_radial_menus) {
       return toolop_radial_menu(ctx, name, ops);
     } else {
@@ -539,19 +544,19 @@ class View3DHandler extends Area {
     }
   }
 
-  call_menu(menu, frame, pos) {
+  call_menu(Object menu, UIFrame frame, Array<float> pos) {
     if (menu instanceof UIRadialMenu) {
       return ui_call_radial_menu(menu, frame, pos);
-    } else {
+    } else if (menu instanceof UIMenu) {
       return ui_call_menu(menu, frame, pos);
     }
   }
 
-  rightclick_menu(event) {
+  rightclick_menu(MouseEvent event) {
     this.editor.rightclick_menu(event, this);
   }
 
-  on_mousedown(event) {
+  on_mousedown(MouseEvent event) {
     if (prior(View3DHandler, this).on_mousedown.call(this, event))
       return;
     
@@ -946,7 +951,7 @@ class View3DHandler extends Area {
     return cpy
   }
 
-  gen_file_menu(ctx, uimenulabel)
+  gen_file_menu(Context ctx, uimenulabel)
   {
     return toolop_menu(ctx, "", 
       ["appstate.export_stl()",
@@ -955,7 +960,7 @@ class View3DHandler extends Area {
       "appstate.open()"]);
   }
 
-  gen_tools_menu(ctx, uimenulabel)
+  gen_tools_menu(Context ctx, uimenulabel)
   {
     return toolop_menu(ctx, "", ["mesh.translate()", "mesh.rotate()", "mesh.scale()"]);
   }
@@ -1007,7 +1012,7 @@ class View3DHandler extends Area {
     this.add(col);
   }
 
-  static fromJSON(obj)
+  static fromJSON(ObjectMap obj)
   {
     var gl = g_app_state.gl;
     var view3d = new View3DHandler(gl, g_app_state.mesh, gl.program, gl.program2, DrawMats.fromJSON(obj.drawmats), obj.pos[0], obj.pos[1], obj.size[0], obj.size[1], obj.znear, obj.zfar);
@@ -1047,7 +1052,7 @@ class View3DHandler extends Area {
     return obj;
   }
   
-  switch_editor(editortype) {
+  switch_editor(View3DEditor editortype) {
     if (editortype == undefined) {
       console.log("Undefined passed to switch_editor()");
       return;
@@ -1089,12 +1094,12 @@ class View3DHandler extends Area {
     this.do_recalc();
   }
   
-  ensure_editor(editortype) {
+  ensure_editor(View3DEditor editortype) {
     if (!(this.editor instanceof editortype))
       this.switch_editor(editortype);
   }
   
-  set_selectmode(mode) {
+  set_selectmode(int mode) {
     this._selectmode = mode;
     
     if (mode & EditModes.GEOMETRY) {
@@ -1109,7 +1114,7 @@ class View3DHandler extends Area {
     this.editor.selectmode = mode;
   }
   
-  render_selbuf_obj(gl, ob, typemask) {
+  render_selbuf_obj(WebGLRenderingContext gl, ASObject ob, int typemask) {
     this.check_subsurf(this.ctx, ob);
     var flip = ob == this.ctx.object;
     
@@ -1142,7 +1147,7 @@ class View3DHandler extends Area {
     }
   }
   
-  draw_object_flat(gl, object, clr) {
+  draw_object_flat(WebGLRenderingContext gl, ASObject object, Array<float> clr) {
     this.gl = gl;
     
     //this.render_selbuf_obj(gl, object, this.selectmode);
@@ -1170,7 +1175,9 @@ class View3DHandler extends Area {
     }
   }
   
-  draw_object_basic(gl, object, drawmode=gl.TRIANGLES, is_active=false) {
+  draw_object_basic(WebGLRenderingContext gl, ASObject object, 
+                    int drawmode=gl.TRIANGLES, Boolean is_active=false) 
+  {
     this.gl = gl;
     
     //gl.depthFunc(gl.GREATER);
@@ -1205,14 +1212,14 @@ class View3DHandler extends Area {
 View3DHandler.framebuffer = undefined;
 View3DHandler.STRUCT = STRUCT.inherit(View3DHandler, Area) + """
     use_backbuf_sel : int;
-    drawmats : DrawMats;
-    zoomfac : float;
-    zoomwheel : float;
-    _id : int;
-    selectmode : int;
+    drawmats        : DrawMats;
+    zoomfac         : float;
+    zoomwheel       : float;
+    _id             : int;
+    selectmode      : int;
     zoom_wheelrange : array(float);
-    zoom_range : array(float);
-    editors : array(abstract(View3DEditor));
-    editor : int | obj.editors.indexOf(obj.editor);
+    zoom_range      : array(float);
+    editors         : array(abstract(View3DEditor));
+    editor          : int | obj.editors.indexOf(obj.editor);
   }
 """

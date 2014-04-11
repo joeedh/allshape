@@ -1,15 +1,13 @@
 "use strict";
 
 /*
-okay.  tutorial recording mode should work by producing a series of
-events, which are really paths into the data api.  it should produce
-a easily-editable script file.
+okay.  tutorial mode is based off of simple scripts:
 
 MouseTo(PathElement("view3d.zoomfac"))
 
-run-time, tutorial mode works by capturing the event system
-(and now I'm wishing I'd implemented aspects).
+(todo: write proper examples)
 */
+
 /*
 class EventPlayer extends EventHandler {
   constructor(EventHandler child, on_end=undefined) {

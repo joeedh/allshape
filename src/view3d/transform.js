@@ -1,41 +1,24 @@
 "use strict";
 
+//private static variable
 var __td_last_startcos = [new Vector3()];
 
 class TransDataType {
-  static get_aabb(tdata, i) {
-  }
+  static get_aabb(TransData tdata, int i)       : Array<Vector3>     {}
+  static reset(TransData tdata, int i)                               {}
+  static get_co(TransData tdata, int i)         : Vector3            {}
+  static update(TransData tdata)                                     {}
+  static get_rot_euler(TransData tdata, int i)  : Vector3            {}
+  static get_size(TransData tdata, int i)       : Vector3            {}
+  static get_imat(TransData tdata, int i)       : Matrix4            {}
+  static get_mat(TransData tdata, int i)        : Matrix4            {}
   
-  static reset(tdata, i) {
-  }
-  
-  static undo_pre(top, tdata, ctx) {
-  }
-  
-  static undo(top, tdata, ctx) {
-  }
-  
-  static get_co(tdata, i) {
-  }
-  
-  static update(tdata) {
-  }
-  
-  static get_rot_euler(tdata, i) {
-  }
-  
-  static get_size(tdata, i) {
-  }
-
-  static get_imat(tdata, i) {
-  }
-  
-  static get_mat(tdata, i) {
-  }
+  static undo_pre(TransformOp top, TransData tdata, ToolContext ctx) {}
+  static undo(TransformOp top, TransData tdata, ToolContext ctx)     {}
 }
 
 class TransMeshType extends TransDataType {
-  static get_aabb(tdata, i) {
+  static get_aabb(TransData tdata, int i) : Array<Vector3> {
     var ret = objcache.array(2);
     
     if (tdata.mesh.flag & MeshFlags.USE_MAP_CO) {
@@ -49,7 +32,7 @@ class TransMeshType extends TransDataType {
     return ret;
   }
   
-  static undo_pre(top, tdata, ctx) {
+  static undo_pre(TransformOp top, TransData tdata, ToolContext ctx) {
     var mesh = ctx.mesh
     
     top._undo = {}
@@ -58,7 +41,7 @@ class TransMeshType extends TransDataType {
     }
   }
 
-  static undo(top, tdata, ctx) {
+  static undo(TransformOp top, TransData tdata, ToolContext ctx) {
     var mesh = ctx.mesh
     
     var _undo = top._undo;
@@ -90,30 +73,30 @@ class TransMeshType extends TransDataType {
     g_app_state.jobs.queue_replace(job);
   }
   
-  static get_rot_euler(tdata, i) {
+  static get_rot_euler(TransData tdata, int i) : Vector3 {
     var ret = objcache.array(3);
     ret[0] = 0; ret[1] = 0; ret[2] = 0;
     
     return ret;
   }
   
-  static get_size(tdata, i) {
+  static get_size(TransData tdata, int i) : Vector3 {
     var ret = objcache.array(3);
     ret[0] = 1.0; ret[2] = 1.0; ret[3] = 1.0;
     
     return ret;
   }
   
-  static reset(tdata, i) {
+  static reset(TransData tdata, int i) {
     tdata.verts[i].co.load(tdata.startcos[i]);
   }
   
-  static update(tdata) {
+  static update(TransData tdata) {
     tdata.mesh.regen_positions();
     tdata.mesh.regen_normals();
   }
   
-  static get_co(tdata, i) {
+  static get_co(TransData tdata, int i) : Vector3 {
     if (tdata.mesh.flag & MeshFlags.USE_MAP_CO) {
       return tdata.verts[i].mapco;
     } else {
@@ -121,29 +104,29 @@ class TransMeshType extends TransDataType {
     }
   }
   
-  static get_imat(tdata, i) {
+  static get_imat(TransData tdata, int i) : Matrix4 {
     return tdata.imat;
   }
   
-  static get_mat(tdata, i) {
+  static get_mat(TransData tdata, int i) : Matrix4 {
     tdata.object.matrix;
   }
 }
 
 class TransObjectType {
-  static get_aabb(tdata, i) {
+  static get_aabb(TransData tdata, int i) : Array<Vector3> {
     return tdata.objects[i].get_aabb();
   }
   
-  static get_co(tdata, i) {
+  static get_co(TransData tdata, int i) : Vector3 {
     return tdata.objects[i].loc;
   }
   
-  static get_rot_euler(tdata, i) {
+  static get_rot_euler(TransData tdata, int i) : Vector3 {
     return tdata.objects[i].rot_euler;
   }
   
-  static undo_pre(top, tdata, ctx) {
+  static undo_pre(TransformOp top, TransData tdata, ToolContext ctx) {
     var undo;
     top._undo = undo = [new GArray(), new GArray()];
     var active = top.inputs.OBJECT.data;
@@ -175,7 +158,7 @@ class TransObjectType {
     }
   }
   
-  static undo(top, tdata, ctx) {
+  static undo(TransformOp top, TransData tdata, ToolContext ctx) {
     var undo = top._undo;
     
     for (var i=0; i<undo[0].length; i++) {
@@ -189,19 +172,19 @@ class TransObjectType {
     }
   }
   
-  static get_size(tdata, i) {
+  static get_size(TransData tdata, int i) : Vector3 {
     return tdata.objects[i].size;
   }
   
-  static get_imat(tdata, i) {
+  static get_imat(TransData tdata, int i) : Matrix4 {
     return tdata.imats[i];
   }
   
-  static get_mat(tdata, i) {
+  static get_mat(TransData tdata, int i) : Matrix4 {
     return tdata.objects[i].matrix;
   }
   
-  static update(tdata, i) {
+  static update(TransData tdata, int i) {
     for (var ob in tdata.objects) {
       ob.recalc(RecalcFlags.TRANSFORM);
     }
@@ -259,7 +242,7 @@ class TransData {
     this.imat.invert();
   }
   
-  load_objects(ctx, active_ob, objlist) {
+  load_objects(ToolContext ctx, ASObject active_ob, Iterator<ASObject> objlist) {
     //load passed in obj, as well as the objects in ctx.scene.selected
     
     var obj = active_ob;
@@ -318,7 +301,7 @@ class TransData {
     this.length = objs.length;
   }
   
-  load_mesh(ctx, obj) {
+  load_mesh(ToolContext ctx, ASObject obj) {
     this.mesh = obj.data;
     this.verts = new GArray<Vertex>();
     this.startcos = new GArray<Vector3>();
@@ -369,11 +352,11 @@ class TransData {
     this.max = new Vector3(mm.max);
   }
 }
-var c = 1.0;
-var xclr = [c, 0.0, 0.0, 0.5]
-var yclr = [0.0, c, 0.0, 0.5]
-var zclr = [0.0, 0.0, c, 0.5]
-var axclrs = [xclr, yclr, zclr]
+var float c = 1.0;
+var Array<float> xclr = [c, 0.0, 0.0, 0.5];
+var Array<float> yclr = [0.0, c, 0.0, 0.5];
+var Array<float> zclr = [0.0, 0.0, c, 0.5];
+var Array<Array<float>> axclrs = [xclr, yclr, zclr];
 
 class TransformOp extends ToolOp {
   constructor(String apiname, String uiname, int mode) {
@@ -383,8 +366,6 @@ class TransformOp extends ToolOp {
       this.datatype = TransMeshType;
     else
       this.datatype = TransObjectType;
-    
-    console.log("------=---------->", mode, EditModes.GEOMETRY, this.datatype);
     
     this.selecting_axis = false;
     this.constrain_plane = false;
@@ -396,7 +377,7 @@ class TransformOp extends ToolOp {
     this._undo = {} : ObjectMap
   }
 
-  static default_slots(obj, mode, asob) {
+  static default_slots(ASObject obj, int mode, ASObject asob) {
     obj.inputs["DATAMODE"] = selectmode_enum.copy();
     obj.inputs["DATAMODE"].flag |= TPropFlags.PRIVATE;
     obj.inputs["OBJECT"] = new DataRefProperty(asob, DataTypes.OBJECT, "object", "Object", "Object to transform", undefined);
@@ -406,7 +387,7 @@ class TransformOp extends ToolOp {
       obj.inputs.DATAMODE.set_data(mode);
   }
   
-  gen_transdata(ctx) {
+  gen_transdata(ToolContext ctx) :  TransData {
     if (DEBUG.transform) {
       console.log("1-", ctx.object);
       console.log("2-", this.inputs.OBJECT.data);
@@ -416,15 +397,15 @@ class TransformOp extends ToolOp {
                           this.inputs.OBJECTS.data, this.inputs.DATAMODE.data);
   }
  
-  undo_pre(ctx) {
+  undo_pre(Context ctx) {
     this.datatype.undo_pre(this, this.transdata, ctx);
   }
 
-  undo(ctx) {
+  undo(Context ctx) {
     this.datatype.undo(this, this.transdata, ctx);
   }
   
-  do_normals(ctx) {
+  do_normals(ToolContext ctx) {
     var td = this.transdata;
     var verts = td.verts;
     var mesh = ctx.mesh;
@@ -460,12 +441,12 @@ class TransformOp extends ToolOp {
     }
   }
   
-  modal_init(ctx) {
+  modal_init(Context ctx) {
     this.inputs.OBJECT.set_data(ctx.object);
     this.inputs.DATAMODE.set_data(ctx.view3d.selectmode);
   }
   
-  on_mousemove(event) {
+  on_mousemove(MouseEvent event) {
     if (this.first_call == true) {
       this.first_call = false;
       this.start_mpos = new Vector3([event.x, event.y, 0]);
@@ -542,7 +523,7 @@ class TransformOp extends ToolOp {
     this.exec(this.modal_tctx);
   }
 
-  gen_axis(axis, center) {
+  gen_axis(Vector3 axis, Vector3 center) : Array<drawline> {
     var dl1 = this.modal_ctx.view3d.new_drawline();
     var dl2 = this.modal_ctx.view3d.new_drawline();
     
@@ -643,7 +624,7 @@ class TransformOp extends ToolOp {
     this.axis_drawlines.push(axis);
   }
 
-  on_mousedown(event) {
+  on_mousedown(MouseEvent event) {
     if (event.button == 1) {
       this.selecting_axis = 1;
       this.set_selecting_axis();
@@ -667,7 +648,7 @@ class TransformOp extends ToolOp {
     //prior.end_modal.call(this);
   }
 
-  on_keydown(event) {
+  on_keydown(MouseEvent event) {
     this.constrain_plane = event.shiftKey;
     var apick = -1;
     
@@ -700,7 +681,7 @@ class TransformOp extends ToolOp {
     }
   }
 
-  on_keyup(event) {
+  on_keyup(MouseEvent event) {
     this.shift = event.shiftKey;
     this.alt = event.altKey;
     this.ctrl = event.ctrlKey;
@@ -713,7 +694,7 @@ class TransformOp extends ToolOp {
     }
   }
 
-  on_mouseup(event) {
+  on_mouseup(MouseEvent event) {
     if (DEBUG.modal)
       console.log("modal end");
     
