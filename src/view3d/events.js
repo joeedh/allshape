@@ -222,126 +222,135 @@ for (var k in charmap_latin_1) {
   charmap_latin_1[charmap_latin_1[k]] = k;
 }
 
-var charmap = charmap_latin_1
+var charmap = charmap_latin_1;
 
-function KeyHandler(key, modifiers, uiname, menunum, ignore_charmap_error) { //menunum is optional, defaults to undefined
-  if (!charmap.hasOwnProperty(key)) {
-    if (ignore_charmap_error != undefined && ignore_charmap_error != true) {
-      console.trace();
-      console.log("Invalid hotkey " + key + "!");
+class KeyHandler {
+  constructor(key, modifiers, uiname, menunum, ignore_charmap_error) { //menunum is optional, defaults to undefined
+    if (!charmap.hasOwnProperty(key)) {
+      if (ignore_charmap_error != undefined && ignore_charmap_error != true) {
+        console.trace();
+        console.log("Invalid hotkey " + key + "!");
+      }
+      
+      this.key = 0;
+      this.keyAscii = "[corrupted hotkey]"
+      this.shift = this.alt = this.ctrl = false;
+      return
     }
     
-    this.key = 0;
-    this.keyAscii = "[corrupted hotkey]"
-    this.shift = this.alt = this.ctrl = false;
-    return
-  }
-  
-  if (typeof(key) == "string") {
-    if (key.length == 1)
-      key = key.toUpperCase()
-  
-    this.keyAscii = key
-    this.key = charmap[key];
-  } else {
-    this.key = key;
-    this.keyAscii = charmap[key]
-  }
-  
-  this.shift = this.alt = this.ctrl = false;
-  this.menunum = menunum
-  
-  for (var i=0; i<modifiers.length; i++) {
-    if (modifiers[i] == "SHIFT") {
-      this.shift = true;
-    } else if (modifiers[i] == "ALT") {
-      this.alt = true;
-    } else if (modifiers[i] == "CTRL") {
-      this.ctrl = true;
+    if (typeof(key) == "string") {
+      if (key.length == 1)
+        key = key.toUpperCase()
+    
+      this.keyAscii = key
+      this.key = charmap[key];
     } else {
-      console.trace()
-      console.log("Warning: invalid modifier " + modifiers[i] + " in KeyHandler")
+      this.key = key;
+      this.keyAscii = charmap[key]
+    }
+    
+    this.shift = this.alt = this.ctrl = false;
+    this.menunum = menunum
+    
+    for (var i=0; i<modifiers.length; i++) {
+      if (modifiers[i] == "SHIFT") {
+        this.shift = true;
+      } else if (modifiers[i] == "ALT") {
+        this.alt = true;
+      } else if (modifiers[i] == "CTRL") {
+        this.ctrl = true;
+      } else {
+        console.trace()
+        console.log("Warning: invalid modifier " + modifiers[i] + " in KeyHandler")
+      }
     }
   }
-}
-create_prototype(KeyHandler)
-KeyHandler.prototype.build_str = function(add_menu_num) : String {
-  var s = ""
-  if (this.ctrl) s += "CTRL-"
-  if (this.alt) s += "ALT-"
-  if (this.shift) s += "SHIFT-"
   
-  s += this.keyAscii
-  
-  return s;
-}
-KeyHandler.prototype.__hash__ = function() : String {
-  return this.build_str(false)
-}
-
-function KeyMap() {
-  hashtable.call(this);
-  
-  this.op_map = new hashtable();
-}
-
-inherit(KeyMap, hashtable);
-
-KeyMap.prototype.get_tool_handler = function(toolstr) {
-  if (this.op_map.has(toolstr))
-    return this.op_map.get(toolstr);
-}
-
-KeyMap.prototype.add_tool = function(keyhandler, toolstr) {
-  this.add(keyhandler, new ToolKeyHandler(toolstr));
-  this.op_map.add(toolstr, keyhandler);
-}
-
-KeyMap.prototype.add_func = function(keyhandler, func) {
-  this.add(keyhandler, new FuncKeyHandler(func));
-}
-
-KeyMap.prototype.add = function(keyhandler, value) {
-  if (this.has(keyhandler)) {
-    console.trace()
-    console.log("Duplicate hotkey definition!")
-  }
-  
-  if (value instanceof ToolKeyHandler) {
-    value.tool.keyhandler = keyhandler;
-  }
-  
-  hashtable.prototype.add.call(this, keyhandler, value);
-}
-
-KeyMap.prototype.process_event = function(Context ctx, KeyboardEvent event) : Object {
-  var modlist = []
-  if (event.ctrlKey) modlist.push("CTRL")
-  if (event.shiftKey) modlist.push("SHIFT")
-  if (event.altKey) modlist.push("ALT")
-  
-  var key = new KeyHandler(event.keyCode, modlist, 0, 0, true);
-  
-  if (this.has(key)) {
-    ctx.keymap_mpos = ctx.view3d.mpos;
-    return this.get(key);
-  }
-  
-  return undefined;
-}
-
-function ToolKeyHandler(tool) {
-  this.tool = tool;
-  
-  this.handle = function(ctx) {
-    var tool = this.tool;
+  build_str(add_menu_num) : String {
+    var s = ""
+    if (this.ctrl) s += "CTRL-"
+    if (this.alt) s += "ALT-"
+    if (this.shift) s += "SHIFT-"
     
+    s += this.keyAscii
+    
+    return s;
+  }
+  
+  __hash__() : String {
+    return this.build_str(false)
+  }
+}
+
+class KeyMap extends hashtable {
+  constructor() {
+    hashtable.call(this);
+    
+    this.op_map = new hashtable();
+  }
+
+  get_tool_handler(toolstr) {
+    if (this.op_map.has(toolstr))
+      return this.op_map.get(toolstr);
+  }
+
+  add_tool(keyhandler, toolstr) {
+    this.add(keyhandler, new ToolKeyHandler(toolstr));
+    this.op_map.add(toolstr, keyhandler);
+  }
+
+  add_func(keyhandler, func) {
+    this.add(keyhandler, new FuncKeyHandler(func));
+  }
+
+  add(keyhandler, value) {
+    if (this.has(keyhandler)) {
+      console.trace()
+      console.log("Duplicate hotkey definition!")
+    }
+    
+    if (value instanceof ToolKeyHandler) {
+      value.tool.keyhandler = keyhandler;
+    }
+    
+    hashtable.prototype.add.call(this, keyhandler, value);
+  }
+
+  process_event(Context ctx, KeyboardEvent event) : Object {
+    var modlist = []
+    if (event.ctrlKey) modlist.push("CTRL")
+    if (event.shiftKey) modlist.push("SHIFT")
+    if (event.altKey) modlist.push("ALT")
+    
+    var key = new KeyHandler(event.keyCode, modlist, 0, 0, true);
+    
+    if (this.has(key)) {
+      ctx.keymap_mpos = ctx.view3d.mpos;
+      return this.get(key);
+    }
+    
+    return undefined;
+  }
+}
+
+class KeyHandlerCls {
+  handle(Context ctx) {
+  }
+}
+
+class ToolKeyHandler extends KeyHandlerCls {
+  constructor(ToolOp tool) {
+    this.tool = tool;
+  }
+  
+  handle(ctx) {
+    var tool = this.tool; 
     ctx.api.call_op(ctx, tool);
   }
 }
-create_prototype(ToolKeyHandler);
 
-function FuncKeyHandler(func) {
-  this.handle = func;
+class FuncKeyHandler extends KeyHandlerCls {
+  constructor(func) {
+    this.handle = func;
+  }
 }
-create_prototype(FuncKeyHandler);

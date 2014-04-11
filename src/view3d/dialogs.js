@@ -177,10 +177,10 @@ class FileSaveAsOp extends ToolOp {
     
     function save_callback(dialog, path) {
       console.log("saving...", path);
-      global formacad_file_ext;
+      global allshape_file_ext;
       
-      if (!path.endsWith(formacad_file_ext)) {
-        path = path + formacad_file_ext;
+      if (!path.endsWith(allshape_file_ext)) {
+        path = path + allshape_file_ext;
       }
       
       var token = g_app_state.session.tokens.access;
@@ -225,10 +225,10 @@ class FileSaveOp extends ToolOp {
     
     function save_callback(dialog, path) {
       console.log("saving...", path);
-      global formacad_file_ext;
+      global allshape_file_ext;
       
-      if (!path.endsWith(formacad_file_ext)) {
-        path = path + formacad_file_ext;
+      if (!path.endsWith(allshape_file_ext)) {
+        path = path + allshape_file_ext;
       }
       
       var token = g_app_state.session.tokens.access;
@@ -373,7 +373,7 @@ class FileSaveSTLOp extends ToolOp {
     
     function save_callback(dialog, path) {
       console.log("saving...", path);
-      global formacad_file_ext;
+      global allshape_file_ext;
       
       this2._path = path;
       if (!path.endsWith(".stl")) {

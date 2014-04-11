@@ -217,356 +217,356 @@ class TranslateOp extends TransformOp {
   }
 }
 
-function RotateOp(int mode) {
-  TransformOp.call(this, "rotate", "Rotate", mode);
-  
-  this.transdata = null;
-  this.is_modal = true;
-  this.trackball = 0;
-  this.rot_sum = 0.0;
-  this.first = true;
-  this.add_matrix = new Matrix4();
-  this.cur_matrix = new Matrix4();
-  
-  this.inputs = {
-    ROTATION: new Vec4Property(new Vector4(), "rotation", "Rotation", "Amount of rotation."), 
-    MV1: new Vec3Property(new Vector3(), "mvector1", "mvector1", "mvector1", TPropFlags.PRIVATE),
-    MV2: new Vec3Property(new Vector3(), "mvector2", "mvector2", "mvector2", TPropFlags.PRIVATE),
-    MV3: new Vec3Property(new Vector3(), "mvector2", "mvector2", "mvector2", TPropFlags.PRIVATE),
-    RAXIS: new Vec3Property(new Vector3(), "axis", "axis", "axis", TPropFlags.PRIVATE),
-    ASP: new FloatProperty(1.0, "aspect_ration", "aspect ratio", "aspect ratio", undefined, undefined, TPropFlags.PRIVATE),
-    AXIS: new Vec3Property(new Vector3(), "cons_axis", "Constraint Axis", "Axis to constrain too during transform", TPropFlags.PRIVATE)
-  };
-  
-  this.outputs = {
-    ROTATION: new Vec4Property(new Vector3(), "rotation", "Rotation", "Amount of rotation.")
-  };
-  
-  TransformOp.default_slots(this, mode);
-}
-
-inherit(RotateOp, TransformOp);
-
-RotateOp.prototype.can_call = function(ctx) {
-  var totsel = 0;
-  
-  for (var v in ctx.mesh.verts) {
-    if ((v.flag & Flags.SELECT) != 0)
-      totsel++;
-  }
-  
-  return totsel > 0;
-}
-
-RotateOp.prototype.end_modal = function() {
-  if (this.drawline1 != null)
-    this.modal_ctx.view3d.kill_drawline(this.drawline1);
+class RotateOp extends TransformOp {
+  constructor(int mode) {
+    TransformOp.call(this, "rotate", "Rotate", mode);
     
-  if (this.drawline2 != null)
-    this.modal_ctx.view3d.kill_drawline(this.drawline2);
-  
-  this.drawline1 = this.drawline2 = null;
-  
-  TransformOp.prototype.end_modal.call(this);
-}
-
-RotateOp.prototype.modal_init = function(ctx) {
-  prior(RotateOp, this).modal_init.call(this, ctx);
-  this.transdata = this.gen_transdata(ctx);
-  this.first_call = true;
-  
-  this.drawline1 = ctx.view3d.new_drawline(new Vector3(), new Vector3());
-  this.drawline2 = ctx.view3d.new_drawline(new Vector3(), new Vector3());
-}
-
-RotateOp.prototype.cancel = function(ctx) {
-  var td = this.transdata;
-  
-  for (var i=0; i<td.verts.length; i++) {
-    td.verts[i].co.load(td.startcos[i]);
-  }
-  
-  td.mesh.regen_positions();
-  td.mesh.regen_normals();
-}
-
-RotateOp.prototype.on_mousemove = function(event) {
-  TransformOp.prototype.on_mousemove.call(this, event);
-
-  if (this.first) {
-    this.first = false;
-    this.inputs.MV3.data = this.inputs.MV1.data;
-  }
-   
-  var ctx = this.modal_ctx;
-  
-  var matrix = new Matrix4(ctx.view3d.drawmats.cameramat);
-  matrix.invert();
-  
-  this.inputs.RAXIS.data = new Vector3([matrix.$matrix.m31, matrix.$matrix.m32, matrix.$matrix.m33]);
-  this.inputs.ASP.data = this.modal_ctx.view3d.asp
-  
-  this.exec(this.modal_tctx);
-}
-
-RotateOp.prototype.on_keyup = function(event) {
-  TransformOp.prototype.on_keyup.call(this, event);
-  
-  this.shift = event.shiftKey;
-  this.alt = event.altKey;
-  this.ctrl = event.ctrlKey;
-  
-  if (event.keyCode == "R".charCodeAt(0)) {
-    console.log("Toggling trackball mode")
-    this.trackball ^= 1;
+    this.transdata = null;
+    this.is_modal = true;
+    this.trackball = 0;
+    this.rot_sum = 0.0;
+    this.first = true;
+    this.add_matrix = new Matrix4();
+    this.cur_matrix = new Matrix4();
     
-    if (this.trackball) {
-      this.add_matrix = this.cur_matrix;
-    } else {
-      this.add_matrix = new Matrix4();
+    this.inputs = {
+      ROTATION: new Vec4Property(new Vector4(), "rotation", "Rotation", "Amount of rotation."), 
+      MV1: new Vec3Property(new Vector3(), "mvector1", "mvector1", "mvector1", TPropFlags.PRIVATE),
+      MV2: new Vec3Property(new Vector3(), "mvector2", "mvector2", "mvector2", TPropFlags.PRIVATE),
+      MV3: new Vec3Property(new Vector3(), "mvector2", "mvector2", "mvector2", TPropFlags.PRIVATE),
+      RAXIS: new Vec3Property(new Vector3(), "axis", "axis", "axis", TPropFlags.PRIVATE),
+      ASP: new FloatProperty(1.0, "aspect_ration", "aspect ratio", "aspect ratio", undefined, undefined, TPropFlags.PRIVATE),
+      AXIS: new Vec3Property(new Vector3(), "cons_axis", "Constraint Axis", "Axis to constrain too during transform", TPropFlags.PRIVATE)
+    };
+    
+    this.outputs = {
+      ROTATION: new Vec4Property(new Vector3(), "rotation", "Rotation", "Amount of rotation.")
+    };
+    
+    TransformOp.default_slots(this, mode);
+  }
+
+  can_call(ctx) {
+    var totsel = 0;
+    
+    for (var v in ctx.mesh.verts) {
+      if ((v.flag & Flags.SELECT) != 0)
+        totsel++;
     }
     
-    this.inputs.MV3.data.load(this.inputs.MV2.data);
-    this.inputs.MV1.data.load(this.inputs.MV2.data);
-    this.start_mpos = this.inputs.MV2.data;
-  } else if (event.keyCode == 27) { //escape key
-    this.end_modal();
-    this.cancel();
-  } else if (event.keyCode == 13) { //enter key
-    this.end_modal();
+    return totsel > 0;
   }
-}
 
-RotateOp.prototype.exec = function(ctx) {
-  if (!this.is_modal)
+  end_modal() {
+    if (this.drawline1 != null)
+      this.modal_ctx.view3d.kill_drawline(this.drawline1);
+      
+    if (this.drawline2 != null)
+      this.modal_ctx.view3d.kill_drawline(this.drawline2);
+    
+    this.drawline1 = this.drawline2 = null;
+    
+    TransformOp.prototype.end_modal.call(this);
+  }
+
+  modal_init(ctx) {
+    prior(RotateOp, this).modal_init.call(this, ctx);
     this.transdata = this.gen_transdata(ctx);
+    this.first_call = true;
     
-  var v1 = new Vector3(this.inputs.MV1.data);
-  var v2 = new Vector3(this.inputs.MV2.data);
-  
-  if (this.is_modal && v1.vectorDistance(v2) < 0.01)
-    return;
-  
-  var mat, q;
-  if (this.trackball) {
-    var perp, q;
-    var vec = new Vector3(v2);
-    vec.sub(v1);
+    this.drawline1 = ctx.view3d.new_drawline(new Vector3(), new Vector3());
+    this.drawline2 = ctx.view3d.new_drawline(new Vector3(), new Vector3());
+  }
+
+  cancel(ctx) {
+    var td = this.transdata;
     
-    if (this.drawline1 != null) {
-      this.drawline1.v1.zero();
-      this.drawline1.v2.zero();
+    for (var i=0; i<td.verts.length; i++) {
+      td.verts[i].co.load(td.startcos[i]);
     }
     
-    perp = new Vector3([-vec[1], vec[0], 0.0]);
-    q = new Quat()
-    q.axisAngleToQuat(perp, vec.vectorLength()*2)
-    mat = q.toMatrix();
-    this.cur_matrix = mat;
-  } else {
-    v1 = new Vector3(this.inputs.MV3.data);
-    var cent = new Vector3(this.transdata.scenter);
-    v1[2] = 0.0; v2[2] = 0.0;
-    cent[2] = 0.0;
-    
-    if (this.drawline1 != null) {
-      this.drawline1.v1.load(v1);
-      this.drawline1.v2.load(cent);
-      /*this.drawline2.v1.load(v2);
-      this.drawline2.v2.load(cent);*/
+    td.mesh.regen_positions();
+    td.mesh.regen_normals();
+  }
+
+  on_mousemove(event) {
+    TransformOp.prototype.on_mousemove.call(this, event);
+
+    if (this.first) {
+      this.first = false;
+      this.inputs.MV3.data = this.inputs.MV1.data;
     }
+     
+    var ctx = this.modal_ctx;
     
-    var asp = this.inputs.ASP.data;
+    var matrix = new Matrix4(ctx.view3d.drawmats.cameramat);
+    matrix.invert();
     
-    v1[1] /= asp;
-    v2[1] /= asp;
-    cent[1] /= asp;
-
-    v1.sub(cent);
-    v2.sub(cent);
-    v1.normalize();
-    v2.normalize();
+    this.inputs.RAXIS.data = new Vector3([matrix.$matrix.m31, matrix.$matrix.m32, matrix.$matrix.m33]);
+    this.inputs.ASP.data = this.modal_ctx.view3d.asp
     
-    if (this.is_modal) {
-      if (v1.vectorDistance(v2) < 0.005)
-        return
-        
-      this.inputs.MV3.data = this.inputs.MV2.data;
-    }
-    
-    var axis = this.inputs.RAXIS.data
-    q = new Quat();
-    
-    if (winding(v1, v2, cent)) {
-      this.rot_sum += Math.acos(v1.dot(v2));
-    } else {
-      this.rot_sum -= Math.acos(v1.dot(v2));
-    }
-
-    q.axisAngleToQuat(axis, this.rot_sum);
-    mat = q.toMatrix(); 
-    
-    if (this.is_modal)
-      this.cur_matrix = mat;
-  }
-  var td = this.transdata;
-  
-  for (var i=0; i<td.verts.length; i++) {
-    var v = td.verts[i];
-    
-    v.co.load(td.startcos[i]);
-    v.co.sub(td.center);
-    v.co.multVecMatrix(this.add_matrix);
-    v.co.multVecMatrix(mat);
-    v.co.add(td.center);
-  }
-  
-  this.do_normals(ctx);
-  
-  ctx.mesh.regen_positions();
-  ctx.mesh.regen_normals();
-}
-
-function ScaleOp(int mode) {
-  TransformOp.call(this, "scale", "Scale", mode);
-  
-  this.transdata = null;
-  this.is_modal = true;
-  this.first = true;
-  
-  this.inputs = {
-    SCALE: new Vec3Property(new Vector3(), "scale", "Scale", "Amount of scale."),
-    MV1: new Vec3Property(new Vector3(), "mvector1", "mvector1", "mvector1", TPropFlags.PRIVATE),
-    MV2: new Vec3Property(new Vector3(), "mvector2", "mvector2", "mvector2", TPropFlags.PRIVATE),
-    AXIS: new Vec3Property(new Vector3(), "cons_axis", "Constraint Axis", "Axis to constrain too during transform", TPropFlags.PRIVATE)
-  };
-    
-  this.outputs = {
-    SCALE: new Vec4Property(new Vector3(), "scale", "Scale", "Amount of scaling.")
-  };
-  
-  TransformOp.default_slots(this, mode);
-}
-
-inherit(ScaleOp, TransformOp);
-
-ScaleOp.prototype.can_call = function(ctx) {
-  var totsel = 0;
-  
-  for (var v in ctx.mesh.verts) {
-    if ((v.flag & Flags.SELECT) != 0)
-      totsel++;
-  }
-  
-  return totsel > 0;
-}
-
-ScaleOp.prototype.end_modal = function() {
-  this.modal_ctx.view3d.kill_drawline(this.drawline1);
-  this.modal_ctx.view3d.kill_drawline(this.drawline2);
-  TransformOp.prototype.end_modal.call(this);
-}
-
-ScaleOp.prototype.modal_init = function(ctx) {
-  prior(ScaleOp, this).modal_init.call(this, ctx);
-  this.transdata = this.gen_transdata(ctx);
-  this.first_call = true;
-  
-  this.drawline1 = ctx.view3d.new_drawline(new Vector3(), new Vector3());
-  this.drawline2 = ctx.view3d.new_drawline(new Vector3(), new Vector3());
-}
-
-ScaleOp.prototype.cancel = function(ctx) {
-  var td = this.transdata;
-  
-  for (var i=0; i<td.verts.length; i++) {
-    td.verts[i].co.load(td.startcos[i]);
-  }
-  
-  td.mesh.regen_positions();
-  td.mesh.regen_normals();
-}
-
-ScaleOp.prototype.on_mousemove = function(event) {
-  TransformOp.prototype.on_mousemove.call(this, event);
-  
-  var ctx = this.modal_ctx;
-  
-  var v1 = new Vector3(this.inputs.MV1.data);
-  var v2 = new Vector3(this.inputs.MV2.data);
-  
-  if (v1.vectorDistance(v2) < 0.01) {
-    this.inputs.SCALE.data = new Vector3([1.0, 1.0, 1.0]);
     this.exec(this.modal_tctx);
-    return;
   }
-  
-  var cent = new Vector3(this.transdata.scenter);
-  this.drawline1.v1.load(cent);
-  this.drawline1.v2.load(v1);
-  
-  this.drawline1.v1.load(cent);
-  this.drawline1.v2.load(v2);
-  
-  v2[1] /= ctx.view3d.asp;
-  v1[1] /= ctx.view3d.asp;
-  cent[1] /= ctx.view3d.asp;
-  v1[2] = v2[2] = cent[2] = 0.0;
-  
-  var mat, fac;
-  
-  if (v1.vectorDistance(v2) < 0.001) {
-    fac = 1.0;
-  } else if (v1.vectorDistance(cent) < 0.001) {
-    fac = v2.vectorDistance(cent)/(v1.vectorDistance(cent)+0.05);
-  } else {
-    fac = v2.vectorDistance(cent)/v1.vectorDistance(cent);
+
+  on_keyup(event) {
+    TransformOp.prototype.on_keyup.call(this, event);
+    
+    this.shift = event.shiftKey;
+    this.alt = event.altKey;
+    this.ctrl = event.ctrlKey;
+    
+    if (event.keyCode == "R".charCodeAt(0)) {
+      console.log("Toggling trackball mode")
+      this.trackball ^= 1;
+      
+      if (this.trackball) {
+        this.add_matrix = this.cur_matrix;
+      } else {
+        this.add_matrix = new Matrix4();
+      }
+      
+      this.inputs.MV3.data.load(this.inputs.MV2.data);
+      this.inputs.MV1.data.load(this.inputs.MV2.data);
+      this.start_mpos = this.inputs.MV2.data;
+    } else if (event.keyCode == 27) { //escape key
+      this.end_modal();
+      this.cancel();
+    } else if (event.keyCode == 13) { //enter key
+      this.end_modal();
+    }
   }
-  
-  var cons_axis = new Vector3(this.inputs.AXIS.data);
-  if (cons_axis[0]+cons_axis[1]+cons_axis[2] != 3.0) {
-    if (cons_axis[0] == 1.0) {
-      cons_axis[1] = 1.0/fac;
-      cons_axis[2] = 1.0/fac;
-    } else if (cons_axis[1] == 1.0) {
-      cons_axis[0] = 1.0/fac;
-      cons_axis[2] = 1.0/fac;
-    } else if (cons_axis[2] == 1.0) {
-      cons_axis[1] = 1.0/fac;
-      cons_axis[0] = 1.0/fac;
+
+  exec(ctx) {
+    if (!this.is_modal)
+      this.transdata = this.gen_transdata(ctx);
+      
+    var v1 = new Vector3(this.inputs.MV1.data);
+    var v2 = new Vector3(this.inputs.MV2.data);
+    
+    if (this.is_modal && v1.vectorDistance(v2) < 0.01)
+      return;
+    
+    var mat, q;
+    if (this.trackball) {
+      var perp, q;
+      var vec = new Vector3(v2);
+      vec.sub(v1);
+      
+      if (this.drawline1 != null) {
+        this.drawline1.v1.zero();
+        this.drawline1.v2.zero();
+      }
+      
+      perp = new Vector3([-vec[1], vec[0], 0.0]);
+      q = new Quat()
+      q.axisAngleToQuat(perp, vec.vectorLength()*2)
+      mat = q.toMatrix();
+      this.cur_matrix = mat;
     } else {
-      cons_axis[0] = cons_axis[1] = cons_axis[2] = 1.0;
-    }    
+      v1 = new Vector3(this.inputs.MV3.data);
+      var cent = new Vector3(this.transdata.scenter);
+      v1[2] = 0.0; v2[2] = 0.0;
+      cent[2] = 0.0;
+      
+      if (this.drawline1 != null) {
+        this.drawline1.v1.load(v1);
+        this.drawline1.v2.load(cent);
+        /*this.drawline2.v1.load(v2);
+        this.drawline2.v2.load(cent);*/
+      }
+      
+      var asp = this.inputs.ASP.data;
+      
+      v1[1] /= asp;
+      v2[1] /= asp;
+      cent[1] /= asp;
+
+      v1.sub(cent);
+      v2.sub(cent);
+      v1.normalize();
+      v2.normalize();
+      
+      if (this.is_modal) {
+        if (v1.vectorDistance(v2) < 0.005)
+          return
+          
+        this.inputs.MV3.data = this.inputs.MV2.data;
+      }
+      
+      var axis = this.inputs.RAXIS.data
+      q = new Quat();
+      
+      if (winding(v1, v2, cent)) {
+        this.rot_sum += Math.acos(v1.dot(v2));
+      } else {
+        this.rot_sum -= Math.acos(v1.dot(v2));
+      }
+
+      q.axisAngleToQuat(axis, this.rot_sum);
+      mat = q.toMatrix(); 
+      
+      if (this.is_modal)
+        this.cur_matrix = mat;
+    }
+    var td = this.transdata;
+    
+    for (var i=0; i<td.verts.length; i++) {
+      var v = td.verts[i];
+      
+      v.co.load(td.startcos[i]);
+      v.co.sub(td.center);
+      v.co.multVecMatrix(this.add_matrix);
+      v.co.multVecMatrix(mat);
+      v.co.add(td.center);
+    }
+    
+    this.do_normals(ctx);
+    
+    ctx.mesh.regen_positions();
+    ctx.mesh.regen_normals();
   }
-  
-  this.inputs.SCALE.data = new Vector3([fac, fac, fac]);
-  this.inputs.SCALE.data.mul(cons_axis);
-  this.exec(this.modal_tctx);
 }
 
-ScaleOp.prototype.exec = function(ctx) {
-  if (!this.is_modal)
-    this.transdata = this.gen_transdata(ctx);
-  
-  var fac = this.inputs.SCALE.data;
-  var mat = new Matrix4();
-  
-  mat.scale(fac[0], fac[1], fac[2]);
-  
-  var td = this.transdata;
-  
-  for (var i=0; i<td.verts.length; i++) {
-    var v = td.verts[i];
-    var co = new Vector3(td.startcos[i]);
+class ScaleOp extends TransformOp {
+  constructor(int mode) {
+    TransformOp.call(this, "scale", "Scale", mode);
     
-    v.co.load(co);
-    v.co.sub(td.center);
-    v.co.multVecMatrix(mat);
-    v.co.add(td.center);
+    this.transdata = null;
+    this.is_modal = true;
+    this.first = true;
+    
+    this.inputs = {
+      SCALE: new Vec3Property(new Vector3(), "scale", "Scale", "Amount of scale."),
+      MV1: new Vec3Property(new Vector3(), "mvector1", "mvector1", "mvector1", TPropFlags.PRIVATE),
+      MV2: new Vec3Property(new Vector3(), "mvector2", "mvector2", "mvector2", TPropFlags.PRIVATE),
+      AXIS: new Vec3Property(new Vector3(), "cons_axis", "Constraint Axis", "Axis to constrain too during transform", TPropFlags.PRIVATE)
+    };
+      
+    this.outputs = {
+      SCALE: new Vec4Property(new Vector3(), "scale", "Scale", "Amount of scaling.")
+    };
+    
+    TransformOp.default_slots(this, mode);
   }
-  
-  this.do_normals(ctx);
-  
-  ctx.mesh.regen_positions();
-  ctx.mesh.regen_normals();
+
+  can_call(ctx) {
+    var totsel = 0;
+    
+    for (var v in ctx.mesh.verts) {
+      if ((v.flag & Flags.SELECT) != 0)
+        totsel++;
+    }
+    
+    return totsel > 0;
+  }
+
+  end_modal() {
+    this.modal_ctx.view3d.kill_drawline(this.drawline1);
+    this.modal_ctx.view3d.kill_drawline(this.drawline2);
+    TransformOp.prototype.end_modal.call(this);
+  }
+
+  modal_init(ctx) {
+    prior(ScaleOp, this).modal_init.call(this, ctx);
+    this.transdata = this.gen_transdata(ctx);
+    this.first_call = true;
+    
+    this.drawline1 = ctx.view3d.new_drawline(new Vector3(), new Vector3());
+    this.drawline2 = ctx.view3d.new_drawline(new Vector3(), new Vector3());
+  }
+
+  cancel(ctx) {
+    var td = this.transdata;
+    
+    for (var i=0; i<td.verts.length; i++) {
+      td.verts[i].co.load(td.startcos[i]);
+    }
+    
+    td.mesh.regen_positions();
+    td.mesh.regen_normals();
+  }
+
+  on_mousemove(event) {
+    TransformOp.prototype.on_mousemove.call(this, event);
+    
+    var ctx = this.modal_ctx;
+    
+    var v1 = new Vector3(this.inputs.MV1.data);
+    var v2 = new Vector3(this.inputs.MV2.data);
+    
+    if (v1.vectorDistance(v2) < 0.01) {
+      this.inputs.SCALE.data = new Vector3([1.0, 1.0, 1.0]);
+      this.exec(this.modal_tctx);
+      return;
+    }
+    
+    var cent = new Vector3(this.transdata.scenter);
+    this.drawline1.v1.load(cent);
+    this.drawline1.v2.load(v1);
+    
+    this.drawline1.v1.load(cent);
+    this.drawline1.v2.load(v2);
+    
+    v2[1] /= ctx.view3d.asp;
+    v1[1] /= ctx.view3d.asp;
+    cent[1] /= ctx.view3d.asp;
+    v1[2] = v2[2] = cent[2] = 0.0;
+    
+    var mat, fac;
+    
+    if (v1.vectorDistance(v2) < 0.001) {
+      fac = 1.0;
+    } else if (v1.vectorDistance(cent) < 0.001) {
+      fac = v2.vectorDistance(cent)/(v1.vectorDistance(cent)+0.05);
+    } else {
+      fac = v2.vectorDistance(cent)/v1.vectorDistance(cent);
+    }
+    
+    var cons_axis = new Vector3(this.inputs.AXIS.data);
+    if (cons_axis[0]+cons_axis[1]+cons_axis[2] != 3.0) {
+      if (cons_axis[0] == 1.0) {
+        cons_axis[1] = 1.0/fac;
+        cons_axis[2] = 1.0/fac;
+      } else if (cons_axis[1] == 1.0) {
+        cons_axis[0] = 1.0/fac;
+        cons_axis[2] = 1.0/fac;
+      } else if (cons_axis[2] == 1.0) {
+        cons_axis[1] = 1.0/fac;
+        cons_axis[0] = 1.0/fac;
+      } else {
+        cons_axis[0] = cons_axis[1] = cons_axis[2] = 1.0;
+      }    
+    }
+    
+    this.inputs.SCALE.data = new Vector3([fac, fac, fac]);
+    this.inputs.SCALE.data.mul(cons_axis);
+    this.exec(this.modal_tctx);
+  }
+
+  exec(ctx) {
+    if (!this.is_modal)
+      this.transdata = this.gen_transdata(ctx);
+    
+    var fac = this.inputs.SCALE.data;
+    var mat = new Matrix4();
+    
+    mat.scale(fac[0], fac[1], fac[2]);
+    
+    var td = this.transdata;
+    
+    for (var i=0; i<td.verts.length; i++) {
+      var v = td.verts[i];
+      var co = new Vector3(td.startcos[i]);
+      
+      v.co.load(co);
+      v.co.sub(td.center);
+      v.co.multVecMatrix(mat);
+      v.co.add(td.center);
+    }
+    
+    this.do_normals(ctx);
+    
+    ctx.mesh.regen_positions();
+    ctx.mesh.regen_normals();
+  }
 }

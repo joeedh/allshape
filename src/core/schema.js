@@ -1094,6 +1094,7 @@ function init_struct_packer() {
   console.log("parsing class serialization scripts...");
   
   istruct = new STRUCT();
+  var errs = [];
   
   for (var cls in defined_classes) {
     try {
@@ -1106,10 +1107,17 @@ function init_struct_packer() {
         print_stack(err);
         console.log("Error parsing struct: " + err.message);
       } else {
-        print_stack(err);
-        throw err;
+        errs.push(err);
       }
     }    
+  }
+  
+  for (var i=0; i<errs.length; i++) {
+    print_stack(err);
+    
+    //throw last error
+    if (i == errs.length-1)
+      throw err;
   }
 }
 

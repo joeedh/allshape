@@ -3,7 +3,7 @@
 /* various constant (except for DEBUG) globals */
 
 //file extension
-var formacad_file_ext = ".al3";
+var allshape_file_ext = ".al3";
 
 //application version
 var g_app_version = 0.042;
