@@ -35,8 +35,8 @@ class AppSettings {
 class UserSession {
   constructor() {
     this.tokens = {} : ObjectMap;
-    this.username = "";
-    this.password = "";
+    this.username = "guest";
+    this.password = "guest123";
     this.is_logged_in = false;
     
     this.settings = new AppSettings();
