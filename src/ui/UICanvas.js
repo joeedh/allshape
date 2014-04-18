@@ -803,7 +803,26 @@ class UICanvas {
   box_outline(pos, size, clr, rfac) {
     this.box(pos, size, clr, rfac, true);
   }
-
+  
+  shadow_box(pos, size, steps=6, margin=[6, 6], clr=uicolors["ShadowBox"]) {
+    static neg1 = [-2, -2];
+    
+    //arg, can't remember the correct formula to use here
+    //x**steps = 0.1
+    //x = 0.1**(1.0/steps)
+    var fac = (1.0/steps)*0.4;
+    var clr = [clr[0], clr[1], clr[2], clr[3]*fac]
+    
+    pos = new Vector2(pos);
+    size = new Vector2(size);
+    expand_rect2d(pos, size, margin);
+    
+    for (var i=0; i<steps; i++) {
+      this.box(pos, size, clr);
+      expand_rect2d(pos, size, neg1);
+    }
+  }
+  
   box(pos, size, clr, rfac, outline_only) {
     if (IsMobile)
       return this.box2(pos, size, clr, rfac, outline_only);
@@ -820,7 +839,6 @@ class UICanvas {
     var p = this.viewport[0];
     var s = this.viewport[1];
     
-    console.log(p, s, pos);
     this.box2([p[0], p[1]], [pos[0], s[1]], clr);
     this.box2([p[0]+pos[0]+size[0], p[1]], [s[0]-pos[0]-size[0], s[1]], clr);
     this.box2([pos[0]+p[0], pos[1]+p[1]+size[1]], [size[0], s[1]-size[1]-p[1]], clr);

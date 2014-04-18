@@ -298,7 +298,7 @@ class MeshEditor extends View3DEditor {
     var macro = new ToolMacro("select_macro", "Select Macro");
     
     var highlight = this.get_mode_highlight()
-    console.log(highlight);
+    //console.log(highlight);
     
     if (!highlight)
       return 0;
@@ -324,13 +324,13 @@ class MeshEditor extends View3DEditor {
     var type = highlight.type
     
     if (type == MeshTypes.VERT) {
-      console.log("selected vert " + eid);
+      //console.log("selected vert " + eid);
       op.inputs.eid_vs.data.push(eid);
     } else if (type == MeshTypes.EDGE) {
-      console.log("selected edge " + eid);
+      //console.log("selected edge " + eid);
       op.inputs.eid_es.data.push(eid);
     } else {
-      console.log("selected face " + eid);
+      //console.log("selected face " + eid);
       op.inputs.eid_fs.data.push(eid);
     }
     
@@ -342,15 +342,16 @@ class MeshEditor extends View3DEditor {
     return 1;
   }
 
-  tools_menu(event, view3d) {
-    var ops = [
+  tools_menu(ctx, mpos, view3d) {
+    static ops = [
       "mesh.subdivide(faces=mesh_selected(f))",
       "mesh.flip_normals(faces=mesh_selected(f))",
       "mesh.vertsmooth(verts=mesh_selected(v))"
-    ]
+    ];
     
-    var menu = view3d.toolop_menu(ctx, "Tools", new Vec2([event.x, event.y]));
-    view3d.call_menu(menu, view3d, pos);
+    var menu = view3d.toolop_menu(ctx, "Tools", ops);
+    
+    view3d.call_menu(menu, view3d, mpos);
   }
 
   rightclick_common_ops() {
@@ -366,7 +367,7 @@ class MeshEditor extends View3DEditor {
     
     ops = ops.concat([
       "mesh.split_edges(edges=mesh_selected(e))",
-      "mesh.context_create(verts=mesh_selected(v)"
+      "mesh.context_create(verts=mesh_selected(v))"
     ])
     
     var menu = view3d.toolop_menu(ctx, "Vertex", ops);

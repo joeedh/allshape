@@ -15,6 +15,7 @@ var csg_draw_shader = """//fragment
       gl_FragColor = color;
     }
 """
+
 var csg_draw_shader2 = """//fragment
     precision highp float;
     uniform mat4 u_modelViewProjMatrix;

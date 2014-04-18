@@ -13,6 +13,9 @@ class UIFrame extends UIElement {
     this.children = new GArray([])
     this.active = undefined;
     
+    //current mouse position relative to this.pos
+    this.mpos = [0, 0];
+    
     this.draw_background = false;
     
     if (canvas != undefined) {
@@ -21,8 +24,13 @@ class UIFrame extends UIElement {
     }
     
     this.rcorner = 16.0;
+    this.keymap = undefined;
   }
-
+  
+  get_keymaps() {
+    return this.keymap != undefined ? [this.keymap] : [];
+  }
+  
   do_full_recalc()
   {
     this.do_recalc();
@@ -83,6 +91,8 @@ class UIFrame extends UIElement {
 
   on_mousemove(MouseEvent e) {
     var mpos = [e.x, e.y]
+    //current mouse position relative to this.pos
+    this.mpos = mpos;
     
     var found = false;
     
@@ -145,6 +155,10 @@ class UIFrame extends UIElement {
 
   on_mousedown(MouseEvent e) {
     var mpos = [e.x, e.y];
+    
+    //current mouse position relative to this.pos
+    this.mpos = mpos;
+    
     this.on_mousemove(e);
     e.x = mpos[0];
     e.y = mpos[1];
@@ -411,5 +425,33 @@ class UIFrame extends UIElement {
       if (!(c.packflag & PackFlags.NO_REPACK))
         c.pack(canvas, isvertical);
     }  
+  }
+  
+  add_floating(e, modal=false, center=false)//center is optional, defaults to true
+  {
+    var off = [e.pos[0], e.pos[1]];
+    var frame = this;
+    
+    while (frame.parent != undefined) {
+      off[0] += frame.pos[0]; off[1] += frame.pos[1]
+      frame = frame.parent;
+    }
+    
+    e.canvas = frame.get_canvas();
+    e.do_recalc();
+    
+    if (center) {
+      off[0] -= e.size[0]/3
+      off[1] -= e.size[1]/3
+    }
+    
+    e.pos[0] = off[0];
+    e.pos[1] = off[1];
+    
+    frame.add(e);
+    if (modal) {
+      frame.push_modal(e);
+      //frame._on_mousemove({"x": e.pos[0]-frame.pos[0], "y":e.pos[1]-frame.pos[1]})
+    }
   }
 }

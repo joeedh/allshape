@@ -454,8 +454,11 @@ class DataAPI {
       if (element == undefined)
         return undefined;
       
-      if (element.keymap != null) {
-        var handler = element.keymap.get_tool_handler(str);
+      var maps = element.get_keymaps();
+      for (var i=0; i<maps.length; i++) {
+        var km = maps[i];
+        
+        var handler = km.get_tool_handler(str);
         if (handler != undefined)
           return handler;
       }
@@ -470,7 +473,26 @@ class DataAPI {
   }
   
   call_op(ctx, str) {
-    //try {
+    if (RELEASE)
+      return this.call_op_release(ctx, str);
+    else
+      return this.call_op_debug(ctx, str);
+  }
+  
+  call_op_debug(ctx, str) {
+    console.log("calling op", str);
+    
+    var op = this.get_op_intern(ctx, str);
+    
+    if (op.flag & ToolFlags.USE_DEFAULT_INPUT) {
+      this.appstate.toolstack.default_inputs(ctx, op);
+    }
+    
+    this.appstate.toolstack.exec_tool(op);
+  }
+  
+  call_op_release(ctx, str) {
+    try {
       var op = this.get_op_intern(ctx, str);
       
       if (op.flag & ToolFlags.USE_DEFAULT_INPUT) {
@@ -478,14 +500,10 @@ class DataAPI {
       }
       
       this.appstate.toolstack.exec_tool(op);
-    /*} catch (error) {
-      if (error != TinyParserError) {
-        throw error;
-      } else {
-        console.log("Error calling " + str);
-        console.trace();
-      }
-    }*/
+    } catch (error) {
+      console.log("Error calling " + str);
+      console.trace();
+    }
   }
   
   get_op_uiname(ctx, str) {

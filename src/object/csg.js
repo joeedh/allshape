@@ -1,6 +1,5 @@
 "use strict";
 
-
 class CSGNode extends GArray {
   constructor(ASObject ob, CSGNode par=undefined) {
     GArray.call(this);

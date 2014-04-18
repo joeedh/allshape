@@ -1,20 +1,51 @@
 "use strict";
 
 //buttons only take executable (function) paths as arguments
-class UIButton extends UIElement {
-  constructor(ctx, text, pos, size, path, callback) {
-    UIElement.call(this, ctx, path);
+class UIButton extends UIHoverHint {
+  constructor(Context ctx, String text, Array<float> pos, 
+              Array<float> size, String path=undefined, 
+              Function callback=undefined, String hint=undefined) 
+  {
+    UIHoverHint.call(this, ctx, path, pos, size);
     
     this.clicked = false;
     this.text = text;
-    this.pos = pos;
-    this.size = size;
+    this.hint = hint;
     this.callback = callback;
   }
+  
+  get_hint() {
+    var ctx = this.ctx;
+    
+    if (this.hint != undefined) {
+      return this.hint;
+    } else if (this.state & UIFlags.USE_PATH) {
+      var op = this.ctx.api.get_op(this.ctx, this.data_path);
+      if (op == undefined) return undefined;
 
+      var hotkey = ctx.api.get_op_keyhandler(ctx, this.data_path);
+      var ret = op.description == undefined ? "" : op.description;
+      
+      console.log("hotkey: ", hotkey);
+      if (hotkey != undefined) {
+        if (ret != "") ret += "\n"
+        ret += "      Hotkey: " + hotkey.build_str(true) + "  ";
+      }
+      
+      return ret == "" ? undefined : ret;
+    }
+  }
+  
+  on_mousemove(MouseEvent event) {
+    if (!this.clicked) {
+      this.start_hover();
+    }
+  }
+  
   on_mousedown(MouseEvent event) {
     if (event.button == 0 && !this.clicked) {
       this.push_modal();
+      this.stop_hover();
       
       this.clicked = true;
       this.do_recalc();
@@ -22,6 +53,8 @@ class UIButton extends UIElement {
   }
 
   on_mouseup(MouseEvent event) {
+    console.trace();
+    console.log("yay", event.button, event.x, event.y);
     if (event.button == 0) {
       this.pop_modal();
       this.clicked = false;
@@ -65,12 +98,13 @@ class UIButton extends UIElement {
   }
 }
 
-class UIMenuButton extends UIElement {
-  constructor(ctx, menu, pos, size, path) {//menu can be undefined, if path is defined
-    UIElement.call(this, ctx, path);
+class UIMenuButton extends UIHoverHint {
+  constructor(ctx, menu, pos, size, path, description="") {//menu can be undefined, if path is defined
+    UIHoverHint.call(this, ctx, path);
     
     this.menu = undefined : UIMenu;
     
+    this.description = "";
     this.ctx = ctx;
     this.clicked = false;
     this.text = ""
@@ -84,8 +118,10 @@ class UIMenuButton extends UIElement {
       this.build_menu();
     }
   }
-
+  
   on_tick() {
+    UIHoverHint.prototype.on_tick.call(this);
+    
     if (this.state & UIFlags.USE_PATH) {
       var val = this.get_prop_data();
       
@@ -142,6 +178,7 @@ class UIMenuButton extends UIElement {
 
   on_mousedown(MouseEvent event) {
     if (event.button == 0 && this.clicked == false) {
+      this.stop_hover();
       this.call_menu(this.menu, [0, Math.floor(this.size[1]-3)], this.size[0]);
       this.clicked = true;
       this.do_recalc();
@@ -159,7 +196,13 @@ class UIMenuButton extends UIElement {
       }
     }  
   }
-
+  
+  on_mousemove(MouseEvent event) {
+    if (!this.clicked) {
+      this.start_hover();
+    }
+  }
+  
   build_draw(UICanvas canvas) {
     canvas.begin(this);
     
@@ -210,9 +253,9 @@ class UIMenuButton extends UIElement {
   }
 }
 
-class UICheckBox extends UIElement {
+class UICheckBox extends UIHoverHint {
   constructor(ctx, text, pos, size, path) {
-    UIElement.call(this, ctx, path);
+    UIHoverHint.call(this, ctx, path);
     
     this.ctx = ctx;
     this.set = false;
@@ -230,6 +273,8 @@ class UICheckBox extends UIElement {
   }
 
   on_tick() {
+    UIHoverHint.prototype.on_tick.call(this);
+
     if (!this.mdown && (this.state & UIFlags.USE_PATH)) {
       var val = this.get_prop_data();
       
@@ -239,10 +284,18 @@ class UICheckBox extends UIElement {
       }
     }
   }
-
+  
+  on_mousemove(MouseEvent event) {
+    if (!this.mdown) {
+      this.start_hover();
+    }
+  }
+  
   on_mousedown(MouseEvent event) {
     if (event.button == 0 && !this.mdown) {
       this.push_modal()
+      
+      this.stop_hover();
       
       this.mdown = true;
       this.set ^= true;
@@ -319,9 +372,9 @@ class UICheckBox extends UIElement {
   }
 }
 
-class UINumBox extends UIElement {
+class UINumBox extends UIHoverHint {
   constructor(ctx, text, range, val, pos, size, path) { //path is optional
-    UIElement.call(this, ctx, path);
+    UIHoverHint.call(this, ctx, path);
     
     this.unit = undefined;
     this.clicked = false;
@@ -377,6 +430,7 @@ class UINumBox extends UIElement {
       
       this.start_mpos = [event.x, event.y]
       this.start_val = this.val
+      this.stop_hover();
       this.clicked = true;
       this.do_recalc();
     } else if (event.shiftKey) {
@@ -429,6 +483,8 @@ class UINumBox extends UIElement {
   }
 
   on_tick() {
+    UIHoverHint.prototype.on_tick.call(this);
+    
     if (this.state & UIFlags.USE_PATH) {
       var val = this.get_prop_data();
       
@@ -448,27 +504,29 @@ class UINumBox extends UIElement {
     var mpos = objcache.getarr(event.x, event.y);
     
     if (this.clicked) {
-        var df = (mpos[0] - this.start_mpos[0]) / 300.0
-        
-        var sign = df < 0.0 ? -1.0 : 1.0;
-        
-        if (!this.is_int) {
-          df = df*df;
-          df *= sign;
-        }
-        
-        df *= this.range[1] - this.range[0]
+      var df = (mpos[0] - this.start_mpos[0]) / 300.0
       
-        this.val = this.start_val + df
-        this.val = Math.min(Math.max(this.val, this.range[0]), this.range[1])
-        if (this.is_int)
-          this.val = Math.floor(this.val);
-          
-        this.do_recalc()
+      var sign = df < 0.0 ? -1.0 : 1.0;
+      
+      if (!this.is_int) {
+        df = df*df;
+        df *= sign;
+      }
+      
+      df *= this.range[1] - this.range[0]
+    
+      this.val = this.start_val + df
+      this.val = Math.min(Math.max(this.val, this.range[0]), this.range[1])
+      if (this.is_int)
+        this.val = Math.floor(this.val);
         
-        if (this.state & UIFlags.USE_PATH) {
-          this.set_prop_data(this.val);
-        }
+      this.do_recalc()
+      
+      if (this.state & UIFlags.USE_PATH) {
+        this.set_prop_data(this.val);
+      }
+    } else {
+      this.start_hover();
     }
   }
 

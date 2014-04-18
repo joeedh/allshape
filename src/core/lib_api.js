@@ -488,14 +488,16 @@ class DataBlock {
   }
 }
 
+//'name' and 'flag' are deliberately not
+//prefixed with 'lib_'
 DataBlock.STRUCT = """
   DataBlock {
-    name : string;
+    name     : string;
     lib_type : int;
-    lib_id : int;
-    lib_lib : int | obj.lib_lib != undefined ? obj.lib_lib.id : -1;
+    lib_id   : int;
+    lib_lib  : int | obj.lib_lib != undefined ? obj.lib_lib.id : -1;
 
     lib_refs : int;
-    flag : int;
+    flag     : int;
   }
 """;

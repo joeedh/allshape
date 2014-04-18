@@ -1,7 +1,9 @@
 "use strict";
 
-//is compatible with MeshTypes
+//bitmask
+//VERT/EDGE/FACE is compatible with MeshTypes, thus why we skip 4
 var EditModes = {VERT : 1, EDGE : 2, FACE : 8, OBJECT : 16, GEOMETRY : 1|2|8};
+
 var ibuf_idgen = new EIDGen();
 
 ibuf_idgen.gen_id();
@@ -19,16 +21,23 @@ class View3DEditor {
     this.keymap = keymap;
   }
 
-  //objecteditor is an abstract class,
-  //but struct system does require the presence
-  //of fromSTRUCT.  need to review that.
+  /*
+    View3DEditor is an abstract class,
+    but the STRUCT system does require the 
+    presence of fromSTRUCT.  Need to review 
+    that.
+   */
   static fromSTRUCT(Function reader) {
     var obj = {};
     reader(obj);
     
     return obj;
   }
-
+  
+  get_keymaps() : Array<KeyMap> {
+    return [this.keymap];
+  }
+  
   on_area_inactive(View3DHandler view3d) {}
   
   on_inactive(View3DHandler view3d) {}
@@ -49,7 +58,7 @@ class View3DEditor {
 
   //returns number of selected items
   do_select(MouseEvent event, Array<float> mpos, View3DHandler view3d) {}
-  tools_menu(MouseEvent event, View3DHandler view3d) {}
+  tools_menu(Context ctx, Array<float> mpos, View3DHandler view3d) {}
   rightclick_menu(MouseEvent event, View3DHandler view3d) {}
   on_mousemove(MouseEvent event) {}
   do_alt_select(MouseEvent event, Array<float> mpos, View3DHandler view3d) {}
@@ -158,6 +167,17 @@ class View3DHandler extends Area {
     
     this.editor = new MeshEditor(this);
     this.editors = new GArray([this.editor]);
+  }
+  
+  get_keymaps() {
+    var ret = [this.keymap];
+    
+    var maps = this.editor.get_keymaps();
+    for (var i=0; i<maps.length; i++) {
+      ret.push(maps[i]);
+    }
+    
+    return ret;
   }
   
   check_subsurf(Context ctx, ASObject ob) {
@@ -531,8 +551,8 @@ class View3DHandler extends Area {
     return this.editor.do_alt_select(event, mpos, view3d);
   }
   
-  tools_menu(MouseEvent event) {
-    this.editor.tools_menu(event, this);
+  tools_menu(Context ctx, Array<float> mpos) {
+    this.editor.tools_menu(ctx, mpos, this);
   }
 
 
@@ -995,7 +1015,9 @@ class View3DHandler extends Area {
     col.rcorner = 100.0
     col.pos = [0, this.size[1]-28]
     
-    col.label("                 ");
+    col.label("                      ");
+    col.toolop("screen.hint_picker()", undefined, "?");
+    
     col.add(new UIMenuLabel(this.ctx, "File", undefined, this.gen_file_menu));
     col.add(new UIMenuLabel(this.ctx, "Tools", undefined, this.gen_tools_menu));
     

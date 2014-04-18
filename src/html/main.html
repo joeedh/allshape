@@ -1412,6 +1412,7 @@ function toJSON_intern (ob, tlevel) {
         
         
         function handleTouchMove(e) {
+          g_app_state.was_touch = true;
           stop_event_propegation(e);
             
           if (g_app_state.eventhandler != undefined) {
@@ -1419,18 +1420,22 @@ function toJSON_intern (ob, tlevel) {
             
             var t = e.targetTouches[0];
             if (t == undefined) {
-              x = e.pageX;
-              y = e.pageY;
+              x = g_app_state._last_touch_mpos[0];
+              y = g_app_state._last_touch_mpos[1];
             } else {         
               x = t.pageX;
-              y = t.pageY;
+              y = g_app_state.screen.size[1] - t.pageY;
+              
+              g_app_state._last_touch_mpos[0] = x;
+              g_app_state._last_touch_mpos[1] = y;
             }
             
-            g_app_state.eventhandler._on_mousemove(new MyMouseEvent(x, g_app_state.screen.size[1] - y, 0, MyMouseEvent.MOUSEMOVE));
+            g_app_state.eventhandler._on_mousemove(new MyMouseEvent(x, y, 0, MyMouseEvent.MOUSEMOVE));
           }
         }
         
         function handleMouseMove(e) {
+          g_app_state.was_touch = false;
           if (g_app_state.eventhandler != undefined) {
             g_app_state.eventhandler._on_mousemove(new MyMouseEvent(e.pageX, g_app_state.screen.size[1] - e.pageY, 0, MyMouseEvent.MOUSEMOVE));
           }
@@ -1473,6 +1478,7 @@ function toJSON_intern (ob, tlevel) {
         }
         
         function handleTouchCancel(e) {
+          g_app_state.was_touch = true;
           stop_event_propegation(e);
           
           var x, y;
@@ -1502,23 +1508,28 @@ function toJSON_intern (ob, tlevel) {
          }
          
           function handleTouchDown(e) {
+            g_app_state.was_touch = true;
             stop_event_propegation(e);
             
             var x, y;
             
             if (DEBUG.touch)
               console.log(e);
+            
             var t = e.targetTouches[0];
             if (t == undefined) {
-              x = e.pageX;
-              y = e.pageY;
+              x = g_app_state._last_touch_mpos[0];
+              y = g_app_state._last_touch_mpos[1];
             } else {         
               x = t.pageX;
-              y = t.pageY;
+              y = g_app_state.screen.size[1] - t.pageY;
+              
+              g_app_state._last_touch_mpos[0] = x;
+              g_app_state._last_touch_mpos[1] = y;
             }
             
             if (g_app_state.screen != undefined) {
-              var e2 = new MyMouseEvent(x, g_app_state.screen.size[1] - y, 0, MyMouseEvent.MOUSEDOWN);
+              var e2 = new MyMouseEvent(x, y, 0, MyMouseEvent.MOUSEDOWN);
               
               e2.shiftKey = e.shiftKey;
               e2.altKey = e.altKey;
@@ -1528,34 +1539,40 @@ function toJSON_intern (ob, tlevel) {
            }
          }
           
-         function handleTouchUp(e) {
-          stop_event_propegation(e);
-          
-          var x, y;
-          
-          if (DEBUG.touch)
-            console.log(e);
-          var t = e.targetTouches[0];
-          if (t == undefined) {
-            x = e.pageX;
-            y = e.pageY;
-          } else {         
-            x = t.pageX;
-            y = t.pageY;
-          }
-          
-          if (g_app_state.screen != undefined) {
-            var e2 = new MyMouseEvent(x, g_app_state.screen.size[1] - y, 0, MyMouseEvent.MOUSEDOWN);
+          function handleTouchUp(e) {
+            g_app_state.was_touch = true;
+            stop_event_propegation(e);
             
-            e2.shiftKey = e.shiftKey;
-            e2.altKey = e.altKey;
-            e2.ctrlKey = e.ctrlKey;
-
-            g_app_state.eventhandler._on_mouseup(e2);
-          }
-        }
+            var x, y;
+            
+            if (DEBUG.touch)
+              console.log(e);
+            
+            var t = e.targetTouches[0];
+            if (t == undefined) {
+              x = g_app_state._last_touch_mpos[0];
+              y = g_app_state._last_touch_mpos[1];
+            } else {         
+              x = t.pageX;
+              y = g_app_state.screen.size[1] - t.pageY;
+              
+              g_app_state._last_touch_mpos[0] = x;
+              g_app_state._last_touch_mpos[1] = y;
+            }
+            
+            if (g_app_state.screen != undefined) {
+              var e2 = new MyMouseEvent(x, y, 0, MyMouseEvent.MOUSEUP);
+              
+              e2.shiftKey = e.shiftKey;
+              e2.altKey = e.altKey;
+              e2.ctrlKey = e.ctrlKey;
+              
+              g_app_state.eventhandler._on_mouseup(e2);
+           }
+         }
         
         function handleMouseDown(e) {
+          g_app_state.was_touch = false;
           if (g_app_state.screen != undefined) {
             var e2 = new MyMouseEvent(e.pageX, g_app_state.screen.size[1] - e.pageY, e.button, MyMouseEvent.MOUSEDOWN);
             
@@ -1573,6 +1590,7 @@ function toJSON_intern (ob, tlevel) {
         }
         
         function handleMouseUp(e) {
+          g_app_state.was_touch = false;
           if (g_app_state.screen != undefined) {
             var e2 = new MyMouseEvent(e.pageX, g_app_state.screen.size[1] - e.pageY, e.button, MyMouseEvent.MOUSEDOWN);
             

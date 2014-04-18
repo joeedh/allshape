@@ -88,7 +88,7 @@ class Area extends UIFrame {
 }
 Area.STRUCT = """
   Area { 
-    pos : vec2;
+    pos  : vec2;
     size : vec2;
     type : string;
   }
@@ -297,11 +297,11 @@ class ScreenArea extends UIFrame {
 
 ScreenArea.STRUCT = """
   ScreenArea { 
-    pos : vec2;
-    size : vec2;
-    type : string;
+    pos     : vec2;
+    size    : vec2;
+    type    : string;
     editors : iter(k, abstract(Area)) | obj.editors[k];
-    area : string | obj.area.constructor.name;
+    area    : string | obj.area.constructor.name;
   }
 """
 
@@ -1258,14 +1258,15 @@ class Screen extends UIFrame {
     }
     
     for (var c in this.children) {
-      g_app_state.raster.push_scissor(c.pos, c.size);
-      
       //only call draw for screenarea children
       if (c instanceof ScreenArea) {
+        g_app_state.raster.push_scissor(c.pos, c.size);
+        
         this.recalc_child_borders(c);
         c.on_draw(gl);
+
+        g_app_state.raster.pop_scissor();
       }
-      g_app_state.raster.pop_scissor();
     }
     
     if (time_ms() - this.last_tick > 42) { //(IsMobile ? 500 : 150)) {
@@ -1558,8 +1559,8 @@ class Screen extends UIFrame {
 
 Screen.STRUCT = """
   Screen { 
-    pos : vec2;
-    size : vec2;
+    pos   : vec2;
+    size  : vec2;
     areas : array(abstract(ScreenArea));
   }
 """
@@ -1630,3 +1631,153 @@ function gen_screen(WebGLRenderingContext gl, View3DHandler view3d, int width, i
   return scr;
 }
 
+class HintPickerOpElement extends UIElement {
+  constructor(ctx, HintPickerOp op) {
+    UIElement.call(this, ctx);
+    this.op = op;
+  }
+  
+  build_draw(UICanvas canvas, Boolean isVertical) {
+    this.op.canvas = canvas;
+    this.op.build_draw();
+  }
+}
+
+class HintPickerOp extends ToolOp {
+  constructor() {
+    ToolOp.call(this, "hint_picker", "Hint Picker");
+    
+    
+    this.canvas = g_app_state.screen.canvas;
+    this.undoflag = UndoFlags.IGNORE_UNDO;
+    this.is_modal = true;
+    
+    this.mup_count = 0; //we count the number of mouseups to implement touch tablet mode
+    this.inputs = {};
+    this.outputs = {};
+    this.active = undefined;
+    this.hintbox = undefined;
+    this.last_mpos = new Vector2([0, 0]);
+  }
+  
+  can_call(Context ctx) {
+    return true; //g_app_state.modalhandler == undefined;
+  }
+  
+  find_element(MouseEvent event, Array<float> mpos) {
+    function descend(e, mpos) {
+      if (e instanceof UIHoverHint) {
+        return e;
+      } else if (!(e instanceof UIFrame)) {
+        return undefined;
+      }
+      
+      mpos = [mpos[0]-e.pos[0], mpos[1]-e.pos[1]];
+      for (var c in e.children) {
+        if (inrect_2d(mpos, c.pos, c.size))
+          return descend(c, mpos);
+      }
+    }
+    
+    var ret;
+    for (var c in g_app_state.screen.children) {
+      if (!(c instanceof ScreenArea)) continue;
+      if (!inrect_2d(mpos, c.pos, c.size)) continue;
+      
+      ret = descend(c, mpos);
+      if (ret != undefined)
+        break;
+    }
+    
+    if (ret != undefined) {
+      this.active = ret;
+    }
+    
+    return ret;
+  }
+  
+  on_mousemove(MouseEvent event) {
+    this.canvas = g_app_state.screen.canvas;
+    
+    var ctx = this.modal_ctx;
+    var mpos = [event.x, event.y];
+    
+    var old = this.active;
+    this.find_element(event, mpos);
+    
+    if (old != this.active && this.active != undefined) {
+      if (this.hintbox != undefined) {
+        this.hintbox.parent.remove(this.hintbox);
+        this.hintbox.parent.do_recalc();
+      }
+      
+      this.helper.do_recalc();
+      this.hintbox = this.active.on_hint(false);
+      
+      console.log("active change");
+    } else if (old != this.active && this.active == undefined) {
+      this.helper.do_recalc();
+    }
+
+    //console.log("active: ", this.active);
+    //g_app_state.build_draw(this.canvas, false);
+  }
+  
+  modal_init(Context ctx) {
+    console.log("helper tool");
+    var helper = new HintPickerOpElement(ctx, this);
+    
+    g_app_state.screen.add(helper);
+    this.helper = helper;
+  }
+  
+  finish() {
+    this.end_modal();
+    g_app_state.screen.remove(this.helper);
+    if (this.hintbox != undefined) {
+      this.hintbox.parent.remove(this.hintbox);
+      this.hintbox.parent.do_recalc();
+    }
+  }
+  
+  on_mousedown(MouseEvent event) {
+    this.on_mousemove(event);
+  }
+  
+  on_mouseup(MouseEvent event) {
+    console.log("was_touch", g_app_state.was_touch, (this.active && g_app_state.was_touch && this.mup_count < 1));
+    
+    if (this.hintbox && g_app_state.was_touch && this.mup_count < 1) {
+      this.mup_count++;
+      return;
+    }
+    
+    this.canvas.reset();
+    this.finish();
+  }
+  
+  on_keyup(KeyboardEvent event) {
+    if (event.keyCode == 27) { //escape key
+      this.canvas.reset();
+      this.finish();
+    }
+  }
+  
+  build_draw() {
+    //console.log("rebuilding draw...");
+    
+    //this.canvas.reset();
+    var clr = [0, 0, 0, 0.35];
+    
+    if (this.active == undefined) {
+      this.canvas.simple_box([0, 0], g_app_state.screen.size, clr);
+    } else {
+      var pos = this.active.get_abs_pos();
+      this.canvas.passpart(pos, this.active.size, clr);
+    }
+  }
+  
+  on_draw(WebGLRenderingContext gl) {
+    //this.canvas.on_draw(gl);
+  }
+}

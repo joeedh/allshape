@@ -941,7 +941,7 @@ DrawMats.STRUCT = """
   DrawMats {
     normalmat : mat4;
     cameramat : mat4;
-    persmat : mat4;
+    persmat   : mat4;
     rendermat : mat4;
   }
 """

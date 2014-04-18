@@ -8,17 +8,9 @@ var UIFlags = {
   FLASH : (16|32)
 };
 
-var PackFlags = {
-  INHERIT_HEIGHT : 1, INHERIT_WIDTH: 2, 
-  ALIGN_RIGHT : 4, ALIGN_LEFT: 8, 
-  ALIGN_CENTER: 16, ALIGN_BOTTOM : 32, 
-  IGNORE_LIMIT : 64, NO_REPACK : 128,
-  UI_DATAPATH_IGNORE : 256
-}
 var CanvasFlags = {NOT_ROOT : 1, NO_PROPEGATE : 2}
 
 var _ui_element_id_gen = 1;
-var default_ui_font_size = 0.7;
 function open_android_keyboard() {
    var canvas = document.getElementById("example")
    canvas.contentEditable = true
@@ -33,10 +25,12 @@ function close_android_keyboard() {
 }
 
 class UIElement extends EventHandler {
-  constructor(ctx, path, pos, size) {
+  constructor(ctx, path=undefined, pos=undefined, size=undefined) {
     EventHandler.call(this)
     
     this._uiel_id = _ui_element_id_gen++;
+    
+    this.description = "";
     
     this.state = UIFlags.ENABLED;
     this.packflag = 0
@@ -63,7 +57,13 @@ class UIElement extends EventHandler {
       this.state |= UIFlags.USE_PATH;
     }  
   }
-
+  
+  get_keymaps() {
+    static empty_arr = [];
+    
+    return empty_arr;
+  }
+  
   __hash__() : String {
     var n = this.constructor.name;
     return n[2] + n[3] + n[n.length-2] + n[n.length-1] + this._uiel_id.toString();
@@ -265,7 +265,16 @@ class UIElement extends EventHandler {
     
     return ret;
   }
-
+  
+  get_hint() : String {
+    if (this.description == "" && (this.state & UIFlags.USE_PATH)) {
+      var prop = this.get_prop_meta();
+      return prop.description != "" ? prop.description : undefined;
+    } else {
+      return this.description;
+    }
+  }
+  
   on_tick() { }
   on_keydown(KeyboardEvent event) { }
   on_keyup(KeyboardEvent event) { }
@@ -288,4 +297,123 @@ class UIElement extends EventHandler {
   gen_tooltip() : String {}
   on_add(parent) {}
   on_remove(parent) {}
+}
+
+class UIHoverBox extends UIElement {
+  constructor(Context ctx, String text, Boolean is_modal, Array<float> pos, Array<float> size) {
+    UIElement.call(this, ctx, undefined, pos, size);
+    
+    this.is_modal = is_modal;
+    this.text = text;
+    this.packflag |= PackFlags.NO_REPACK;
+  }
+  
+  get_min_size(UICanvas, Boolean isVertical) {
+    return this.size;
+  }
+  
+  on_mousemove(event) {
+    if (this.is_modal && !inrect_2d([event.x, event.y], [0, 0], this.size)) {
+      this.pop_modal();
+      this.parent.remove(this);
+      this.parent.do_recalc();
+    }
+  }
+  
+  build_draw(UICanvas canvas, Boolean isVertical) {
+    canvas.begin(this);
+    
+    canvas.shadow_box([4, -4], this.size);
+    canvas.box([0, 0], this.size, uicolors["HoverHint"]);
+    canvas.text([4, 7], this.text, uicolors["BoxText"]);
+    
+    canvas.end(this);
+  }
+}
+
+class UIHoverHint extends UIElement {
+  constructor(ctx, path=undefined, pos=undefined, size=undefined) {
+    global ui_hover_time;
+    
+    UIElement.call(this, ctx, path, pos, size);
+    
+    this.size = size;
+    this.pos = pos;
+    this.start_time = 0;
+    this.hover_time = ui_hover_time;
+    this.hovering = false;
+  }
+  
+  start_hover() {
+    this.start_time = time_ms();
+    this.hovering = true;
+  }
+  
+  stop_hover() {
+    this.hovering = false;
+  }
+  
+  on_hint(Boolean is_modal=true) : UIElement {
+    var hint = this.get_hint();
+    
+    console.log("hint: ", hint);
+    if (!hint) return;
+    
+    var size = new Vector2(this.ctx.font.calcsize(hint));
+    size.add([4.0, 8.0]);
+    var pos = new Vector2(this.pos); //this.parent.mpos);
+    
+    pos[1] -= size[1];
+    //pos.sub([Math.floor(size[0]*0.5), Math.floor(size[1]*0.5)]);
+    
+    var hintbox = new UIHoverBox(this.ctx, hint, is_modal, pos, size);
+    
+    /*ensure hint is fully within view*/
+    var abspos = [hintbox.pos[0], hintbox.pos[1]];
+    var editor = this.parent;
+    
+    while (!(editor instanceof Area)) {
+      abspos[0] += editor.pos[0];
+      abspos[1] += editor.pos[1];
+      
+      editor = editor.parent;
+    }
+    var abspos2 = [abspos[0], abspos[1]];
+    
+    if (editor == undefined)
+      editor = g_app_state.screen;
+    
+    abspos[0] = Math.min(Math.max(0, abspos[0]), editor.size[0]-hintbox.size[0]);
+    
+    //move above element, if necassary
+    if (abspos[1] < 0) {
+      abspos[1] += size[1] + this.size[1];
+    }
+    //clamp to within view, in case above code failed
+    abspos[1] = Math.min(Math.max(0, abspos[1]), editor.size[1]-hintbox.size[1]);
+    
+    hintbox.pos[0] += abspos[0] - abspos2[0];
+    hintbox.pos[1] += abspos[1] - abspos2[1];
+    
+    this.parent.add_floating(hintbox, is_modal);
+    
+    return hintbox;
+  }
+  
+  on_active() {
+    if (this.hovering) {
+      this.start_hover();
+    }
+  }
+  
+  on_inactive() {
+    this.hovering = false;
+  }
+  
+  on_tick() {
+    if (this.hovering && time_ms()-this.start_time >= this.hover_time) {
+      this.hovering = false;
+      this.on_hint();
+    }
+  }
 }

@@ -66,9 +66,9 @@ class DagSocket {
 
 DagSocket.STRUCT = """
   DagSocket {
-    name : static_string[64];
-    id : int;
-    node : int | obj.node == undefined ? -1 : (obj.node.dag_node == undefined ? -1 : obj.node.dag_node.id);
+    name  : static_string[64];
+    id    : int;
+    node  : int | obj.node == undefined ? -1 : (obj.node.dag_node == undefined ? -1 : obj.node.dag_node.id);
     edges : array(DagEdge);
   }
 """
@@ -665,9 +665,9 @@ class Dag {
 //direct data nodes is a bit hackish. . .
 Dag.STRUCT = """
   Dag {
-    flag : int;
-    idgen : EIDGen;
+    flag       : int;
+    idgen      : EIDGen;
     sock_idgen : EIDGen;
-    nodes : array(e, abstract(Object)) | (instance_of(e, DataBlock) ? e.dag_node : e) ;
+    nodes      : array(e, abstract(Object)) | (instance_of(e, DataBlock) ? e.dag_node : e) ;
   }
 """;

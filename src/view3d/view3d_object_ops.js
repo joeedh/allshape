@@ -211,8 +211,9 @@ class ObjectEditor extends View3DEditor {
     //view3d.update_selbuf();
   }
   
-  tools_menu(event, view3d) {
+  tools_menu(ctx, mpos, view3d) {
   }
+  
   rightclick_menu(event, view3d) {
   }
   on_mousemove(event) {

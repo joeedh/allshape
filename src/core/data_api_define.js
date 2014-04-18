@@ -21,6 +21,7 @@ var csg_mode_enum = new EnumProperty("SUBTRACT",
     UNION : CsgModes.UNION
   },
   "csg_mode", "CSG Mode", "CSG Mode");
+
 csg_mode_enum.ui_value_names = {
     SUBTRACT : "Subtract",
     INTERSECT : "Intersect",
@@ -115,8 +116,8 @@ var ObjectStruct = undefined;
 function api_define_object() {
   
   var name = new StringProperty("", "name", "name", "Name", TPropFlags.LABEL);
-  var use_subsurf = new BoolProperty(false, "use_subsurf", "Use Subsurf");
-  var use_csg = new BoolProperty(false, "use_csg", "Enable CSG")
+  var use_subsurf = new BoolProperty(false, "use_subsurf", "Use Subsurf", "Enable subdivision surface rendering");
+  var use_csg = new BoolProperty(false, "use_csg", "Enable CSG", "Enable CSG rendering")
   var csg_mode = csg_mode_enum.copy();
   
   csg_mode.update = function() {
@@ -411,8 +412,13 @@ function api_define_ops() {
     "appstate.save_as" : function(ctx, args) {
       return new FileSaveAsOp();
     },
+    
     "screen.area_split_tool" : function(ctx, args) {
       return new SplitAreasTool(g_app_state.screen);
+    },
+    
+    "screen.hint_picker" : function(ctx, args) {
+      return new HintPickerOp();
     },
     
     "object.toggle_select_all" : function(ctx, args) {

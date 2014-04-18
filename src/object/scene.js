@@ -143,6 +143,6 @@ class Scene extends DataBlock {
 
 Scene.STRUCT = STRUCT.inherit(Scene, DataBlock) + """
   objects : DBList;
-  graph : SceneGraph;
+  graph   : SceneGraph;
 }
 """;

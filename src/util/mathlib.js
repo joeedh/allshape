@@ -287,6 +287,13 @@ function aabb_isect_2d(pos1, size1, pos2, size2) {
   return false;
 }
 
+function expand_rect2d(Array<float> pos, Array<float> size, Array<float> margin) {
+  pos[0] -= Math.floor(margin[0]);
+  pos[1] -= Math.floor(margin[1]);
+  size[0] += Math.floor(margin[0]*2.0);
+  size[1] += Math.floor(margin[1]*2.0);
+}
+
 function expand_line(l, margin) {
     var c = new Vector3();
     c.add(l[0]);

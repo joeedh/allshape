@@ -53,9 +53,10 @@
 */
 
 class ToolOpAbstract {
-  constructor(apiname, uiname) {
+  constructor(apiname, uiname, description) {
     this.uiname = "";
     this.name = "";
+    this.description = description == undefined ? "" : description;
     
     this.inputs = {};
     this.outputs = {};
@@ -109,8 +110,11 @@ var ToolFlags = {
 };
 
 class ToolOp extends EventHandler, ToolOpAbstract {
-  constructor(apiname="(undefined)", uiname="(undefined)") {
-    ToolOpAbstract.call(this, apiname, uiname);
+  constructor(String apiname="(undefined)", 
+              String uiname="(undefined)", 
+              String description=undefined) 
+  {
+    ToolOpAbstract.call(this, apiname, uiname, description);
     EventHandler.call(this);
     
     this.name = apiname;

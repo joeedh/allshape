@@ -429,7 +429,7 @@ class RotateOp extends TransformOp {
 
 class ScaleOp extends TransformOp {
   constructor(int mode) {
-    TransformOp.call(this, "scale", "Scale", mode);
+    TransformOp.call(this, "scale", "Scale", mode, "Scale selection");
     
     this.transdata = null;
     this.is_modal = true;

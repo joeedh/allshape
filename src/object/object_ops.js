@@ -187,7 +187,7 @@ class ObjectParentOp extends ToolOp {
     this.is_modal = false;
     
     this.inputs = {
-      parent : new DataRefProperty(undefined, [DataTypes.OBJECT], "parent", "Parent", "Object to use as parent"),
+      parent  : new DataRefProperty(undefined, [DataTypes.OBJECT], "parent", "Parent", "Object to use as parent"),
       objects : new CollectionProperty(undefined, [ASObject], "objects", "Children", "Child objects"),
       preserve_child_space : new BoolProperty(true, "preserve_child_space", "Keep Child Space", "Preserve child transformation space")
     };

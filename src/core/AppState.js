@@ -166,6 +166,9 @@ class AppState {
     this.screen = screen;
     this.eventhandler = screen : EventHandler;
     
+    this._last_touch_mpos = [0, 0];
+    
+    this.was_touch = false;
     this.toolstack = new ToolStack(this);
     this.active_view3d = undefined;
     this.api = new DataAPI(this);

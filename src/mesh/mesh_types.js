@@ -41,9 +41,9 @@ class Element {
 }
 Element.STRUCT = """
   Element {
-    type : int;
-    eid : int;
-    flag : int;
+    type  : int;
+    eid   : int;
+    flag  : int;
     index : int;
   }
 """
@@ -134,9 +134,9 @@ class Vertex extends Element {
 }
 
 Vertex.STRUCT = STRUCT.inherit(Vertex, Element) + """
-    co : vec3;
-    no : vec3;
-    loop : int | obj.loop == undefined ? -1 : obj.loop.eid;
+    co    : vec3;
+    no    : vec3;
+    loop  : int | obj.loop == undefined ? -1 : obj.loop.eid;
     edges : array(e, int) | e.eid;
   }
 """;
@@ -230,8 +230,8 @@ class Edge extends Element {
   }
 }
 Edge.STRUCT = STRUCT.inherit(Edge, Element) + """
-  v1 : int | obj.v1.eid;
-  v2 : int | obj.v2.eid;
+  v1   : int | obj.v1.eid;
+  v2   : int | obj.v2.eid;
   loop : int | obj.loop == undefined ? -1 : obj.loop.eid;
 }
 """;
@@ -285,11 +285,11 @@ class Loop extends Element {
 
 Loop.STRUCT = """
   Loop {
-    eid : int;
-    type : int;
-    v : int | obj.v.eid;
-    e : int | obj.e.eid;
-    f : int | obj.f.eid;
+    eid         : int;
+    type        : int;
+    v           : int | obj.v.eid;
+    e           : int | obj.e.eid;
+    f           : int | obj.f.eid;
     radial_next : int | obj.radial_next.eid;
     radial_prev : int | obj.radial_prev.eid;
   }
@@ -516,10 +516,10 @@ class Face extends Element{
 
 Face.STRUCT = STRUCT.inherit(Face, Element) + """
     looplists : array(iter(Loop));
-    no : vec3;
-    center : vec3;
+    no        : vec3;
+    center    : vec3;
     mapcenter : vec3;
-    totvert : int;
+    totvert   : int;
   }
 """;
 

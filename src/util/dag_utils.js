@@ -25,7 +25,7 @@ class Matrix4Socket extends DagSocket {
 
 Matrix4Socket.STRUCT = STRUCT.inherit(Matrix4Socket, DagSocket) + """
     matrix : mat4;
-    field : string;
+    field  : string;
   }
 """;
 

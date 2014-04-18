@@ -1,5 +1,13 @@
 "use strict";
 
+var PackFlags = {
+  INHERIT_HEIGHT : 1, INHERIT_WIDTH: 2, 
+  ALIGN_RIGHT : 4, ALIGN_LEFT: 8, 
+  ALIGN_CENTER: 16, ALIGN_BOTTOM : 32, 
+  IGNORE_LIMIT : 64, NO_REPACK : 128,
+  UI_DATAPATH_IGNORE : 256
+}
+
 class UIPackFrame extends UIFrame {
   constructor(ctx, path_prefix)
   {
@@ -21,7 +29,7 @@ class UIPackFrame extends UIFrame {
     //  this.pack(canvas, false);
   }
 
-  toolop(path, inherit_flag) {
+  toolop(path, inherit_flag, label=undefined) {
     var ctx = this.ctx;
     var opname = ctx.api.get_op_uiname(ctx, path);
     
@@ -30,6 +38,9 @@ class UIPackFrame extends UIFrame {
       console.log("couldn't find tool operator at path" + path + ".");
       return;
     }
+    
+    if (label != undefined)
+      opname = label;
     
     var c = new UIButton(ctx, opname, [0,0], [0,0], path);
     

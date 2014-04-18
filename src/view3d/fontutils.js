@@ -32,7 +32,7 @@ function Font(WebGLRenderingContext gl, RasterState raster) {
   this.space_width = 4;
   this.tab_width = this.space_width*2;
   this.kern_off = 0;
-  this.linehgt = 11;
+  this.linehgt = 18;
   
   var thetex = this.tex;
   this.tex.image.onload = function() {
@@ -64,12 +64,12 @@ function Font(WebGLRenderingContext gl, RasterState raster) {
     var y = 0;
     for (var i=0; i<totline; i++) {
       var bound = this.calc_string(lines[i]);
+      y += this.linehgt;
+      
       mm.minmax(objcache.getarr(bound[0][0], bound[1][0]+y));
       mm.minmax(objcache.getarr(bound[0][1], bound[1][1]+y));
       mm.minmax(objcache.getarr(bound[0][0], bound[1][1]+y));
       mm.minmax(objcache.getarr(bound[0][1], bound[1][0]+y));
-      
-      y += this.linehgt;
     }
     
     var ret = _cs_rt[_cs_cur_rt][0];
@@ -82,7 +82,7 @@ function Font(WebGLRenderingContext gl, RasterState raster) {
   }
   
   this.calc_string = function(String text, FontAddCharFunc add_char) : Array<Array<float>> { //add_char is optional (vrect, trect) function
-    var x=0, y=0, minx=23423, miny=23432, maxx=-23432, maxy=-2343;
+    var x=0, y=0, minx=10000, miny=10000, maxx=-10000, maxy=-10000;
     var sw = this.space_width;
     var tabw = this.tab_width;
     var finfo = this.finfo
@@ -99,9 +99,11 @@ function Font(WebGLRenderingContext gl, RasterState raster) {
     
     for (var i=0; i<text.length; i++) {
       if (text[i] == " ") {
+        minx = Math.min(minx, x);
         x += sw;
         continue;
       } else if (text[i] == "\t") {
+        minx = Math.min(minx, x);
         x += tabw;
         continue;
       }
@@ -130,7 +132,7 @@ function Font(WebGLRenderingContext gl, RasterState raster) {
       add_char(vrect, trect);
       
       miny = Math.min(miny, 0);
-      maxy = Math.max(maxy, vrect[1]);
+      maxy = Math.max(maxy, vrect[1]+vrect[3]);
       
       minx = Math.min(minx, vrect[0]);
       maxx = Math.max(maxx, vrect[0]+vrect[2]);
@@ -138,7 +140,7 @@ function Font(WebGLRenderingContext gl, RasterState raster) {
       x += g.advance + kern;
     }
     
-    if (maxx == -23432) {
+    if (maxx == -10000) {
       minx = 0;
       maxx = x;
       miny = 0;
@@ -367,8 +369,8 @@ function Font(WebGLRenderingContext gl, RasterState raster) {
     
     for (var j=totline-1; j>=0; j--) {
       var ret = this.calc_string(lines[j], add_char);
-      y += ret[1][1] - ret[1][0];
-      x = Math.max(ret[0][1]);
+      y += ret[1][1] - ret[1][0] + 4;
+      //x = Math.max(ret[0][1]);
     }
     
     var cent = transform_verts(verts);
