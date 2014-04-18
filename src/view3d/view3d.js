@@ -1010,10 +1010,10 @@ class View3DHandler extends Area {
     var col = new ColumnFrame(this.ctx, undefined, PackFlags.ALIGN_LEFT);
     col.packflag |= PackFlags.IGNORE_LIMIT;
     
-    col.size = [this.size[0], 30];
+    col.size = [this.size[0], 35];
     col.draw_background = true
     col.rcorner = 100.0
-    col.pos = [0, this.size[1]-28]
+    col.pos = [0, this.size[1]-33]
     
     col.label("                      ");
     col.toolop("screen.hint_picker()", undefined, "?");

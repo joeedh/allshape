@@ -1689,9 +1689,7 @@ class HintPickerOp extends ToolOp {
         break;
     }
     
-    if (ret != undefined) {
-      this.active = ret;
-    }
+    this.active = ret;
     
     return ret;
   }
@@ -1732,8 +1730,11 @@ class HintPickerOp extends ToolOp {
   }
   
   finish() {
+    this.canvas.reset();
     this.end_modal();
+    
     g_app_state.screen.remove(this.helper);
+    
     if (this.hintbox != undefined) {
       this.hintbox.parent.remove(this.hintbox);
       this.hintbox.parent.do_recalc();
@@ -1745,14 +1746,12 @@ class HintPickerOp extends ToolOp {
   }
   
   on_mouseup(MouseEvent event) {
-    console.log("was_touch", g_app_state.was_touch, (this.active && g_app_state.was_touch && this.mup_count < 1));
+    console.log("was_touch", this.active, (this.active && g_app_state.was_touch && this.mup_count < 1));
     
-    if (this.hintbox && g_app_state.was_touch && this.mup_count < 1) {
-      this.mup_count++;
+    if (g_app_state.was_touch && this.active != undefined) {
       return;
     }
     
-    this.canvas.reset();
     this.finish();
   }
   
