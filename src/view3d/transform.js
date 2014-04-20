@@ -359,8 +359,8 @@ var Array<float> zclr = [0.0, 0.0, c, 0.5];
 var Array<Array<float>> axclrs = [xclr, yclr, zclr];
 
 class TransformOp extends ToolOp {
-  constructor(String apiname, String uiname, int mode, String description) {
-    ToolOp.call(this, apiname, uiname, description);
+  constructor(String apiname, String uiname, int mode, String description, int icon) {
+    ToolOp.call(this, apiname, uiname, description, icon);
     
     if (mode & EditModes.GEOMETRY)
       this.datatype = TransMeshType;

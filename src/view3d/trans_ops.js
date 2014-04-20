@@ -2,7 +2,7 @@
 
 class TranslateOp extends TransformOp {
   constructor(int mode, Object ob_active=undefined) {
-    TransformOp.call(this, "translate", "Translate", mode, "Move selection");
+    TransformOp.call(this, "translate", "Translate", mode, "Move selection", Icons.TRANSLATE);
     
     this.transdata = null;
     this.is_modal = true;
@@ -429,7 +429,7 @@ class RotateOp extends TransformOp {
 
 class ScaleOp extends TransformOp {
   constructor(int mode) {
-    TransformOp.call(this, "scale", "Scale", mode, "Scale selection");
+    TransformOp.call(this, "scale", "Scale", mode, "Scale selection", Icons.SCALE);
     
     this.transdata = null;
     this.is_modal = true;

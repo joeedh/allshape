@@ -11,6 +11,7 @@ js_targets = {"app.js" : [
 	"src/core/webgl-debug.js",
 	"src/core/webgl-utils.js",
   "src/util/base_vector.js",
+  "src/datafiles/icon_enum.js",
   "src/util/vector.js",
 	"src/core/J3DIMath.js",
 	"src/core/J3DI.js",
@@ -71,6 +72,7 @@ js_targets = {"app.js" : [
   "src/ui/UICanvas.js",
   "src/ui/UIFrame.js",
   "src/ui/UIPack.js",
+  "src/ui/icon.js",
 	"src/ui/UIWidgets.js",
 	"src/ui/UIMenu.js",
 	"src/ui/RadialMenu.js",
@@ -98,5 +100,7 @@ js_targets = {"app.js" : [
   
   "src/font/fontgen10.png",
   "src/font/fontgen12.png",
-  "src/font/fontgen14.png"
+  "src/font/fontgen14.png",
+  "src/datafiles/iconsheet.png",
+  "src/datafiles/iconsheet16.png"
 ]}

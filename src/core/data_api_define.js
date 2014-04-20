@@ -319,6 +319,8 @@ function api_define_ops() {
       var macro = new ToolMacro("extrude_grab", "Extrude");
       
       macro.add_tool(op);
+      macro.description = op.description;
+      macro.icon = op.icon;
       
       var transop = new TranslateOp(EditModes.GEOMETRY)
       macro.add_tool(transop);

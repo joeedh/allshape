@@ -16,9 +16,10 @@ class TriList {
     this.verts = [];
     this.colors = [];
     this.texcos = [];
-    this.use_tex = 0;
+    this.use_tex = 1;
     this.tex = 0 : WebGLTexture;
     this.view3d = view3d : View3DHandler;
+    this.iconsheet = g_app_state.raster.iconsheet;
     
     this.recalc = 1
     this.tottri = 0;
@@ -60,11 +61,11 @@ class TriList {
     
     if (this.use_tex) {
       if (t1 == undefined) {
-        static zero = [0, 0];
-        t1 = t2 = t3 = zero
+        static negone = [-1, -1];
+        t1 = t2 = t3 = negone;
       }
       
-      var ts = self.texcos
+      var ts = this.texcos
       ts.push(t1[0]); ts.push(t1[1]); ts.push(t2[0]); ts.push(t2[1]);
       ts.push(t3[0]); ts.push(t3[1])
     }
@@ -77,6 +78,36 @@ class TriList {
   {
     this.add_tri(v1, v2, v3, c1, c2, c3, t1, t2, t3);
     this.add_tri(v1, v3, v4, c1, c3, c4, t1, t3, t4);
+  }
+  
+  icon_quad(int icon, Vector3 pos, float alpha=1.0)
+  {
+    static tcos = new Array(0);
+    static clr = [1.0, 1.0, 1.0, 1.0];
+    clr[3] = alpha;
+    
+    var dx = 1.0 / this.viewport[0];
+    var dy = 1.0 / this.viewport[1];
+    
+    var cw = this.iconsheet.cellsize[0], ch = this.iconsheet.cellsize[1];
+    
+    var v1 = new Vector3([pos[0], pos[1], 0.0]);
+    var v2 = new Vector3([pos[0], pos[1]+ch, 0.0]);
+    var v3 = new Vector3([pos[0]+cw, pos[1]+ch, 0.0]);
+    var v4 = new Vector3([pos[0]+cw, pos[1], 0.0]);
+    
+    tcos.length = 0;
+    this.iconsheet.gen_tile(icon, tcos);
+    
+    var t1 = new Vector3([tcos[0], tcos[1], 0]);
+    var t2 = new Vector3([tcos[2], tcos[3], 0]);
+    var t3 = new Vector3([tcos[4], tcos[5], 0]);
+    var t4 = new Vector3([tcos[6], tcos[7], 0]);
+    var t5 = new Vector3([tcos[8], tcos[9], 0]);
+    var t6 = new Vector3([tcos[10], tcos[11], 0]);
+    
+    this.add_tri(v1, v2, v3, clr, clr, clr, t1, t2, t3);
+    this.add_tri(v1, v3, v4, clr, clr, clr, t4, t5, t6);
   }
   
   transform(v) {
@@ -188,7 +219,7 @@ class TriList {
       c3[3] = 0.0; c4[3] = 0.0;
       n1.mulScalar(2.0);
       n2.mulScalar(2.0);
-      if (this.use_tex) { 
+      if (this.use_tex && texcos) { 
         if (!half)
           this.add_quad(v0, v1, v2, v3, c1, c2, c3, c4, texcos[i][0], 
                       texcos[i][1], texcos[i][0], texcos[i][1]);
@@ -210,6 +241,7 @@ class TriList {
       gl.deleteBuffer(this.vbuf);
       gl.deleteBuffer(this.cbuf);
     }
+    
     if (this.tbuf) {
       gl.deleteBuffer(this.tbuf);
     }  
@@ -302,6 +334,9 @@ class TriList {
     } 
     
     gl.useProgram(gl.basic2d.program);
+    gl.activeTexture(gl.TEXTURE4);
+    gl.bindTexture(gl.TEXTURE_2D, this.iconsheet.tex);
+    gl.uniform1i(gl.basic2d.uniformloc(gl, "iconsampler"), 4);
     
     //console.log(this.verts);
     //console.log(this.tottri*3, this.verts.length/3, this.colors.length/4, this.verts[0], this.verts[1], this.verts[2])
@@ -424,6 +459,8 @@ function _box_process_clr(default_cs, clr) {
 //viewport is optional, defaults to view3d.size
 class UICanvas {
   constructor(view3d, viewport) { 
+    this.iconsheet = g_app_state.raster.iconsheet;
+    
     if (viewport == undefined)
       this.viewport = [view3d.pos, view3d.size];
     else
@@ -845,7 +882,11 @@ class UICanvas {
     this.box2([pos[0]+p[0], p[1]], [size[0], pos[1]], clr)
   }
   
-  box2(pos, size, clr, rfac, outline_only) {
+  icon(int icon, Array<float> pos, float alpha=1.0) {
+    this.trilist.icon_quad(icon, pos, alpha);
+  }
+  
+  box2(Array<float> pos, Array<float> size, Array<float> clr=undefined, float rfac=undefined, Boolean outline_only=false) {
     var cs = uicolors["Box"];
     
     cs = _box_process_clr(cs, clr);
@@ -856,7 +897,7 @@ class UICanvas {
     this.trilist.add_quad([x, y, 0], [x+w, y, 0], [x+w, y+h, 0], [x, y+h, 0], cs[0], cs[1], cs[2], cs[3]);
   }
 
-  box1(pos, size, clr, rfac, outline_only) {//clr,rfac,outline_only are optional
+  box1(Array<float> pos, Array<float> size, Array<float> clr=undefined, float rfac=undefined, Boolean outline_only=false) {
     var c1, c2, c3, c4;
     var cs = uicolors["Box"];
     

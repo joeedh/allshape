@@ -18,8 +18,8 @@ var MPropTypes = {
 
 /*note: unlike ToolOps, MeshOps can call each other and recurse.*/
 class MeshOp extends ToolOpAbstract {
-  constructor(String apiname, String uiname, String description) {
-    ToolOpAbstract.call(this, apiname, uiname, description);
+  constructor(String apiname, String uiname, String description, int icon=0) {
+    ToolOpAbstract.call(this, apiname, uiname, description, icon);
 
     this.flag = 0;
     this.undo_expand_lvl = 0; //for partial undo, how much to expand the partial mesh area
@@ -845,7 +845,7 @@ class ExtrudeVertsOp extends MeshOp {
 //extrudes vertices and edges as well as faces
 class ExtrudeAllOp extends MeshOp {
   constructor(elementiter) {
-    MeshOp.call(this, "extrude_all", "Extrude", "Extrude selected geometry");
+    MeshOp.call(this, "extrude_all", "Extrude", "Extrude selected geometry", Icons.EXTRUDE);
     
     this.flag |= ToolFlags.USE_PARTIAL_UNDO;
     
@@ -948,7 +948,7 @@ class OutsideNormalsOp extends MeshOp {
 
 class FlipNormalsOp extends MeshOp {
   constructor(faceiter) {
-    MeshOp.call(this, "flip_normals", "Flip Normals", "Flip normals of selected faces");
+    MeshOp.call(this, "flip_normals", "Flip Normals", "Flip normals of selected faces", Icons.FLIP_NORMALS);
     
     this.inputs = {
       faces: new CollectionProperty(undefined, [Face], "faces", "Faces", ""),

@@ -53,8 +53,6 @@ class UIButton extends UIHoverHint {
   }
 
   on_mouseup(MouseEvent event) {
-    console.trace();
-    console.log("yay", event.button, event.x, event.y);
     if (event.button == 0) {
       this.pop_modal();
       this.clicked = false;
@@ -95,6 +93,62 @@ class UIButton extends UIHoverHint {
   get_min_size(UICanvas canvas, Boolean isvertical)
   {
     return [canvas.textsize(this.text)[0]+12, 26]
+  }
+}
+
+class UIButtonIcon extends UIButton {
+  constructor(Context ctx, String text, int icon, Array<float> pos, 
+              Array<float> size, String path=undefined, 
+              Function callback=undefined, String hint=undefined) 
+  {
+    global icon_tst_k;
+    
+    UIButton.call(this, ctx, text, pos, size, path, callback, hint);
+    this.icon = icon == undefined ? 0 : icon;
+    this.pad = 2;
+  }
+  
+  get_min_size(UICanvas canvas, Boolean isvertical) {
+    var ret = objcache.array(2);
+    var pad = this.pad;
+    
+    ret[0] = canvas.iconsheet.cellsize[0]+pad*2.0;
+    ret[1] = canvas.iconsheet.cellsize[1]+pad*2.0;
+    
+    return ret;
+  }
+  
+  build_draw(UICanvas canvas) {
+    static pos = [0, 0];
+    static size = [0, 0];
+    
+    canvas.begin(this);
+
+    //can't print debug info in a draw loop
+    if (this.icon == -1) {
+      return;
+    }
+    
+    var pad = this.pad;
+    
+    var isize = canvas.iconsheet.cellsize;
+    pos[0] = Math.abs(isize[0] - this.size[0] + pad*2.0)*0.5;
+    pos[1] = 0;
+    
+    size[0] = isize[0]+pad*2.0;
+    size[1] = isize[1]+pad*2.0;
+    
+    if (this.clicked) 
+      canvas.invbox(pos, size);
+    else if (this.state & UIFlags.HIGHLIGHT)
+      canvas.hlightbox(pos, size)
+    else 
+      canvas.box(pos, size);
+    
+    pos[0] += pad;
+    pos[1] += pad;
+    canvas.icon(this.icon, pos, 0.75);
+    canvas.end(this);
   }
 }
 

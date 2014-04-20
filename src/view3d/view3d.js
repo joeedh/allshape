@@ -12,6 +12,7 @@ ibuf_idgen.gen_id();
 var __v3d_g_s = [];
 var _v3d_static_mat = new Matrix4();
 var bleh_bleh = 0;
+var icon_tst_k = 0;
 
 class View3DEditor {
   constructor(String name, int type, int lib_type, KeyMap keymap) {
@@ -847,7 +848,8 @@ class View3DHandler extends Area {
       
       //g_app_state.load_undo_file(g_app_state.create_undo_file());
       //console.log(sort_csg(ctx.scene).toString());
-      test_tutorial_mode();
+      //test_tutorial_mode();
+      icon_tst_k++;
       
       //new Context().scene.graph.exec();
     }));

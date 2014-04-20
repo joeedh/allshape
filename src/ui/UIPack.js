@@ -5,7 +5,7 @@ var PackFlags = {
   ALIGN_RIGHT : 4, ALIGN_LEFT: 8, 
   ALIGN_CENTER: 16, ALIGN_BOTTOM : 32, 
   IGNORE_LIMIT : 64, NO_REPACK : 128,
-  UI_DATAPATH_IGNORE : 256
+  UI_DATAPATH_IGNORE : 256, USE_ICON : 512
 }
 
 class UIPackFrame extends UIFrame {
@@ -31,7 +31,7 @@ class UIPackFrame extends UIFrame {
     //  this.pack(canvas, false);
   }
 
-  toolop(path, inherit_flag, label=undefined) {
+  toolop(path, inherit_flag=0, label=undefined) {
     var ctx = this.ctx;
     var opname = ctx.api.get_op_uiname(ctx, path);
     
@@ -43,6 +43,27 @@ class UIPackFrame extends UIFrame {
     
     if (label != undefined)
       opname = label;
+    
+    if (inherit_flag & PackFlags.USE_ICON) {
+      var op = ctx.api.get_op(ctx, path);
+      if (op == undefined) {
+        console.trace();
+        console.log("Error fetching operator ", path);
+        var c = new UIButton(ctx, "???");
+        
+        c.packflag |= inherit_flag;
+        this.add(c);
+        return;
+      }
+      
+      console.log("icon toolop", op.icon);
+      if (op.icon >= 0) {
+        var c = new UIButtonIcon(ctx, opname, op.icon, [0,0], [0,0], path);
+        c.packflag |= inherit_flag;
+        this.add(c);
+        return; //NON-PRECONDITION EXIT POINT
+      }
+    }
     
     var c = new UIButton(ctx, opname, [0,0], [0,0], path);
     
