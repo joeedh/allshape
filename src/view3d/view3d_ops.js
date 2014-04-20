@@ -274,7 +274,7 @@ function tprop_to_mprop(mprop, tprop) {
 
 class MeshToolOp extends ToolOp {
   constructor(meshop) {
-    ToolOp.call(this, meshop.name, meshop.uiname);
+    ToolOp.call(this, meshop.name, meshop.uiname, meshop.description);
     
     this.is_modal = false;
     

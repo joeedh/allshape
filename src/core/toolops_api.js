@@ -54,8 +54,8 @@
 
 class ToolOpAbstract {
   constructor(apiname, uiname, description) {
-    this.uiname = "";
-    this.name = "";
+    this.uiname = uiname;
+    this.name = apiname;
     this.description = description == undefined ? "" : description;
     
     this.inputs = {};

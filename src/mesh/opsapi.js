@@ -18,14 +18,14 @@ var MPropTypes = {
 
 /*note: unlike ToolOps, MeshOps can call each other and recurse.*/
 class MeshOp extends ToolOpAbstract {
-  constructor(apiname, uiname) {
-    ToolOpAbstract.call(this, apiname, uiname);
+  constructor(String apiname, String uiname, String description) {
+    ToolOpAbstract.call(this, apiname, uiname, description);
 
     this.flag = 0;
     this.undo_expand_lvl = 0; //for partial undo, how much to expand the partial mesh area
   }
   
-  exec(op, mesh) { }
+  exec(MeshOp get_rid_of_this_variable, Mesh mesh) { }
 }
 
 class element_filter_iter {
@@ -318,10 +318,8 @@ class MeshOpAPI {
 
 class RemoveDoublesOp extends MeshOp {
   constructor(vertiter) {
-    MeshOp.call(this);
+    MeshOp.call(this, "remove_doubles", "Remove Doubles",  "Remove Duplicate Verts");
   
-    this.uiname = "Remove Duplicate Verts"
-    this.name = "RemoveDoubles";
     this.inputs = {
       radius: new FloatProperty(0.0005, "radius", "Radius", ""), 
       input_verts: new CollectionProperty(undefined, [Vertex], "input_verts", "Verts", "")
@@ -426,9 +424,8 @@ class RemoveDoublesOp extends MeshOp {
 
 class SplitEdgeOp extends MeshOp {
   constructor(edgeiter) {
-    MeshOp.call(this);
+    MeshOp.call(this, "split_edge", "Split Edge", "Split edges in two");
   
-    this.name = "Split Edge";
     this.inputs = {
       radius: new FloatProperty(0.0005, "radius", "Radius", ""), 
       input_edges: new CollectionProperty(undefined, [Edge], "input_edges", "Edges", ""),
@@ -449,7 +446,7 @@ class SplitEdgeOp extends MeshOp {
 
 class VertexConnectOp extends MeshOp {
   constructor (vertiter) {
-    MeshOp.call(this);
+    MeshOp.call(this, "vertex_connect", "Connect", "Split faces between selected vertices");
     
     this.uiname = "Vertex Connect"
     this.name = "VertConnect";
@@ -494,10 +491,8 @@ class VertexConnectOp extends MeshOp {
 
 class DissolveFacesOp extends MeshOp {
   constructor(faceiter) {
-    MeshOp.call(this);
+    MeshOp.call(this, "dissolve_faces", "Dissolve", "Dissolve selected faces");
     
-    this.name = "dissolve_faces"
-    this.uiname = "Dissolve";
     this.inputs = {
       faces: new CollectionProperty(undefined, [Face], "faces", "Faces", "")
     }
@@ -572,12 +567,10 @@ function vert_smooth(mesh, vertiter) {
 
 class VertSmoothOp extends MeshOp {
   constructor(vertiter) {
-    MeshOp.call(this);
+    MeshOp.call(this, "vertex_smooth", "Vertex Smooth", "Smooth selected vertex positions");
     
     this.flag |= ToolFlags.USE_PARTIAL_UNDO;
     
-    this.uiname = "Vertex Smooth"
-    this.name = "VertSmooth";
     this.inputs = {
       verts: new CollectionProperty(undefined, [Vertex], "verts", "Vertices", ""),
     }
@@ -594,12 +587,10 @@ class VertSmoothOp extends MeshOp {
 
 class ExtrudeFacesOp extends MeshOp {
   constructor(faceiter) {
-    MeshOp.call(this);
+    MeshOp.call(this, "extrude_faces", "Extrude Faces", "Extrude selected faces");
     
     this.flag |= ToolFlags.USE_PARTIAL_UNDO;
 
-    this.uiname = "Extrude Faces"
-    this.name = "ExtrudeFaces";
     this.inputs = {
       input_faces: new CollectionProperty(undefined, [Face], "input_faces", "Faces", ""),
     }
@@ -718,12 +709,10 @@ class ExtrudeFacesOp extends MeshOp {
 
 class ExtrudeEdgesOp extends MeshOp {
   constructor(edgeiter) {
-    MeshOp.call(this);
+    MeshOp.call(this, "extrude_edges", "Extrude Edges", "Extrude selected edges");
     
     this.flag |= ToolFlags.USE_PARTIAL_UNDO;
 
-    this.name = "Extrude Edges"
-    this.name = "ExtrudeEdges";
     this.inputs = {
       input_edges: new CollectionProperty(undefined, [Edge], "input_edges", "Edges", ""),
     }
@@ -800,10 +789,8 @@ class ExtrudeEdgesOp extends MeshOp {
 
 class ExtrudeVertsOp extends MeshOp {
   constructor(vertiter) {
-    MeshOp.call(this);
+    MeshOp.call(this, "extrude_verts", "Extrude Verts", "Extrude selected vertices");
     
-    this.uiname = "Extrude Verts"
-    this.name = "ExtrudeVerts";
     this.inputs = {
       input_verts: new CollectionProperty(undefined, [Vertex], "input_verts", "Vertices", ""),
     }
@@ -858,12 +845,10 @@ class ExtrudeVertsOp extends MeshOp {
 //extrudes vertices and edges as well as faces
 class ExtrudeAllOp extends MeshOp {
   constructor(elementiter) {
-    MeshOp.call(this);
+    MeshOp.call(this, "extrude_all", "Extrude", "Extrude selected geometry");
     
     this.flag |= ToolFlags.USE_PARTIAL_UNDO;
     
-    this.name = "Extrude"
-    this.name = "ExtrudeAll";
     this.inputs = {
       elements: new CollectionProperty(undefined, [Element], "elements", "Elements", "")
     }
@@ -946,10 +931,7 @@ class ExtrudeAllOp extends MeshOp {
 //XXX need to add option to only consider selected faces
 class OutsideNormalsOp extends MeshOp {
   constructor(faceiter) {
-    MeshOp.call(this);
-    
-    this.uiname = "Fix Normals"
-    this.name = "fix_normals";
+    MeshOp.call(this, "fix_normals", "Fix Normals", "Make face normals point outside the mesh");
     
     this.inputs = {
       faces: new CollectionProperty(undefined, [Face], "faces", "Faces", ""),
@@ -966,10 +948,8 @@ class OutsideNormalsOp extends MeshOp {
 
 class FlipNormalsOp extends MeshOp {
   constructor(faceiter) {
-    MeshOp.call(this);
+    MeshOp.call(this, "flip_normals", "Flip Normals", "Flip normals of selected faces");
     
-    this.uiname = "Flip Normals"
-    this.name = "FlipNormals";
     this.inputs = {
       faces: new CollectionProperty(undefined, [Face], "faces", "Faces", ""),
     }
@@ -988,7 +968,7 @@ class FlipNormalsOp extends MeshOp {
 
 class DeleteVertsOp extends MeshOp {
   constructor(vertiter) {
-    MeshOp.call(this);
+    MeshOp.call(this, "delete_verts", "Delete Verts", "Delete selected vertices and connected edges/faces");
     
     this.uiname = "Delete Vertices"
     this.name = "DeleteVertices";
@@ -1013,7 +993,7 @@ class DeleteVertsOp extends MeshOp {
 
 class DeleteEdgesOp extends MeshOp {
   constructor(vertiter) {
-    MeshOp.call(this);
+    MeshOp.call(this, "delete_edges", "Delete Edges", "Delete selected edges and connected faces/vertices");
     
     this.uiname = "Delete Edges"
     this.name = "DeleteEdges";
@@ -1038,10 +1018,8 @@ class DeleteEdgesOp extends MeshOp {
 
 class DeleteFacesOp extends MeshOp {
   constructor(vertiter) {
-    MeshOp.call(this);
+    MeshOp.call(this, "delete_faces", "Only Faces", "Remove selected faces");
     
-    this.uiname = "Only Faces"
-    this.name = "DeleteFaces";
     this.inputs = {
       faces: new CollectionProperty(undefined, [Face], "faces", "Faces", ""),
     }
@@ -1063,10 +1041,8 @@ class DeleteFacesOp extends MeshOp {
 
 class DeleteFaceRegionOp extends MeshOp {
   constructor(vertiter) {
-    MeshOp.call(this);
+    MeshOp.call(this, "delete_faces", "Delete Faces", "Delete faces and interior vertices/edges\n (but not exterior or border verts/edges)");
     
-    this.uiname = "Delete Faces"
-    this.name = "DeleteFaces";
     this.inputs = {
       faces: new CollectionProperty(undefined, [Face], "faces", "Faces", ""),
     }

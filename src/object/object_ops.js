@@ -2,7 +2,7 @@
 
 class ObjectDuplicateOp extends ToolOp {
   constructor(obs) {
-    ToolOp.call(this, "object_duplicate", "Object Duplicate");
+    ToolOp.call(this, "object_duplicate", "Object Duplicate", "Duplicate selected objects");
     
     this.is_modal = false;
     

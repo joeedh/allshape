@@ -188,6 +188,7 @@ class MeshEditor extends View3DEditor {
     row.toolop("mesh.duplicate_transform()", PackFlags.INHERIT_WIDTH);
     row.toolop("mesh.bridge_edges(edges=mesh_selected(e))", PackFlags.INHERIT_WIDTH);
     row.toolop("mesh.vertsmooth(verts=mesh_selected(v))", PackFlags.INHERIT_WIDTH);
+    row.toolop("mesh.loopcut()", PackFlags.INHERIT_WIDTH);
 
     row.label("Last Tool:", false)
     row.add(new ToolOpFrame(ctx, "last_tool"), PackFlags.INHERIT_WIDTH);

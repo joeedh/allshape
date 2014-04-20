@@ -268,10 +268,7 @@ function do_frame_dill(vset, mesh) {
 
 class ContextCreateOp extends MeshOp {
   constructor(vertiter) {
-    MeshOp.call(this);
-    
-    this.uiname = "Create Face"
-    this.name = "ContextCreate";
+    MeshOp.call(this, "context_create", "Create Face", "Create face from selection");
     
     //this.flag |= ToolFlags.USE_PARTIAL_UNDO;
       

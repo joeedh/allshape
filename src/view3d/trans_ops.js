@@ -2,7 +2,7 @@
 
 class TranslateOp extends TransformOp {
   constructor(int mode, Object ob_active=undefined) {
-    TransformOp.call(this, "translate", "Translate", mode);
+    TransformOp.call(this, "translate", "Translate", mode, "Move selection");
     
     this.transdata = null;
     this.is_modal = true;
@@ -219,7 +219,7 @@ class TranslateOp extends TransformOp {
 
 class RotateOp extends TransformOp {
   constructor(int mode) {
-    TransformOp.call(this, "rotate", "Rotate", mode);
+    TransformOp.call(this, "rotate", "Rotate", mode, "Rotate selection");
     
     this.transdata = null;
     this.is_modal = true;

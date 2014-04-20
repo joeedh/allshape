@@ -12,7 +12,7 @@ var ES_FillFlags = {
 // algorithm; calling it "edge subdivide" may be a bit misleading.
 class ESubdivideOp extends MeshOp {
   constructor(Iterator edgeiter, int count) {
-    MeshOp.call(this);
+    MeshOp.call(this, "esubd", "Edge Subdivide", "Smart Edge Subdivider");
     
     this.name = "EdgeSubdivide";
     this.uiname = "Split Edges"
@@ -360,10 +360,8 @@ function _edge_subdivide(Mesh mesh, Iterator edgeiter, int count, int fillmode)
 // algorithm; calling it "edge subdivide" may be a bit misleading.
 class QuadSubdOp extends MeshOp {
   constructor(Iterator faceiter, int count) {
-    MeshOp.call(this);
+    MeshOp.call(this, "quad_subdivide", "Subdivide", "Subdivides selected faces\ninto quads");
     
-    this.uiname = "Subdivide"
-    this.name = "QuadSubdivide";
     this.inputs = {
       //count: new MeshIntProperty(1, "count", "Count", "", undefined, TPropFlags.PRIVATE), 
       input_faces: new CollectionProperty(undefined, [Face], "faces", "Faces", "")
