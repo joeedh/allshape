@@ -1,4 +1,4 @@
-font_info = {size: [512, 512], cellsize: [32, 32], glyphs: {
+var font_info = {size: [512, 512], cellsize: [32, 32], glyphs: {
 32: {size: [0.000, 0.000], bearing: [0.000, 0.000], advance: 5.000, cellpos: [0, 0], bitmap_size: [0, 0]},
 33: {size: [2.000, 12.000], bearing: [2.000, 12.000], advance: 6.000, cellpos: [32, 0], bitmap_size: [2, 12]},
 34: {size: [6.000, 5.000], bearing: [1.000, 12.000], advance: 8.000, cellpos: [64, 0], bitmap_size: [6, 5]},

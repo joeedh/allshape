@@ -1118,13 +1118,13 @@ class Screen extends UIFrame {
     var copy = false;
     var event2;
     
-    try {
-      event2 = JSON.parse(JSON.stringify(event));
-    } catch (_error) {
-      copy = true;
-    }
-    
-    //if (copy || !("keyCode" in event2)) {
+    if (event instanceof MyMouseEvent) {
+        event2 = event.copy();
+        event2.keyCode = event.keyCode;
+        event2.shiftKey = event.shiftKey;
+        event2.ctrlKey = event.ctrlKey;
+        event2.altKey = event.altKey;
+    } else {
       event2 = {
           x : event.x,
           y : event.y,
@@ -1134,7 +1134,7 @@ class Screen extends UIFrame {
           ctrlKey : event.ctrlKey,
           altKey : event.altKey
        };
-    //}
+    }
     
     event = event2;
     

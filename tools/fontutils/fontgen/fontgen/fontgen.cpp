@@ -13,6 +13,8 @@
 #include <math.h>
 #include <time.h>
 
+#define FONT_NAME "courier"
+
 FT_Library freetype;
 
 int glyph_range[2] = {0, 256};
@@ -84,16 +86,15 @@ int write_img(const char *path, unsigned char *img, int w, int h, int channels)
 	return 0;
 }
 
-int _tmain(int argc, _TCHAR* argv[])
-{
+int gen_font(float size) {
 	FT_Init_FreeType(&freetype);
 	FT_Face face;
 	FT_Error error;
 	FT_Bitmap b;
-	float size = 14.0;
 	int cw, ch, w, h, i, j, x, y, max_w=0, max_h=0, totglpyhs;
 	float fw, fh;
 	unsigned char *img;
+  char buf[255];
 	FILE *file;
 
 	error = FT_New_Face(freetype, "..\\times.ttf", 0, &face);
@@ -134,8 +135,10 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	img = (unsigned char*)malloc(w*h);
 
-	file = fopen("font_out.js", "w");
-	fprintf(file, "var font_info = {size: [%d, %d], cellsize: [%d, %d], glyphs: {\n", w, h, cw, ch);
+  sprintf(buf, "fontgen%d.js", (int)size);
+	file = fopen(buf, "w");
+
+	fprintf(file, "var fontinfo%d = {s: [%d, %d], c: [%d, %d], g: {\n", (int)size, w, h, cw, ch);
 
 	x = 0;
 	y = 0;
@@ -151,7 +154,7 @@ int _tmain(int argc, _TCHAR* argv[])
 		error = FT_Load_Glyph(face, ci, FT_LOAD_DEFAULT);
 		error = FT_Render_Glyph(face->glyph, FT_RENDER_MODE_NORMAL);
 		
-		fprintf(file, "%d: {size: [%.3f, %.3f], bearing: [%.3f, %.3f], advance: %.3f, cellpos: [%d, %d], bitmap_size: [%d, %d]}", 
+		fprintf(file, "%d: {s: [%.3f, %.3f], b: [%.3f, %.3f], a: %.3f, c: [%d, %d], bs: [%d, %d]}", 
 			   i,
 			   (float)face->glyph->metrics.width/64.0f, 
 			   (float)face->glyph->metrics.height/64.0f,
@@ -170,12 +173,50 @@ int _tmain(int argc, _TCHAR* argv[])
 		x++;
 	}
 
-	write_img("font_out.png", img, w, h, 1);
+  sprintf(buf, "fontgen%d.png", (int)size);
+	write_img(buf, img, w, h, 1);
 
 	fprintf(file, "}};\n");
 
 	fclose(file);
-	system("PAUSE");
 	return 0;
+}
+
+static int sizes[] = {
+  7,
+  8,
+  10,
+  12,
+  14,
+  16,
+};
+int totsize = sizeof(sizes) / sizeof(*sizes);
+
+int _tmain(int argc, _TCHAR* argv[])
+{
+  int i;
+  FILE *file;
+
+  for (i=0; i<totsize; i++) {
+    printf("generating font size %d...\n", sizes[i]);
+    gen_font(sizes[i]);
+  }
+
+  file = fopen("fontdata.js", "w");
+  fprintf(file, "%s", "var fontdata = {sizes:[");
+  for (i=0; i<totsize; i++) {
+    if (i > 0) {
+      fprintf(file, ",\n");
+    } else {
+      fprintf(file, "\n");
+    }
+
+    fprintf(file, "  [%d, \"fontgen%d.js\", \"fontgen%d.png\"]", sizes[i], sizes[i], sizes[i]);
+  }
+
+  fprintf(file, "\n]}\n");
+  fclose(file);
+
+	system("PAUSE");    
 }
 

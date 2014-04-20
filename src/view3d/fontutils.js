@@ -1,4 +1,37 @@
-font_file = "/content/font_out.png"
+var _fdata = {
+  "10" : [fontinfo10, "content/fontgen10.png"],
+  "12" : [fontinfo12, "content/fontgen12.png"],
+  "14" : [fontinfo14, "content/fontgen14.png"]
+};
+
+class FontManager {
+  constructor() {
+    this.sizes = new set([10, 12, 14]);
+    this.fonts = {};
+  }
+  
+  get_font(WebGLRenderingContext gl, RasterState raster, int size) : Font {
+    if (!(this.sizes.has(size))) {
+      console.trace();
+      console.log("Warning: bad font size " + size, list(this.sizes).toString());
+      
+      var match = undefined;
+      for (var size2 in this.sizes) {
+        if (match == undefined || Math.abs(size2-size) < Math.abs(match-size)) {
+          match = size2;
+        }
+      }
+      
+      size = match;
+    }
+    
+    if (!(size in this.fonts)) {
+      this.fonts[size] = new Font(gl, raster, size, _fdata[size][0], _fdata[size][1]);
+    }
+    
+    return this.fonts[size];
+  }
+}
 
 default_font_color = new Float32Array([0.9, 0.8, 0.3, 1.0]);
 
@@ -15,7 +48,9 @@ for (var i=0; i<32; i++) {
 
 var _cs_cur_rt = 0;
 
-function Font(WebGLRenderingContext gl, RasterState raster) {
+function Font(WebGLRenderingContext gl, RasterState raster, int size, 
+              Object font_info, String font_file) 
+{
   this.finfo = font_info;
   
   this.tex = gl.createTexture();
@@ -110,24 +145,24 @@ function Font(WebGLRenderingContext gl, RasterState raster) {
       
       var c = text.charCodeAt(i);
       
-      if (!finfo.glyphs.hasOwnProperty(c)) {
+      if (!finfo.g.hasOwnProperty(c)) {
         console.log("Could not find glyph for character code", c, text[i]);
         c = "?".charCodeAt(0);
       }
       
-      var g = finfo.glyphs[c];
+      var g = finfo.g[c];
       var vrect = _st_vr;
       
-      vrect[0] = x+g.bearing[0];
-      vrect[1] = y+g.bearing[1]-g.size[1];
-      vrect[2] = g.size[0];
-      vrect[3] = g.size[1];
+      vrect[0] = x+g.b[0];
+      vrect[1] = y+g.b[1]-g.s[1];
+      vrect[2] = g.s[0];
+      vrect[3] = g.s[1];
       
       var trect = _st_tr;
-      trect[0] = g.cellpos[0]
-      trect[1] = g.cellpos[1]+g.bitmap_size[1]
-      trect[2] = g.bitmap_size[0]
-      trect[3] = -g.bitmap_size[1]
+      trect[0] = g.c[0]
+      trect[1] = g.c[1]+g.bs[1]
+      trect[2] = g.bs[0]
+      trect[3] = -g.bs[1]
       
       add_char(vrect, trect);
       
@@ -137,7 +172,7 @@ function Font(WebGLRenderingContext gl, RasterState raster) {
       minx = Math.min(minx, vrect[0]);
       maxx = Math.max(maxx, vrect[0]+vrect[2]);
       
-      x += g.advance + kern;
+      x += g.a + kern;
     }
     
     if (maxx == -10000) {
@@ -216,8 +251,8 @@ function Font(WebGLRenderingContext gl, RasterState raster) {
     
     function transform_texcos(Array<float> texcos) {
       for (var i=0; i<texcos.length/2; i++) {
-        texcos[i*2] = (texcos[i*2]/finfo.size[0]);
-        texcos[i*2+1] = (texcos[i*2+1]/finfo.size[1]);
+        texcos[i*2] = (texcos[i*2]/finfo.s[0]);
+        texcos[i*2+1] = (texcos[i*2+1]/finfo.s[1]);
       }
     }
     
@@ -353,7 +388,7 @@ function Font(WebGLRenderingContext gl, RasterState raster) {
     }
     
     function transform_texcos(Array<float> texcos) {
-      var size = finfo.size;
+      var size = finfo.s;
       var len = texcos.length/2;
       
       for (var i=0; i<len; i++) {

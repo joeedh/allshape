@@ -1430,7 +1430,9 @@ function toJSON_intern (ob, tlevel) {
               g_app_state._last_touch_mpos[1] = y;
             }
             
-            g_app_state.eventhandler._on_mousemove(new MyMouseEvent(x, y, 0, MyMouseEvent.MOUSEMOVE));
+            var e2 = new MyMouseEvent(x, y, 0, MyMouseEvent.MOUSEMOVE);
+            e2.touches = do_touches(e);
+            g_app_state.eventhandler._on_mousemove(e2);
           }
         }
         
@@ -1502,10 +1504,28 @@ function toJSON_intern (ob, tlevel) {
             e2.shiftKey = e.shiftKey;
             e2.altKey = e.altKey;
             e2.ctrlKey = e.ctrlKey;
+            e2.touches = do_touches(e);
             
             g_app_state.eventhandler._on_mouseup(e2);
           }
          }
+         
+          function do_touches(e) {
+            var ts = {};
+            
+            var in_ts = e.changedTouches.length == 0 ? e.targetTouches : e.changedTouches;
+            if (in_ts == undefined || in_ts.length == 0) return [];
+            
+            for (var i=0; i<in_ts.length; i++) {
+              var id = in_ts[i].identifier;
+              if (id == undefined) 
+                id = i;
+              
+              ts[id] = [g_app_state.screen[1] - in_ts[i].PageY, in_ts[i].PageX];
+            }
+            
+            return ts;
+          }
          
           function handleTouchDown(e) {
             g_app_state.was_touch = true;
@@ -1514,7 +1534,7 @@ function toJSON_intern (ob, tlevel) {
             var x, y;
             
             if (DEBUG.touch)
-              console.log(e);
+              console.log(e.targetTouches.length, e);
             
             var t = e.targetTouches[0];
             if (t == undefined) {
@@ -1534,6 +1554,7 @@ function toJSON_intern (ob, tlevel) {
               e2.shiftKey = e.shiftKey;
               e2.altKey = e.altKey;
               e2.ctrlKey = e.ctrlKey;
+              e2.touches = do_touches(e);
               
               g_app_state.eventhandler._on_mousedown(e2);
            }
@@ -1566,6 +1587,7 @@ function toJSON_intern (ob, tlevel) {
               e2.shiftKey = e.shiftKey;
               e2.altKey = e.altKey;
               e2.ctrlKey = e.ctrlKey;
+              e2.touches = do_touches(e);
               
               g_app_state.eventhandler._on_mouseup(e2);
            }

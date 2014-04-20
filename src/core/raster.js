@@ -41,7 +41,8 @@ class CacheStack extends Array {
 class RasterState {
   constructor(gl, size) {
     this.size = size;
-    this.font = new Font(gl, this);
+    this.fonts = new FontManager();
+    this.font = this.fonts.get_font(gl, this, 10);
     this.pos = [0, 0];
     
     this.viewport_stack = new CacheStack(2)

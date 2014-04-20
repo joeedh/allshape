@@ -243,6 +243,7 @@ handlers = {
   r'.*\.js\b' : Handler(jcc_handler),
   r'.*\.html\.in\b' : Handler(tcc_handler),
   r'.*\.html\b' : Handler(cp_handler, can_popen=False),
+  r'.*\.png\b' : Handler(cp_handler, can_popen=False),
   r'.*\.js_' : Handler(cp_handler, can_popen=False)
 }
 
@@ -269,7 +270,9 @@ def add_depend(dest, src):
   db_depend[dest] = fset
   
 def build_depend(f):
+  if f.endswith(".png"): return
   file = open(f, "r")
+  
   for line in file.readlines():
     if not (line.strip().startswith("#") and "include" in line and '"' in line):
       continue

@@ -8,7 +8,7 @@ function darken(c, m) {
   return c;
 }
 
-var default_ui_font_size = 0.75;
+var default_ui_font_size =  1.0;
 var ui_hover_time = 800;
 
 var colors3d = {

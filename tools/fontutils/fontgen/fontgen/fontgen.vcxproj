@@ -50,12 +50,12 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\development\lib\windows\freetype\include;C:\development\lib\windows\freetype\include\freetype;C:\development\lib\windows\png\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\dev\blender\lib\windows\freetype\include;C:\dev\blender\lib\windows\freetype\include\freetype;C:\dev\blender\lib\windows\png\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>C:\development\lib\windows\freetype\lib\freetype2ST_d.lib;C:\development\lib\windows\png\lib\libpng_st.lib;C:\development\lib\windows\zlib\lib\libz_st.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>C:\dev\blender\lib\windows\freetype\lib\freetype2ST_d.lib;C:\dev\blender\lib\windows\png\lib\libpng.lib;C:\dev\blender\lib\windows\zlib\lib\libz.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">

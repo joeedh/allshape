@@ -27,7 +27,7 @@ var DEBUG = {
   keyboard : false,
   modifier_keys : false,
   mouse : false,
-  touch : true,
+  touch : false,
   mousemove : false,
   ui_datapaths : false,
   ui_menus : false,

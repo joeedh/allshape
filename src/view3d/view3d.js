@@ -615,7 +615,9 @@ class View3DHandler extends Area {
       return;
   }
 
-  on_mousemove(MouseEvent event) {
+  on_mousemove(MyMouseEvent event) {
+    //console.log("->", event, event.touches);
+    
     var mpos = new Vector3([event.x, event.y, 0])
     this.mpos = mpos;
     

@@ -6,14 +6,34 @@ class MyMouseEvent {
     this.button = button;
     this.type = type;
     
-    /*enumeration values for this.type*/
-    this.MOUSEMOVE = 0;
-    this.MOUSEDOWN = 1;
-    this.MOUSEUP = 2;
-    this.LEFT = 0;
-    this.RIGHT = 1;
+    this.touches = {};
+  }
+  
+  copy(Array<float> sub_offset = undefined) : MyMouseEvent {
+    var ret = new MyMouseEvent(this.x, this.y, this.button, this.type);
+    
+    for (var k in this.touches) {
+      var t = this.touches[k];
+      var x = t[0], y = t[1];
+      
+      if (sub_offset) {
+        x -= sub_offset[0];
+        y -= sub_offset[1];
+      }
+      
+      ret.touches[k] = [x, y];
+    }
+    
+    return ret;
   }
 }
+
+/*enumeration values for MyMouseEvent.type*/
+MyMouseEvent.MOUSEMOVE = 0
+MyMouseEvent.MOUSEDOWN = 1
+MyMouseEvent.MOUSEUP   = 2
+MyMouseEvent.LEFT  = 0
+MyMouseEvent.RIGHT = 1
 
 /*going to use DOM event structure for this one*/
 /*class KeyEvent {
@@ -57,6 +77,17 @@ class EventHandler {
   on_keyup(KeyboardEvent event) { }
   on_mousemove(MouseEvent event) { }
   on_mousedown(MouseEvent event) { }
+  
+  //touch events
+  on_mouseup2(MouseEvent event) { }
+  on_mouseup3(MouseEvent event) { }
+  
+  on_mousedown2(MouseEvent event) { }
+  on_mousedown3(MouseEvent event) { }
+  
+  on_mousemove2(MouseEvent event) { }
+  on_mousemove3(MouseEvent event) { }
+  
   on_mousewheel(MouseEvent event) { }
   on_mouseup(MouseEvent event) { }
   on_resize(Array<int> newsize) { }

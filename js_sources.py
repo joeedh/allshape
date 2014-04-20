@@ -22,7 +22,9 @@ js_targets = {"app.js" : [
 	"src/util/parseutil.js",
 	"src/util/jslzjb.js",
 	"src/core/jobs.js",
-	"src/ui/font_out.js",
+	"src/font/fontgen10.js",
+	"src/font/fontgen12.js",
+	"src/font/fontgen14.js",
 	"src/core/ajax.js",
   "src/core/raster.js",
 	"src/core/AppState.js",
@@ -44,6 +46,7 @@ js_targets = {"app.js" : [
 	"src/mesh/subsurf.js",
 
 	"src/view3d/events.js",
+  "src/ui/touchevents.js",
   
   "src/core/toolprops.js",
   "src/core/toolprops_iter.js",
@@ -91,5 +94,9 @@ js_targets = {"app.js" : [
 	"src/object/scenegraph.js",
 	"src/object/scene.js",
 	"src/object/object_ops.js",
-	"src/core/data_api_define.js"
+	"src/core/data_api_define.js",
+  
+  "src/font/fontgen10.png",
+  "src/font/fontgen12.png",
+  "src/font/fontgen14.png"
 ]}
