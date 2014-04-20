@@ -14,7 +14,7 @@ var _v3d_static_mat = new Matrix4();
 var bleh_bleh = 0;
 
 class View3DEditor {
-  constructor(String name, int type, int lib_type, keymap) {
+  constructor(String name, int type, int lib_type, KeyMap keymap) {
     this.name = name;
     this.type = type;
     this.lib_type = lib_type;

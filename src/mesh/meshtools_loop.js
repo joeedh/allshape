@@ -2,7 +2,7 @@
 
 class LoopCutOp extends ToolOp {
   constructor() {
-    ToolOp.call(this, "mesh_loopcut", "Loop Cut", "Splits a face loops");
+    ToolOp.call(this, "mesh_loopcut", "Loop Cut", "Splits a face loop");
 
     this.drawlines = new GArray();
 
