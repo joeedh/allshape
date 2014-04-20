@@ -1254,10 +1254,7 @@ class AddCircleOp extends MeshOp {
 
 class MeshDuplicateOp extends MeshOp {
   constructor(geometry) {
-    MeshOp.call(this);
-    
-    this.uiname = "Duplicate"
-    this.name = "duplicate";
+    MeshOp.call(this, "duplicate", "Duplicate", "Duplicate selected geometry");
     
     this.inputs = {
       geometry: new CollectionProperty(undefined, [Element], "geometry", "Geometry", ""),

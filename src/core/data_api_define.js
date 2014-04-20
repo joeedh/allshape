@@ -336,6 +336,8 @@ function api_define_ops() {
 
       var macro = new ToolMacro("duplicate_transform", "Duplicate");
       
+      macro.description = meshop.description;
+      
       macro.add_tool(op);
       
       var transop = new TranslateOp(EditModes.GEOMETRY)
