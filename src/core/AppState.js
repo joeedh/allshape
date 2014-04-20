@@ -849,6 +849,12 @@ class AppState {
   }
 }
 
+/*
+  The Context classes represent a set of common arguments that
+  are passed to various parts of the API (especially the tool
+  and data/UI APIs).  Like most of the rest of the tool API,
+  it's inspired by what Blender does.
+*/
 //restricted context for tools
 class ToolContext {
   constructor(scene=undefined, ob=undefined, mesh=undefined) {
@@ -894,10 +900,6 @@ SavedContext.STRUCT = """
 """
 
 
-/*
-  need to split context into two structs: a serializable ToolContext,
-  and a UI/View3D Context.
-*/
 class Context {
   constructor() {
     this.font = g_app_state.raster.font;

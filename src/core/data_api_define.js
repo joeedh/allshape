@@ -440,7 +440,8 @@ function api_define_ops() {
     },
     
     "object.duplicate": function(ctx, args) {
-      //XXX someday, will need to support passing in a list of objects too
+      //XXX someday, will need to support passing in a list of objects
+      //through the data api, too
       return new ObjectDuplicateOp(ctx.scene.objects.selected);
     },
     

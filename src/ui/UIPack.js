@@ -18,6 +18,8 @@ class UIPackFrame extends UIFrame {
     this.path_prefix = path_prefix;
     this.min_size = undefined : Array<float>;
     
+    this.last_pos = new Vector2();
+    this.last_size = new Vector2();
   }
 
   on_resize(Array<int> newsize, Array<int> oldsize)
@@ -51,7 +53,8 @@ class UIPackFrame extends UIFrame {
   }
 
   pack(canvas, isVertical) {
-    //this.do_full_recalc();
+    this.last_pos.load(this.pos);
+    this.last_size.load(this.size);
   }
 
   prop(path, packflag) {
@@ -203,12 +206,19 @@ class UIPackFrame extends UIFrame {
 
   _pack_recalc() 
   {
-    return;
-    //this.do_full_recalc();
+    //flag a complete recalc of parent container
+    //if size or position has changed,
+    //as the canvas cached will be messed up
+    //otherwise.
     
-    for (var c in this.children) {
-      if (!(c instanceof UIFrame)) {
-        c.recalc = 1;
+    if (this.last_pos.vectorDistance(this.pos) > 0.0001 || this.last_size.vectorDistance(this.size) > 0.00001) {
+      console.log("complex ui recalc");
+      this.parent.do_full_recalc();
+      
+      for (var c in this.children) {
+        if (!(c instanceof UIFrame)) {
+          c.recalc = 1;
+        }
       }
     }
   }
@@ -257,8 +267,6 @@ class RowFrame extends UIPackFrame {
       console.log("Warning: undefined canvas in pack");
       return;
     }
-    
-    this._pack_recalc();
     
     if (this.size[0] == 0 && this.size[1] == 0) {
       this.size[0] = this.parent.size[0];
@@ -313,6 +321,8 @@ class RowFrame extends UIPackFrame {
         c.pack(canvas, is_vertical);
     }
     
+    this._pack_recalc();
+    UIPackFrame.prototype.pack.call(this, canvas, is_vertical);
     //this.size[1] = Math.max(this.size[1], minsize[1]);
   }
 }
@@ -360,8 +370,6 @@ class ColumnFrame extends UIPackFrame {
       return;
     }
 
-    this._pack_recalc();
-    
     if (this.size[0] == 0 && this.size[1] == 0) {
       this.size[0] = this.parent.size[0];
       this.size[1] = this.parent.size[1];
@@ -440,6 +448,9 @@ class ColumnFrame extends UIPackFrame {
         c.pos[0] += Math.floor((this.size[0]-x)*0.5);
       }
     }
+    
+    this._pack_recalc();
+    UIPackFrame.prototype.pack.call(this, canvas, is_vertical);
   }
 }
 
