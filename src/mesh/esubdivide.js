@@ -360,7 +360,7 @@ function _edge_subdivide(Mesh mesh, Iterator edgeiter, int count, int fillmode)
 // algorithm; calling it "edge subdivide" may be a bit misleading.
 class QuadSubdOp extends MeshOp {
   constructor(Iterator faceiter, int count) {
-    MeshOp.call(this, "quad_subdivide", "Subdivide", "Subdivides selected faces\ninto quads", Icons.SUBDIVIDE);
+    MeshOp.call(this, "quad_subdivide", "Subdivide", "Subdivide selected faces\ninto quads", Icons.SUBDIVIDE);
     
     this.inputs = {
       //count: new MeshIntProperty(1, "count", "Count", "", undefined, TPropFlags.PRIVATE), 

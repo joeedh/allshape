@@ -385,10 +385,6 @@ class UIFrame extends UIElement {
         
         canvas.use_cache(c);
       } else {
-        if (!(c instanceof UIFrame)) {
-          //console.log("recalculating element", c.__hash__());
-        }
-        
         var r = this.recalc;
         
         if (!(c.packflag & PackFlags.NO_REPACK))

@@ -219,7 +219,7 @@ class TranslateOp extends TransformOp {
 
 class RotateOp extends TransformOp {
   constructor(int mode) {
-    TransformOp.call(this, "rotate", "Rotate", mode, "Rotate selection");
+    TransformOp.call(this, "rotate", "Rotate", mode, "Rotate selection", Icons.ROTATE);
     
     this.transdata = null;
     this.is_modal = true;

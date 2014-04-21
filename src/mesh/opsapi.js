@@ -1118,10 +1118,8 @@ class DeleteFaceRegionOp extends MeshOp {
 
 class TriangulateOp extends MeshOp {
   constructor(faceiter) {
-    MeshOp.call(this);
+    MeshOp.call(this, "triangulate", "Triangulate", "Turn selected faces into triangles", Icons.TRIANGULATE);
     
-    this.uiname = "Triangulate"
-    this.name = "Triangulate";
     this.inputs = {
       faces: new CollectionProperty(undefined, [Face], "faces", "Faces", ""),
     }
@@ -1143,7 +1141,7 @@ class TriangulateOp extends MeshOp {
 
 class Tri2QuadOp extends MeshOp {
   constructor(faceiter) {
-    MeshOp.call(this);
+    MeshOp.call(this, "tris2quads", "Tris2Quads", "Turn selected triangles into quads", Icons.TRI2QUAD);
     
     this.uiname = "Tris2Quads"
     this.name = "tri2quad";

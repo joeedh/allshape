@@ -101,15 +101,14 @@ class UIButtonIcon extends UIButton {
               Array<float> size, String path=undefined, 
               Function callback=undefined, String hint=undefined) 
   {
-    global icon_tst_k;
-    
     UIButton.call(this, ctx, text, pos, size, path, callback, hint);
-    this.icon = icon == undefined ? 0 : icon;
+    this.icon = icon;
     this.pad = 2;
+    this._min_size = [0, 0];
   }
   
   get_min_size(UICanvas canvas, Boolean isvertical) {
-    var ret = objcache.array(2);
+    var ret = [0, 0]; // this._min_size;
     var pad = this.pad;
     
     ret[0] = canvas.iconsheet.cellsize[0]+pad*2.0;
@@ -124,7 +123,9 @@ class UIButtonIcon extends UIButton {
     
     canvas.begin(this);
 
-    //can't print debug info in a draw loop
+    /*can't print debug info in a draw loop,
+      unfortunately, so just return
+     */
     if (this.icon == -1) {
       return;
     }

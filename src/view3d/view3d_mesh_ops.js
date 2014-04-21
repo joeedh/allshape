@@ -177,13 +177,13 @@ class MeshEditor extends View3DEditor {
     row2.toolop("mesh.subdivide(faces=mesh_selected(f))", PackFlags.INHERIT_WIDTH|PackFlags.USE_ICON);
     row2.toolop("mesh.translate()", PackFlags.INHERIT_WIDTH|PackFlags.USE_ICON);
     row2.toolop("mesh.extrude(geometry=mesh_selected(vef))", PackFlags.INHERIT_WIDTH|PackFlags.USE_ICON);
-    row2.toolop("mesh.rotate()", PackFlags.INHERIT_WIDTH);
+    row2.toolop("mesh.rotate()", PackFlags.INHERIT_WIDTH|PackFlags.USE_ICON);
     
     row2 = col.row()
     row2.toolop("mesh.scale()", PackFlags.INHERIT_WIDTH|PackFlags.USE_ICON);
     row2.toolop("mesh.flip_normals(faces=mesh_selected(f))", PackFlags.INHERIT_WIDTH|PackFlags.USE_ICON);
-    row2.toolop("mesh.triangulate(faces=mesh_selected(f))", PackFlags.INHERIT_WIDTH);
-    row2.toolop("mesh.tri2quad(faces=mesh_selected(f))", PackFlags.INHERIT_WIDTH);
+    row2.toolop("mesh.triangulate(faces=mesh_selected(f))", PackFlags.INHERIT_WIDTH|PackFlags.USE_ICON);
+    row2.toolop("mesh.tri2quad(faces=mesh_selected(f))", PackFlags.INHERIT_WIDTH|PackFlags.USE_ICON);
     
     row.toolop("mesh.duplicate_transform()", PackFlags.INHERIT_WIDTH);
     row.toolop("mesh.bridge_edges(edges=mesh_selected(e))", PackFlags.INHERIT_WIDTH);

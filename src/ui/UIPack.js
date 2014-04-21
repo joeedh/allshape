@@ -12,12 +12,14 @@ class UIPackFrame extends UIFrame {
   constructor(ctx, path_prefix)
   {
     UIFrame.call(this, ctx);
+    
     if (path_prefix == undefined)
       path_prefix = ""
     
     this.path_prefix = path_prefix;
     this.min_size = undefined : Array<float>;
     
+    this.last_ms = 0;
     this.last_pos = new Vector2();
     this.last_size = new Vector2();
   }
@@ -74,8 +76,8 @@ class UIPackFrame extends UIFrame {
   }
 
   pack(canvas, isVertical) {
-    this.last_pos.load(this.pos);
-    this.last_size.load(this.size);
+    //this.last_pos.load(this.pos);
+    //this.last_size.load(this.size);
   }
 
   prop(path, packflag) {
@@ -224,16 +226,27 @@ class UIPackFrame extends UIFrame {
     
     return col;
   }
-
+  
+  on_tick() {
+    UIFrame.prototype.on_tick.call(this);
+    this._pack_recalc();
+  }
+  
   _pack_recalc() 
   {
+    if (time_ms()-this.last_ms < 40) {
+      return;
+    }
+    
+    this.last_ms = time_ms();
+     
     //flag a complete recalc of parent container
     //if size or position has changed,
     //as the canvas cached will be messed up
     //otherwise.
     
     if (this.last_pos.vectorDistance(this.pos) > 0.0001 || this.last_size.vectorDistance(this.size) > 0.00001) {
-      console.log("complex ui recalc");
+      console.log("complex ui recalc", this.pos, this.last_pos.toString(), this.last_pos.vectorDistance(this.pos), this.last_size.vectorDistance(this.size));
       this.parent.do_full_recalc();
       
       for (var c in this.children) {
@@ -241,6 +254,9 @@ class UIPackFrame extends UIFrame {
           c.recalc = 1;
         }
       }
+      
+      this.last_pos.load(this.pos);
+      this.last_size.load(this.size);
     }
   }
 }
@@ -342,7 +358,7 @@ class RowFrame extends UIPackFrame {
         c.pack(canvas, is_vertical);
     }
     
-    this._pack_recalc();
+    //this._pack_recalc();
     UIPackFrame.prototype.pack.call(this, canvas, is_vertical);
     //this.size[1] = Math.max(this.size[1], minsize[1]);
   }
@@ -470,7 +486,7 @@ class ColumnFrame extends UIPackFrame {
       }
     }
     
-    this._pack_recalc();
+    //this._pack_recalc();
     UIPackFrame.prototype.pack.call(this, canvas, is_vertical);
   }
 }
