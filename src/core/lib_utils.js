@@ -473,4 +473,17 @@ class DataRefList extends GArray, TPropIterable {
     
     GArray.prototype.prepend.call(this, b);
   }
+  
+  static fromSTRUCT(reader) {
+    var ret = {};
+    reader(ret);
+    
+    return new DataRefList(ret.list);
+  }
 }
+
+DataRefList.STRUCT = """
+  DataRefList {
+    list : array(i, dataref(DataBlock)) | this[i];
+  }
+"""

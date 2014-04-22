@@ -109,7 +109,6 @@ class ToolProperty {
 ToolProperty.STRUCT = """
   ToolProperty {
     type : int;
-    apiname : static_string[8] | obj.apiname ? obj.apiname : "";
     flag : int;
   }
 """;
@@ -146,7 +145,7 @@ class DataRefProperty extends ToolProperty {
   set_data(DataBlock value) {
     if (value == undefined) {
       ToolProperty.prototype.set_data.call(this, undefined);
-    } else {
+    } else if (!(value instanceof DataRef)) {
       if (!this.types.has(value.lib_type)) {
         console.trace();
         console.log("Invalid datablock type " + value.lib_type + " passed to DataRefProperty.set_value()");
@@ -154,6 +153,8 @@ class DataRefProperty extends ToolProperty {
       }
       
       value = new DataRef(value);
+      ToolProperty.prototype.set_data.call(this, value);
+    } else {
       ToolProperty.prototype.set_data.call(this, value);
     }
   }
@@ -163,12 +164,17 @@ class DataRefProperty extends ToolProperty {
     reader(l);
     
     l.types = new set(l.types);
+    
+    if (l.data != undefined && l.data.id < 0)
+      l.data = undefined;
     l.set_data(l.data);
+    
+    return l;
   }
 }
 
-DataRefProperty.STRUCT = STRUCT.inherit(DataRefList, ToolProperty) + """
-  data : dataref(DataBlock);
+DataRefProperty.STRUCT = STRUCT.inherit(DataRefProperty, ToolProperty) + """
+  data : DataRef | obj.data == undefined ? new DataRef(-1) : obj.data;
   types : iter(int);
 }
 """;
@@ -191,6 +197,9 @@ class RefListProperty extends ToolProperty {
   }
   
   set_data(DataBlock value) {
+    if (value != undefined && value.constructor.name == "Array")
+      value = new GArray(value);
+    
     if (value == undefined) {
       ToolProperty.prototype.set_data.call(this, undefined);
     } else {
@@ -220,11 +229,13 @@ class RefListProperty extends ToolProperty {
     
     t.types = new set(t.types);
     t.set_data(t.data);
+    
+    return t;
   }
 }
 
 RefListProperty.STRUCT = STRUCT.inherit(RefListProperty, ToolProperty) + """
-  data : array(dataref(DataBlock));
+  data : iter(dataref(DataBlock));
   types : iter(int);
 }
 """

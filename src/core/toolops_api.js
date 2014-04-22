@@ -82,6 +82,14 @@ class ToolOpAbstract {
   default_inputs(Context ctx, ToolGetDefaultFunc get_default) {  
   }
 }
+ToolOpAbstract.STRUCT = """
+  ToolOpAbstract {
+      flag    : int;
+      saved_context  : SavedContext;
+      inputs  : iter(k, PropPair) | new PropPair(k, obj.inputs[k]);
+      outputs : iter(k, PropPair) | new PropPair(k, obj.outputs[k]);
+  }
+"""
 
 class PropPair {
   constructor(key, value) {
@@ -97,12 +105,12 @@ class PropPair {
 }
 PropPair.STRUCT = """
   PropPair {
-    key   : static_string[12];
+    key   : static_string[16];
     value : abstract(ToolProperty);
   }
 """;
 
-var UndoFlags = {IGNORE_UNDO: 2};
+var UndoFlags = {IGNORE_UNDO: 2, IS_ROOT_OPERATOR : 4, UNDO_BARRIER : 8};
 
 var ToolFlags = {
   HIDE_TITLE_IN_LAST_BUTTONS: 1, 
@@ -216,52 +224,11 @@ class ToolOp extends EventHandler, ToolOpAbstract {
     */
   }
   
-  //NOTE: this method can returned undefined!!!
   static fromSTRUCT(reader) {
-    //okay. . .this is going to be complicated.
     var obj = Object.create(Object.prototype);
     reader(obj);
     
-    var inputs = {};
-    var outputs = {};
-    
-    for (var i=0; i<obj.inputs.length; i++) {
-      inputs[obj.inputs[i].key] = obj.inputs[i].value;
-    }
-    
-    for (var i=0; i<obj.outputs.length; i++) {
-      outputs[obj.outputs[i].key] = obj.outputs[i].value;
-    }
-    
-    obj.inputs = inputs;
-    obj.outputs = outputs;
-    
-    var con = get_constructor(obj.constructor);
-    
-    if (con == undefined) {
-      console.trace()
-      if (RELEASE) {
-        console.log("ERROR: invalid toolop constructor " + obj.constructor);
-        console.log("ignoring!");
-        
-        return undefined;
-      } else {
-        throw new Error("Invalid toolop constructor " + obj.constructor);
-      }
-    }
-    
-    var op = new con();
-    for (var k in inputs) {
-      op.inputs[k].set_data(inputs[k].data);
-    }
-    
-    for (var k in outputs) {
-      op.outputs[k].set_data(outputs[k].data);
-    }
-    
-    op.flag = obj.flag;
-    
-    return op;
+    return obj;
   }
   
   static get_constructor(name) {
@@ -280,13 +247,12 @@ class ToolOp extends EventHandler, ToolOpAbstract {
 }
 
 ToolOp.STRUCT = """
-ToolOp {
-  constructor : static_string[32] | obj.constructor.name;
-  flag : int;
-  inputs  : iter(k, PropPair) | new PropPair(k, obj.inputs[k]);
-  outputs : iter(k, PropPair) | new PropPair(k, obj.outputs[k]);
-  ctx : SavedContext | obj.saved_context;
-}
+  ToolOp {
+      flag    : int;
+      saved_context  : SavedContext;
+      inputs  : iter(k, PropPair) | new PropPair(k, obj.inputs[k]);
+      outputs : iter(k, PropPair) | new PropPair(k, obj.outputs[k]);
+  }
 """
 
 class ToolMacro extends ToolOp {
@@ -435,5 +401,67 @@ class ToolMacro extends ToolOp {
   on_draw(event) {
     this.tools[this.cur_modal].modal_ctx = this.modal_ctx;
     this.tools[this.cur_modal].on_draw(event);
+  }
+}
+
+//generate default toolop STRUCTs/fromSTRUCTS
+function init_toolop_structs() {
+  global defined_classes;
+  
+  function gen_fromSTRUCT(cls1) {
+    function fromSTRUCT(reader) {
+      var op = new cls1();
+      reader(op);
+      
+      var ins = {};
+      for (var i=0; i<op.inputs.length; i++) {
+        ins[op.inputs[i].key] = op.inputs[i].value;
+      }
+      
+      var outs = {};
+      for (var i=0; i<op.outputs.length; i++) {
+        outs[op.outputs[i].key] = op.outputs[i].value;
+      }
+      
+      op.inputs = ins;
+      op.outputs = outs;
+      
+      return op;
+    }
+    
+    return fromSTRUCT;
+  }
+  
+  for (var i=0; i<defined_classes.length; i++) {
+    //only consider classes that inherit from ToolOpAbstract
+    var cls = defined_classes[i];
+    var ok=false;
+    for (var j=0; j<cls.__clsorder__.length; j++) {
+      if (cls.__clsorder__[j] == ToolOpAbstract) {
+        ok = true;
+        break;
+      } else if (cls.__clsorder__[j] == ToolOp) {
+        ok = true;
+        break;
+      }
+    }
+    if (!ok) continue;
+    
+    //console.log("-->", cls.name);
+    if (!("STRUCT" in cls)) {
+      cls.STRUCT = cls.name + " {" + """
+        flag    : int;
+        saved_context  : SavedContext;
+        inputs  : iter(k, PropPair) | new PropPair(k, obj.inputs[k]);
+        outputs : iter(k, PropPair) | new PropPair(k, obj.outputs[k]);
+      }
+      """
+    }
+    
+    if (cls.fromSTRUCT == ToolOp.fromSTRUCT || cls.fromSTRUCT == undefined) {
+      
+      cls.fromSTRUCT = gen_fromSTRUCT(cls);
+      define_static(cls, "fromSTRUCT", cls.fromSTRUCT);
+    }
   }
 }

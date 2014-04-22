@@ -101,6 +101,7 @@ js_targets = {"app.js" : [
   "src/font/fontgen10.png",
   "src/font/fontgen12.png",
   "src/font/fontgen14.png",
+  "src/datafiles/iconsheet.svg",
   "src/datafiles/iconsheet.png",
   "src/datafiles/iconsheet16.png"
 ]}

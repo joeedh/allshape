@@ -567,19 +567,22 @@ function vert_smooth(mesh, vertiter) {
 
 class VertSmoothOp extends MeshOp {
   constructor(vertiter) {
-    MeshOp.call(this, "vertex_smooth", "Vertex Smooth", "Smooth selected vertex positions");
+    MeshOp.call(this, "vertex_smooth", "Smooth Vertices", "Smoothes selected vertex positions", Icons.VERTEX_SMOOTH);
     
     this.flag |= ToolFlags.USE_PARTIAL_UNDO;
     
     this.inputs = {
       verts: new CollectionProperty(undefined, [Vertex], "verts", "Vertices", ""),
+      repeat: new IntProperty(1, "repeat", "Repeat", "How many times to repeat smoothing", [1, 50])
     }
     
     this.inputs.verts.set_data(vertiter);
   }
 
   exec(op, mesh) {
-    vert_smooth(mesh, this.inputs.verts);
+    for (var i=0; i<this.inputs.repeat.data; i++) {
+      vert_smooth(mesh, this.inputs.verts);
+    }
     
     mesh.api.recalc_normals();
   }
@@ -1252,7 +1255,7 @@ class AddCircleOp extends MeshOp {
 
 class MeshDuplicateOp extends MeshOp {
   constructor(geometry) {
-    MeshOp.call(this, "duplicate", "Duplicate", "Duplicate selected geometry");
+    MeshOp.call(this, "duplicate", "Duplicate", "Duplicate selected geometry", Icons.DUPLICATE);
     
     this.inputs = {
       geometry: new CollectionProperty(undefined, [Element], "geometry", "Geometry", ""),

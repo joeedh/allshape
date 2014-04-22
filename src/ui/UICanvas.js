@@ -461,6 +461,7 @@ function _box_process_clr(default_cs, clr) {
 class UICanvas {
   constructor(view3d, viewport) { 
     this.iconsheet = g_app_state.raster.iconsheet;
+    this.iconsheet16 = g_app_state.raster.iconsheet16;
     
     if (viewport == undefined)
       this.viewport = [view3d.pos, view3d.size];

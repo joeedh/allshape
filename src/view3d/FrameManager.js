@@ -1645,8 +1645,9 @@ class HintPickerOpElement extends UIElement {
 
 class HintPickerOp extends ToolOp {
   constructor() {
-    ToolOp.call(this, "hint_picker", "Hint Picker");
-    
+    ToolOp.call(this, "hint_picker", "Hint Picker", 
+                "Helper tool to display tooltips on tablets", 
+                Icons.HELP_PICKER);
     
     this.canvas = g_app_state.screen.canvas;
     this.undoflag = UndoFlags.IGNORE_UNDO;

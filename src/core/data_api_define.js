@@ -348,6 +348,7 @@ function api_define_ops() {
       macro.description = meshop.description;
       
       macro.add_tool(op);
+      macro.icon = meshop.icon;
       
       var transop = new TranslateOp(EditModes.GEOMETRY)
       macro.add_tool(transop);
@@ -423,7 +424,9 @@ function api_define_ops() {
     "appstate.save_as" : function(ctx, args) {
       return new FileSaveAsOp();
     },
-    
+    "appstate.new" : function(ctx, args) {
+      return new FileNewOp();
+    },
     "screen.area_split_tool" : function(ctx, args) {
       return new SplitAreasTool(g_app_state.screen);
     },

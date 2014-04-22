@@ -161,6 +161,8 @@ class MeshEditor extends View3DEditor {
     var ctx = new Context();
     var row = new RowFrame(ctx);
     
+    //row.default_packflag = PackFlags.INHERIT_WIDTH;
+    
     row.size = [148, view3d.size[1]-34-30]
     row.draw_background = true
     row.rcorner = 100.0
@@ -175,24 +177,28 @@ class MeshEditor extends View3DEditor {
     
     var col = row.col()
     var row2 = col.row()
-    row2.toolop("mesh.subdivide(faces=mesh_selected(f))", PackFlags.INHERIT_WIDTH|PackFlags.USE_ICON);
-    row2.toolop("mesh.translate()", PackFlags.INHERIT_WIDTH|PackFlags.USE_ICON);
-    row2.toolop("mesh.scale()", PackFlags.INHERIT_WIDTH|PackFlags.USE_ICON);
-    row2.toolop("mesh.rotate()", PackFlags.INHERIT_WIDTH|PackFlags.USE_ICON);
+    row2.toolop("mesh.extrude(geometry=mesh_selected(vef))", PackFlags.USE_LARGE_ICON);
+    row2.toolop("mesh.flip_normals(faces=mesh_selected(f))", PackFlags.USE_LARGE_ICON);
+    row2.toolop("mesh.triangulate(faces=mesh_selected(f))", PackFlags.USE_LARGE_ICON);
+    row2.toolop("mesh.subdivide(faces=mesh_selected(f))", PackFlags.USE_LARGE_ICON);
+    row2.toolop("mesh.duplicate_transform()", PackFlags.USE_LARGE_ICON);
+    row2.toolop("mesh.bridge_edges(edges=mesh_selected(e))", PackFlags.USE_LARGE_ICON);
     
     row2 = col.row()
-    row2.toolop("mesh.extrude(geometry=mesh_selected(vef))", PackFlags.INHERIT_WIDTH|PackFlags.USE_ICON);
-    row2.toolop("mesh.flip_normals(faces=mesh_selected(f))", PackFlags.INHERIT_WIDTH|PackFlags.USE_ICON);
-    row2.toolop("mesh.triangulate(faces=mesh_selected(f))", PackFlags.INHERIT_WIDTH|PackFlags.USE_ICON);
-    row2.toolop("mesh.tri2quad(faces=mesh_selected(f))", PackFlags.INHERIT_WIDTH|PackFlags.USE_ICON);
-    
-    row.toolop("mesh.duplicate_transform()", PackFlags.INHERIT_WIDTH);
-    row.toolop("mesh.bridge_edges(edges=mesh_selected(e))", PackFlags.INHERIT_WIDTH);
-    row.toolop("mesh.vertsmooth(verts=mesh_selected(v))", PackFlags.INHERIT_WIDTH);
-    row.toolop("mesh.loopcut()", PackFlags.INHERIT_WIDTH);
+    row2.toolop("mesh.translate()", PackFlags.USE_LARGE_ICON);
+    row2.toolop("mesh.scale()", PackFlags.USE_LARGE_ICON);
+    row2.toolop("mesh.rotate()", PackFlags.USE_LARGE_ICON);
+    row2.toolop("mesh.tri2quad(faces=mesh_selected(f))", PackFlags.USE_LARGE_ICON);
+    row2.toolop("mesh.vertsmooth(verts=mesh_selected(v))", PackFlags.USE_LARGE_ICON);
+    row2.toolop("mesh.loopcut()", PackFlags.USE_LARGE_ICON);
 
+    //last tool panel
+    var toolframe = new ToolOpFrame(ctx, "last_tool");
+    toolframe.packflag |= PackFlags.INHERIT_WIDTH;
+    
     row.label("Last Tool:", false)
-    row.add(new ToolOpFrame(ctx, "last_tool"), PackFlags.INHERIT_WIDTH);
+    row.add(toolframe);
+    
   }
 
   build_bottombar(view3d) {
@@ -208,7 +214,7 @@ class MeshEditor extends View3DEditor {
     col.size = [view3d.size[0], 35];
     
     col.label("        Selection Mode:");
-    col.prop("view3d.selectmode", PackFlags.ENUM_STRIP|PackFlags.USE_ICON);
+    col.prop("view3d.selectmode", PackFlags.ENUM_STRIP|PackFlags.USE_SMALL_ICON);
     col.prop("view3d.use_backbuf_sel");
     col.label("  |  ");
     col.prop("view3d.zoomfac");

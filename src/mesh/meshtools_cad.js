@@ -270,10 +270,8 @@ function bridge_two_loops(mesh, vloop1, vloop2) {
 
 function BridgeOp(edgeiter) {
   this.prototype = Object.create(MeshOp.prototype);
-  MeshOp.call(this);
+  MeshOp.call(this, "bridge_edges", "Bridge Edges", "Bridge edge loops with faces", Icons.BRIDGE);
   
-  this.uiname = "Bridge Edges"
-  this.name = "bridge_edges";
   this.inputs = {
     edges: new CollectionProperty(undefined, [Edge], "faces", "Faces", ""),
   }

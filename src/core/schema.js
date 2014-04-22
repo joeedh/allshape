@@ -438,7 +438,7 @@ var _st_packers = [
   function(data, val, obj, thestruct, field, type) { //tstruct (struct with type)
     var cls = thestruct.get_struct_cls(type.data);
     var stt = thestruct.get_struct(type.data);
-        
+    
     if (val.constructor.name != type.data && (val instanceof cls)) {
       if (DEBUG.Struct) {
         console.log(val.constructor.name + " inherits from " + cls.name);
@@ -448,7 +448,7 @@ var _st_packers = [
       stt = thestruct.get_struct(type.data);
     } else {
       console.trace();
-      throw new Error("Bad struct " + val.constructor.name + " passed to write_struct");
+      throw new Error("Bad struct " + val.constructor + " passed to write_struct");
     }
     
     if (stt.id == 0) {
@@ -527,7 +527,13 @@ var _st_packers = [
     var type2 = d.type;
     var env = _ws_env;
     
+    var i=0;
     for (var val2 in val) {
+      if (i >= len) {
+        console.log("malformed iteration value for serialization", field, val);
+        break;
+      }
+      
       if (itername != "" && itername != undefined && field.get) {
         env[0][0] = itername;
         env[0][1] = val2;
@@ -537,6 +543,8 @@ var _st_packers = [
       
       var f2 = {type : type2, get : undefined, set: undefined};
       _st_pack_type(data, val2, obj, thestruct, f2, type2);
+      
+      i++;
     }
     packer_debug_end("iter");
   },
@@ -886,8 +894,9 @@ class STRUCT {
       },
       T_STATIC_STRING : function(type) {
         packer_debug_start("static_string");
+        var start_i = uctx.i;
         var s = unpack_static_string(data, uctx, type.data.maxlength);
-        packer_debug("data: '"+s+"'");
+        packer_debug("data: '"+s+"'" + ", length: " + (uctx.i-start_i).toString());
         packer_debug_end("static_string");
         return s;
       },
@@ -985,12 +994,18 @@ class STRUCT {
       
       for (var i=0; i<flen; i++) {
         var f = fields[i];
-        var  val = unpack_field(f.type);
+        var val = unpack_field(f.type);
         
+        //if (f.name == "key")
+        //  console.log("--->", val);
+          
         obj[f.name] = val;
       }
     }
     
+    if (cls.fromSTRUCT == undefined) {
+      console.log("-------->", cls.name, cls);
+    }
     return cls.fromSTRUCT(load);
   }
 }
@@ -1090,6 +1105,8 @@ create_test(test_struct);
 
 function init_struct_packer() {
   global defined_classes, istruct;
+  
+  init_toolop_structs();
   
   console.log("parsing class serialization scripts...");
   

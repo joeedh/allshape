@@ -228,6 +228,9 @@ def cp_handler(file, target):
   else:
     return "cp %s %s" % (file, target)
 
+def svg_handler(file, target):
+  return PYBIN + " tools/scripts/render_icons.py"
+  
 def jcc_handler(file, target):
   return PYBIN + "%s %s %s %s -np" % (JCC, file, target, JFLAGS)
 
@@ -244,7 +247,8 @@ handlers = {
   r'.*\.html\.in\b' : Handler(tcc_handler),
   r'.*\.html\b' : Handler(cp_handler, can_popen=False),
   r'.*\.png\b' : Handler(cp_handler, can_popen=False),
-  r'.*\.js_' : Handler(cp_handler, can_popen=False)
+  r'.*\.js_' : Handler(cp_handler, can_popen=False),
+  r".*\.svg\b" : Handler(svg_handler, can_popen=True)
 }
 
 def iter_files(files):

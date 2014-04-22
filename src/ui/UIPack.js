@@ -1,12 +1,13 @@
 "use strict";
 
 var PackFlags = {
-  INHERIT_HEIGHT : 1, INHERIT_WIDTH: 2, 
-  ALIGN_RIGHT : 4, ALIGN_LEFT: 8, 
-  ALIGN_CENTER: 16, ALIGN_BOTTOM : 32, 
-  IGNORE_LIMIT : 64, NO_REPACK : 128,
-  UI_DATAPATH_IGNORE : 256, USE_ICON : 512,
-  ENUM_STRIP : 1024
+  INHERIT_HEIGHT :       1, INHERIT_WIDTH :     2, 
+  ALIGN_RIGHT :          4, ALIGN_LEFT :        8, 
+  ALIGN_CENTER :        16, ALIGN_BOTTOM :     32, 
+  IGNORE_LIMIT :        64, NO_REPACK :       128,
+  UI_DATAPATH_IGNORE : 256, USE_ICON :  1024|2048,
+  USE_SMALL_ICON :    1024, USE_LARGE_ICON : 2048,
+  ENUM_STRIP :        4096
 }
 
 class UIPackFrame extends UIFrame {
@@ -62,9 +63,13 @@ class UIPackFrame extends UIFrame {
         return;
       }
       
-      console.log("icon toolop", op.icon);
+      if (DEBUG.icons)
+        console.log("icon toolop", op.icon);
+      
       if (op.icon >= 0) {
-        var c = new UIButtonIcon(ctx, opname, op.icon, [0,0], [0,0], path);
+        var use_small = inherit_flag & PackFlags.USE_SMALL_ICON;
+        
+        var c = new UIButtonIcon(ctx, opname, op.icon, [0,0], [0,0], path, undefined, undefined, use_small);
         c.packflag |= inherit_flag;
         this.add(c);
         return; //NON-PRECONDITION EXIT POINT
@@ -289,6 +294,7 @@ class UIPackFrame extends UIFrame {
     var row = new RowFrame(this.ctx, this.path_prefix);
     this.add(row);
     
+    row.default_packflag |= this.default_packflag;
     row.packflag |= align;
       
     return row;
@@ -299,7 +305,8 @@ class UIPackFrame extends UIFrame {
     
     var col = new ColumnFrame(this.ctx, this.path_prefix);
     this.add(col);
-
+    
+    col.default_packflag |= this.default_packflag;
     col.packflag |= align;
     
     return col;
@@ -324,7 +331,7 @@ class UIPackFrame extends UIFrame {
     //otherwise.
     
     if (this.last_pos.vectorDistance(this.pos) > 0.0001 || this.last_size.vectorDistance(this.size) > 0.00001) {
-      console.log("complex ui recalc", this.pos, this.last_pos.toString(), this.last_pos.vectorDistance(this.pos), this.last_size.vectorDistance(this.size));
+      //console.log("complex ui recalc", this.pos, this.last_pos.toString(), this.last_pos.vectorDistance(this.pos), this.last_size.vectorDistance(this.size));
       this.parent.do_full_recalc();
       
       for (var c in this.children) {

@@ -385,9 +385,21 @@ class TransformOp extends ToolOp {
     
     if (mode != 0)
       obj.inputs.DATAMODE.set_data(mode);
+  } 
+  
+  exec_pre(ToolContext ctx) {
+    if (this.inputs.DATAMODE.get_value() & EditModes.GEOMETRY)
+      this.datatype = TransMeshType;
+    else
+      this.datatype = TransObjectType;
   }
   
-  gen_transdata(ToolContext ctx) :  TransData {
+  gen_transdata(ToolContext ctx) : TransData {
+    if (this.inputs.DATAMODE.get_value() & EditModes.GEOMETRY)
+      this.datatype = TransMeshType;
+    else
+      this.datatype = TransObjectType;
+    
     if (DEBUG.transform) {
       console.log("1-", ctx.object);
       console.log("2-", this.inputs.OBJECT.data);

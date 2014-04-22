@@ -99,10 +99,12 @@ class UIButton extends UIHoverHint {
 class UIButtonIcon extends UIButton {
   constructor(Context ctx, String text, int icon, Array<float> pos, 
               Array<float> size, String path=undefined, 
-              Function callback=undefined, String hint=undefined) 
+              Function callback=undefined, String hint=undefined,
+              Boolean use_small_icon=false) 
   {
     UIButton.call(this, ctx, text, pos, size, path, callback, hint);
     this.icon = icon;
+    this.small_icon = use_small_icon;
     this.pad = 2;
     this._min_size = [0, 0];
   }
@@ -111,8 +113,18 @@ class UIButtonIcon extends UIButton {
     var ret = [0, 0]; // this._min_size;
     var pad = this.pad;
     
-    ret[0] = canvas.iconsheet.cellsize[0]+pad*2.0;
-    ret[1] = canvas.iconsheet.cellsize[1]+pad*2.0;
+    var iconsheet = this.small_icon ? canvas.iconsheet16 : canvas.iconsheet;
+    ret[0] = iconsheet.cellsize[0]+pad*2.0;
+    ret[1] = iconsheet.cellsize[1]+pad*2.0;
+    
+    return ret;
+  }
+  
+  get_hint() {
+    var ret = prior(UIButtonIcon, this).get_hint.call(this);
+    
+    if (this.text)
+      ret = this.text + "\n\n" + ret
     
     return ret;
   }
@@ -127,12 +139,19 @@ class UIButtonIcon extends UIButton {
       unfortunately, so just return
      */
     if (this.icon == -1) {
+      if (this.clicked) 
+        canvas.invbox(this.pos, this.size);
+      else if (this.state & UIFlags.HIGHLIGHT)
+        canvas.hlightbox(this.pos, this.size)
+      else 
+        canvas.box(this.pos, this.size);
+      
       return;
     }
     
     var pad = this.pad;
     
-    var isize = canvas.iconsheet.cellsize;
+    var isize = this.small_icon ? canvas.iconsheet16.cellsize : canvas.iconsheet.cellsize;
     pos[0] = Math.abs(isize[0] - this.size[0] + pad*2.0)*0.5;
     pos[1] = 0;
     
@@ -148,7 +167,12 @@ class UIButtonIcon extends UIButton {
     
     pos[0] += pad;
     pos[1] += pad;
-    canvas.icon(this.icon, pos, 0.75);
+    
+    if (this.small_icon)    
+      canvas.icon(this.icon, pos, 0.75, true);
+    else
+      canvas.icon(this.icon, pos, 0.75, false);
+    
     canvas.end(this);
   }
 }

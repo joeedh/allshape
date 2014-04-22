@@ -102,7 +102,6 @@ function gen_default_file(size) {
     try {
       var buf = localStorage.startup_file
       buf = new DataView(b64decode(buf).buffer);
-      //buf = new DataView(new Uint8Array(JSON.parse(buf)).buffer);
       
       g.load_user_file_new(buf, new unpack_ctx());
       return;
@@ -118,27 +117,8 @@ function gen_default_file(size) {
   //will leave .screen and .mesh undefined
   g.reset_state();
   
-  //drawmats
-  var mesh = makeBoxMesh(undefined);
-  g.mesh = mesh;
-  
-  //make scene
-  var scene = new Scene();
-  scene.set_fake_user();
-  
-  g.datalib.add(scene);
-  
-  //object
-  var object = new ASObject();
-  scene.add(object);
-  
-  //mesh
-  object.data = mesh;
-  mesh.gen_render_struct();
-  mesh.regen_render();
-  
-  g.datalib.add(object);
-  g.datalib.add(mesh);
+  var op = new BasicFileOp();
+  g.toolstack.exec_tool(op);
 
   //set up screen UI
   var mvMatrix = new Matrix4();
@@ -146,7 +126,7 @@ function gen_default_file(size) {
   var drawmats = new DrawMats(new Matrix4(), mvMatrix, new Matrix4());
   
   //a 3d viewport
-  var view3d = new View3DHandler(gl, mesh, gl.program, gl.program2,
+  var view3d = new View3DHandler(gl, undefined, gl.program, gl.program2,
                      drawmats, 0, 0, size[0], size[1], 0.1, 1000.0);
   
   g.view3d = g.active_view3d = view3d;
@@ -157,7 +137,7 @@ function gen_default_file(size) {
   //now create screen
   gen_screen(gl, view3d, size[0], size[1]);
     
-  g.set_mesh(mesh);
+  g.set_mesh(new Context().mesh);
   view3d.ctx = new Context();
 }
 
@@ -281,7 +261,7 @@ class AppState {
   }
 
   create_undo_file() {
-    var buf = this.create_user_file_new(true, false, false);
+    var buf = this.create_user_file_new(true, false, false, false);
     
     return buf;
   }
@@ -329,7 +309,7 @@ class AppState {
     data (of length data_length-4)
     
   */
-  create_user_file_new(gen_dataview=true, compress=false, save_screen=true) : ArrayBuffer {
+  create_user_file_new(gen_dataview=true, compress=false, save_screen=true, save_toolstack=true) : ArrayBuffer {
     var mesh = this.mesh;
     
     function bheader(data, type, subtype) {
@@ -388,6 +368,17 @@ class AppState {
         
         data = data.concat(data2);
       }   
+    }
+    
+    if (save_toolstack) {
+      console.log("writing toolstack");
+      
+      var data2 = [];
+      istruct.write_object(data2, this.toolstack);
+      
+      bheader(data, "TSTK", "STRT");
+      pack_int(data, data2.length);
+      data = data.concat(data2);
     }
     
     if (compress) {
@@ -584,6 +575,7 @@ class AppState {
     this.object = undefined;
     this.scene = undefined;
     
+    var toolstack = undefined;
     var this2 = this;
     function load_state() {
       //handle version changes
@@ -592,7 +584,7 @@ class AppState {
       for (var i=0; i<blocks.length; i++) {
         var block = blocks[i];
         
-        if (block.subtype == "STRT" && block.type != "SCRN") {
+        if (block.subtype == "STRT" && block.type != "SCRN" && block.type != "TSTK") {
           block.data.data_link(block.data, getblock, getblock_us);
         }
       }
@@ -647,9 +639,26 @@ class AppState {
       this2.screen.size = this2.size;
       
       var ctx = new Context();
+      
+      //find toolstack block, if it exists
+      for (var i=0; i<blocks.length; i++) {
+        var block = blocks[i];
+        
+        if (block.type == "TSTK") {
+          toolstack = block.data;
+        }      
+      }
     }
     
     load_state();
+    if (toolstack != undefined) {
+      this.toolstack = fstructs.read_object(toolstack, ToolStack);
+      this.toolstack.undocur = this.toolstack.undostack.length;
+      
+      for (var i=0; i<this.toolstack.undostack.length; i++) {
+        this.toolstack.undostack[i].undoflag |= UndoFlags.UNDO_BARRIER;
+      }
+    }
   }
 
   load_blocks(DataView data, unpack_ctx uctx) {
@@ -875,17 +884,41 @@ class ToolContext {
 class SavedContext {
   constructor(ctx=undefined) {
     if (ctx != undefined) {
-      this.scene = ctx.scene ? new DataRef(ctx.scene) : undefined;
-      this.object = ctx.object ? new DataRef(ctx.object) : undefined;
-      this.mesh = ctx.mesh ? new DataRef(ctx.mesh) : undefined;
+      this._scene = ctx.scene ? new DataRef(ctx.scene) : new DataRef(-1);
+      this._object = ctx.object ? new DataRef(ctx.object) : new DataRef(-1);
+      this._mesh = ctx.mesh ? new DataRef(ctx.mesh) : new DataRef(-1);
     } else {
-      this.scene = undefined; this.object = undefined; this.mesh = undefined;
+      this._scene = new DataRef(-1); this._object = new DataRef(-1); this._mesh = new DataRef(-1);
     }
   }
   
-  static fromSTRUCT(reader) {
+  get datalib() : DataLib {
+    return g_app_state.datalib;
+  }
+  
+  get scene() : Scene {
+    return this._scene != undefined ? g_app_state.datalib.get(this._scene) : undefined;
+  }
+  
+  get object() : ASObject {
+    return this._object != undefined ? g_app_state.datalib.get(this._object) : undefined;
+  }
+  
+  get mesh() : Mesh {
+    return this._mesh != undefined ? g_app_state.datalib.get(this._mesh) : undefined;
+  }
+ 
+  static fromSTRUCT(reader) : SavedContext {
     var sctx = new SavedContext();
+    
     reader(sctx);
+    
+    if (sctx._scene.id == -1)
+      sctx._scene = undefined;
+    if (sctx._object.id == -1)
+      sctx._object = undefined;
+    if (sctx._mesh.id == -1)
+      sctx._mesh = undefined;
     
     return sctx;
   }
@@ -893,9 +926,9 @@ class SavedContext {
 
 SavedContext.STRUCT = """
   SavedContext {
-    scene : dataref(DataBlock);
-    object : dataref(DataBlock);
-    mesh : dataref(DataBlock);
+    _scene : DataRef;
+    _object : DataRef;
+    _mesh : DataRef;
   }
 """
 
@@ -1017,8 +1050,38 @@ class ToolStack {
   constructor(appstate) {
     this.undocur = 0;
     this.undostack = new GArray();
+    
     this.appstate = appstate;
     this.valcache = appstate.toolop_input_cache;
+  }
+  
+  reexec_stack() {
+    var stack = this.undostack;
+    
+    g_app_state.datalib = new DataLib();
+    
+    console.log("reexecuting tool stack from scratch. . .");
+    for (var i=0; i<this.undocur; i++) {
+      var tool = stack[i];
+      var ctx = tool.saved_context;
+      
+      console.log("executing " + tool.constructor.name + ". . .");
+      
+      tool.is_modal = false;
+      
+      tool.exec_pre(ctx);
+      
+      if (!(tool.undoflag & UndoFlags.IGNORE_UNDO)) {
+        console.log("undo pre");
+        tool.undo_pre(ctx);
+        console.log(tool._undo);
+      }
+      
+      tool.exec(ctx);
+      
+      if (i != 0)
+        tool.undoflag &= ~UndoFlags.UNDO_BARRIER;
+    }
   }
   
   default_inputs(Context ctx, ToolOp tool) {
@@ -1063,6 +1126,9 @@ class ToolStack {
   }
 
   undo() {
+    if (this.undocur > 0 && (this.undostack[this.undocur-1].undoflag & UndoFlags.UNDO_BARRIER))
+      return;
+      
     if (this.undocur > 0) {
       this.appstate.jobs.kill_owner_jobs(this.appstate.mesh);
       
@@ -1144,10 +1210,14 @@ class ToolStack {
   }
 
   exec_tool(ToolOp tool) {
-    if (this.appstate.screen.active instanceof ScreenArea && this.appstate.screen.active.area instanceof View3DHandler)
+    if (this.appstate.screen && 
+        this.appstate.screen.active instanceof ScreenArea 
+        && this.appstate.screen.active.area instanceof View3DHandler)
+    {
       this.appstate.active_view3d = this.appstate.screen.active.area;
+    }
     
-    if (this.appstate.active_view3d == undefined) {
+    if (this.appstate.screen && this.appstate.active_view3d == undefined) {
       for (var s in this.appstate.screen.children) {
         if (s instanceof ScreenArea && s.area instanceof View3DHandler) {
           this.appstate.active_view3d = s.area;
@@ -1193,7 +1263,7 @@ class ToolStack {
       tool._start_modal(ctx);
     } else {
       var tctx = new ToolContext();
-      tool.saved_context = new SavedContext(ctx);
+      tool.saved_context = new SavedContext(tctx);
       
       if (!(tool.undoflag & UndoFlags.IGNORE_UNDO)) {
         //undo callbacks, unlike .exec, get full context structure
@@ -1221,6 +1291,7 @@ class ToolStack {
 
 ToolStack.STRUCT = """
   ToolStack {
-    undostack : array(ToolOp) | obj.undostack.slice(0, obj.undocur);
+    undocur   : int;
+    undostack : array(abstract(ToolOp)) | obj.undostack.slice(0, obj.undocur+1);
   }
 """

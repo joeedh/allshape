@@ -12,5 +12,10 @@ var Icons = {
   VERT_SEL       : 8,
   EDGE_SEL       : 9,
   FACE_SEL       : 10,
-  OBJECT_SEL     : 11
+  OBJECT_SEL     : 11,
+  HELP_PICKER    : 12,
+  DUPLICATE      : 13,
+  BRIDGE         : 14,
+  VERTEX_SMOOTH  : 15,
+  LOOP_CUT       : 16
 };

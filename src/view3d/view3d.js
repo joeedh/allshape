@@ -849,7 +849,8 @@ class View3DHandler extends Area {
       //g_app_state.load_undo_file(g_app_state.create_undo_file());
       //console.log(sort_csg(ctx.scene).toString());
       //test_tutorial_mode();
-      icon_tst_k++;
+      //icon_tst_k++;
+      g_app_state.toolstack.reexec_stack();
       
       //new Context().scene.graph.exec();
     }));
@@ -981,7 +982,8 @@ class View3DHandler extends Area {
       ["appstate.export_stl()",
       "appstate.save_as()", 
       "appstate.save()", 
-      "appstate.open()"]);
+      "appstate.open()",
+      "appstate.new()"]);
   }
 
   gen_tools_menu(Context ctx, uimenulabel)
@@ -1020,7 +1022,7 @@ class View3DHandler extends Area {
     col.pos = [0, this.size[1]-33]
     
     col.label("                      ");
-    col.toolop("screen.hint_picker()", undefined, "?");
+    col.toolop("screen.hint_picker()", PackFlags.USE_SMALL_ICON, "?");
     
     col.add(new UIMenuLabel(this.ctx, "File", undefined, this.gen_file_menu));
     col.add(new UIMenuLabel(this.ctx, "Tools", undefined, this.gen_tools_menu));

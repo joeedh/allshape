@@ -135,7 +135,7 @@ class ObjectEditor extends View3DEditor {
     col.size = [view3d.size[0], 35];
     
     col.label("        Selection Mode:");
-    col.prop("view3d.selectmode", PackFlags.ENUM_STRIP|PackFlags.USE_ICON);
+    col.prop("view3d.selectmode", PackFlags.ENUM_STRIP|PackFlags.USE_SMALL_ICON);
     col.prop("view3d.use_backbuf_sel");
     col.label("  |  ");
     col.prop("view3d.zoomfac");

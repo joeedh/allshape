@@ -110,7 +110,25 @@ class DataRef extends Array {
     //since lib linking is unimplemented/
     return b != undefined && b[0] == this[0];
   }
+  
+  static fromSTRUCT(reader) {
+    var ret = new DataRef(0);
+    reader(ret);
+    
+    return ret;
+  }
 }
+
+//sometimes we need to serialize DataRef
+//structures themselves, as opposed to auto-generating
+//them from library block references, which is what the.  
+//(lowercase) dataref STRUCT type does.
+DataRef.STRUCT = """
+  DataRef {
+    id : int;
+    lib : int;
+  }
+"""
 
 class DataRefListIter extends ToolIter {
   constructor(lst, ctx) {

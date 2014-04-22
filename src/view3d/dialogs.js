@@ -194,6 +194,31 @@ class FileSaveAsOp extends ToolOp {
   }
 }
 
+class FileNewOp extends ToolOp {
+  constructor() {
+    ToolOp.call(this, "new_file", "New");
+
+    this.is_modal = false;
+    
+    this.undoflag = UndoFlags.IGNORE_UNDO;
+    this.flag = ToolFlags.HIDE_TITLE_IN_LAST_BUTTONS;
+    
+    this.inputs = {};
+  }
+
+  exec(ctx) {
+    function new_callback(dialog, do_cancel) {
+      if (!do_cancel) {
+        gen_default_file(g_app_state.screen.size);
+      }
+    }
+    
+    var okay = new OkayDialog("Create blank scene?\nAny unsaved changes\nwill be lost", new_callback)
+    okay.call();
+    console.log("File new");
+  }
+}
+
 class FileSaveOp extends ToolOp {
   constructor() {
     ToolOp.call(this, "save_file", "Save");

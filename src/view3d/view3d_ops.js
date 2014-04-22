@@ -650,3 +650,39 @@ class ToggleSubSurfOp extends ToolOp {
     }
   }
 }
+
+class BasicFileOp extends ToolOp {
+  constructor() {
+    ToolOp.call(this, "basic_file", "internal op", "Root operator; creates a scene with a simple cube");
+    
+    this.is_modal = false;
+    this.undoflag = UndoFlags.IS_ROOT_OPERATOR|UndoFlags.UNDO_BARRIER;
+    
+    this.inputs = {};
+    this.outputs = {};
+  }
+  
+  exec(ToolContext ctx) {
+    var datalib = ctx.datalib;
+    
+    //make scene
+    var scene = new Scene();
+    scene.set_fake_user();
+    
+    datalib.add(scene);
+    
+    //object
+    var object = new ASObject();
+    scene.add(object);
+    
+    //mesh
+    var mesh = makeBoxMesh(undefined);
+    
+    object.data = mesh;
+    mesh.gen_render_struct();
+    mesh.regen_render();
+    
+    datalib.add(object);
+    datalib.add(mesh);
+  }
+}

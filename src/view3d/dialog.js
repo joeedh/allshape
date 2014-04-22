@@ -152,8 +152,13 @@ class Dialog extends UIFrame {
     }
   }
   
-  call(pos) {
+  call(Array<int> pos=undefined) {
     this.pack(this.screen.canvas, false);
+    
+    if (pos == undefined) {
+      pos = [g_app_state.screen.mpos[0], g_app_state.screen.mpos[1]];
+      pos[1] -= this.size[1] + 20;
+    }
     
     /*clamp to screen bounds*/
     pos[0] = Math.min(pos[0]+this.size[0], this.screen.size[0]) - this.size[0];
@@ -205,3 +210,25 @@ class PackedDialog extends Dialog {
     this.subframe.pack(this.canvas);
   }
 }
+
+class OkayDialog extends PackedDialog {
+  constructor(String text, Function callback) {
+    var ctx = new Context();
+    var screen = g_app_state.screen;
+    var flag = 0;
+    PackedDialog.call(this, "Okay?", ctx, screen, flag);
+    
+    this.callback = callback;
+    
+    var col = this.subframe.col();
+    col.add(Dialog.okay_button(ctx));
+    col.add(Dialog.cancel_button(ctx));
+    this.subframe.label(text);
+  }
+  
+  end(Boolean do_cancel) {
+    prior(OkayDialog, this).end.call(this, do_cancel);
+    this.callback(this, do_cancel);
+  }
+}
+
