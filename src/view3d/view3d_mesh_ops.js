@@ -195,23 +195,24 @@ class MeshEditor extends View3DEditor {
     row.add(new ToolOpFrame(ctx, "last_tool"), PackFlags.INHERIT_WIDTH);
   }
 
-  build_bottombar(view3d)
-  {
+  build_bottombar(view3d) {
     var ctx = new Context();
     var col = new ColumnFrame(ctx);
+    
+    col.packflag |= PackFlags.ALIGN_LEFT;
+    col.default_packflag = PackFlags.ALIGN_LEFT;
     
     col.draw_background = true;
     col.rcorner = 100.0
     col.pos = [0,0] 
     col.size = [view3d.size[0], 35];
     
-    //col.add(new UIMenuLabel(this.ctx, "File", undefined, gen_file_menu));
-    col.label("  Select Mode:  ");
-    col.prop("view3d.selectmode");
+    col.label("        Select Mode:");
+    col.prop("view3d.selectmode", PackFlags.ENUM_STRIP|PackFlags.USE_ICON);
     col.prop("view3d.use_backbuf_sel");
-    col.label("  |   ");
+    col.label("  |  ");
     col.prop("view3d.zoomfac");
-    col.label("  |   ");
+    col.label("  |  ");
     col.prop("object.use_subsurf");
     
     view3d.rows.push(col);

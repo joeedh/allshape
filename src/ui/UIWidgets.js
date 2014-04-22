@@ -309,9 +309,10 @@ class UIMenuButton extends UIHoverHint {
 }
 
 class UICheckBox extends UIHoverHint {
-  constructor(ctx, text, pos, size, path) {
+  constructor(ctx, text, pos, size, path, use_check=true) {
     UIHoverHint.call(this, ctx, path);
     
+    this.draw_check = use_check;
     this.ctx = ctx;
     this.set = false;
     this.mdown = false;
@@ -402,15 +403,17 @@ class UICheckBox extends UIHoverHint {
       canvas.quad_aa(v1, v2, v3, v4, uicolors["Check"])
     }
     
-    if (this.state & UIFlags.HIGHLIGHT) {
+    if ((this.state & UIFlags.HIGHLIGHT) && this.draw_check) {
       canvas.simple_box([2, 0], [this.size[0], csize[1]])
       
       var mul = this.set ? 1.0 : 0.3;
       canvas.hlightbox([0, 0], csize, mul, 2)
-      if (this.set) draw_check();
+      if (this.set)
+        draw_check();
     } else if(this.set) {
       canvas.invbox([2, 0], csize, undefined, 2);
-      draw_check();
+      if (this.draw_check)
+        draw_check();
     } else {
       canvas.box([2, 0], csize, undefined, 2);
     }
@@ -1752,5 +1755,103 @@ class UIVScroll extends UIFrame {
   get_min_size(UICanvas canvas, Boolean isvertical)
   {
     return [26, 26*3]
+  }
+}
+
+/*draws 16x16 "small" icons*/
+class UIIconCheck extends UIHoverHint {
+  constructor(ctx, text, int icon, pos, size, path, use_check=true) {
+    UIHoverHint.call(this, ctx, path);
+    
+    this.ctx = ctx;
+    this.set = false;
+    this.mdown = false;
+    this.text = text
+    this.pos = pos
+    this.size = size
+    this.callback = undefined;
+    this.icon = icon;
+    
+    this.prop = undefined : ToolProperty;
+    
+    if (this.state & UIFlags.USE_PATH) {
+      this.prop = this.get_prop_meta();
+    }
+  }
+
+  on_tick() {
+    UIHoverHint.prototype.on_tick.call(this);
+
+    if (!this.mdown && (this.state & UIFlags.USE_PATH)) {
+      var val = this.get_prop_data();
+      
+      if (val != this.set) {
+        this.set = val;
+        this.do_recalc();
+      }
+    }
+  }
+ 
+  on_mousemove(MouseEvent event) {
+    if (!this.mdown) {
+      this.start_hover();
+    }
+  }
+  
+  on_mousedown(MouseEvent event) {
+    if (event.button == 0 && !this.mdown) {
+      this.push_modal()
+      
+      this.stop_hover();
+      
+      this.mdown = true;
+      this.set ^= true;
+      
+      this.do_recalc();
+    }  
+  }
+
+  on_mouseup(MouseEvent event) {
+    if (this.mdown) {
+      this.pop_modal();
+      this.mdown = false;
+      
+      if (this.callback != undefined)
+        this.callback(this, this.set);
+      
+      if (this.state & UIFlags.USE_PATH) {
+        this.set_prop_data(this.set);
+      }
+    }  
+  }
+
+  build_draw(UICanvas canvas) {
+    canvas.begin(this);
+    
+    var csize = [24, 24];
+    
+    if (this.state & UIFlags.HIGHLIGHT) {
+      canvas.simple_box([0, 0], [this.size[0], csize[1]])
+      
+      var mul = this.set ? 0.3 : 1.0;
+      canvas.hlightbox([0, 0], csize, mul, 2)
+    } else if(this.set) {
+      canvas.invbox([0, 0], csize, undefined, 2);
+    } else {
+      canvas.box([0, 0], csize, undefined, 2);
+    }
+    
+    var tsize = canvas.textsize(this.text);
+    canvas.text([csize[0]+5, (this.size[1]-tsize[1])*0.25], this.text);
+    
+    var pos = [4, 4];
+    canvas.icon(this.icon, pos, 0.75, true);
+    
+    canvas.end(this);
+  }
+
+  get_min_size(UICanvas canvas, Boolean isvertical)
+  {
+    return [canvas.textsize(this.text)[0]+24, 24]
   }
 }

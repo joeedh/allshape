@@ -516,6 +516,10 @@ class Mesh extends DataBlock {
     for (var f in faces) {
       for (var list in f.looplists) {
         for (var l in list) {
+          if (l.e == undefined) {
+            console.log("Warning: corrupted loop", l, "in load_partial.  Attempting to correct.");
+            l.e = this.make_edge(l.v, l.next.v);
+          }
           this._radial_loop_insert(l.e, l);
         }
       }

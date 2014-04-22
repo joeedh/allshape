@@ -12,14 +12,15 @@ var _trilist_v7 = new Vector3(); var _trilist_v8 = new Vector3();
 var _trilist_v9 = new Vector3();
 
 class TriList {
-  constructor(View3DHandler view3d, UICanvas canvas) {
+  constructor(View3DHandler view3d, UICanvas canvas, Boolean use_small_icons=false) {
     this.verts = [];
     this.colors = [];
     this.texcos = [];
     this.use_tex = 1;
     this.tex = 0 : WebGLTexture;
     this.view3d = view3d : View3DHandler;
-    this.iconsheet = g_app_state.raster.iconsheet;
+    this.iconsheet = use_small_icons ? g_app_state.raster.iconsheet16 : g_app_state.raster.iconsheet;
+    this.small_icons = use_small_icons;
     
     this.recalc = 1
     this.tottri = 0;
@@ -519,8 +520,8 @@ class UICanvas {
     this.new_trilist();
   }
 
-  new_trilist() {
-    this.trilist = new TriList(this.view3d, this);
+  new_trilist(Boolean use_small_icons=false) {
+    this.trilist = new TriList(this.view3d, this, use_small_icons);
     
     if (this.scissor_stack.length > 0) {
       this.trilist.spos = this.scissor_stack[this.scissor_stack.length-1][0];
@@ -882,7 +883,11 @@ class UICanvas {
     this.box2([pos[0]+p[0], p[1]], [size[0], pos[1]], clr)
   }
   
-  icon(int icon, Array<float> pos, float alpha=1.0) {
+  icon(int icon, Array<float> pos, float alpha=1.0, Boolean small=false) {
+    if (this.trilist.small_icons != small) {
+      this.new_trilist(small);
+    }
+    
     this.trilist.icon_quad(icon, pos, alpha);
   }
   

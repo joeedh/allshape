@@ -360,7 +360,7 @@ class UIHoverHint extends UIElement {
     if (!hint) return;
     
     var size = new Vector2(this.ctx.font.calcsize(hint));
-    size.add([4.0, 8.0]);
+    size.add([8.0, 12.0]);
     var pos = new Vector2(this.pos); //this.parent.mpos);
     
     pos[1] -= size[1];

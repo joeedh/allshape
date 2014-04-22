@@ -49,6 +49,7 @@ class RasterState {
     this.pos = [0, 0];
     
     this.iconsheet = new IconManager(gl, "content/iconsheet.png", [512, 512], [32, 32]);
+    this.iconsheet16 = new IconManager(gl, "content/iconsheet16.png", [256, 256], [16, 16]);
     
     this.viewport_stack = new CacheStack(2)
     this.scissor_stack = new CacheStack(4)

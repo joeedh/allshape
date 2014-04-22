@@ -8,5 +8,9 @@ var Icons = {
   EXTRUDE        : 4,
   TRIANGULATE    : 5,
   ROTATE         : 6,
-  TRI2QUAD       : 7
+  TRI2QUAD       : 7,
+  VERT_SEL       : 8,
+  EDGE_SEL       : 9,
+  FACE_SEL       : 10,
+  OBJECT_SEL     : 11
 };

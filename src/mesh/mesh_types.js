@@ -39,6 +39,7 @@ class Element {
     return String(this.type + "|" + this.eid);
   }
 }
+
 Element.STRUCT = """
   Element {
     type  : int;

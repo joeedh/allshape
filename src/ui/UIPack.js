@@ -5,7 +5,8 @@ var PackFlags = {
   ALIGN_RIGHT : 4, ALIGN_LEFT: 8, 
   ALIGN_CENTER: 16, ALIGN_BOTTOM : 32, 
   IGNORE_LIMIT : 64, NO_REPACK : 128,
-  UI_DATAPATH_IGNORE : 256, USE_ICON : 512
+  UI_DATAPATH_IGNORE : 256, USE_ICON : 512,
+  ENUM_STRIP : 1024
 }
 
 class UIPackFrame extends UIFrame {
@@ -22,8 +23,9 @@ class UIPackFrame extends UIFrame {
     this.last_ms = 0;
     this.last_pos = new Vector2();
     this.last_size = new Vector2();
+    this.default_packflag = 0;
   }
-
+ 
   on_resize(Array<int> newsize, Array<int> oldsize)
   {
     prior(UIPackFrame, this).on_resize.call(this, newsize, oldsize);
@@ -36,6 +38,8 @@ class UIPackFrame extends UIFrame {
   toolop(path, inherit_flag=0, label=undefined) {
     var ctx = this.ctx;
     var opname = ctx.api.get_op_uiname(ctx, path);
+    
+    inherit_flag |= this.default_packflag;
     
     if (opname == undefined) {
       console.trace();
@@ -80,9 +84,8 @@ class UIPackFrame extends UIFrame {
     //this.last_size.load(this.size);
   }
 
-  prop(path, packflag) {
-    if (packflag == undefined)
-      packflag = 0;
+  prop(path, packflag=0) {
+    packflag |= this.default_packflag;
     
     if (this.path_prefix.length > 0)
       path = this.path_prefix + "." + path
@@ -107,6 +110,81 @@ class UIPackFrame extends UIFrame {
       c.unit = prop.unit;
       
       this.add(c);
+    } else if (prop.type == PropTypes.ENUM && (packflag & PackFlags.ENUM_STRIP)) {
+      console.log("enum strip");
+      var checkmap = {};
+      var this2 = this;
+      prop.ctx = ctx;
+      
+      function update_enum(chk, val) {
+        console.log("enum strip update");
+
+        //only allow check sets
+        if (!val) {
+          chk.set = true;
+          return;
+        }
+        
+        for (var k in checkmap) {
+          var check = checkmap[k];
+          if (check == chk) {
+            prop.ctx = this2.ctx;
+            prop.set_value(k);
+            prop.set_data(prop.data);
+            continue;
+          }
+          
+          check.set = false;
+          check.do_recalc();
+        }
+        
+        var val = prop.values[k];
+      }
+      
+      var subframe;
+      if (this instanceof ColumnFrame) {
+        subframe = this.col();
+      } else {
+        subframe = this.row();
+      }
+      
+      subframe.packflag |= packflag;
+      
+      if (packflag & PackFlags.USE_ICON) {
+        for (var k in prop.values) {
+          var label = prop.ui_value_names != undefined ? prop.ui_value_names[k] : k;
+          if (label == undefined) label = "(error)";
+          
+          var c = new UIIconCheck(ctx, "", prop.iconmap[prop.values[k]]);
+          
+          c.callback = update_enum
+          c.icon = prop.iconmap[k];
+          c.draw_check = false;
+          
+          c.description = label + "\n" + prop.description;
+          
+          if (prop.get_value() == prop.values[k])
+            c.set = true;
+          
+          subframe.add(c);
+          checkmap[prop.values[k]] = c;
+        }
+      } else {
+        for (var k in prop.values) {
+          var label = prop.ui_value_names != undefined ? prop.ui_value_names[k] : k;
+          if (label == undefined) label = "(error)";
+          
+          var c = new UICheckBox(ctx, label);
+          c.callback = update_enum
+          c.draw_check = false;
+          
+          if (prop.get_value() == prop.values[k])
+            c.set = true;
+            
+          subframe.add(c);
+          checkmap[prop.values[k]] = c;
+        }
+      }
     } else if (prop.type == PropTypes.ENUM) {
       var c = new UIMenuButton(ctx, undefined, [0,0], [0,0], path);
       
@@ -183,7 +261,9 @@ class UIPackFrame extends UIFrame {
     }
   }
 
-  label(text, use_path, align) { //use_path, align are optional
+  label(text, use_path, align=0) { //use_path, align are optional
+    align |= this.default_packflag;
+    
     if (use_path != undefined && use_path) {
       var c = new UILabel(this.ctx, "", [0,0], [0,0], text);
       this.add(c);
@@ -203,26 +283,24 @@ class UIPackFrame extends UIFrame {
     }
   }
 
-  row(path_prefix, align) { //path_prefix is optional
-    if (path_prefix == undefined) path_prefix = ""
+  row(String path_prefix="", int align=0) { //path_prefix is optional
+    align |= this.default_packflag;
     
     var row = new RowFrame(this.ctx, this.path_prefix);
     this.add(row);
     
-    if (align)
-      row.packflag |= align;
+    row.packflag |= align;
       
     return row;
   }
 
-  col(path_prefix, align) { //path_prefix is optional
-    if (path_prefix == undefined) path_prefix = ""
+  col(String  path_prefix="", int align=0) { //path_prefix is optional
+    align |= this.default_packflag;
     
     var col = new ColumnFrame(this.ctx, this.path_prefix);
     this.add(col);
 
-    if (align)
-      col.packflag |= align;
+    col.packflag |= align;
     
     return col;
   }

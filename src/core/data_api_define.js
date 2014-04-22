@@ -6,7 +6,14 @@ var selectmode_enum = new EnumProperty("FACE",
     OBJECT : EditModes.OBJECT
   }, 
   "selmode", "Select Mode", "Selection mode");
-  
+
+selectmode_enum.add_icons({
+  VERT : Icons.VERT_SEL,
+  EDGE : Icons.EDGE_SEL,
+  FACE : Icons.FACE_SEL,
+  OBJECT : Icons.OBJECT_SEL
+});
+
 selectmode_enum.ui_value_names = {
   VERT: "Vertices", 
   EDGE: "Edges", 

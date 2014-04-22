@@ -493,8 +493,16 @@ class EnumProperty extends ToolProperty {
     for (var k in this.values) {
       this.ui_value_names[k] = k[0].toUpperCase() + k.slice(1, k.length);
     }
+    
+    this.iconmap = {};
   }
-
+  
+  add_icons(iconmap) {
+    for (var k in iconmap) {
+      this.iconmap[k] = iconmap[k];
+    }
+  }
+  
   copy() {
     var p = new EnumProperty("dummy", {"dummy" : 0}, this.apiname, this.uiname, this.description, this.flag)
     p.keys = Object.create(this.keys);
@@ -503,6 +511,10 @@ class EnumProperty extends ToolProperty {
     p.ui_value_names = this.ui_value_names;
     p.update = this.update;
     p.api_update = this.api_update;
+    
+    for (var k in this.iconmap) {
+      p.iconmap[k] = this.iconmap[k];
+    }
     
     return p;
   }

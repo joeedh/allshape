@@ -126,14 +126,16 @@ class ObjectEditor extends View3DEditor {
     var ctx = new Context();
     var col = new ColumnFrame(ctx);
     
+    col.packflag |= PackFlags.ALIGN_LEFT;
+    col.default_packflag = PackFlags.ALIGN_LEFT;
+    
     col.draw_background = true;
     col.rcorner = 100.0
     col.pos = [0,0]
     col.size = [view3d.size[0], 35];
     
-    //col.add(new UIMenuLabel(this.ctx, "File", undefined, gen_file_menu));
-    col.label(" Select Mode:  ");
-    col.prop("view3d.selectmode");
+    col.label("        Select Mode:");
+    col.prop("view3d.selectmode", PackFlags.ENUM_STRIP|PackFlags.USE_ICON);
     col.prop("view3d.use_backbuf_sel");
     col.label("  |  ");
     col.prop("view3d.zoomfac");
