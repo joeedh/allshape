@@ -595,19 +595,15 @@ ElementBufProperty.STRUCT = STRUCT.inherit(ElementBufProperty, ToolProperty) + "
 class Vec4Property extends ToolProperty {
   constructor(vec4, apiname, uiname, description, flag) {
     ToolProperty.call(this, PropTypes.VEC4, apiname, uiname, description, flag);
-  
+    
+    this.unit = "default";
     this.range = [undefined, undefined]
     this.real_range = [undefined, undefined]
     this.data = new Vector4(vec4);  
   }
-
-  pack(data) {
-    pack_vec4(this.data);
-  }
   
   static fromSTRUCT(reader) {
-    var t = new Vec4Property();
-    
+    var t = new Vec3Property();
     reader(t);
     return t;
   }

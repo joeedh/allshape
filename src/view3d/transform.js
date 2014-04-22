@@ -460,8 +460,8 @@ class TransformOp extends ToolOp {
     mend[0] = (mend[0]/(this.modal_ctx.view3d.size[0]/2)) - 1.0;
     mend[1] = (mend[1]/(this.modal_ctx.view3d.size[1]/2)) - 1.0;
 
-    this.inputs.MV1.data = mstart;
-    this.inputs.MV2.data = mend;
+    this.mv1 = mstart;
+    this.mv2 = mend;
     
     if (this.selecting_axis) {
       var td = this.transdata;
@@ -594,7 +594,7 @@ class TransformOp extends ToolOp {
     this.axis_drawlines.push(dy);
     this.axis_drawlines.push(dz);
 
-    var cent = new Vector3(this.inputs.MV2.data);
+    var cent = new Vector3(this.mv2);
     cent[2] = 0.0;
     this.axis_scent = cent;
     

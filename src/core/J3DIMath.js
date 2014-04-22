@@ -2095,7 +2095,7 @@ class Quat extends Vector4 {
   normalize() : float
   {
 
-    var len = Math.sqrt(this.dot())
+    var len = Math.sqrt(this.dot(this))
     if (len != 0.0) {
       this.mulScalar(1.0 / len);
     }

@@ -8,9 +8,7 @@ class TranslateOp extends TransformOp {
     this.is_modal = true;
     
     this.inputs = {TRANSLATION: new Vec3Property(new Vector3(), "translation", "Translation", "Amount of translation."), 
-             MV1: new Vec3Property(new Vector3(), "mvector1", "mvector1", "mvector1", TPropFlags.PRIVATE),
-             MV2: new Vec3Property(new Vector3(), "mvector2", "mvector2", "mvector2", TPropFlags.PRIVATE), 
-             AXIS: new Vec3Property(new Vector3(), "cons_axis", "Constraint Axis", "Axis to constrain too during transform", TPropFlags.PRIVATE)}
+                   AXIS: new Vec3Property(new Vector3(), "cons_axis", "Constraint Axis", "Axis to constrain too during transform", TPropFlags.PRIVATE)}
     this.outputs = {TRANSLATION: new Vec3Property(new Vector3(), "translation", "Translation", "Amount of translation.")}
     
     if (ob_active == undefined)
@@ -229,13 +227,14 @@ class RotateOp extends TransformOp {
     this.add_matrix = new Matrix4();
     this.cur_matrix = new Matrix4();
     
+    this.mv1 = new Vector3();
+    this.mv2 = new Vector3();
+    this.mv3 = new Vector3();
+    this.raxis = new Vector3();
+    this.asp = 1.0;
+    
     this.inputs = {
-      ROTATION: new Vec4Property(new Vector4(), "rotation", "Rotation", "Amount of rotation."), 
-      MV1: new Vec3Property(new Vector3(), "mvector1", "mvector1", "mvector1", TPropFlags.PRIVATE),
-      MV2: new Vec3Property(new Vector3(), "mvector2", "mvector2", "mvector2", TPropFlags.PRIVATE),
-      MV3: new Vec3Property(new Vector3(), "mvector2", "mvector2", "mvector2", TPropFlags.PRIVATE),
-      RAXIS: new Vec3Property(new Vector3(), "axis", "axis", "axis", TPropFlags.PRIVATE),
-      ASP: new FloatProperty(1.0, "aspect_ration", "aspect ratio", "aspect ratio", undefined, undefined, TPropFlags.PRIVATE),
+      ROTATION: new Vec4Property(new Vector4(), "rotation", "Quaternion", "Amount of rotation."), 
       AXIS: new Vec3Property(new Vector3(), "cons_axis", "Constraint Axis", "Axis to constrain too during transform", TPropFlags.PRIVATE)
     };
     
@@ -294,7 +293,7 @@ class RotateOp extends TransformOp {
 
     if (this.first) {
       this.first = false;
-      this.inputs.MV3.data = this.inputs.MV1.data;
+      this.mv3.load(this.mv1);
     }
      
     var ctx = this.modal_ctx;
@@ -302,9 +301,75 @@ class RotateOp extends TransformOp {
     var matrix = new Matrix4(ctx.view3d.drawmats.cameramat);
     matrix.invert();
     
-    this.inputs.RAXIS.data = new Vector3([matrix.$matrix.m31, matrix.$matrix.m32, matrix.$matrix.m33]);
-    this.inputs.ASP.data = this.modal_ctx.view3d.asp
+    this.raxis = new Vector3([matrix.$matrix.m31, matrix.$matrix.m32, matrix.$matrix.m33]);
+    this.asp = this.modal_ctx.view3d.asp;
     
+    var v1 = new Vector3(this.mv1);
+    var v2 = new Vector3(this.mv2);
+    var v3 = new Vector3(this.mv3);
+    
+    if (this.is_modal && v1.vectorDistance(v2) < 0.01)
+      return;
+    
+    if (this.trackball) { //trackball
+      var perp, q;
+      var vec = new Vector3(v2);
+      vec.sub(v1);
+      
+      if (this.drawline1 != null) {
+        this.drawline1.v1.zero();
+        this.drawline1.v2.zero();
+      }
+      
+      perp = new Vector3([-vec[1], vec[0], 0.0]);
+      q = new Quat()
+      q.axisAngleToQuat(perp, vec.vectorLength()*2)
+      this.inputs.ROTATION.set_data(new Vector4(q));
+    } else { //simple rotation
+      v1 = new Vector3(this.mv3);
+      var cent = new Vector3(this.transdata.scenter);
+      v1[2] = 0.0; v2[2] = 0.0;
+      cent[2] = 0.0;
+      
+      if (this.drawline1 != null) {
+        this.drawline1.v1.load(v1);
+        this.drawline1.v2.load(cent);
+        /*this.drawline2.v1.load(v2);
+        this.drawline2.v2.load(cent);*/
+      }
+      
+      var asp = this.asp;
+      
+      v1[1] /= asp;
+      v2[1] /= asp;
+      cent[1] /= asp;
+
+      v1.sub(cent);
+      v2.sub(cent);
+      
+      v1.normalize();
+      v2.normalize();
+      
+      if (v1.vectorDistance(v2) < 0.005)
+        return
+        
+      var axis = this.raxis;
+      var ang = Math.acos(v1.dot(v2));
+      
+      q = new Quat();
+      
+      if (winding(v1, v2, cent)) {
+        this.rot_sum += ang;
+      } else {
+        this.rot_sum -= ang;
+      }
+
+      q.axisAngleToQuat(axis, this.rot_sum);
+      this.inputs.ROTATION.set_data(new Vector4(q));
+      this.mv3.load(this.mv2);
+    }
+    
+    //execute
     this.exec(this.modal_tctx);
   }
 
@@ -325,9 +390,9 @@ class RotateOp extends TransformOp {
         this.add_matrix = new Matrix4();
       }
       
-      this.inputs.MV3.data.load(this.inputs.MV2.data);
-      this.inputs.MV1.data.load(this.inputs.MV2.data);
-      this.start_mpos = this.inputs.MV2.data;
+      this.mv3.load(this.mv2);
+      this.mv1.load(this.mv2);
+      this.start_mpos = this.mv2;
     } else if (event.keyCode == 27) { //escape key
       this.end_modal();
       this.cancel();
@@ -340,75 +405,12 @@ class RotateOp extends TransformOp {
     if (!this.is_modal)
       this.transdata = this.gen_transdata(ctx);
       
-    var v1 = new Vector3(this.inputs.MV1.data);
-    var v2 = new Vector3(this.inputs.MV2.data);
-    
-    if (this.is_modal && v1.vectorDistance(v2) < 0.01)
-      return;
-    
-    var mat, q;
-    if (this.trackball) {
-      var perp, q;
-      var vec = new Vector3(v2);
-      vec.sub(v1);
-      
-      if (this.drawline1 != null) {
-        this.drawline1.v1.zero();
-        this.drawline1.v2.zero();
-      }
-      
-      perp = new Vector3([-vec[1], vec[0], 0.0]);
-      q = new Quat()
-      q.axisAngleToQuat(perp, vec.vectorLength()*2)
-      mat = q.toMatrix();
-      this.cur_matrix = mat;
-    } else {
-      v1 = new Vector3(this.inputs.MV3.data);
-      var cent = new Vector3(this.transdata.scenter);
-      v1[2] = 0.0; v2[2] = 0.0;
-      cent[2] = 0.0;
-      
-      if (this.drawline1 != null) {
-        this.drawline1.v1.load(v1);
-        this.drawline1.v2.load(cent);
-        /*this.drawline2.v1.load(v2);
-        this.drawline2.v2.load(cent);*/
-      }
-      
-      var asp = this.inputs.ASP.data;
-      
-      v1[1] /= asp;
-      v2[1] /= asp;
-      cent[1] /= asp;
-
-      v1.sub(cent);
-      v2.sub(cent);
-      v1.normalize();
-      v2.normalize();
-      
-      if (this.is_modal) {
-        if (v1.vectorDistance(v2) < 0.005)
-          return
-          
-        this.inputs.MV3.data = this.inputs.MV2.data;
-      }
-      
-      var axis = this.inputs.RAXIS.data
-      q = new Quat();
-      
-      if (winding(v1, v2, cent)) {
-        this.rot_sum += Math.acos(v1.dot(v2));
-      } else {
-        this.rot_sum -= Math.acos(v1.dot(v2));
-      }
-
-      q.axisAngleToQuat(axis, this.rot_sum);
-      mat = q.toMatrix(); 
-      
-      if (this.is_modal)
-        this.cur_matrix = mat;
-    }
+    var mat, q = new Quat();
     var td = this.transdata;
+    
+    q.load(this.inputs.ROTATION.data);
+    q.normalize();
+    var mat = q.toMatrix();
     
     for (var i=0; i<td.verts.length; i++) {
       var v = td.verts[i];
@@ -437,8 +439,6 @@ class ScaleOp extends TransformOp {
     
     this.inputs = {
       SCALE: new Vec3Property(new Vector3(), "scale", "Scale", "Amount of scale."),
-      MV1: new Vec3Property(new Vector3(), "mvector1", "mvector1", "mvector1", TPropFlags.PRIVATE),
-      MV2: new Vec3Property(new Vector3(), "mvector2", "mvector2", "mvector2", TPropFlags.PRIVATE),
       AXIS: new Vec3Property(new Vector3(), "cons_axis", "Constraint Axis", "Axis to constrain too during transform", TPropFlags.PRIVATE)
     };
       
@@ -491,8 +491,8 @@ class ScaleOp extends TransformOp {
     
     var ctx = this.modal_ctx;
     
-    var v1 = new Vector3(this.inputs.MV1.data);
-    var v2 = new Vector3(this.inputs.MV2.data);
+    var v1 = new Vector3(this.mv1);
+    var v2 = new Vector3(this.mv2);
     
     if (v1.vectorDistance(v2) < 0.01) {
       this.inputs.SCALE.data = new Vector3([1.0, 1.0, 1.0]);

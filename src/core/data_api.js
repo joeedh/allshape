@@ -698,7 +698,7 @@ class DataAPI {
       
       code += "  obj = " + ret[2] + ";\n";
       
-      if (p.data.type == PropTypes.VEC3 && ret[3]) {
+      if ((p.data.type == PropTypes.VEC3 || p.data.type == PropTypes.VEC4) && ret[3]) {
         code += "obj[" + ret[1] + "] = value";
       } else if (p.data.type == PropTypes.FLAG && ret[3]) {
         if (value2) {
@@ -723,7 +723,7 @@ class DataAPI {
       func(ctx, value);
     }
     
-    if (p.data.type == PropTypes.VEC3 && ret[3]) {
+    if ((p.data.type == PropTypes.VEC3 || p.data.type == PropTypes.VEC4) && ret[3]) {
       var vec = p.data.data
       vec[ret[1]] = value;
       
@@ -810,7 +810,7 @@ class DataAPI {
       
       return ret;
     } else {
-      if (p.data.type == PropTypes.VEC3 && ret[3]) {
+      if ((p.data.type == PropTypes.VEC3 || p.data.type == PropTypes.VEC4) && ret[3]) {
         return p.data.data[ret[1]];
       } else if (p.data.type == PropTypes.FLAG && ret[3]) {
         return (p.data.data & Number(ret[1])) == Number(ret[1]);
@@ -865,7 +865,7 @@ class DataAPI {
     } else {
       return ts;
       
-      if (p.data.type == PropTypes.VEC3 && ret[3]) {
+      if ((p.data.type == PropTypes.VEC3 || p.data.type == PropTypes.VEC4) && ret[3]) {
         return p.data.data[ret[1]];
       } else if (p.data.type == PropTypes.FLAG && ret[3]) {
         return (p.data.data & Number(ret[1])) == Number(ret[1]);

@@ -140,8 +140,8 @@ class UIPackFrame extends UIFrame {
         
         row.label(prop.uiname);
         var c = new UINumBox(ctx, "X", range, prop.data, [0,0], [0,0], path + "[0]");
-        c.packflag |= packflag;
         c.unit = prop.unit;
+        c.packflag |= packflag;
         row.add(c);
 
         var c = new UINumBox(ctx, "Y", range, prop.data, [0,0], [0,0], path + "[1]");
