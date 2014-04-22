@@ -926,9 +926,9 @@ class SavedContext {
 
 SavedContext.STRUCT = """
   SavedContext {
-    _scene : DataRef;
-    _object : DataRef;
-    _mesh : DataRef;
+    _scene : DataRef | obj._scene == undefined ? new DataRef(-1) : obj._scene;
+    _object : DataRef | obj._object == undefined ? new DataRef(-1) : obj._object;
+    _mesh : DataRef | obj._mesh == undefined ? new DataRef(-1) : obj._mesh;
   }
 """
 
@@ -1251,14 +1251,15 @@ class ToolStack {
     }
     
     if (tool.is_modal) {
+      tool.modal_ctx = ctx;
+      tool.modal_tctx = new ToolContext();
+      tool.saved_context = new SavedContext(tool.modal_tctx);
+      
+      tool.exec_pre(tool.modal_tctx);
       if (!(tool.undoflag & UndoFlags.IGNORE_UNDO)) {
         tool.undo_pre(ctx);
       }
       
-      tool.modal_ctx = ctx;
-      tool.modal_tctx = new ToolContext();
-      
-      tool.exec_pre(tool.modal_tctx);
       tool.modal_init(ctx);
       tool._start_modal(ctx);
     } else {

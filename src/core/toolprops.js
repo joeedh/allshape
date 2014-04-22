@@ -761,4 +761,23 @@ class CollectionProperty extends ToolProperty {
     else
       return this.data.__iterator__();
   }
+  
+  fromSTRUCT() {
+  }
 }
+
+class BlankArray {
+  static fromSTRUCT() {
+    return new GArray();
+  }
+}
+BlankArray.STRUCT = """
+  BlankArray {
+    length : int | 0;
+  }
+""";
+
+CollectionProperty.STRUCT = STRUCT.inherit(CollectionProperty, ToolProperty) + """
+    data : abstract(Object) | obj.data == undefined ? new BlankArray() : obj.data;
+  }
+""";

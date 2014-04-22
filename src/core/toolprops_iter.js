@@ -101,8 +101,8 @@ class MSelectIter extends ToolIter {
     ToolIter.call(this);
     
     //inherits .ctx, .parent (IterProperty), and .ret ({done, val} objet)
-    
     this.meshref = new DataRef(mesh);
+    
     this.mask = typemask;
     this.mesh = undefined;
     this.init = true;
@@ -139,7 +139,22 @@ class MSelectIter extends ToolIter {
     
     return ret;
   }
+  
+  static fromSTRUCT(reader) {
+    var ob = {};
+    
+    reader(ob);
+    var ret = new MSelectIter(ob.typemask, ob.meshref);
+    
+    return ret;
+  }
 }
+
+MSelectIter.STRUCT = STRUCT.inherit(MSelectIter, ToolIter) + """
+  meshref  : DataRef;
+  mask : int;
+}
+""";
 
 class element_iter_convert extends ToolIter {
   constructor(iter, type) {
@@ -218,4 +233,26 @@ class element_iter_convert extends ToolIter {
 	  
 	  return v;
   }
+  
+  static fromSTRUCT(reader) {
+    static map = {
+      Vertex : 1,
+      Edge   : 2,
+      Loop   : 4,
+      Face   : 9
+    };
+    
+    var ob = {};
+    
+    reader(ob);
+    
+    var type = map[ob.type];
+    var ret = new element_iter_convert(ob._iter, type);
+  }
 }
+
+element_iter_convert.STRUCT = STRUCT.inherit(element_iter_convert, ToolIter) + """
+  type : static_string[8] | this.type.constructor.name;
+  _iter : abstract(ToolIter) | obj.iter;
+}
+""";

@@ -223,12 +223,25 @@ class ToolOp extends EventHandler, ToolOpAbstract {
     ctx.set_mesh(m2);
     */
   }
-  
-  static fromSTRUCT(reader) {
-    var obj = Object.create(Object.prototype);
-    reader(obj);
     
-    return obj;
+  static fromSTRUCT(reader) : ToolOp {
+    var op = new ToolOp();
+    reader(op);
+    
+    var ins = {};
+    for (var i=0; i<op.inputs.length; i++) {
+      ins[op.inputs[i].key] = op.inputs[i].value;
+    }
+    
+    var outs = {};
+    for (var i=0; i<op.outputs.length; i++) {
+      outs[op.outputs[i].key] = op.outputs[i].value;
+    }
+    
+    op.inputs = ins;
+    op.outputs = outs;
+    
+    return op;
   }
   
   static get_constructor(name) {
@@ -274,7 +287,7 @@ class ToolMacro extends ToolOp {
     if (tool.is_modal)
       this.is_modal = true;
   }
-
+  
   connect_tools(ToolOp output, ToolOp input) 
   {
     var old_set = input.user_set_data;
@@ -298,7 +311,11 @@ class ToolMacro extends ToolOp {
     }
   }
 
-  exec(Context ctx) {
+  exec(ToolContext ctx) {
+    for (var i=0; i<this.tools.length; i++) {
+      this.tools[i].saved_context = this.saved_context;
+    }
+    
     for (var op in this.tools) {
       if (op.is_modal)
         op.is_modal = this.is_modal;
@@ -309,8 +326,10 @@ class ToolMacro extends ToolOp {
           p.user_set_data.call(p);
       }
       
-      op.undo_pre(ctx);    
+      op.saved_context = this.saved_context;
+      
       op.exec_pre(ctx);
+      op.undo_pre(ctx);    
       op.exec(ctx);
     }
   }
@@ -320,6 +339,10 @@ class ToolMacro extends ToolOp {
   }
 
   modal_init(Context ctx) {
+    for (var i=0; i<this.tools.length; i++) {
+      this.tools[i].saved_context = this.saved_context;
+    }
+    
     for (var i=0; i<this.tools.length; i++) {
       var op = this.tools[i];
       
@@ -334,6 +357,8 @@ class ToolMacro extends ToolOp {
         op.modal_ctx = this.modal_ctx;
         op.modal_tctx = this.modal_tctx;
         
+        op.saved_context = this.saved_context;
+        
         op.undo_pre(ctx);      
         return op.modal_init(ctx);
       } else {
@@ -343,8 +368,10 @@ class ToolMacro extends ToolOp {
             p.user_set_data.call(p);
         }
         
-        op.undo_pre(ctx);
+        op.saved_context = this.saved_context;
+        
         op.exec_pre(ctx);
+        op.undo_pre(ctx);
         op.exec(ctx);
       }
     }
@@ -402,9 +429,23 @@ class ToolMacro extends ToolOp {
     this.tools[this.cur_modal].modal_ctx = this.modal_ctx;
     this.tools[this.cur_modal].on_draw(event);
   }
+  
+  static fromSTRUCT(Function reader) : ToolMacro {
+    var ret = STRUCT.chain_fromSTRUCT(ToolMacro, reader);
+    ret.tools = new GArray(ret.tools);
+    
+    return ret;
+  }
 }
 
-//generate default toolop STRUCTs/fromSTRUCTS
+ToolMacro.STRUCT = STRUCT.inherit(ToolMacro, ToolOp) + """
+  tools : array(abstract(ToolOp));
+}
+"""
+
+//generates default toolop STRUCTs/fromSTRUCTS, as needed
+//genereated STRUCT/fromSTRUCT should be identical with 
+//ToolOp.STRUCT/fromSTRUCT, except for the change in class name.
 function init_toolop_structs() {
   global defined_classes;
   
@@ -436,12 +477,14 @@ function init_toolop_structs() {
     //only consider classes that inherit from ToolOpAbstract
     var cls = defined_classes[i];
     var ok=false;
+    var is_toolop = false;
+    
     for (var j=0; j<cls.__clsorder__.length; j++) {
       if (cls.__clsorder__[j] == ToolOpAbstract) {
         ok = true;
-        break;
       } else if (cls.__clsorder__[j] == ToolOp) {
         ok = true;
+        is_toolop = true;
         break;
       }
     }
@@ -451,15 +494,16 @@ function init_toolop_structs() {
     if (!("STRUCT" in cls)) {
       cls.STRUCT = cls.name + " {" + """
         flag    : int;
-        saved_context  : SavedContext;
         inputs  : iter(k, PropPair) | new PropPair(k, obj.inputs[k]);
         outputs : iter(k, PropPair) | new PropPair(k, obj.outputs[k]);
-      }
       """
+      if (is_toolop)
+        cls.STRUCT += "    saved_context  : SavedContext;\n";
+      
+      cls.STRUCT += "  }";
     }
     
-    if (cls.fromSTRUCT == ToolOp.fromSTRUCT || cls.fromSTRUCT == undefined) {
-      
+    if (!("fromSTRUCT" in cls.__statics__)) {
       cls.fromSTRUCT = gen_fromSTRUCT(cls);
       define_static(cls, "fromSTRUCT", cls.fromSTRUCT);
     }

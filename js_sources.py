@@ -34,6 +34,13 @@ js_targets = {"app.js" : [
 	"src/core/schema.js",
 	"src/core/fileapi.js",
   
+  "src/view3d/events.js",
+  "src/ui/touchevents.js",
+  
+  "src/core/toolprops.js",
+  "src/core/toolprops_iter.js",
+	"src/core/toolops_api.js",
+  
   "src/mesh/mesh_types.js",
 	"src/mesh/mesh.js",
   "src/mesh/mesh_api.js",
@@ -45,14 +52,7 @@ js_targets = {"app.js" : [
   
 	"src/mesh/triangulate.js",
 	"src/mesh/subsurf.js",
-
-	"src/view3d/events.js",
-  "src/ui/touchevents.js",
   
-  "src/core/toolprops.js",
-  "src/core/toolprops_iter.js",
-	"src/core/toolops_api.js",
-
 	"src/core/lib_utils.js",
 
 	"src/mesh/meshtools_cad.js",

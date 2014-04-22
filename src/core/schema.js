@@ -439,7 +439,7 @@ var _st_packers = [
     var cls = thestruct.get_struct_cls(type.data);
     var stt = thestruct.get_struct(type.data);
     
-    if (val.constructor.name != type.data && (val instanceof cls)) {
+    if (type.data == "Object" || (val.constructor.name != type.data && (val instanceof cls))) {
       if (DEBUG.Struct) {
         console.log(val.constructor.name + " inherits from " + cls.name);
       }
@@ -448,7 +448,7 @@ var _st_packers = [
       stt = thestruct.get_struct(type.data);
     } else {
       console.trace();
-      throw new Error("Bad struct " + val.constructor + " passed to write_struct");
+      throw new Error("Bad struct " + val.constructor.name + ", " + JSON.stringify(val) + " passed to write_struct");
     }
     
     if (stt.id == 0) {
@@ -710,6 +710,10 @@ class STRUCT {
     
     if (proto.toString != Object.prototype.toString)
       obj.toString = proto.toString;
+    
+    obj.constructor = cls;
+    obj.prototype = cls.prototype;
+    obj.__proto__.constructor = cls;
     
     return obj;
   }

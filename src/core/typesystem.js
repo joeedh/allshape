@@ -109,6 +109,19 @@ the final prototype is flattened, so that all the methods
 of the parent prototypes are copied into it.
 */
 function inherit_multiple(obj, parents) {
+  var bad = false;
+  
+  if (parents == undefined) {
+    bad = true;
+  } else {
+    for (var i=0; i<parents.length; i++) {
+      if (parents[i] == undefined || typeof(parents[i]) != "function") bad = true;
+    }
+  }
+  
+  if (bad)
+    throw new Error("Bad call to inherit_multiple");
+  
   defined_classes.push(obj);
   
   parents.reverse();
@@ -205,7 +218,12 @@ function inherit_multiple(obj, parents) {
     var lsts = [];
     
     for (var i=0; i<parents.length; i++) {
-      lsts.push(parents[i].__clsorder__);
+      var cpy = [];
+      for (var j=0; j<parents[i].__clsorder__.length; j++) {
+        cpy.push(parents[i].__clsorder__[j]);
+      }
+      
+      lsts.push(cpy);
     }
     
     obj.__clsorder__ = merge(parents, lsts);
@@ -329,6 +347,7 @@ function inherit_multiple(obj, parents) {
   obj.__statics__ = {};
   
   //add inherited statics
+  obj.__flatstatics__ = {}
   for (var i=0; i<cs.length; i++) {
     if (!("__statics__" in cs[i])) continue;
     var keys = _get_obj_keys(cs[i].__statics__);
@@ -338,9 +357,13 @@ function inherit_multiple(obj, parents) {
       if (k == "__proto__" || excluded(k))
         continue;
       
-      obj.__statics__[k] = k;
+      obj.__flatstatics__[k] = k;
       obj[k] = cs[i][k];
     }
+  }
+  
+  for (var k in obj.__statics__) {
+    obj.__flatstatics__[k] = obj.__statics__[k];
   }
 }
 

@@ -274,14 +274,19 @@ function tprop_to_mprop(mprop, tprop) {
 
 class MeshToolOp extends ToolOp {
   constructor(meshop) {
-    ToolOp.call(this, meshop.name, meshop.uiname, meshop.description, meshop.icon);
+    if (meshop == undefined)
+      ToolOp.call(this);
+    else
+      ToolOp.call(this, meshop.name, meshop.uiname, meshop.description, meshop.icon);
     
     this.is_modal = false;
     
     this.meshop = meshop;
     
-    this.inputs = meshop.inputs;
-    this.outputs = meshop.outputs;
+    if (this.meshop) {
+      this.inputs = meshop.inputs;
+      this.outputs = meshop.outputs;
+    }
     
     this._partial = undefined : Mesh;
   }
@@ -321,7 +326,23 @@ class MeshToolOp extends ToolOp {
     mprop_to_tprop(this.meshop.outputs, this.outputs);
     ctx.mesh.regen_render();
   }
+  
+  static fromSTRUCT(reader) {
+    var ret = STRUCT.chain_fromSTRUCT(MeshToolOp, reader);
+    
+    ret.name = ret.meshop.name;
+    ret.description = ret.meshop.description;
+    ret.uiname = ret.meshop.uiname;
+    ret.icon = ret.meshop.icon;
+    
+    return ret;
+  }
 }
+
+MeshToolOp.STRUCT = STRUCT.inherit(MeshToolOp, ToolOp) + """
+  meshop : abstract(MeshOp);
+}
+""";
 
 class ClickExtrude extends ExtrudeAllOp, ToolOp {
    constructor(ctx) {
