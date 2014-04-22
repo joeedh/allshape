@@ -169,6 +169,7 @@ class MeshEditor extends View3DEditor {
     view3d.cols.push(row);
     view3d.add(row);
     
+    row.label("  ");
     row.toolop("screen.area_split_tool()", PackFlags.INHERIT_WIDTH);
     row.label("");
     
@@ -176,11 +177,11 @@ class MeshEditor extends View3DEditor {
     var row2 = col.row()
     row2.toolop("mesh.subdivide(faces=mesh_selected(f))", PackFlags.INHERIT_WIDTH|PackFlags.USE_ICON);
     row2.toolop("mesh.translate()", PackFlags.INHERIT_WIDTH|PackFlags.USE_ICON);
-    row2.toolop("mesh.extrude(geometry=mesh_selected(vef))", PackFlags.INHERIT_WIDTH|PackFlags.USE_ICON);
+    row2.toolop("mesh.scale()", PackFlags.INHERIT_WIDTH|PackFlags.USE_ICON);
     row2.toolop("mesh.rotate()", PackFlags.INHERIT_WIDTH|PackFlags.USE_ICON);
     
     row2 = col.row()
-    row2.toolop("mesh.scale()", PackFlags.INHERIT_WIDTH|PackFlags.USE_ICON);
+    row2.toolop("mesh.extrude(geometry=mesh_selected(vef))", PackFlags.INHERIT_WIDTH|PackFlags.USE_ICON);
     row2.toolop("mesh.flip_normals(faces=mesh_selected(f))", PackFlags.INHERIT_WIDTH|PackFlags.USE_ICON);
     row2.toolop("mesh.triangulate(faces=mesh_selected(f))", PackFlags.INHERIT_WIDTH|PackFlags.USE_ICON);
     row2.toolop("mesh.tri2quad(faces=mesh_selected(f))", PackFlags.INHERIT_WIDTH|PackFlags.USE_ICON);

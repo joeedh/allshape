@@ -1390,6 +1390,8 @@ class UIListBox extends ColumnFrame {
     this.add(this.listbox, PackFlags.INHERIT_WIDTH|PackFlags.ALIGN_LEFT);
     
     this.vscroll = new UIVScroll(ctx, [0, 0])
+    this.vscroll.packflag |= PackFlags.INHERIT_HEIGHT;
+    
     this.listbox.static_size = [this.size[0]-26, this.size[1]]
     this.scrollx = 0;
     this.scrolly = 0;
@@ -1416,6 +1418,10 @@ class UIListBox extends ColumnFrame {
     prior(UIListBox, this).on_mouseup.call(this, event);
     
     if (this.listbox.active != undefined && (this.listbox.active instanceof UIListEntry)) {
+      if (this.active_entry != undefined && this.active_entry != this.listbox.active) {
+        this.active_entry.do_recalc();
+      }
+      
       this.active_entry = this.listbox.active;
       this.active_entry.do_recalc();
       if (this.callback != undefined) {
@@ -1479,12 +1485,21 @@ class UIListBox extends ColumnFrame {
     
     prior(UIListBox, this).pack.call(this, canvas, is_vertical);
     
-    if (this.listbox.size[1] > this.size[1])
-      this.vscroll.set_range([0, this.listbox.size[1]-this.size[1]]);
+    this.vscroll.pos[1] = 0;
+    this.vscroll.size[1] = this.listbox.static_size[1];
+    
+    /*enforce correct size on this.listbox (a RowFrame)*/
+    var area = this.listbox.get_min_size(canvas, is_vertical);
+    this.listbox.size[0] = area[0];
+    this.listbox.size[1] = area[1];
+    
+    if (area[1] > this.size[1])
+      this.vscroll.set_range([0, area[1]-this.size[1]]);
     else
       this.vscroll.set_range([0, 50]);
     
-    this.listbox.pos[1] = this.size[1] - this.listbox.size[1];
+    this.listbox.pos[1] = this.size[1]-this.listbox.size[1];
+    
     this.listbox.pos[0] += this.scrollx;
     this.listbox.pos[1] += this.scrolly;
   }
@@ -1505,7 +1520,7 @@ class UIListEntry extends UILabel {
     
     this.id = id;
   }
-
+    
   build_draw(UICanvas canvas, Boolean isVertical) {
     canvas.begin(this);
     
