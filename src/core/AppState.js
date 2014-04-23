@@ -309,7 +309,7 @@ class AppState {
     data (of length data_length-4)
     
   */
-  create_user_file_new(gen_dataview=true, compress=false, save_screen=true, save_toolstack=true) : ArrayBuffer {
+  create_user_file_new(gen_dataview=true, compress=false, save_screen=true, save_toolstack=!RELEASE) : ArrayBuffer {
     var mesh = this.mesh;
     
     function bheader(data, type, subtype) {
