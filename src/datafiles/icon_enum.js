@@ -17,5 +17,8 @@ var Icons = {
   DUPLICATE      : 13,
   BRIDGE         : 14,
   VERTEX_SMOOTH  : 15,
-  LOOP_CUT       : 16
+  LOOP_CUT       : 16,
+  UNDO           : 17,
+  REDO           : 18,
+  SELECT_ALL     : 19
 };

@@ -193,7 +193,9 @@ class MeshEditor extends View3DEditor {
     row2.toolop("mesh.tri2quad(faces=mesh_selected(f))", PackFlags.USE_LARGE_ICON);
     row2.toolop("mesh.vertsmooth(verts=mesh_selected(v))", PackFlags.USE_LARGE_ICON);
     row2.toolop("mesh.loopcut()", PackFlags.USE_LARGE_ICON);
-
+    
+    view3d.undo_redo(row);
+    
     //last tool panel
     var toolframe = new ToolOpFrame(ctx, "last_tool");
     toolframe.packflag |= PackFlags.INHERIT_WIDTH;

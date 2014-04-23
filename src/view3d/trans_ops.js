@@ -11,6 +11,9 @@ class TranslateOp extends TransformOp {
                    AXIS: new Vec3Property(new Vector3(), "cons_axis", "Constraint Axis", "Axis to constrain too during transform", TPropFlags.PRIVATE)}
     this.outputs = {TRANSLATION: new Vec3Property(new Vector3(), "translation", "Translation", "Amount of translation.")}
     
+    //XXX should set some sort of uirange instead? or is range uirange?
+    this.inputs.TRANSLATION.range = [-150.0, 150.0];
+    
     if (ob_active == undefined)
       ob_active = (new Context()).object;
     

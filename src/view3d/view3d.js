@@ -811,7 +811,30 @@ class View3DHandler extends Area {
     this.draw_lines(gl);
     Area.prototype.on_draw.call(this, gl)
   }
-
+  
+  undo_redo(RowFrame row) {
+    var ctx = this.ctx;
+    
+    var col = row.col();
+    var row2 = col.row();
+    
+    var undo = new UIButtonIcon(ctx, "Undo", Icons.UNDO);
+    undo.hint = "  Hotkey : CTRL-Z"
+    undo.callback = function() {
+      g_app_state.toolstack.undo();
+    }
+    
+    row2.add(undo);
+    var row2 = col.row();
+    
+    var redo = new UIButtonIcon(ctx, "Redo", Icons.REDO);
+    redo.hint = "  Hotkey : CTRL-SHIFT-Z"
+    redo.callback = function() {
+      g_app_state.toolstack.redo();
+    }
+    row2.add(redo);
+  }
+  
   add_menu() {
     this.editor.add_menu(this, this.mpos);
   }

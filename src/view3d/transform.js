@@ -370,11 +370,13 @@ class TransformOp extends ToolOp {
     this.selecting_axis = false;
     this.constrain_plane = false;
     
+    this.first_mdown = true;
+    
     this.axis_drawlines = new GArray<drawline>();
     this.axis_scent = null;
     this.axis_line1 = null;
     this.axis_line2 = null;
-    this._undo = {} : ObjectMap
+    this._undo = {};
   }
 
   static default_slots(ASObject obj, int mode, ASObject asob) {
@@ -454,6 +456,7 @@ class TransformOp extends ToolOp {
   }
   
   modal_init(Context ctx) {
+    this.first_mdown = true;
     this.inputs.OBJECT.set_data(ctx.object);
     this.inputs.DATAMODE.set_data(ctx.view3d.selectmode);
   }
@@ -637,6 +640,17 @@ class TransformOp extends ToolOp {
   }
 
   on_mousedown(MouseEvent event) {
+    if (this.first_mdown) {//g_app_state.was_touch && this.first_mdown) {
+      this.first_mdown = false;
+      this.first_call = false;
+      this.start_mpos = new Vector3([event.x, event.y, 0]);
+      this.start_mpos[0] = (this.start_mpos[0]/(this.modal_ctx.view3d.size[0]/2)) - 1.0;
+      this.start_mpos[1] = (this.start_mpos[1]/(this.modal_ctx.view3d.size[1]/2)) - 1.0;
+      if (this.transdata != undefined)
+        this.transdata.start_mpos = this.start_mpos;
+      //this.mv1 = [this.start_mpos[0], this.start_mpos[1]];
+    }
+    
     if (event.button == 1) {
       this.selecting_axis = 1;
       this.set_selecting_axis();

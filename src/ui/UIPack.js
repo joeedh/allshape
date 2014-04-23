@@ -196,7 +196,7 @@ class UIPackFrame extends UIFrame {
       c.packflag |= packflag;
       this.add(c)
     } else if (prop.type == PropTypes.VEC3) {
-        range = [-2000, 2000];
+        range = (prop.range != undefined && prop.range[0] != undefined) ? prop.range : [-2000, 2000];
         
         var row = this.row();
         row.packflag = packflag;
@@ -217,7 +217,7 @@ class UIPackFrame extends UIFrame {
         c.packflag |= packflag;
         row.add(c);
     } else if (prop.type == PropTypes.VEC4) {
-        range = [-2000, 2000];
+        range = (prop.range != undefined && prop.range[0] != undefined) ? prop.range : [-2000, 2000];
         
         var row = this.row();
         

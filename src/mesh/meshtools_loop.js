@@ -13,6 +13,7 @@ class LoopCutOp extends ToolOp {
                   cuts : new IntProperty(1, "cuts", "Cuts", "Cuts", [1, 25], [1, 25])};
                   
     this._partial = undefined;
+    this.mcount = 0;
   }
 
   can_call(ctx) {
@@ -29,13 +30,24 @@ class LoopCutOp extends ToolOp {
   }
 
   on_mousedown(event) {
+    if (g_app_state.was_touch && this.mcount < 1) {
+      this.mcount++;
+      return;
+    }
+    
     if (event.button == 0) {
       this.finish(this.modal_tctx);
     } else if (event.button == 2) {
       this.cancel(this.modal_ctx);
     }
   }
-
+  
+  on_mouseup(event) {
+    if (g_app_state.was_touch) {
+      this.on_mousedown(event);
+    }
+  }
+  
   on_mousewheel(event, delta) {
     this.inputs.cuts.data = Math.max(Math.min(Math.floor(this.inputs.cuts.data+delta), 25), 1);
     

@@ -110,6 +110,8 @@ class UIElement extends EventHandler {
     var alen = color.length;
     
     var l1 = objcache.array(alen), l2 = objcache.array(alen);
+    l1.length = 0; l2.length = 0;
+    
     if (typeof(color[0]) == "number") {
       l1.push(color);
     } else {
@@ -134,12 +136,15 @@ class UIElement extends EventHandler {
     }
     
     var l3 = objcache.array(l1.length);
+    l3.length = 0;
+    
     for (var i=0; i<l1.length; i++) {
       var clr = new Vector4(l1[i]);
       clr.interp(l2[i], f);
       l3.push(clr);
     }
     
+    console.log(">-->", l1, l2, l3, "<----");
     if (l3.length == 1) 
       return l3[0];
     else
