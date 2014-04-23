@@ -172,7 +172,9 @@ class MeshEditor extends View3DEditor {
     view3d.add(row);
     
     row.label("  ");
-    row.toolop("screen.area_split_tool()", PackFlags.INHERIT_WIDTH);
+    //XXX
+    if (!RELEASE)
+      row.toolop("screen.area_split_tool()", PackFlags.INHERIT_WIDTH);
     row.label("");
     
     var col = row.col()
