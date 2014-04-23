@@ -98,6 +98,10 @@ class UserSession {
 function gen_default_file(size) {
   var g = g_app_state;
   
+  if (RELEASE && localStorage.startup_file == undefined) {
+    localStorage.startup_file = startup_file_str;
+  }
+  
   if (localStorage.startup_file) {
     try {
       var buf = localStorage.startup_file
@@ -141,6 +145,19 @@ function gen_default_file(size) {
   view3d.ctx = new Context();
 }
 
+function output_startup_file() : String {
+  var str = localStorage.startup_file;
+  var out = ""
+  
+  for (var i=0; i<str.length; i++) {
+    out += str[i];
+    if (((i+1) % 77) == 0) {
+      out += "\n";
+    }
+  }
+  
+  return out;
+}
 class AppState {
   constructor(FrameManager screen, Mesh mesh, WebGLRenderingContext gl) {
     this.screen = screen;
@@ -176,19 +193,6 @@ class AppState {
       //this.mesh = mesh = makeCircleMesh(gl, 1.0, 10);
       this.mesh.api.recalc_normals();
       mesh = this.mesh;
-    }
-    
-    
-    if (0) { //localStorage.mesh_bytes != undefined && localStorage.mesh_bytes != "undefined") {//hasOwnProperty("mesh_bytes") {
-      var ren = this.mesh.render;
-      
-      this.mesh = mesh = new Mesh()
-      
-      var arr = eval("["+localStorage.mesh_bytes+"]")
-
-      this.mesh.unpack(new DataView(new Uint8Array(arr).buffer), new unpack_ctx());
-      this.mesh.render = ren;
-      this.mesh.regen_render();
     }
     
     this.mesh = mesh;  
@@ -246,7 +250,7 @@ class AppState {
   }
 
   set_startup_file() {
-    var buf = this.create_user_file_new(true, false);
+    var buf = this.create_user_file_new(true, true);
     buf = new Uint8Array(buf.buffer);
     
     /*var ar = [];

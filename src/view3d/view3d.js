@@ -1029,7 +1029,7 @@ class View3DHandler extends Area {
     col.toolop("screen.hint_picker()", PackFlags.USE_SMALL_ICON, "?");
     
     col.add(new UIMenuLabel(this.ctx, "File", undefined, this.gen_file_menu));
-    col.add(new UIMenuLabel(this.ctx, "Tools", undefined, this.gen_tools_menu));
+    //col.add(new UIMenuLabel(this.ctx, "Tools", undefined, this.gen_tools_menu));
     
     col.label("|");
     if (!IsMobile) {

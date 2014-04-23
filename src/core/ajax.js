@@ -636,7 +636,7 @@ function send_mesh(Mesh mesh)
   mesh.pack(data);
   console.log(data);
   
-  localStorage.mesh_bytes = data;
+  //localStorage.mesh_bytes = data;
 }
 
 function NetJobFinish(job, owner);

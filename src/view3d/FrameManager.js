@@ -1291,7 +1291,6 @@ class Screen extends UIFrame {
   on_tick()
   {
     if (time_ms() - this.last_sync > 700) {
-      //localStorage.screen = JSON.stringify(this);
       this.last_sync = time_ms();
     }
     
@@ -1609,25 +1608,16 @@ function gen_screen(WebGLRenderingContext gl, View3DHandler view3d, int width, i
   
   g_app_state.gl = gl;
   
-  if (1) { //localStorage.screen == undefined) {
-    g_app_state.active_view3d = view3d;
-    
-    view3d.size = [width, height]
-    view3d.pos = [0, 0];
-    
-    scr.ctx = new Context();
-    scr.canvas = new UICanvas(view3d, [[0, 0], [width, height]]);
-    
-    scr.add(new ScreenArea(view3d, scr.ctx, view3d.pos, view3d.size));
-  }
+  g_app_state.active_view3d = view3d;
   
-  if (0) { //localStorage.screen != undefined && localStorage.screen != "undefined") {
-    console.log(localStorage.screen)
-    var obj = JSON.parse(localStorage.screen);
-    
-    load_screen(scr, obj);
-  }
+  view3d.size = [width, height]
+  view3d.pos = [0, 0];
   
+  scr.ctx = new Context();
+  scr.canvas = new UICanvas(view3d, [[0, 0], [width, height]]);
+  
+  scr.add(new ScreenArea(view3d, scr.ctx, view3d.pos, view3d.size));
+
   return scr;
 }
 
