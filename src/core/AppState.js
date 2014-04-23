@@ -99,7 +99,7 @@ function gen_default_file(size) {
   var g = g_app_state;
   global startup_file_str;
   
-  if (RELEASE && (!("startup_file" in localStorage) || localStorage.startup_file == undefined)) {
+  if (RELEASE && (!("startup_file" in localStorage) || localStorage.startup_file == undefined || localStorage.startup_file == "undefined")) {
     localStorage.startup_file = startup_file_str;
   }
   
