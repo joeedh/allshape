@@ -423,6 +423,12 @@ class MinOutVisit (NodeVisit):
       if add_n:
         o(node, "\n")
 
+  def FinallyNode(self, node, scope, t, tlevel):
+    o = self.out
+    o(node, "finally{")
+    t(node[0])
+    o(node, "}")
+    
   def CatchNode(self, node, scope, t, tlevel):
     o = self.out
     

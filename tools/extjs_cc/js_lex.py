@@ -21,7 +21,7 @@ res = [
 'float', 'int', 'const', 'short', 'double', 'char',
 'unsigned', 'signed', 'variable', 'template', 'byte',
 'global', 'inferred', 'native', 'class', 'extends',
-'static', 'typed'
+'static', 'typed', 'finally'
 ]
 
 reserved = {}

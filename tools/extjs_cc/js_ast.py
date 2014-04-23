@@ -2065,6 +2065,17 @@ class TypedClassNode(Node):
       
   def gen_js(self, tlevel):
     return ""
+
+class FinallyNode (Node):
+  def __init__(self):
+    Node.__init__(self)
+  
+  def gen_js(self, tlevel):
+    s = self.s("finally {\n")
+    s += self[0].gen_js(tlevel+1)
+    s += tab(tlevel) + "}\n"
+    
+    return s
     
 def node_is_class(node):
   if type(node) != FunctionNode:
@@ -2085,4 +2096,3 @@ def line_print(s, do_print=True):
   if do_print:
     print(s2)
   return s2
-

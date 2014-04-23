@@ -341,6 +341,7 @@ def p_statement(p):
                 | throw SEMI
                 | try
                 | catch
+                | finally
                 | switch
                 | func_native SEMI
   '''
@@ -388,6 +389,7 @@ def p_statement_nonctrl(p):
                         | throw SEMI
                         | try
                         | catch
+                        | finally
                         | delete SEMI
   '''
   set_parse_globals(p)
@@ -1918,9 +1920,15 @@ def p_try(p):
     p[0] = TryNode()
     p[0].add(p[3])
 
+def p_finally(p):
+  '''finally : FINALLY  LBRACKET statementlist_opt RBRACKET
+  '''
+  p[0] = FinallyNode()
+  p[0].add(p[3]);
+  
 def p_catch(p):
   '''catch : CATCH paren_expr statement_nonctrl
-        | CATCH paren_expr LBRACKET statementlist RBRACKET
+           | CATCH paren_expr LBRACKET statementlist RBRACKET
   '''
 
   set_parse_globals(p)

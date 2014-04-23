@@ -144,7 +144,7 @@ class MSelectIter extends ToolIter {
     var ob = {};
     
     reader(ob);
-    var ret = new MSelectIter(ob.typemask, ob.meshref);
+    var ret = new MSelectIter(ob.mask, ob.meshref);
     
     return ret;
   }
@@ -152,7 +152,7 @@ class MSelectIter extends ToolIter {
 
 MSelectIter.STRUCT = STRUCT.inherit(MSelectIter, ToolIter) + """
   meshref  : DataRef;
-  mask : int;
+  mask     : int;
 }
 """;
 

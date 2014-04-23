@@ -1,4 +1,4 @@
-js_targets = {"app.js" : [
+sources = [
 	"src/html/unit_test.html",
 	"src/html/main.html",
   "src/core/typesystem.js",
@@ -104,4 +104,14 @@ js_targets = {"app.js" : [
   "src/datafiles/iconsheet.svg",
   "src/datafiles/iconsheet.png",
   "src/datafiles/iconsheet16.png"
-]}
+]
+
+js_targets = {"app.js"        : sources,
+              "unit_tests.js" : [
+                 "tools/utils/libs/jasmine/lib/jasmine.js",
+#                "tools/utils/libs/jasmine/lib/jasmine-html.js",
+                 "tools/utils/libs/jasmine/lib/boot.js"
+               ] + sources + [
+                 "src/unit_tests/tests.js"
+               ]
+             }

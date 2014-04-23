@@ -650,13 +650,63 @@ class AppState {
       }
     }
     
+    function add_macro(p1, p2, tool) {
+      p1.push(tool);
+      p2.push(tool.saved_context);
+      
+      for (var t in tool.tools) {
+        if (t instanceof ToolMacro)
+          add_macro(p1, p2, t);
+        
+        p1.push(t);
+        p2.push(tool.saved_context);
+      }
+    }
+    
     load_state();
     if (toolstack != undefined) {
       this.toolstack = fstructs.read_object(toolstack, ToolStack);
       this.toolstack.undocur = this.toolstack.undostack.length;
       
+      var patch_tools1 = new GArray();
+      var patch_tools2 = new GArray();
+      
+      //set tool property contexts
       for (var i=0; i<this.toolstack.undostack.length; i++) {
-        this.toolstack.undostack[i].undoflag |= UndoFlags.UNDO_BARRIER;
+        var tool = this.toolstack.undostack[i];
+        
+        //add undo barrier flag, since we don't serialize undo
+        //data.
+        tool.undoflag |= UndoFlags.UNDO_BARRIER;
+        
+        //tools in the undostack
+        patch_tools1.push(tool);
+        patch_tools2.push(tool.saved_context);
+        
+        //meshops, which do inherit from ToolOpAbstract
+        if (tool instanceof MeshToolOp) {
+          patch_tools1.push(tool.meshop);
+          patch_tools2.push(tool.saved_context);
+        }
+        
+        //tools within macros
+        if (tool instanceof ToolMacro) {
+          add_macro(patch_tools1, patch_tools2, tool);
+        }
+      }
+      
+      //set toolproperty contexts
+      for (var i=0; i<patch_tools1.length; i++) {
+        var tool = patch_tools1[i];
+        var saved_context = patch_tools2[i];
+        
+        for (var k in tool.inputs) {
+          tool.inputs[k].ctx = saved_context;
+        }
+        
+        for (var k in tool.outputs) {
+          tool.outputs[k].ctx = saved_context;
+        }
       }
     }
   }
@@ -1059,6 +1109,23 @@ class ToolStack {
     var stack = this.undostack;
     
     g_app_state.datalib = new DataLib();
+    
+   /*
+    var sce = new Scene();
+    var ob = new ASObject();
+    var mesh = new Mesh();
+    mesh.gen_render_struct();
+    mesh.regen_render();
+    
+    g_app_state.datalib.add(mesh);
+    g_app_state.datalib.add(ob);
+    g_app_state.datalib.add(sce);
+    
+    ob.data = mesh;
+    sce.add(ob);
+    
+    return;
+    // */
     
     console.log("reexecuting tool stack from scratch. . .");
     for (var i=0; i<this.undocur; i++) {

@@ -463,7 +463,7 @@ var _st_packers = [
     packer_debug_end("tstruct");
   },
   function(data, val, obj, thestruct, field, type) { //array
-    packer_debug_start("array");
+    packer_debug_start("array " + field.name);
   
     if (val == undefined) {
       console.trace();
@@ -501,7 +501,7 @@ var _st_packers = [
     packer_debug_end("array");
   },
   function(data, val, obj, thestruct, field, type) { //iter
-    packer_debug_start("iter");
+    packer_debug_start("iter " + field.name);
     
     if (val == undefined) {
       console.trace();
@@ -738,11 +738,17 @@ class STRUCT {
     var tab = "  ";
     
     function fmt_type(type) {
-      if (type.type == T_ARRAY || type.type == T_ITER) {
+      if (type.type == T_ARRAY) {
         if (type.data.iname != "" && type.data.iname != undefined) {
           return "array(" + type.data.iname + ", " + fmt_type(type.data.type) + ")";
         } else {
           return "array(" + fmt_type(type.data.type) + ")";
+        }
+      } else if (type.type == T_ITER) {
+        if (type.data.iname != "" && type.data.iname != undefined) {
+          return "iter(" + type.data.iname + ", " + fmt_type(type.data.type) + ")";
+        } else {
+          return "iter(" + fmt_type(type.data.type) + ")";
         }
       } else if (type.type == T_DATAREF) {
         return "dataref(" + type.data + ")";

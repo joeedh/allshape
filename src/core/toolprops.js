@@ -762,9 +762,19 @@ class CollectionProperty extends ToolProperty {
       return this.data.__iterator__();
   }
   
-  fromSTRUCT() {
+  static fromSTRUCT(reader) {
+    var ret = new CollectionProperty();
+    
+    reader(ret);
+    
+    return ret;
   }
 }
+
+CollectionProperty.STRUCT = STRUCT.inherit(CollectionProperty, ToolProperty) + """
+    data : abstract(Object) | obj.data == undefined ? new BlankArray() : obj.data;
+  }
+""";
 
 class BlankArray {
   static fromSTRUCT() {
@@ -774,10 +784,5 @@ class BlankArray {
 BlankArray.STRUCT = """
   BlankArray {
     length : int | 0;
-  }
-""";
-
-CollectionProperty.STRUCT = STRUCT.inherit(CollectionProperty, ToolProperty) + """
-    data : abstract(Object) | obj.data == undefined ? new BlankArray() : obj.data;
   }
 """;
