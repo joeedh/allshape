@@ -133,6 +133,14 @@ class WSGIServerBridge:
   def do_request(self):
     if self.has_handler(self.path):
       self.exec_handler(self.path, self.method)
+    elif self.path == unit_path:
+      file = open((doc_root+"/build/unit_test.html").replace("/", os.path.sep), "rb")
+      
+      body = file.read()
+      file.close()
+      
+      self.wfile.write(body)
+      self.gen_headers(self.method, len(body), "text/html")
     elif self.path == base_path:
       file = open((doc_root+"/src/html/main.html").replace("/", os.path.sep), "rb")
       

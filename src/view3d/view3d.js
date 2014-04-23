@@ -850,8 +850,12 @@ class View3DHandler extends Area {
       //console.log(sort_csg(ctx.scene).toString());
       //test_tutorial_mode();
       //icon_tst_k++;
-      g_app_state.toolstack.reexec_stack();
-      
+      if (UNIT_TESTER) {
+        console.log("executing unit tests...");
+        window.unit_test_env.execute();
+      } else {
+        g_app_state.toolstack.reexec_stack();
+      }
       //new Context().scene.graph.exec();
     }));
     

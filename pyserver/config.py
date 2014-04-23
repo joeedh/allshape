@@ -10,6 +10,9 @@ except:
 def bytes_py2(s, encoding):
   return str(s)
 
+unit_path = "/unit_test.html"
+serv_unit_tests = False
+
 #example config_local.py file parameters
 #serverhost = "127.0.0.1:8081"
 #serverport = 8081

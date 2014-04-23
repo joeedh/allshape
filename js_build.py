@@ -6,6 +6,12 @@ import subprocess, shlex, signal
 import imp, runpy
 from math import floor
 
+#normpath helper func
+def np(path):
+  return os.path.abspath(os.path.normpath(path))
+
+sp = os.path.sep
+
 REBUILD = 1
 WASBUILT = 2
 
@@ -119,12 +125,6 @@ if len(localcfg) > 0:
     
   print("\n")
 
-#normpath helper func
-def np(path):
-  return os.path.abspath(os.path.normpath(path))
-
-sp = os.path.sep
-
 class Source:
   def __init__(self, f):
     self.source = f
@@ -144,8 +144,22 @@ class Target (list):
   
   def replace(self, a, b):
     self[self.index(a)] = b
-    
+
 srcmod = modimport("js_sources")
+
+copy_targets = []
+if hasattr(srcmod, "copy_targets"):
+  for f1 in srcmod.copy_targets:
+    tpath = "build"+sep+f1
+    f2 = srcmod.copy_targets[f1]
+    target = Target(tpath)
+    
+    s = Source(np(f2))
+    s.target = tpath
+    target.append(s)
+    
+    copy_targets.append(target)
+
 targets2 = srcmod.js_targets
 targets = []
 for k in targets2:
@@ -153,6 +167,7 @@ for k in targets2:
   for s in targets2[k]:
     targets[-1].append(Source(s))
     
+
 db = None
 db_depend = None
 
@@ -582,6 +597,47 @@ def aggregate(files, outpath=target_path+"app.js"):
     mapfile.write(sbuf)
     mapfile.close()
 
+
+def do_copy_targets():
+  global copy_targets
+  global db, db_depend
+  
+  db = open_db("jbuild.db")
+  db_depend = open_db("jbuild_dependencies.db")
+  
+  try:
+    for f in copy_targets:
+      abspath = np(f.target)
+      src = f[0].source
+      
+      stat = safe_stat(f[0].source)
+      if not (abspath not in db or db[abspath] < stat): continue
+
+      #db[abspath] = stat
+      print(abspath, src)
+      cmd = cp_handler(src, abspath)
+      print(cmd)
+      ret = os.system(cmd)
+      
+      if ret == 0:
+        db[abspath] = stat
+      else:
+        print("build failure\n\n")
+
+        sys.stderr.write("build failure\n");
+        if build_cmd != "loop":
+          sys.exit(-1)
+        else:
+          break
+  except:
+    import traceback
+    
+    db.close()
+    db_depend.close()
+    
+    traceback.print_stack()
+    traceback.print_last()
+  
 def buildall():
   for t in targets:
     for s in t:
@@ -592,7 +648,9 @@ def buildall():
     
   for t in targets:
     build_target(t)
-
+  
+  do_copy_targets()
+  
 def themain():  
   if build_cmd == "loop":
     while 1:

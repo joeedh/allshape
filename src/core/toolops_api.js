@@ -79,9 +79,17 @@ class ToolOpAbstract {
     otherwise we might end up destroying the tool default cache every time
     we modify a tool input.
   */
-  default_inputs(Context ctx, ToolGetDefaultFunc get_default) {  
-  }
+  default_inputs(Context ctx, ToolGetDefaultFunc get_default) {  }
+  
+  /*
+  static unit_test_req(Context ctx) : ToolOpTestReq {}
+  static unit_test(Context ctx) : ToolOpAbstract {}
+  
+  unit_test_pre(Context ctx) {}
+  unit_test_post(Context ctx) {}
+  */
 }
+
 ToolOpAbstract.STRUCT = """
   ToolOpAbstract {
       flag    : int;

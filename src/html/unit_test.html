@@ -1123,7 +1123,11 @@ function toJSON_intern (ob, tlevel) {
 
 </script>
 
-<script type="text/javascript" src="content/unit_test.js"></script>
+<script type="text/javascript" src="content/jasmine.js"></script>
+<script type="text/javascript" src="content/jasmine-html.js"></script>
+<script type="text/javascript" src="content/jasmine-console.js"></script>
+<script type="text/javascript" src="content/jasmine_boot.js"></script>
+<script type="text/javascript" src="content/unit_tests.js"></script>
 
 <script>
     var g = {};
@@ -1137,6 +1141,8 @@ function toJSON_intern (ob, tlevel) {
     
     function init()
     {
+        UNIT_TESTER = true;
+        
         //initialize struct pack system
         init_struct_packer();
         

@@ -705,5 +705,7 @@ class BasicFileOp extends ToolOp {
     
     datalib.add(object);
     datalib.add(mesh);
+    
+    object.subsurf = true;
   }
 }

@@ -2,6 +2,7 @@ sources = [
 	"src/html/unit_test.html",
 	"src/html/main.html",
   "src/core/typesystem.js",
+  "src/config/config.js",
   "src/core/const.js",
   "src/util/object_cache.js",
 	"tools/utils/crypto/sha1.js",
@@ -39,6 +40,7 @@ sources = [
   
   "src/core/toolprops.js",
   "src/core/toolprops_iter.js",
+  "src/view3d/toolops_unit_test.js",
 	"src/core/toolops_api.js",
   
   "src/mesh/mesh_types.js",
@@ -106,11 +108,15 @@ sources = [
   "src/datafiles/iconsheet16.png"
 ]
 
+copy_targets = {
+   "jasmine.js"      : "tools/utils/libs/jasmine/lib/jasmine.js",
+   "jasmine-html.js" : "tools/utils/libs/jasmine/lib/jasmine-html.js",
+   "jasmine-console.js"      : "tools/utils/libs/jasmine/lib/console.js",
+   "jasmine_boot.js"         : "src/unit_tests/jasmine_boot.js"
+}
+
 js_targets = {"app.js"        : sources,
               "unit_tests.js" : [
-                 "tools/utils/libs/jasmine/lib/jasmine.js",
-#                "tools/utils/libs/jasmine/lib/jasmine-html.js",
-                 "tools/utils/libs/jasmine/lib/boot.js"
                ] + sources + [
                  "src/unit_tests/tests.js"
                ]

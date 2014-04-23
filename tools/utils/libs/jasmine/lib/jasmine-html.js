@@ -20,11 +20,86 @@ LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
-jasmineRequire.html = function(j$) {
-  j$.ResultsNode = jasmineRequire.ResultsNode();
-  j$.HtmlReporter = jasmineRequire.HtmlReporter(j$);
-  j$.QueryString = jasmineRequire.QueryString();
-  j$.HtmlSpecFilter = jasmineRequire.HtmlSpecFilter();
+
+jasmineRequire.QueryString = function() {
+  function QueryString(options) {
+
+    this.setParam = function(key, value) {
+      var paramMap = queryStringToParamMap();
+      paramMap[key] = value;
+      options.getWindowLocation().search = toQueryString(paramMap);
+    };
+
+    this.getParam = function(key) {
+      return queryStringToParamMap()[key];
+    };
+
+    return this;
+
+    function toQueryString(paramMap) {
+      var qStrPairs = [];
+      for (var prop in paramMap) {
+        qStrPairs.push(encodeURIComponent(prop) + "=" + encodeURIComponent(paramMap[prop]));
+      }
+      return "?" + qStrPairs.join('&');
+    }
+
+    function queryStringToParamMap() {
+      var paramStr = options.getWindowLocation().search.substring(1),
+        params = [],
+        paramMap = {};
+
+      if (paramStr.length > 0) {
+        params = paramStr.split('&');
+        for (var i = 0; i < params.length; i++) {
+          var p = params[i].split('=');
+          var value = decodeURIComponent(p[1]);
+          if (value === "true" || value === "false") {
+            value = JSON.parse(value);
+          }
+          paramMap[decodeURIComponent(p[0])] = value;
+        }
+      }
+
+      return paramMap;
+    }
+
+  }
+
+  return QueryString;
+};
+
+jasmineRequire.ResultsNode = function() {
+  function ResultsNode(result, type, parent) {
+    this.result = result;
+    this.type = type;
+    this.parent = parent;
+
+    this.children = [];
+
+    this.addChild = function(result, type) {
+      this.children.push(new ResultsNode(result, type, this));
+    };
+
+    this.last = function() {
+      return this.children[this.children.length - 1];
+    };
+  }
+
+  return ResultsNode;
+};
+
+jasmineRequire.HtmlSpecFilter = function() {
+  function HtmlSpecFilter(options) {
+    var filterString = options && options.filterString() && options.filterString().replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
+    var filterPattern = new RegExp(filterString);
+
+    this.matches = function(specName) {
+      return filterPattern.test(specName);
+    };
+  }
+
+  return HtmlSpecFilter;
 };
 
 jasmineRequire.HtmlReporter = function(j$) {
@@ -277,83 +352,10 @@ jasmineRequire.HtmlReporter = function(j$) {
   return HtmlReporter;
 };
 
-jasmineRequire.HtmlSpecFilter = function() {
-  function HtmlSpecFilter(options) {
-    var filterString = options && options.filterString() && options.filterString().replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
-    var filterPattern = new RegExp(filterString);
-
-    this.matches = function(specName) {
-      return filterPattern.test(specName);
-    };
-  }
-
-  return HtmlSpecFilter;
-};
-
-jasmineRequire.ResultsNode = function() {
-  function ResultsNode(result, type, parent) {
-    this.result = result;
-    this.type = type;
-    this.parent = parent;
-
-    this.children = [];
-
-    this.addChild = function(result, type) {
-      this.children.push(new ResultsNode(result, type, this));
-    };
-
-    this.last = function() {
-      return this.children[this.children.length - 1];
-    };
-  }
-
-  return ResultsNode;
-};
-
-jasmineRequire.QueryString = function() {
-  function QueryString(options) {
-
-    this.setParam = function(key, value) {
-      var paramMap = queryStringToParamMap();
-      paramMap[key] = value;
-      options.getWindowLocation().search = toQueryString(paramMap);
-    };
-
-    this.getParam = function(key) {
-      return queryStringToParamMap()[key];
-    };
-
-    return this;
-
-    function toQueryString(paramMap) {
-      var qStrPairs = [];
-      for (var prop in paramMap) {
-        qStrPairs.push(encodeURIComponent(prop) + "=" + encodeURIComponent(paramMap[prop]));
-      }
-      return "?" + qStrPairs.join('&');
-    }
-
-    function queryStringToParamMap() {
-      var paramStr = options.getWindowLocation().search.substring(1),
-        params = [],
-        paramMap = {};
-
-      if (paramStr.length > 0) {
-        params = paramStr.split('&');
-        for (var i = 0; i < params.length; i++) {
-          var p = params[i].split('=');
-          var value = decodeURIComponent(p[1]);
-          if (value === "true" || value === "false") {
-            value = JSON.parse(value);
-          }
-          paramMap[decodeURIComponent(p[0])] = value;
-        }
-      }
-
-      return paramMap;
-    }
-
-  }
-
-  return QueryString;
+jasmineRequire.html = function(j$) {
+  console.log(jasmineRequire);
+  j$.ResultsNode = jasmineRequire.ResultsNode();
+  j$.HtmlReporter = jasmineRequire.HtmlReporter(j$);
+  j$.QueryString = jasmineRequire.QueryString();
+  j$.HtmlSpecFilter = jasmineRequire.HtmlSpecFilter();
 };

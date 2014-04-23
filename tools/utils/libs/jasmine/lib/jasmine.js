@@ -31,7 +31,11 @@ function getJasmineRequireObj() {
 
 getJasmineRequireObj().core = function(jRequire) {
   var j$ = {};
-
+  
+  //XXX
+  if (jRequire.version == undefined)
+    jRequire.version = function() { return 2.0; };
+  
   jRequire.base(j$);
   j$.util = jRequire.util();
   j$.Any = jRequire.Any();

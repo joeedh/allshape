@@ -13,10 +13,17 @@ var g_app_version = 0.043;
 var SELECT = 1;
 
 //release mode
-var RELEASE = false;
+//var RELEASE = false;
+//now defined in src/config/config.js
+
+var UNIT_TESTER = false;
+var FEATURES = {
+  save_toolstack : (RELEASE ? false : true)
+}
 
 //debug flags
 var DEBUG = {
+  Struct : false,
   modal : false, 
   datalib : false, 
   glext : false, //prints gl extensions to console on startup
@@ -32,7 +39,6 @@ var DEBUG = {
   ui_datapaths : false,
   ui_menus : false,
   ui_canvas : false,
-  Struct : true,
   dag : false,
   icons : false
 };
