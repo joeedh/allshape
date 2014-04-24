@@ -573,13 +573,12 @@ class MeshEditor extends View3DEditor {
     mpos = new Vector3([mpos[0], mpos[1], 0.0]);
 
     var s1 = new Vector3(); var s2 = new Vector3();
-    var project = this.view3d.project;
     
     for (var e in this.mesh.edges) {
       s1.load(e.v1.mapco); s2.load(e.v2.mapco);
       
-      project(s1, pmat);
-      project(s2, pmat);
+      this.view3d.project(s1, pmat);
+      this.view3d.project(s2, pmat);
       
       var d = dist_to_line_v2(mpos, s1, s2);
       //console.log(d)
@@ -594,7 +593,6 @@ class MeshEditor extends View3DEditor {
 
   findnearestedge(Vector2 mpos) {
     var pmat = new Matrix4(this.view3d.drawmats.rendermat);
-    mpos = new Vector2(mpos);
     
     if (this.view3d.use_backbuf_sel)
       return this.findnearest_backbuf(mpos, MeshTypes.EDGE);
@@ -607,16 +605,14 @@ class MeshEditor extends View3DEditor {
     var dis = limit;
     mpos = new Vector3([mpos[0], mpos[1], 0.0]);
 
-    var project = this.view3d.project;
     var s1 = new Vector3(); var s2 = new Vector3();
     for (var e in this.mesh.edges) {
       s1.load(e.v1.co); s2.load(e.v2.co);
       
-      project(s1, pmat);
-      project(s2, pmat);
+      this.view3d.project(s1, pmat);
+      this.view3d.project(s2, pmat);
       
       var d = dist_to_line_v2(mpos, s1, s2);
-      //console.log(d)
       if (d < dis) {
         epick = e;
         dis = d;
@@ -671,11 +667,13 @@ class MeshEditor extends View3DEditor {
     mpos = new Vector3([mpos[0], mpos[1], 0.0]);
     for (var v in this.mesh.verts) {
       var co = new Vector3(v.co);
-      co.multVecMatrix(pmat);
+      
+      this.view3d.project(co, pmat);
+      /*co.multVecMatrix(pmat);
       
       co[0] = (co[0]+1.0)*0.5*size[0];
       co[1] = (co[1]+1.0)*0.5*size[1];
-      co[2] = 0.0;
+      co[2] = 0.0;*/
       
       co.sub(mpos);
       
