@@ -268,9 +268,11 @@ function ui_call_menu(menu, frame, pos, center, min_width)//center is optional, 
   menu.closed = false;
   menu.minwidth = min_width
   
-  menu.canvas = frame.get_canvas();
+  console.log("menu frame", frame);
+  canvas = frame.canvas; //get_canvas();
+  menu.canvas = canvas;
   menu.do_recalc();
-  menu.packmenu(frame.get_canvas());
+  menu.packmenu(canvas);
   
   if (center) {
     off[0] -= menu.size[0]/3
@@ -286,7 +288,7 @@ function ui_call_menu(menu, frame, pos, center, min_width)//center is optional, 
   console.log("menu call");
   frame.add(menu);
   frame.push_modal(menu);
-  frame._on_mousemove({"x": pos[0]-frame.pos[0], "y":pos[1]-frame.pos[1]})
+  //frame._on_mousemove({"x": pos[0]-frame.pos[0], "y":pos[1]-frame.pos[1]})
 }
 
 function toolop_menu(ctx, name, oplist) {

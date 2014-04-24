@@ -109,7 +109,10 @@ class RasterState {
       
       rect[0] = 0; rect[1] = 0; rect[2] = size2[0]; rect[3] = size2[1];
     } else {
-      rect = this.cur_scissor;
+      rect = this.scissor_stack.gen();
+      for (var i=0; i<4; i++) {
+        rect[i] = this.cur_scissor[i];
+      }
     }
 
     this.scissor_stack.push(rect);
@@ -136,7 +139,7 @@ class RasterState {
     }
     
     this.cur_scissor = cur;
-    this.gl.scissor(rect[0], rect[1], rect[2], rect[3]);
+    this.gl.scissor(cur[0], cur[1], cur[2], cur[3]);
   }
 
   reset_scissor_stack() {

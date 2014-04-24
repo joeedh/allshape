@@ -752,6 +752,8 @@ class View3DHandler extends Area {
     this.editor.alt = this.alt;
     this.editor.ctrl = this.ctrl;
     
+    //temporarily override active view3d for draw
+    var old_active = g_app_state.active_view3d;
     g_app_state.active_view3d = this;
     
     var ctx = this.ctx = new Context();
@@ -810,6 +812,8 @@ class View3DHandler extends Area {
     
     this.draw_lines(gl);
     Area.prototype.on_draw.call(this, gl)
+    
+    g_app_state.active_view3d = old_active;
   }
   
   undo_redo(RowFrame row) {
@@ -877,7 +881,7 @@ class View3DHandler extends Area {
         console.log("executing unit tests...");
         window.unit_test_env.execute();
       } else {
-        g_app_state.toolstack.reexec_stack();
+      //  g_app_state.toolstack.reexec_stack();
       }
       //new Context().scene.graph.exec();
     }));

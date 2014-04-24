@@ -417,10 +417,10 @@ class TextDraw {
     
     var spos, ssize;  
     if (this.ssize != undefined) {
-        spos = objcache.getarr(this.spos[0], this.spos[1], 0);
-        ssize = objcache.getarr(this.ssize[0], this.ssize[1], 0);
-        
-        g_app_state.raster.push_scissor(spos, ssize);
+      spos = objcache.getarr(this.spos[0], this.spos[1], 0);
+      ssize = objcache.getarr(this.ssize[0], this.ssize[1], 0);
+      
+      g_app_state.raster.push_scissor(spos, ssize);
     }
     
     this.tdrawbuf.on_draw(gl, this.pos, this.size);

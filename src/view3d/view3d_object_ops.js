@@ -68,8 +68,12 @@ class ObjectEditor extends View3DEditor {
   }
 
   //returns new copy
-  editor_duplicate(view3d) {
+  editor_duplicate(view3d) : View3DEditor {
+    var ret = new ObjectEditor(view3d);
+    
+    return ret;
   }
+  
   render_selbuf(gl, view3d, typemask) {
     view3d.render_selbuf_obj(gl, view3d.ctx.object, typemask|EditModes.OBJECT);
   }
@@ -115,7 +119,7 @@ class ObjectEditor extends View3DEditor {
     view3d.add(row);
     
     //XXX
-    if (!RELEASE)
+    //if (!RELEASE)
       row.toolop("screen.area_split_tool()", PackFlags.INHERIT_WIDTH);
       
     row.toolop("object.set_parent()", PackFlags.INHERIT_WIDTH);

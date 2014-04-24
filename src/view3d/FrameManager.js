@@ -992,6 +992,8 @@ class Screen extends UIFrame {
       console.log("saving new startup file.");
       g_app_state.set_startup_file();
     });
+    
+    this.canvas = new UICanvas({gl: g_app_state.gl}, [[0, 0], this.size]);
   }
 
   static fromSTRUCT(reader) {
@@ -1045,10 +1047,6 @@ class Screen extends UIFrame {
     e = this.handle_event_modifiers(e);
     
     UIFrame.prototype._on_mousemove.call(this, e);
-    
-    if (this.active instanceof View3DHandler) {
-      g_app_state.active_view3d = this.active;
-    }
   }
 
   get_active_view3d() {
@@ -1060,6 +1058,7 @@ class Screen extends UIFrame {
       }
     }
     
+    //console.log("active view3d:", view3d._id, view3d);
     return view3d;
   }
 
@@ -1243,42 +1242,43 @@ class Screen extends UIFrame {
     /*recalculate root scissor box*/
     gl.enable(gl.SCISSOR_TEST);
     
-    g_app_state.raster.reset_scissor_stack();
-    g_app_state.raster.push_scissor([0, 0], this.size);
-    
-    if ((this.active instanceof ScreenArea) && this.active.area instanceof
+    /*if ((this.active instanceof ScreenArea) && this.active.area instanceof
         View3DHandler) 
     {
       g_app_state.active_view3d = this.active.area;
-    }
+    }*/
     
     if (time_ms() - g_app_state.jobs.last_ms > g_app_state.jobs.ival) {
       g_app_state.jobs.run();
       g_app_state.jobs.last_ms = time_ms();
     }
     
+    g_app_state.raster.reset_scissor_stack();
+    g_app_state.raster.push_scissor([0, 0], this.size);
+
+   //draw editors
     for (var c in this.children) {
       //only call draw for screenarea children
-      if (c instanceof ScreenArea) {
-        g_app_state.raster.push_scissor(c.pos, c.size);
-        
-        this.recalc_child_borders(c);
-        c.on_draw(gl);
+      if (!(c instanceof ScreenArea)) continue;
+     
+      g_app_state.raster.push_scissor(c.pos, c.size);
+      
+      this.recalc_child_borders(c);
+      c.on_draw(gl);
 
-        g_app_state.raster.pop_scissor();
-      }
+      g_app_state.raster.pop_scissor();
     }
+    
+    gl.enable(gl.BLEND);
+    gl_blend_func(gl);
+     
+    gl.viewport(0, 0, this.size[0], this.size[1]);
+    prior(Screen, this).on_draw.call(this, gl);
     
     if (time_ms() - this.last_tick > 42) { //(IsMobile ? 500 : 150)) {
       this.on_tick();
       this.last_tick = time_ms();
     }
-    
-    gl.enable(gl.BLEND);
-    gl_blend_func(gl);
-    
-    gl.viewport(0, 0, this.size[0], this.size[1]);
-    prior(Screen, this).on_draw.call(this, gl);
     
     if (this.modalhandler != null && !(this.modalhandler instanceof ScreenArea)) {
       this.modalhandler.on_draw(gl);
@@ -1290,6 +1290,8 @@ class Screen extends UIFrame {
 
   on_tick()
   {
+    this.handle_active_view3d();
+    
     if (time_ms() - this.last_sync > 700) {
       this.last_sync = time_ms();
     }
@@ -1307,7 +1309,7 @@ class Screen extends UIFrame {
     
     prior(Screen, this).on_tick.call(this, function(c) {
       if (c instanceof ScreenArea && c.area instanceof View3DHandler) {
-        g_app_state.active_view3d = c.area;
+        //g_app_state.active_view3d = c.area;
       }
     });
   }
@@ -1348,8 +1350,8 @@ class Screen extends UIFrame {
     this.snap_areas();
     
     for (var c in this.children) {
-      if (c instanceof ScreenArea && c.area instanceof View3DHandler)
-        g_app_state.active_view3d = c.area;
+      //if (c instanceof ScreenArea && c.area instanceof View3DHandler)
+      //  g_app_state.active_view3d = c.area;
       
       c.on_resize(newsize, oldsize);
     }
@@ -1585,8 +1587,8 @@ function load_screen(Screen scr, json_obj)
     
     if (area.area instanceof View3DHandler) {
       scr.view3d = area.area;
-      scr.ctx.view3d = area.area;
-      g_app_state.active_view3d = area.area;
+      //scr.ctx.view3d = area.area;
+      //g_app_state.active_view3d = area.area;
     }
   }
   
@@ -1768,6 +1770,6 @@ class HintPickerOp extends ToolOp {
   }
   
   on_draw(WebGLRenderingContext gl) {
-    //this.canvas.on_draw(gl);
+    this.canvas.on_draw(gl);
   }
 }

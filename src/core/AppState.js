@@ -1282,7 +1282,7 @@ class ToolStack {
   }
 
   exec_tool(ToolOp tool) {
-    if (this.appstate.screen && 
+    /*if (this.appstate.screen && 
         this.appstate.screen.active instanceof ScreenArea 
         && this.appstate.screen.active.area instanceof View3DHandler)
     {
@@ -1296,7 +1296,7 @@ class ToolStack {
           break;
         }
       }
-    }
+    }*/
     
     var ctx = new Context();
     

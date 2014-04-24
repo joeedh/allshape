@@ -5,7 +5,7 @@ var UIFlags = {
   FOCUS: 4, GREYED: 8, 
   REDERROR: 16, WARNING: 32, 
   USE_PATH : 64, NO_RECALC: 128,
-  FLASH : (16|32)
+  FLASH : (16|32), SKIP_DRAW : 256
 };
 
 var CanvasFlags = {NOT_ROOT : 1, NO_PROPEGATE : 2}

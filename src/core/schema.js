@@ -439,6 +439,11 @@ var _st_packers = [
     var cls = thestruct.get_struct_cls(type.data);
     var stt = thestruct.get_struct(type.data);
     
+    if (val == undefined) {
+      console.log(field.name, obj);
+      throw new Error("Undefined passed to tstruct, for field " + JSON.stringify(field));
+    }
+    
     if (type.data == "Object" || (val.constructor.name != type.data && (val instanceof cls))) {
       if (DEBUG.Struct) {
         console.log(val.constructor.name + " inherits from " + cls.name);

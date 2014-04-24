@@ -13,11 +13,11 @@ class ViewRotateOp extends ToolOp {
     this.outputs = {}
   }
 
-  can_call(ctx) {
+  can_call(Context ctx) {
     return true;
   }
 
-  modal_init(ctx) {
+  modal_init(Context ctx) {
     this.start_mat = new Matrix4(ctx.view3d.drawmats.cameramat);
     this.first_call = true;
   }
@@ -41,11 +41,13 @@ class ViewRotateOp extends ToolOp {
     
     this.inputs.MV1.data = mstart;
     this.inputs.MV2.data = mend;
+    
     this.exec(this.modal_ctx);
   }
 
   exec(ctx) {
     ctx = this.modal_ctx;
+    console.log("id:", g_app_state.active_view3d._id);
     
     var v1 = new Vector3(this.inputs.MV1.data);
     var v2 = new Vector3(this.inputs.MV2.data);

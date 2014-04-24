@@ -640,7 +640,7 @@ class TransformOp extends ToolOp {
   }
 
   on_mousedown(MouseEvent event) {
-    if (this.first_mdown) {//g_app_state.was_touch && this.first_mdown) {
+    if (g_app_state.was_touch && this.first_mdown) {
       this.first_mdown = false;
       this.first_call = false;
       this.start_mpos = new Vector3([event.x, event.y, 0]);

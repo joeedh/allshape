@@ -173,7 +173,7 @@ class MeshEditor extends View3DEditor {
     
     row.label("  ");
     //XXX
-    if (!RELEASE)
+    //if (!RELEASE)
       row.toolop("screen.area_split_tool()", PackFlags.INHERIT_WIDTH);
     row.label("");
     
