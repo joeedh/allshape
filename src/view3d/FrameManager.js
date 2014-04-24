@@ -936,7 +936,8 @@ class ScreenBorder extends UIElement {
   build_draw(UICanvas canvas, Boolean isVertical)
   {
     canvas.begin(this);
-    canvas.line(this.pos, new Vector2(this.pos).add([100, 100]), undefined, undefined, 20.0);
+    //XXX!!
+    //canvas.line(this.pos, new Vector2(this.pos).add([100, 100]), undefined, undefined, 20.0);
     canvas.end(this);
   }
 }
