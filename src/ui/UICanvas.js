@@ -10,13 +10,19 @@ var active_canvases = {};
 
 var _canvas_draw_id = 1;
 
-#ifdef NOCACHE
+//disable use of theoretically faster typed array allocator,
+//for now.
+
+//#ifdef NOCACHE
+
 #define F32ALLOC(verts) new Float32Array(verts);
 #define F32FREE(verts) verts = undefined;
-#else
+
+/*#else
 #define F32ALLOC(verts123) f32_alloc.from_array(verts123);
 #define F32FREE(verts123) if (verts123 != undefined) { f32_alloc.free(verts123); verts123 = undefined;}
 #endif
+*/
 
 // 
 //
@@ -285,15 +291,9 @@ class TriList {
   line_strip(lines, colors, texcos, width=2.0, half=false) {//width, width are optional
     static black = new Vector4([0.0, 0.0, 0.0, 1.0]);
     
-    static v0 = new Vector3();
-    static v1 = new Vector3();
-    static v2 = new Vector3();
-    static v3 = new Vector3();
-    static v4 = new Vector3();
-    static n0 = new Vector3();
-    static n1 = new Vector3();
-    static n2 = new Vector3();
-    static c3 = new Vector3();
+    static v0 = new Vector3(), v1 = new Vector3(), v2 = new Vector3();
+    static v3 = new Vector3(), v4 = new Vector3(), n0 = new Vector3();
+    static n1 = new Vector3(), n2 = new Vector3(), c3 = new Vector3();
     static c4 = new Vector3();
 
     for (var i =0; i<lines.length; i++) {

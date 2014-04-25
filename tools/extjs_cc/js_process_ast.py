@@ -1514,6 +1514,13 @@ def gen_useful_funcname(p2):
 def process_static_vars(result, typespace):
   def visit(node):
     if "static" not in node.modifiers: return
+    
+    #make sure we aren't carrying any child vardecl nodes
+    #(e.g var a, b, c, d) with us.
+    for c in list(node[2:]):
+      node.remove(c)
+      node.parent.insert(node.parent.index(node), c)
+    
     #helper function for generating (hopefully) unique suffixes
     #from parent nodes
     def is_ok(s):
