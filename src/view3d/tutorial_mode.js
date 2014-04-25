@@ -298,7 +298,7 @@ class TutorialHandler extends EventHandler {
   
   end() {
     g_app_state.eventhandler = this.child;
-    this.canvas.reset();
+    this.canvas.destroy();
   }
 }
 

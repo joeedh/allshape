@@ -147,6 +147,10 @@ class GArray extends Array {
     
     return s
   }
+  
+  reset() {
+    this.length = 0;
+  }
 }
 EXPORT_FUNC(GArray)
 
@@ -451,7 +455,13 @@ class hashtable {
     this.keymap = {};
     this.length = 0;
   }
-
+  
+  reset() {
+    this.items = {};
+    this.keymap = {};
+    this.length = 0;
+  }
+  
   add(Object key, Object item) {
     if (!this.items.hasOwnProperty(key.__hash__())) 
       this.length++;

@@ -40,5 +40,9 @@ var DEBUG = {
   ui_menus : false,
   ui_canvas : false,
   dag : false,
-  icons : false
+  icons : false,
+  complex_ui_recalc : false
 };
+
+//private macro helper global for utildefine.js
+var $_mh = undefined;

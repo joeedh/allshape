@@ -1,3 +1,5 @@
+#include "src/core/utildefine.js"
+
 var _fdata = {
   "10" : [fontinfo10, "content/fontgen10.png"],
   "12" : [fontinfo12, "content/fontgen12.png"],
@@ -42,7 +44,7 @@ var _st_tr = [0, 0, 0, 0];
 //static cached return values for calc_string, to avoid 
 //object (array) creation overhead
 var _cs_rt = [];
-for (var i=0; i<32; i++) {
+for (var i=0; i<128; i++) {
   _cs_rt.push([[0,0], [0,0]]);
 }
 
@@ -88,7 +90,7 @@ function Font(WebGLRenderingContext gl, RasterState raster, int size,
   }
   
   this._static_minmax = new MinMax(2);
-  this.calcsize = function(String text) : float {
+  this.calcsize = function(String text) : Array<float> {
     var mm = this._static_minmax;
     
     mm.reset();
@@ -101,10 +103,10 @@ function Font(WebGLRenderingContext gl, RasterState raster, int size,
       var bound = this.calc_string(lines[i]);
       y += this.linehgt;
       
-      mm.minmax(objcache.getarr(bound[0][0], bound[1][0]+y));
-      mm.minmax(objcache.getarr(bound[0][1], bound[1][1]+y));
-      mm.minmax(objcache.getarr(bound[0][0], bound[1][1]+y));
-      mm.minmax(objcache.getarr(bound[0][1], bound[1][0]+y));
+      mm.minmax(CACHEARR2(bound[0][0], bound[1][0]+y));
+      mm.minmax(CACHEARR2(bound[0][1], bound[1][1]+y));
+      mm.minmax(CACHEARR2(bound[0][0], bound[1][1]+y));
+      mm.minmax(CACHEARR2(bound[0][1], bound[1][0]+y));
     }
     
     var ret = _cs_rt[_cs_cur_rt][0];
@@ -122,22 +124,28 @@ function Font(WebGLRenderingContext gl, RasterState raster, int size,
     var tabw = this.tab_width;
     var finfo = this.finfo
     
+    static one_space_str = "";
+    static one_tab_str = "\t";
+    static one_lf_str = "\n";
+    static questioncode = "?".charCodeAt(0);
+    static null_add_char = function(vrect, trect) {}; //be careful with static expr functions in the future
+    
     if (text == undefined) {
-      text = " ";
+      text = one_space_str;
     }
     
     if (add_char == undefined) {
-      add_char = function(vrect, trect) {};
+      add_char = null_add_char;
     }
     
     kern = this.kern_off;
     
     for (var i=0; i<text.length; i++) {
-      if (text[i] == " ") {
+      if (text[i] == one_space_str) {
         minx = Math.min(minx, x);
         x += sw;
         continue;
-      } else if (text[i] == "\t") {
+      } else if (text[i] == one_tab_str) {
         minx = Math.min(minx, x);
         x += tabw;
         continue;
@@ -147,7 +155,7 @@ function Font(WebGLRenderingContext gl, RasterState raster, int size,
       
       if (!finfo.g.hasOwnProperty(c)) {
         console.log("Could not find glyph for character code", c, text[i]);
-        c = "?".charCodeAt(0);
+        c = questioncode;
       }
       
       var g = finfo.g[c];
@@ -306,16 +314,19 @@ function Font(WebGLRenderingContext gl, RasterState raster, int size,
   this.split_text = function(text) {
     var i = 0;
     var lines = this._static_split_text;
-    lines[0] = ""
+    static empty_str = "";
+    static slashn = "\n";
+    
+    lines[0] = empty_str
     
     for (var j=0; j<text.length; j++) {
-      if (text[j] == "\n") {
+      if (text[j] == slashn) {
         i++;
         if (i >= lines.length) {
           lines.push(0);
         }
         
-        lines[i] = "";
+        lines[i] = empty_str;
       } else {
         lines[i] += text[j];
       }
@@ -458,7 +469,7 @@ class TextDrawBuffer {
     gl.bindTexture(gl.TEXTURE_2D, this.tex);
     
     var origin = this.origin;
-    var l = objcache.getarr(loc[0]+origin[0], loc[1]+origin[1], loc[2]+origin[2]);
+    var l = CACHEARR3(loc[0]+origin[0], loc[1]+origin[1], loc[2]+origin[2]);
     
     gl.uniform1i(shader.uniformloc(gl, "sampler2d"), 0);
     gl.uniform4fv(shader.uniformloc(gl, "uColor"), this.clr);

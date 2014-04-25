@@ -358,7 +358,8 @@ class LoginDialog extends PackedDialog {
 function login_dialog(ctx)
 {
   ld = new LoginDialog(ctx);
-  ld.call(new Vector2(ctx.screen.size).mulScalar(0.5).floor());  
+  //XXX
+  //ld.call(new Vector2(ctx.screen.size).mulScalar(0.5).floor());  
 }
 
 class FileSaveSTLOp extends ToolOp {

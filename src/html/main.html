@@ -1344,7 +1344,7 @@ function toJSON_intern (ob, tlevel) {
           gl.finish();
           
         // Show the framerate
-          framerate.snapshot();
+          //framerate.snapshot();
           //document.getElementById("tottri").innerHTML = "Tris: " + g.view3d.mesh.faces.length + " Edges: " + g.   view3d.mesh.edges.length + " Verts: " + g.view3d.mesh.verts.length
         }
     }
@@ -1388,7 +1388,7 @@ function toJSON_intern (ob, tlevel) {
 
         currentAngle = 0;
         incAngle = 0.5;
-        framerate = new Framerate("framerate");
+        //framerate = new Framerate("framerate");
         var f = function() {
           try {
             if (!_skip_draw) 

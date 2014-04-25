@@ -23,6 +23,7 @@ sources = [
 	"src/util/mathlib.js",
 	"src/util/parseutil.js",
 	"src/util/jslzjb.js",
+  "src/core/tarray_alloc.js",
 	"src/core/jobs.js",
 	"src/font/fontgen10.js",
 	"src/font/fontgen12.js",
@@ -78,6 +79,8 @@ sources = [
 	"src/ui/UIWidgets.js",
 	"src/ui/UIMenu.js",
 	"src/ui/RadialMenu.js",
+  "src/ui/UIWidgets_special.js",
+  "src/core/utildefine.js",
 	"src/view3d/dialog.js",
 	"src/view3d/dialogs.js",
 	"src/view3d/FrameManager.js",
@@ -119,5 +122,11 @@ js_targets = {"app.js"        : sources,
               "unit_tests.js" : [
                ] + sources + [
                  "src/unit_tests/tests.js"
+               ],
+               "alloc_test.js" : [
+                "src/core/typesystem.js",
+                "src/util/utils.js",
+                "src/core/tarray_alloc.js"
                ]
              }
+
