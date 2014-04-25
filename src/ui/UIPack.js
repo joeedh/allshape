@@ -1,5 +1,9 @@
 "use strict";
 
+
+#include "src/core/utildefine.js"
+
+
 var PackFlags = {
   INHERIT_HEIGHT :       1, INHERIT_WIDTH :     2, 
   ALIGN_RIGHT :          4, ALIGN_LEFT :        8, 
@@ -331,7 +335,9 @@ class UIPackFrame extends UIFrame {
     //otherwise.
     
     if (this.last_pos.vectorDistance(this.pos) > 0.0001 || this.last_size.vectorDistance(this.size) > 0.00001) {
-      //console.log("complex ui recalc", this.pos, this.last_pos.toString(), this.last_pos.vectorDistance(this.pos), this.last_size.vectorDistance(this.size));
+      if (DEBUG.complex_ui_recalc) {
+        console.log("complex ui recalc", this.pos, this.last_pos.toString(), this.last_pos.vectorDistance(this.pos), this.last_size.vectorDistance(this.size));
+      }
       this.parent.do_full_recalc();
       
       for (var c in this.children) {
@@ -369,7 +375,7 @@ class RowFrame extends UIPackFrame {
       if (!(c.packflag & PackFlags.NO_REPACK))
         size = c.get_min_size(canvas, isvertical);
       else
-        size = [c.size[0], c.size[1]];
+        size = CACHEARR2(c.size[0], c.size[1]);
       
       tothgt += size[1]+2;
       maxwidth = Math.max(maxwidth, size[0]+2);
@@ -588,7 +594,7 @@ class ToolOpFrame extends RowFrame {
   do_rebuild(ctx) {
     var strct = this.ctx.api.get_struct(ctx, this.path_prefix);
     
-    this.children = new GArray([]);
+    this.children.reset();
     
     if (strct == undefined) return;
     
@@ -605,6 +611,7 @@ class ToolOpFrame extends RowFrame {
     if (strct != this.strct) {
       this.do_rebuild(this.ctx);
       this.do_recalc();
+      this.strct = strct;
     }
     
     RowFrame.prototype.on_tick.call(this);

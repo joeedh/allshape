@@ -357,11 +357,26 @@ function recalc_normals_job_intern(Mesh m2, Boolean use_sco) //use_sco is option
 {
   var cent = new Vector3();
   
-  for (var v in m2.verts) {
-    v.no[0] = v.no[1] = v.no[2] = 0.0;
-  }
+  var use_mapco = m2.flag & MeshFlags.USE_MAP_CO;
+  var bb = m2.bb;
+  var sel_bb = m2.sel_bb;
+  
+  m2.bb.reset();
+  m2.sel_bb.reset();
   
   var i = 0;
+  for (var v in m2.verts) {
+    v.no[0] = v.no[1] = v.no[2] = 0.0;
+    bb.minmax(v.co);
+    
+    if (v.flag & Flags.SELECT)
+      sel_bb.minmax(v.co);
+      
+    if (i%50 == 0)
+      yield;
+  }
+  
+  i = 0;
   for (var f in m2.faces) {
     var n = null;
     

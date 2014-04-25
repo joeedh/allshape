@@ -52,6 +52,17 @@ class Mesh extends DataBlock {
     
     this.render = 0;
     this.api = new MeshAPI(this);
+    
+    this.bb = new MinMax(3);
+    this.sel_bb = new MinMax(3);
+  }
+  
+  get sel_aabb() {
+    return this.sel_bb;
+  }
+  
+  get aabb() {
+    return this.aabb;
   }
   
   get selected() {

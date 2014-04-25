@@ -148,26 +148,33 @@ function get_rect_lines(p, size)
   }
 }
 
-function MinMax(totaxis) {
-  this.totaxis = totaxis;
-  
-  //we handle the empty set case by separating the 
-  //minmax arrays from the publicly available interface ,
-  //such that the minmax of the empty set will always
-  //be [0, 0];
-  
-  if (totaxis != 1) {
-    this._min = new Array(totaxis);
-    this._max = new Array(totaxis);
-    this.min = new Array(totaxis);
-    this.max = new Array(totaxis);
-  } else {
-    this.min = this.max = 0;
-    this._min = FLOAT_MAX;
-    this._max = FLOAT_MIN;
+class MinMax {
+  constructor(int totaxis) {
+    this.totaxis = totaxis;
+    
+    //we handle the empty set case by separating the 
+    //minmax arrays from the publicly available interface ,
+    //such that the minmax of the empty set will always
+    //be [0, 0];
+    
+    if (totaxis != 1) {
+      this._min = new Array(totaxis);
+      this._max = new Array(totaxis);
+      this.min = new Array(totaxis);
+      this.max = new Array(totaxis);
+    } else {
+      this.min = this.max = 0;
+      this._min = FLOAT_MAX;
+      this._max = FLOAT_MIN;
+    }
+    
+    this.reset();
+    
+    this._static_mr_co = new Array(this.totaxis);
+    this._static_mr_cs = new Array(this.totaxis*this.totaxis);
   }
   
-  this.reset = function() {
+  reset() {
     var totaxis = this.totaxis;
     
     if (totaxis == 1) {
@@ -184,12 +191,7 @@ function MinMax(totaxis) {
     }
   }
   
-  this.reset();
-  
-  this._static_mr_co = new Array(this.totaxis);
-  this._static_mr_cs = new Array(this.totaxis*this.totaxis);
-  
-  this.minmax_rect = function(p, size) {
+  minmax_rect(Array<float> p, Array<float> size) {
     var totaxis = this.totaxis;
     
     var cs = this._static_mr_cs;
@@ -218,7 +220,7 @@ function MinMax(totaxis) {
     }
   }
   
-  this.minmax = function(p) {
+  minmax(Array<float> p) {
     var totaxis = this.totaxis
     
     if (totaxis == 1) {

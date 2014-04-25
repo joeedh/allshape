@@ -32,6 +32,11 @@ class UIElement extends EventHandler {
     
     this.description = "";
     
+    this.abspos = [0, 0];
+    
+    //cached hash string
+    this._h12 = undefined : String;
+    
     this.state = UIFlags.ENABLED;
     this.packflag = 0
     this.data_path = path;
@@ -65,8 +70,12 @@ class UIElement extends EventHandler {
   }
   
   __hash__() : String {
-    var n = this.constructor.name;
-    return n[2] + n[3] + n[n.length-2] + n[n.length-1] + this._uiel_id.toString();
+    if (this._h12 == undefined) {
+      var n = this.constructor.name;
+      this._h12 = n[2] + n[3] + n[n.length-2] + n[n.length-1] + this._uiel_id.toString();
+    }
+    
+    return this._h12;
   }
 
   set_context(ctx) {

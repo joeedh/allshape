@@ -72,7 +72,7 @@ class ASObject extends DagNode {
     this.parentinv = new Matrix4(); 
     
     //bounding box stuff
-    this.bb = [new Vector3(), new Vector3()];
+    this.bb = new MinMax(3);
     this.bb_display = BBDispTypes.Box;
     
     this.parent = undefined : ASObject;
@@ -102,7 +102,7 @@ class ASObject extends DagNode {
     return ob;
   }
   
-  get_aabb() {
+  get aabb() {
     return this.bb;
   }
   

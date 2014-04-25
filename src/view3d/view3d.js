@@ -98,13 +98,12 @@ class View3DHandler extends Area {
     
     this.drawmats = drawmats;
     this.transmat = new Mat4Stack();
-   
     if (drawmats != undefined) {
       drawmats.cameramat.load([0.920457286330552, 0.05884240153177518, -0.386388348456536, 0, 0.373664711170723,
       -0.4223555167941103, 0.8258271617349959, 0, -0.1145995971489264, -0.9045183188944005, 
       -0.4107475418280071, 0, 0, 0, 0, 1]);
     }
-     
+
     this.mesh = mesh;
     this.sidmap = {}; //stores objects, and possibly manipulator widgets and the like
     

@@ -109,11 +109,12 @@ procs = []
 def signal_handler(signal, stack):
   print("====================================")
   sys.stderr.write("signal caught; closing databases. . .\n")
+  
   for v in open_dbs.values():
     v.close()
   sys.stderr.write("done.\n")
 
-signal.signal(signal.SIGINT, signal_handler)
+#signal.signal(signal.SIGINT, signal_handler)
 
 if len(localcfg) > 0:
   print("build config:")
@@ -189,14 +190,16 @@ if build_cmd == "clean": build_cmd = "cleanbuild"
 if not os.path.exists("build"):
   os.mkdir("build")
 
+_fmap = {}
 for t1 in targets:
-  for t2 in targets:
-    if t1 == t2: continue
+  for f1 in t1:
+    f1.source_abs = np(f1.source)
+    _fmap[f1.source_abs] = f1
     
-    for f1 in t1:
-      for f2 in t2:
-        if np(f1.source) == np(f2.source):
-          t2.replace(f2, f1)
+for t1 in targets:
+  for i, f1 in enumerate(t1):
+    if f1.source_abs in _fmap:
+      t1[i] = _fmap[f1.source_abs]
 
 #read sources
 for t in targets:

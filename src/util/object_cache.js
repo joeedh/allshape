@@ -1,5 +1,7 @@
 "use strict";
 
+#include "src/core/utildefine.js"
+
 var CACHE_CYCLE_SIZE = 256;
 
 function _cache_copy_object(obj) {
@@ -113,8 +115,10 @@ class ObjectCache {
   //object each time to get the right
   //behavior.
   raw_fetch(templ, tot=CACHE_CYCLE_SIZE) {
-    //return _cache_copy_object(templ); //XXX
-    
+//#ifdef NOCACHE
+//    return _cache_copy_object(templ); //XXX
+//#endif
+
     var id = templ._c_id;
     if (id == undefined) id = _c_idgen++;
     
@@ -169,9 +173,37 @@ class ObjectCache {
     
     return arr;
   }
-  
+
+#define ARR_LEN_C 8192
   array(int len) {
+#ifdef NOCACHE
+    var ret = new Array(len);
+    ret.length = len;
+    
+    return ret;
+#endif
+
+    /*XXX stupid simple version for testing purposes
     var arr;
+    //note the bad use of static variables in an instance method
+    static arr_cycle = undefined, cur_arr=0;
+    
+    if (arr_cycle == undefined) {
+      console.log("defining arr_cycle");
+      arr_cycle = [];
+      for (var i=0; i<ARR_LEN_C; i++) {
+        var a = new Array(ARR_LEN_C);
+        arr_cycle.push(a);
+      }
+    }
+    
+    var ret = arr_cycle[cur_arr];
+    cur_arr = (cur_arr+1) % ARR_LEN_C;
+    
+    ret.length = len;
+    return ret;
+    
+    // XXX*/
     
     if (!(len in this.arrays)) {
       arr = new Array(len);
@@ -181,7 +213,8 @@ class ObjectCache {
       arr = this.arrays[len];
     }
     
-    var arr2 = this.raw_fetch(arr);
+    var arr2 = this.raw_fetch(arr, ARR_LEN_C);
+    arr2.length = len;
     
     if (arr2.length > 8) {
       for (var i=0; i<arr2.length; i++) {
@@ -198,9 +231,6 @@ var objcache = new ObjectCache()
 
 var _itempl = {done : false, value : undefined};
 function cached_iret() {
-  //XXX
-  //return {done : false, value : undefined};
-  
   var ret = objcache.raw_fetch(_itempl);
   
   ret.done = false;

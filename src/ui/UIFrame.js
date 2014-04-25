@@ -23,6 +23,8 @@ class UIFrame extends UIElement {
       this.view3d = canvas.view3d;
     }
     
+    this.leafcount = 0;
+    this.framecount = 0;
     this.rcorner = 16.0;
     this.keymap = undefined;
   }
@@ -251,6 +253,12 @@ class UIFrame extends UIElement {
   add(UIElement e, int packflag) { //packflag is optional
     this.children.push(e);
     
+    if (!(e instanceof UIFrame)) {
+      this.leafcount++;
+    } else {
+      this.framecount++;
+    }
+    
     if (packflag != undefined)
       e.packflag |= packflag;
     
@@ -285,6 +293,12 @@ class UIFrame extends UIElement {
   }
 
   remove(UIElement e) {
+    if (!(e instanceof UIFrame)) {
+      this.leafcount--;
+    } else {
+      this.framecount--;
+    }
+    
     if (e == this.modalhandler) {
       e.pop_modal();
     }
@@ -340,6 +354,14 @@ class UIFrame extends UIElement {
   build_draw(canvas, skip_box) { //skip_box is optional
     var mat = _static_mat;
     
+    if (this.framecount == 0) {
+      canvas.frame_begin(this);
+    }
+    
+    if (this.parent == undefined) {
+      this.abspos[0] = this.pos[0]; this.abspos[1] = this.pos[1];
+    }
+    
     if (this.pos == undefined) {
       this.pos = [0,0];
       console.log("eek");
@@ -353,7 +375,16 @@ class UIFrame extends UIElement {
     var retag_recalc = false;
     this.recalc = 0;
     
+    var viewport = g_app_state.raster.viewport;
+    
     for (var c in this.children) {
+      c.abspos[0] = c.pos[0] + this.pos[0];
+      c.abspos[1] = c.pos[1] + this.pos[1];
+     
+      if (!aabb_isect_2d(c.abspos, c.size, viewport[0], viewport[1])) {
+        continue;
+      }
+      
       if (c.pos == undefined) {
         c.pos = [0,0];
         c.size = [0, 0];
@@ -397,6 +428,10 @@ class UIFrame extends UIElement {
       }
     }
 
+    if (this.framecount == 0) {
+      canvas.frame_end(this);
+    }
+    
     if (retag_recalc)
       this.do_recalc();
   }

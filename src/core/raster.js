@@ -80,6 +80,7 @@ class RasterState {
       return ret;
     }
   }
+  
   push_viewport(pos, size) {
     var arr = this.viewport_stack.gen()
     arr[0] = pos;

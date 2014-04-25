@@ -55,8 +55,8 @@ class WSGIServerBridge:
     self.path = environ["REQUEST_URI"]
     self.query = environ["QUERY_STRING"]
     
-    if self.path.startswith(base_path) and base_path != "/":
-      self.path = self.path[len(base_path):]
+    #if self.path.startswith(base_path) and base_path != "/":
+    #  self.path = self.path[len(base_path):]
       
     try:
       self.clen = int(environ.get('CONTENT_LENGTH', 0))

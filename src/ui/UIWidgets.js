@@ -1,5 +1,7 @@
 "use strict";
 
+#include "src/core/utildefine.js"
+
 //buttons only take executable (function) paths as arguments
 class UIButton extends UIHoverHint {
   constructor(Context ctx, String text, Array<float> pos, 
@@ -92,7 +94,7 @@ class UIButton extends UIHoverHint {
 
   get_min_size(UICanvas canvas, Boolean isvertical)
   {
-    return [canvas.textsize(this.text)[0]+12, 26]
+    return CACHEARR2(canvas.textsize(this.text)[0]+12, 26)
   }
 }
 
@@ -110,7 +112,7 @@ class UIButtonIcon extends UIButton {
   }
   
   get_min_size(UICanvas canvas, Boolean isvertical) {
-    var ret = [0, 0]; // this._min_size;
+    var ret = this._min_size;
     var pad = this.pad;
     
     var iconsheet = this.small_icon ? canvas.iconsheet16 : canvas.iconsheet;
@@ -317,7 +319,7 @@ class UIMenuButton extends UIHoverHint {
     if (this.menu != undefined) {
       this.menu.packmenu(canvas);
       
-      var size = [canvas.textsize(this.text+"     ")[0], 26];
+      var size = CACHEARR2(canvas.textsize(this.text+"     ")[0], 26);
       
       for (var c in this.menu.children) {
         var size2 = c.get_min_size(canvas, isvertical);
@@ -325,9 +327,9 @@ class UIMenuButton extends UIHoverHint {
         size[1] = Math.max(size[1], size2[1])
       }
       
-      return [size[0]+canvas.textsize("     ")[0]+20, 26];
+      return CACHEARR2(size[0]+canvas.textsize("     ")[0]+20, 26);
     } else {
-      return [canvas.textsize(this.text+"     ")[0]+20, 26]
+      return CACHEARR2(canvas.textsize(this.text+"     ")[0]+20, 26);
     }
   }
 }
@@ -450,7 +452,7 @@ class UICheckBox extends UIHoverHint {
 
   get_min_size(UICanvas canvas, Boolean isvertical)
   {
-    return [canvas.textsize(this.text)[0]+15, 26]
+    return CACHEARR2(canvas.textsize(this.text)[0]+15, 26);
   }
 }
 
@@ -583,7 +585,7 @@ class UINumBox extends UIHoverHint {
   }
 
   on_mousemove(MouseEvent event) {
-    var mpos = objcache.getarr(event.x, event.y);
+    var mpos = CACHEARR2(event.x, event.y);
     
     if (this.clicked) {
       var df = (mpos[0] - this.start_mpos[0]) / 300.0
@@ -652,7 +654,7 @@ class UINumBox extends UIHoverHint {
 
   get_min_size(UICanvas canvas, Boolean isvertical)
   {
-    return [canvas.textsize(this.text)[0]+70, 26]
+    return CACHEARR2(canvas.textsize(this.text)[0]+70, 26);
   }
 }
 
@@ -725,7 +727,7 @@ class UILabel extends UIElement {
 
   get_min_size(UICanvas canvas, Boolean isvertical)
   {
-    return [canvas.textsize(this.text)[0]+4, 26]
+    return CACHEARR2(canvas.textsize(this.text)[0]+4, 26)
   }
 }
 
@@ -904,7 +906,7 @@ class UIMenuLabel extends UIElement {
 
   get_min_size(UICanvas canvas, Boolean isvertical)
   {
-    return [canvas.textsize(this.text)[0]+4, 26]
+    return CACHEARR2(canvas.textsize(this.text)[0]+4, 26);
   }
 }
 
@@ -1394,7 +1396,7 @@ class UITextBox extends UIElement {
 
   get_min_size(UICanvas canvas, Boolean isvertical)
   {
-    return [this.min_width, 26]
+    return CACHEARR2(this.min_width, 26)
   }
 }
 
@@ -1508,7 +1510,7 @@ class UIListBox extends ColumnFrame {
 
   pack(UICanvas canvas, Boolean is_vertical)
   {
-    this.listbox.min_size = [this.size[0]-26, this.size[1]]
+    this.listbox.min_size = CACHEARR2(this.size[0]-26, this.size[1])
     
     prior(UIListBox, this).pack.call(this, canvas, is_vertical);
     
@@ -1536,7 +1538,7 @@ class UIListBox extends ColumnFrame {
     if (this.size != undefined && this.size[0]+this.size[1] != 0.0) {
       return this.size;
     } else {
-      return [500, 300];
+      return CACHEARR2(500, 300);
     }
   }
 }
@@ -1609,7 +1611,7 @@ class ScrollButton extends UIElement {
 
   get_min_size(UICanvas canvas, Boolean isvertical)
   {
-    return [26, 26]
+    return CACHEARR2(26, 26)
   }
 }
 
@@ -1778,7 +1780,7 @@ class UIVScroll extends UIFrame {
 
   get_min_size(UICanvas canvas, Boolean isvertical)
   {
-    return [26, 26*3]
+    return CACHEARR2(26, 26*3)
   }
 }
 
@@ -1876,6 +1878,6 @@ class UIIconCheck extends UIHoverHint {
 
   get_min_size(UICanvas canvas, Boolean isvertical)
   {
-    return [canvas.textsize(this.text)[0]+24, 24]
+    return CACHEARR2(canvas.textsize(this.text)[0]+24, 24)
   }
 }

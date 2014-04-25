@@ -115,7 +115,7 @@ class TransMeshType extends TransDataType {
 
 class TransObjectType {
   static get_aabb(TransData tdata, int i) : Array<Vector3> {
-    return tdata.objects[i].get_aabb();
+    return tdata.objects[i].aabb;
   }
   
   static get_co(TransData tdata, int i) : Vector3 {

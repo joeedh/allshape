@@ -5,6 +5,8 @@ var FileFlags = {COMPRESSED_LZSTRING : 1};
 /*Globals*/
 var AppState g_app_state = undefined;
 
+var f32_alloc = new TA_Alloc();
+
 class FileData {
   constructor(blocks, fstructs, version) {
     this.blocks = blocks;
@@ -222,6 +224,14 @@ class AppState {
   }
 
   reset_state(screen, mesh) {
+    global active_canvases;
+    
+    for (var k in active_canvases) {
+      var canvas = active_canvases[k];
+      canvas.destroy();
+    }
+    active_canvases = {};
+    
     AppState.call(this, screen, mesh, this.gl);
   }
 
