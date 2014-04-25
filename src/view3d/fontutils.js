@@ -1,4 +1,7 @@
-#include "src/core/utildefine.js"
+//#include "src/core/utildefine.js"
+
+#define CACHEARR2(a, b) [a, b]
+#define CACHEARR3(a, b, c) [a, b, c]
 
 var _fdata = {
   "10" : [fontinfo10, "content/fontgen10.png"],
