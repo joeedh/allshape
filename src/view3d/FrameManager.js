@@ -11,12 +11,10 @@ class Area extends UIFrame {
     
     this.rows = new GArray();
     this.cols = new GArray();
+    
+    this.note_area = undefined;
   }
 
-  //uipackframe to add notifications to, if one exists
-  get note_area() : UIPackFrame {
-  }
-  
   static fromSTRUCT(reader) {
     var ob = {};
     reader(ob);
