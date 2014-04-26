@@ -2,6 +2,7 @@
 
 var Area_Types = new set(["View3DHandler"]);
 
+//this should have been named ScreenEditor, ger
 class Area extends UIFrame {
   constructor(type, ctx, pos, size) {
     UIFrame.call(this, ctx, undefined, undefined, pos, size);
@@ -12,6 +13,10 @@ class Area extends UIFrame {
     this.cols = new GArray();
   }
 
+  //uipackframe to add notifications to, if one exists
+  get note_area() : UIPackFrame {
+  }
+  
   static fromSTRUCT(reader) {
     var ob = {};
     reader(ob);
@@ -1293,6 +1298,8 @@ class Screen extends UIFrame {
   {
     this.handle_active_view3d();
     
+    g_app_state.notes.on_tick();
+    
     if (time_ms() - this.last_sync > 700) {
       this.last_sync = time_ms();
     }
@@ -1337,15 +1344,18 @@ class Screen extends UIFrame {
       return;
     
     for (var c in this.children) {
+      
       c.pos[0] *= ratio[0];
       c.pos[1] *= ratio[1];
-      c.size[0] *= ratio[0];
-      c.size[1] *= ratio[1];
-      
-      c.size[0] = Math.ceil(c.size[0])
-      c.size[1] = Math.ceil(c.size[1])
       c.pos[0] = Math.floor(c.pos[0])
       c.pos[1] = Math.floor(c.pos[1])
+      
+      //don't resize dialogs and menus
+      if (c instanceof Dialog || c instanceof UIMenu || c instanceof UIRadialMenu) continue;
+      c.size[0] *= ratio[0];
+      c.size[1] *= ratio[1];
+      c.size[0] = Math.ceil(c.size[0])
+      c.size[1] = Math.ceil(c.size[1])
     }
    
     this.snap_areas();

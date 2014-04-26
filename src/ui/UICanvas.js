@@ -473,6 +473,9 @@ class TriList {
   }
   
   on_draw(gl) {
+    if (!this.iconsheet.ready)
+      return;
+    
     //if (this._dead)
     //  return;
     
@@ -518,9 +521,10 @@ class TriList {
       gl.disableVertexAttribArray(2);
     } 
     
-    gl.useProgram(gl.basic2d.program);
     gl.activeTexture(gl.TEXTURE4);
     gl.bindTexture(gl.TEXTURE_2D, this.iconsheet.tex);
+
+    gl.useProgram(gl.basic2d.program);
     gl.uniform1i(gl.basic2d.uniformloc(gl, "iconsampler"), 4);
     
     //console.log(this.verts);
@@ -1086,14 +1090,11 @@ class UICanvas {
     this.box(pos, size, cs, r);
   }
 
-  simple_box(pos, size, clr, r) { //clr is optional
+  simple_box(pos, size, clr=undefined, r=2.0) { //clr is optional
     
     var cs = uicolors["SimpleBox"]
     
     cs = _box_process_clr(cs, clr);
-    
-    if (r == undefined)
-      r = 2.0;
       
     this.box(pos, size, cs, r);
   }

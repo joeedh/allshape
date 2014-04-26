@@ -297,7 +297,10 @@ class MeshToolOp extends ToolOp {
     if (this.meshop.flag & ToolFlags.USE_PARTIAL_UNDO) {
       this._partial = ctx.mesh.gen_partial(ctx.mesh.selected, this.meshop.undo_expand_lvl);
     } else {
-      prior(MeshToolOp, this).undo_pre.call(this, ctx);
+      var data = [];
+      
+      ctx.mesh.pack(data);
+      this._mesh = new DataView(new Uint8Array(data).buffer);
     }
   }
 
@@ -306,12 +309,24 @@ class MeshToolOp extends ToolOp {
       var part = this._partial;
       var mesh = ctx.mesh;
       
+      g_app_state.jobs.kill_owner_jobs(mesh);
+
       mesh.load_partial(this._partial);
       mesh.regen_render();
       
       this._partial = undefined;
     } else {
-      prior(MeshToolOp, this).undo.call(this, ctx);
+      var mesh = ctx.mesh;
+      var data = this._mesh;
+      
+      g_app_state.jobs.kill_owner_jobs(mesh);
+      
+      //use STRUCT system for this?
+      mesh.load(new Mesh());
+      mesh.unpack(data, new unpack_ctx());
+      
+      mesh.regen_render();
+      this._mesh = undefined;
     }
   }
 

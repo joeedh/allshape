@@ -10,6 +10,7 @@ class IconManager {
     
     this.load(gl);
     this.texture = undefined;
+    this.ready = false;
   }
   
   load(WebGLRenderingContext gl) {
@@ -19,6 +20,7 @@ class IconManager {
     this.tex.image.src = this.path;
     
     var thetex = this.tex;
+    var this2 = this;
     this.tex.image.onload = function() {
       var tex = thetex;
       
@@ -27,6 +29,8 @@ class IconManager {
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, tex.image);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      
+      this2.ready = true;
     }
   }
   

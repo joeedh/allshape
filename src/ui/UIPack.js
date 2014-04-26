@@ -269,8 +269,8 @@ class UIPackFrame extends UIFrame {
         console.log("warning: unimplemented property type for path " + path + " in user interface code");
     }
   }
-
-  label(text, use_path, align=0) { //use_path, align are optional
+    
+  label(text, use_path=false, align=0) {
     align |= this.default_packflag;
     
     if (use_path != undefined && use_path) {

@@ -98,6 +98,7 @@ class View3DHandler extends Area {
     
     this.drawmats = drawmats;
     this.transmat = new Mat4Stack();
+    this.topbar = undefined;
     
     if (drawmats != undefined) {
       drawmats.cameramat.load([0.920457286330552, 0.05884240153177518, -0.386388348456536, 0, 0.373664711170723,
@@ -887,8 +888,8 @@ class View3DHandler extends Area {
         console.log("executing unit tests...");
         window.unit_test_env.execute();
       } else {
-        test_progress_dialog();
-      //  g_app_state.toolstack.reexec_stack();
+        //test_progress_dialog();
+        //g_app_state.toolstack.reexec_stack();
       }
       //new Context().scene.graph.exec();
     }));
@@ -1046,12 +1047,18 @@ class View3DHandler extends Area {
     this.ctx = new Context();
     this.editor.build_sidebar1(this);
   }
-
+  
+  get note_area() : UIPackFrame {
+    return this.topbar;
+  }
+  
   build_topbar()
   {
     this.ctx = new Context();
     
     var col = new ColumnFrame(this.ctx, undefined, PackFlags.ALIGN_LEFT);
+    
+    this.topbar = col;
     col.packflag |= PackFlags.IGNORE_LIMIT;
     
     col.size = [this.size[0], 35];

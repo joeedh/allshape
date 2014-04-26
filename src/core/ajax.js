@@ -646,6 +646,7 @@ function NetJobStatus(job, owner, status) : NetStatus;
 function NetStatus() {
   this.progress = 0 : float;
   this.status_msg = "";
+  this._client_control = false; //client api code is controlling this NetStatus, not XMLHttpRequest callbacks
 }
 
 class NetJob {
@@ -740,7 +741,24 @@ function api_exec(path, netjob, mode,
   if (responseType == undefined)
     responseType = "text"
   
+  req.onerror = req.onabort = function() {
+    error(netjob, netjob.owner, "Network Error");
+  }
+  
   req.responseType = responseType
+  
+  req.onprogress = function(evt) {
+    if (netjob.status_data._client_control || evt.total == 0) return;
+    
+    console.log("progress: ", evt, evt.status, evt.loaded, evt.total);
+    var perc = evt.loaded / evt.total;
+    netjob.status_data.progress = perc;
+    console.log("perc", perc, netjob.status);
+    
+    if (netjob.status)
+      netjob.status(netjob, netjob.owner, netjob.status_data);
+  }
+  
   req.onreadystatechange=function() {
    //console.log(req.readyState, req.status);
     if (req.readyState==4 && (req.status>=200 && req.status <=300)) {
@@ -764,6 +782,12 @@ function api_exec(path, netjob, mode,
       
       var reti = iter.next();
       if (reti.done) {
+        if (netjob.status_data.progress != 1.0) {
+          netjob.status_data.progress = 1.0;
+          if (netjob.status)
+            netjob.status(netjob, netjob.owner, netjob.status_data);
+        }
+        
         if (netjob.finish) {
           netjob.finish(netjob, owner);
         }
@@ -774,7 +798,7 @@ function api_exec(path, netjob, mode,
     }
   }
   
-  req.send(data);
+  var ret = req.send(data);
 }
 
 function AuthSessionGen(job, user, password, refresh_token) {
@@ -848,6 +872,8 @@ function get_dir_files(job, args) {
 function upload_file(job, args) {
   var suffix;
   
+  job.status_data._client_control = true;
+  
   var url = args.url;
   var url2 = args.chunk_url
   
@@ -864,6 +890,9 @@ function upload_file(job, args) {
   
   var c = 0;
   var ilen = Math.ceil(len/csize);
+  
+  var prog = 0.0;
+  var dp = 1.0/ilen;
   
   console.log("beginning upload", ilen);
   for (var i=0; i<ilen; i++) {
@@ -887,6 +916,12 @@ function upload_file(job, args) {
     yield;
     
     c += size;
+    
+    prog += dp;
+    job.status_data.progress = prog;
+    if (job.status) {
+      job.status(job, job.owner, job.status_data);
+    }
   }
 }
 

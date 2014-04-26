@@ -75,6 +75,7 @@ function Font(WebGLRenderingContext gl, RasterState raster, int size,
   this.linehgt = 18;
   
   var thetex = this.tex;
+  this.tex.ready = false;
   this.tex.image.onload = function() {
     var tex = thetex;
     
@@ -83,6 +84,8 @@ function Font(WebGLRenderingContext gl, RasterState raster, int size,
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, tex.image);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    
+    tex.ready = true;
   }
   this.tex.image.src = font_file;
   
@@ -458,6 +461,9 @@ class TextDrawBuffer {
   }
 
   on_draw(gl, loc=[0,0,0], size=[1,1,1]) {
+    if (!this.tex.ready)
+      return;
+    
     gl.enable(gl.BLEND);
     gl_blend_func(gl);
     

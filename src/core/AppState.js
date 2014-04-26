@@ -167,6 +167,7 @@ class AppState {
     this.eventhandler = screen : EventHandler;
     
     this._last_touch_mpos = [0, 0];
+    this.notes = new NotificationManager();
     
     this.was_touch = false;
     this.toolstack = new ToolStack(this);

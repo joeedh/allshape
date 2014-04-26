@@ -251,6 +251,7 @@ class UIFrame extends UIElement {
   }
 
   add(UIElement e, int packflag) { //packflag is optional
+    e.defunct = false;
     this.children.push(e);
     
     if (!(e instanceof UIFrame)) {
@@ -293,6 +294,8 @@ class UIFrame extends UIElement {
   }
 
   remove(UIElement e) {
+    e.defunct = true;
+    
     if (!(e instanceof UIFrame)) {
       this.leafcount--;
     } else {
