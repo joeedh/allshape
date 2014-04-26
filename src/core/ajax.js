@@ -886,7 +886,7 @@ function upload_file(job, args) {
   
   var data = args.data;
   var len = data.byteLength;
-  var csize = 1024*256;
+  var csize = 1024*8;
   
   var c = 0;
   var ilen = Math.ceil(len/csize);
