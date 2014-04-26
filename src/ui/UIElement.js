@@ -28,6 +28,8 @@ class UIElement extends EventHandler {
   constructor(ctx, path=undefined, pos=undefined, size=undefined) {
     EventHandler.call(this)
     
+    this.defunct = false;
+    
     this._uiel_id = _ui_element_id_gen++;
     
     this.description = "";

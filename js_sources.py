@@ -85,6 +85,8 @@ sources = [
 	"src/view3d/dialogs.js",
 	"src/view3d/FrameManager.js",
 
+  "src/view3d/notifications.js",
+
 	"src/util/dag.js",
 	"src/util/dag_utils.js",
   "src/shaders/csg_vshader.js",

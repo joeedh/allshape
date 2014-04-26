@@ -239,7 +239,7 @@ class element_iter_convert extends ToolIter {
       Vertex : 1,
       Edge   : 2,
       Loop   : 4,
-      Face   : 9
+      Face   : 8
     };
     
     var ob = {};
@@ -252,7 +252,7 @@ class element_iter_convert extends ToolIter {
 }
 
 element_iter_convert.STRUCT = STRUCT.inherit(element_iter_convert, ToolIter) + """
-  type : static_string[8] | this.type.constructor.name;
+  type : static_string[8] | this.type != undefined ? this.type.constructor.name : "";
   _iter : abstract(ToolIter) | obj.iter;
 }
 """;

@@ -664,7 +664,9 @@ class UILabel extends UIElement {
 
     this.prop = undefined;
     this.val = text;
-    this.text = text
+    this.text = text;
+    this.bgcolor = undefined;
+    this.color = undefined;
 
     if (this.state & UIFlags.USE_PATH) {
       this.prop = ctx.api.get_prop_meta(ctx, this.data_path);
@@ -677,8 +679,18 @@ class UILabel extends UIElement {
     this.size = size
     this.callback = undefined;
   }
-
-  set_text(text) {
+  
+  set_background(Array<float> color) {
+    this.bgcolor = new Vector4(color);
+    this.do_recalc();
+  }
+  
+  set_color(Array<float> color) {
+    this.color = new Vector4(color);
+    this.do_recalc();
+  }
+  
+  set_text(String text) {
     if (this.text != text)
       this.do_recalc();
     
@@ -695,6 +707,7 @@ class UILabel extends UIElement {
       }
     }
   }
+  
   on_mousedown(MouseEvent event) {
     if (event.button == 0) {
       this.clicked = true;
@@ -718,8 +731,12 @@ class UILabel extends UIElement {
     //canvas.push_scissor([0,0], this.size);
     canvas.begin(this);
     
+    if (this.bgcolor) {
+      canvas.box([0, 0], this.size, this.bgcolor);
+    }
+    
     var tsize = canvas.textsize(this.text);
-    canvas.text([(this.size[0]-tsize[0])*0.5, (this.size[1]-tsize[1])*0.25], this.text, undefined);
+    canvas.text([(this.size[0]-tsize[0])*0.5, (this.size[1]-tsize[1])*0.25], this.text, this.color);
     
     canvas.end(this);
     //canvas.pop_scissor();
@@ -727,7 +744,8 @@ class UILabel extends UIElement {
 
   get_min_size(UICanvas canvas, Boolean isvertical)
   {
-    return CACHEARR2(canvas.textsize(this.text)[0]+4, 26)
+    var pad = this.bgcolor != undefined ? 20 : 4;
+    return CACHEARR2(canvas.textsize(this.text)[0]+pad, 26)
   }
 }
 
@@ -1915,7 +1933,22 @@ class UIProgressBar extends UIElement {
   
   build_draw(UICanvas canvas, Boolean isVertical) {
     static zero = [0, 0];
+    static one = [1, 1];
+    static size2 = [0, 0];
     
-    canvas.box(zero, this.size);
+    canvas.begin(this);
+    var perc = (this.value / (this.max-this.min));
+    
+    canvas.box(zero, this.size, uicolors["ProgressBarBG"]);
+    
+    if (perc > 0.0) {
+      perc = Math.min(Math.max(0.0, perc), 1.0);
+      
+      size2[1] = this.size[1]-2;
+      size2[0] = Math.floor(this.size[0]*perc)-2;
+      canvas.box(one, size2, uicolors["ProgressBar"]);
+    }
+    
+    canvas.end(this);
   }
 }

@@ -362,6 +362,8 @@ class QuadSubdOp extends MeshOp {
   constructor(Iterator faceiter, int count) {
     MeshOp.call(this, "quad_subdivide", "Subdivide", "Subdivide selected faces\ninto quads", Icons.SUBDIVIDE);
     
+    //this.flag |= ToolFlags.USE_PARTIAL_UNDO;
+    
     this.inputs = {
       //count: new MeshIntProperty(1, "count", "Count", "", undefined, TPropFlags.PRIVATE), 
       input_faces: new CollectionProperty(undefined, [Face], "faces", "Faces", "")
