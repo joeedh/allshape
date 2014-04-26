@@ -19,6 +19,13 @@ function gen_tris(Mesh mesh) {
   var ls = new Array<Loop>();
   
   for (var f in mesh.faces) {
+    if (ls == undefined | ls.push == undefined) {
+      console.trace();
+      console.log("WARNING: Chrome array error!!", ls);
+      mesh.regen_render();
+      return;
+    }
+    
     if (f.totvert == 3) {
       var l = f.looplists[0].loop;
       

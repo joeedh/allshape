@@ -64,7 +64,14 @@ class FileDialog extends PackedDialog {
       this2.do_recalc();
     }
     
+    was_closed = false;
     function error(job, owner, msg) {
+      if (!was_closed) {
+        error_dialog(this2.ctx, "Network Error", function() {
+          this2.end(true);
+        }, true);
+      }
+      was_closed = true;
     }
     
     call_api(get_dir_files, {path : this.dirpath}, finish, error);
@@ -122,18 +129,29 @@ class FileOpenOp extends ToolOp {
   exec(ctx) {
     console.log("File open");
     
+    /*I should really make these file operations modal, since
+        they create ui elements
+     */
+    ctx = new Context();
+    var pd = new ProgressDialog(ctx, "Downloading");
+    pd.call(ctx.screen.mpos);
+    
     function error(job, owner, msg) {
-      console.log("network error", msg);
+      pd.end()
+      error_dialog(ctx, "Network Error", undefined, true);
     }
     
     function status(job, owner, status) {
-      console.log("status: ", status.progress, status);
+      pd.value = status.progress;
+      pd.bar.do_recalc();
+      console.log("status: ", status.progress, pd.bar.max);
     }
-    
+        
     function open_callback(dialog, path) {
       console.log("loading...", path);
       
       function finish(job, owner) {
+        pd.end();
         g_app_state.load_user_file_new(new DataView(job.value));
         g_app_state.filepath = path;
         console.log("finished downloading");
@@ -162,16 +180,25 @@ class FileSaveAsOp extends ToolOp {
   exec(ctx) {
     console.log("File save");
     
+    //I should really make these file operations modal, since
+    //they create ui elements
+    ctx = new Context();
+    var pd = new ProgressDialog(ctx, "Uploading");
+    pd.call(ctx.screen.mpos);
+    
     mesh_data = g_app_state.create_user_file_new().buffer;
     function error(job, owner, msg) {
-      console.log("network error", msg);
+      pd.end()
+      error_dialog(ctx, "Network Error", undefined, true);
     }
     
     function finish(job, owner) {
       console.log("finished uploading");
+      pd.end()
     }
     
     function status(job, owner, status) {
+      pd.value = status.progress;
       console.log("status: ", status.progress, status);
     }
     
@@ -220,9 +247,10 @@ class FileNewOp extends ToolOp {
 }
 
 class FileSaveOp extends ToolOp {
-  constructor() {
+  constructor(Boolean do_progress=true) {
     ToolOp.call(this, "save_file", "Save");
 
+    this.do_progress = true;
     this.is_modal = false;
     
     this.undoflag = UndoFlags.IGNORE_UNDO;
@@ -236,16 +264,27 @@ class FileSaveOp extends ToolOp {
     
     mesh_data = g_app_state.create_user_file_new().buffer;
     
-    function error(job, owner, msg) {
-      console.log("network error", msg);
-    }
+    /*I should really make these file operations modal, since
+        they create ui elements
+     */
+    ctx = new Context();
+    var pd = new ProgressDialog(ctx, "Uploading");
+    pd.call(ctx.screen.mpos);
     
-    function finish(job, owner) {
-      console.log("finished uploading");
+    function error(job, owner, msg) {
+      pd.end()
+      error_dialog(ctx, "Network Error", undefined, true);
     }
     
     function status(job, owner, status) {
-      console.log("status: ", status.progress, status);
+      pd.value = status.progress;
+      pd.bar.do_recalc();
+      console.log("status: ", status.progress, pd.bar.max);
+    }
+    
+    function finish(job, owner) {
+      pd.end();
+      console.log("finished uploading");
     }
     
     function save_callback(dialog, path) {
@@ -271,27 +310,54 @@ class FileSaveOp extends ToolOp {
   }
 }
 
+var test_pd = undefined;
 function test_progress_dialog() {
+  global test_pd;
+  
   var ctx = new Context();
-  var pd = new ProgressDialog(ctx, "test");
+  var pd = new ProgressDialog(ctx, "test", 0.2);
   
   pd.call(ctx.screen.mpos);
+  
+  test_pd = pd;
 }
 
 class ProgressDialog extends PackedDialog {
   constructor(Context ctx, String label, float val=0.0, float min=0.0, float max=1.0) {
-    PackedDialog.call(this, "User Login", ctx, ctx.screen);
+    PackedDialog.call(this, label, ctx, ctx.screen);
     
     this.pos = [0,0];
     this.closed = false;
     
     this.flag = DialogFlags.MODAL;
     
-    var col = this.subframe.col();
-    col.label(label);
+    var col = this.subframe.col();   
     
     this.bar = new UIProgressBar(ctx, val, min, max);
     col.add(this.bar);
+    
+    //ensure the user sees the full progress bar,
+    //even for quick actions
+    this._full_ms = 0;
+    this._do_end = false;
+    this._end_flash = 150;
+  }
+  
+  on_tick() {
+    if (this._do_end && time_ms() - this._full_ms > this._end_flash) {
+      prior(ProgressDialog, this).end.call(this, false);
+    }
+  }
+  
+  end(Boolean do_cancel) {
+    if (this.bar.value >= this.bar.max) {
+      this._full_ms = time_ms();
+      this._do_end = true;
+      this.bar.value = this.bar.max;
+      this.bar.do_recalc();
+    } else {
+      prior(ProgressDialog, this).end.call(this, false);
+    }
   }
   
   set value(float val) {
@@ -300,60 +366,6 @@ class ProgressDialog extends PackedDialog {
   
   get value() {
     return this.bar.value;
-  }
-  
-  end(do_cancel) {
-    var dialog = this;
-    
-    var session = g_app_state.session
-    console.log(session.tokens);
-    
-    if (do_cancel) {
-      prior(LoginDialog, this).end.call(this, do_cancel);
-      return;
-    }
-    
-    function finish(job, owner) {
-      if (dialog.closed)
-        return;
-      
-      var session = g_app_state.session;
-      
-      console.log(job.value, "----------");
-      session.tokens = job.value;
-      session.is_logged_in = true;
-      session.store();
-      
-      console.log(job.value);
-      dialog.closed = true;
-      prior(LoginDialog, dialog).end.call(dialog, false);
-      
-      g_app_state.session.validate_session();
-    }
-    
-    function error(job, owner, msg) {
-      if (dialog.errlabel == undefined) {
-        dialog.errlabel = dialog.subframe.label("", undefined, PackFlags.INHERIT_WIDTH);
-      }
-      
-      dialog.errlabel.set_text("Error");
-      console.log(msg);
-    }
-    
-    var user = this.userbox.text;
-    var password = this.passbox.text;
-    
-    console.log(user, password);
-    
-    var session = g_app_state.session;
-    
-    session.username = user;
-    session.password = password;
-    session.store();
-    
-    auth_session(user, password, finish, error);
-
-    //prior(LoginDialog, this).end.call(this, do_cancel);
   }
 }
 
@@ -441,6 +453,17 @@ class LoginDialog extends PackedDialog {
   }
 }
 
+function error_dialog(Context ctx, String msg, Function callback=undefined, Boolean center=false) {
+  var pd = new ErrorDialog(msg, callback);
+  
+  var s = ctx.screen.size;
+  var mpos = center ? [Math.floor(s[0]/2.0), Math.floor(s[1]/2.0)] : ctx.screen.mpos;
+  
+  pd.call(mpos);
+  
+  return pd;
+}
+
 function login_dialog(ctx)
 {
   ld = new LoginDialog(ctx);
@@ -465,8 +488,12 @@ class FileSaveSTLOp extends ToolOp {
     
     mesh_data = export_stl_str(ctx.mesh).buffer;
     
+    var pd = new ProgressDialog("Exporting STL");
+    
     function error(job, owner, msg) {
       console.log("network error", msg);
+      
+      pd.end();
     }
     
     var this2 = this;
@@ -477,9 +504,12 @@ class FileSaveSTLOp extends ToolOp {
       
       console.log(url)
       window.open(url);
+      
+      pd.end();
     }
     
     function status(job, owner, status) {
+      pd.set_value(status.progress);
       console.log("status: ", status.progress, status);
     }
     

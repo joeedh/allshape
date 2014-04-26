@@ -10,7 +10,7 @@ class _TitleBar extends UIElement {
   }
 
   build_draw(canvas, isVertical) {
-    canvas.simple_box([0, 0], this.size);
+    canvas.simple_box([0, 0], this.size, uicolors["DialogTitle"]);
     
     var tsize = canvas.textsize(this.text);
     canvas.text([12, (this.size[1]-tsize[1])*0.25], this.text);
@@ -169,7 +169,8 @@ class Dialog extends UIFrame {
     this.pos[0] = pos[0]; this.pos[1] = pos[1];
     this.screen.add(this);
     
-    if (this.flag & DialogFlags.MODAL) {
+    //create a modal dialog if MODAL flag is set, *or* a modal handler already exists
+    if ((this.flag & DialogFlags.MODAL) || this.screen.modalhandler) {
       this.screen.push_modal(this);
     }
     
@@ -189,6 +190,7 @@ class Dialog extends UIFrame {
     }
     
     this.screen.remove(this);
+    this.screen.canvas.reset();
   }
 }
 
@@ -229,6 +231,31 @@ class OkayDialog extends PackedDialog {
   end(Boolean do_cancel) {
     prior(OkayDialog, this).end.call(this, do_cancel);
     this.callback(this, do_cancel);
+  }
+}
+
+class ErrorDialog extends PackedDialog {
+  constructor(String text, Function callback) {
+    var ctx = new Context();
+    var screen = g_app_state.screen;
+    var flag = 0;
+    PackedDialog.call(this, "Error: ", ctx, screen, flag);
+    
+    this.callback = callback;
+    
+    var col = this.subframe;
+    col.add(Dialog.okay_button(ctx), PackFlags.ALIGN_RIGHT);
+    
+    var c = col.label("  " + text + "    ");
+    c.set_color(uicolors["ErrorText"]);
+    c.set_background(uicolors["ErrorTextBG"]);
+  }
+  
+  end(Boolean do_cancel) {
+    prior(ErrorDialog, this).end.call(this, do_cancel);
+    
+    if (this.callback != undefined)
+      this.callback(this, do_cancel);
   }
 }
 
