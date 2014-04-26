@@ -886,6 +886,7 @@ class View3DHandler extends Area {
         console.log("executing unit tests...");
         window.unit_test_env.execute();
       } else {
+        test_progress_dialog();
       //  g_app_state.toolstack.reexec_stack();
       }
       //new Context().scene.graph.exec();

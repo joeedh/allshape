@@ -1881,3 +1881,41 @@ class UIIconCheck extends UIHoverHint {
     return CACHEARR2(canvas.textsize(this.text)[0]+24, 24)
   }
 }
+
+class UIProgressBar extends UIElement {
+  constructor(Context ctx, float value=0.0, float min=0.0, float max=1.0, int min_wid=200, int min_hgt=25) {
+    UIElement.call(this, ctx);
+    
+    this.value = value;
+    this.min = min;
+    this.max = max;
+    this.min_wid = min_wid;
+    this.min_hgt = min_hgt;
+    this.size[1] = min_hgt;
+    this.size[0] = min_wid;
+    this.last_value = this.value;
+  }
+  
+  get_min_size(UICanvas canvas, Boolean isVertical) : Array<float> {
+    return [this.min_wid, this.min_hgt];
+  }
+  
+  //we recalc draw buffers in on_tick, to avoid excessive updates per second
+  on_tick() {
+    if (this.last_value != this.value) {
+      this.do_recalc();
+      this.last_value = this.value;
+    }
+  }
+  
+  set_value(float value) {
+    this.last_value = this.value;
+    this.value = value;
+  }
+  
+  build_draw(UICanvas canvas, Boolean isVertical) {
+    static zero = [0, 0];
+    
+    canvas.box(zero, this.size);
+  }
+}
