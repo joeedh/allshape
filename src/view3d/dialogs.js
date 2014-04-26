@@ -271,6 +271,92 @@ class FileSaveOp extends ToolOp {
   }
 }
 
+function test_progress_dialog() {
+  var ctx = new Context();
+  var pd = new ProgressDialog(ctx, "test");
+  
+  pd.call(ctx.screen.mpos);
+}
+
+class ProgressDialog extends PackedDialog {
+  constructor(Context ctx, String label, float val=0.0, float min=0.0, float max=1.0) {
+    PackedDialog.call(this, "User Login", ctx, ctx.screen);
+    
+    this.pos = [0,0];
+    this.closed = false;
+    
+    this.flag = DialogFlags.MODAL;
+    
+    var col = this.subframe.col();
+    col.label(label);
+    
+    this.bar = new UIProgressBar(ctx, val, min, max);
+    col.add(this.bar);
+  }
+  
+  set value(float val) {
+    this.bar.set_value(val);
+  }
+  
+  get value() {
+    return this.bar.value;
+  }
+  
+  end(do_cancel) {
+    var dialog = this;
+    
+    var session = g_app_state.session
+    console.log(session.tokens);
+    
+    if (do_cancel) {
+      prior(LoginDialog, this).end.call(this, do_cancel);
+      return;
+    }
+    
+    function finish(job, owner) {
+      if (dialog.closed)
+        return;
+      
+      var session = g_app_state.session;
+      
+      console.log(job.value, "----------");
+      session.tokens = job.value;
+      session.is_logged_in = true;
+      session.store();
+      
+      console.log(job.value);
+      dialog.closed = true;
+      prior(LoginDialog, dialog).end.call(dialog, false);
+      
+      g_app_state.session.validate_session();
+    }
+    
+    function error(job, owner, msg) {
+      if (dialog.errlabel == undefined) {
+        dialog.errlabel = dialog.subframe.label("", undefined, PackFlags.INHERIT_WIDTH);
+      }
+      
+      dialog.errlabel.set_text("Error");
+      console.log(msg);
+    }
+    
+    var user = this.userbox.text;
+    var password = this.passbox.text;
+    
+    console.log(user, password);
+    
+    var session = g_app_state.session;
+    
+    session.username = user;
+    session.password = password;
+    session.store();
+    
+    auth_session(user, password, finish, error);
+
+    //prior(LoginDialog, this).end.call(this, do_cancel);
+  }
+}
+
 class LoginDialog extends PackedDialog {
   constructor(ctx) {
     PackedDialog.call(this, "User Login", ctx, ctx.screen);
@@ -358,8 +444,8 @@ class LoginDialog extends PackedDialog {
 function login_dialog(ctx)
 {
   ld = new LoginDialog(ctx);
-  //XXX
-  //ld.call(new Vector2(ctx.screen.size).mulScalar(0.5).floor());  
+  
+  ld.call(new Vector2(ctx.screen.size).mulScalar(0.5).floor());  
 }
 
 class FileSaveSTLOp extends ToolOp {
