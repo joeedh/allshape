@@ -340,7 +340,13 @@ class UIHoverBox extends UIElement {
     canvas.begin(this);
     
     canvas.shadow_box([4, -4], this.size);
-    canvas.box([0, 0], this.size, uicolors["HoverHint"]);
+    
+    //hrm, something is wrong with canvas.box1, which is used
+    //to draw rounded boxes on desktops.  box2, used on tablets,
+    //works correctly.  this size offset shouln't be necassary.
+    var size = IsMobile ? this.size : [this.size[0], this.size[1]+2];
+
+    canvas.box([0, 0], size, uicolors["HoverHint"]);
     canvas.text([4, 7], this.text, uicolors["BoxText"]);
     
     canvas.end(this);
