@@ -57,7 +57,7 @@ class ASObject extends DagNode {
     this.flag = 0;
     this.ss_mesh = undefined;
     this.ss_steps = 24;
-    this.last_ss_steps = 24;
+    this.last_ss_steps = this.ss_steps;
     
     this.loc = new Vector3();
     this.rot_euler = new Vector3();
@@ -121,6 +121,10 @@ class ASObject extends DagNode {
   
   calc_ss_steps() : int {
     var steps = Math.floor(this.ss_steps / Math.log(this.data.faces.length))+1.0;
+    
+    if (IsMobile && steps > 5)
+      steps = Math.floor(steps*0.5);
+    
     steps = Math.max(steps, 3.0);
     
     return steps;
