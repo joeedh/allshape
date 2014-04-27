@@ -178,7 +178,7 @@ class MeshEditor extends View3DEditor {
       row.label("  ");
     row.toolop("screen.area_split_tool()", PackFlags.INHERIT_WIDTH);
     
-    var spacing = IsMobile ? 9.0 : 0.0;
+    var spacing = IsMobile ? 0.0 : 0.0;
     
     var col = row.col()
     var row2 = col.row()
