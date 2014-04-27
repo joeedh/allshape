@@ -378,7 +378,7 @@ class RowFrame extends UIPackFrame {
       else
         size = CACHEARR2(c.size[0], c.size[1]);
       
-      tothgt += size[1]+2;
+      tothgt += size[1]+this.pad[1];
       maxwidth = Math.max(maxwidth, size[0]+2);
     }
     
