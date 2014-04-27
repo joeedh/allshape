@@ -115,6 +115,9 @@ class UIButtonIcon extends UIButton {
     var ret = this._min_size;
     var pad = this.pad;
     
+    if (this.small_icon)
+      pad += 4;
+    
     var iconsheet = this.small_icon ? canvas.iconsheet16 : canvas.iconsheet;
     ret[0] = iconsheet.cellsize[0]+pad*2.0;
     ret[1] = iconsheet.cellsize[1]+pad*2.0;
@@ -157,8 +160,9 @@ class UIButtonIcon extends UIButton {
     pos[0] = Math.abs(isize[0] - this.size[0] + pad*2.0)*0.5;
     pos[1] = 0;
     
-    size[0] = isize[0]+pad*2.0;
-    size[1] = isize[1]+pad*2.0;
+    var size = this.size;
+    //size[0] = isize[0]+pad*2.0;
+    //size[1] = isize[1]+pad*2.0;
     
     if (this.clicked) 
       canvas.invbox(pos, size);
@@ -167,8 +171,8 @@ class UIButtonIcon extends UIButton {
     else 
       canvas.box(pos, size);
     
-    pos[0] += pad;
-    pos[1] += pad;
+    pos[0] += (size[0]-isize[0])*0.5;
+    pos[1] += (size[1]-isize[1])*0.5;
     
     if (this.small_icon)    
       canvas.icon(this.icon, pos, 0.75, true);
@@ -452,7 +456,7 @@ class UICheckBox extends UIHoverHint {
 
   get_min_size(UICanvas canvas, Boolean isvertical)
   {
-    return CACHEARR2(canvas.textsize(this.text)[0]+15, 32);
+    return CACHEARR2(canvas.textsize(this.text)[0]+15, 22);
   }
 }
 
@@ -1878,11 +1882,11 @@ class UIIconCheck extends UIHoverHint {
       canvas.simple_box([0, 0], [this.size[0], csize[1]])
       
       var mul = this.set ? 0.3 : 1.0;
-      canvas.hlightbox([0, 0], csize, mul, 2)
+      canvas.hlightbox([0, 0], this.size, mul, 2)
     } else if(this.set) {
-      canvas.invbox([0, 0], csize, undefined, 2);
+      canvas.invbox([0, 0], this.size, undefined, 2);
     } else {
-      canvas.box([0, 0], csize, undefined, 2);
+      canvas.box([0, 0], this.size, undefined, 2);
     }
     
     var tsize = canvas.textsize(this.text);

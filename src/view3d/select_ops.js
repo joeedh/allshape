@@ -511,7 +511,7 @@ class CircleDraw extends UIElement {
 
 class CircleSelectOp extends SelectOpAbstract {
   constructor(selectmode) {
-    SelectOpAbstract.call(this, "mesh_circle_select", "Circle Select");
+    SelectOpAbstract.call(this, "mesh_circle_select", "Circle Select", " ", Icons.CIRCLE_SEL);
     
     this.is_modal = true;
     this.flag = ToolFlags.HIDE_TITLE_IN_LAST_BUTTONS;
@@ -762,9 +762,16 @@ class CircleSelectOp extends SelectOpAbstract {
   }
 
   on_mousedown(event) {
+    //touch version
+    if (g_app_state.was_touch) {
+      this.doing = true;
+      this.mode = !g_app_state.select_inverse;
+      return;
+    }
+    
+    //normal mouse version
     if (event.button == 2 && !this.alt) {
       this.end_modal();
-      return;
     } else if (event.button == 2 && this.alt) {
       this.doing = true;
       this.mode = false;
@@ -776,9 +783,12 @@ class CircleSelectOp extends SelectOpAbstract {
       this.mode = false;
     }
   }
-
+ 
   on_mouseup(event) {
     this.doing = false;
+    
+    if (g_app_state.was_touch)
+      this.end_modal();
   }
 
   on_keydown(event) {

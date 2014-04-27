@@ -22,5 +22,6 @@ var Icons = {
   REDO           : 18,
   SELECT_ALL     : 19,
   EDGE_LOOP_SEL  : 20,
-  FACE_LOOP_SEL  : 21
+  FACE_LOOP_SEL  : 21,
+  CIRCLE_SEL     : 22
 };

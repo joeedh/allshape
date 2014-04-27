@@ -181,43 +181,44 @@ class MeshEditor extends View3DEditor {
     var spacing = IsMobile ? 9.0 : 0.0;
     
     var col = row.col()
-    var row2 = col.row()
+    var row2 = col.row(undefined, undefined, PackFlags.USE_LARGE_ICON)
     row2.pad[1] = spacing;
     
-    row2.toolop("mesh.extrude(geometry=mesh_selected(vef))", PackFlags.USE_LARGE_ICON);
-    row2.toolop("mesh.flip_normals(faces=mesh_selected(f))", PackFlags.USE_LARGE_ICON);
-    row2.toolop("mesh.triangulate(faces=mesh_selected(f))", PackFlags.USE_LARGE_ICON);
-    row2.toolop("mesh.subdivide(faces=mesh_selected(f))", PackFlags.USE_LARGE_ICON);
+    row2.toolop("mesh.extrude(geometry=mesh_selected(vef))");
+    row2.toolop("mesh.flip_normals(faces=mesh_selected(f))");
+    row2.toolop("mesh.triangulate(faces=mesh_selected(f))");
+    row2.toolop("mesh.subdivide(faces=mesh_selected(f))");
     
-    row2 = col.row()
+    row2 = col.row(undefined, undefined, PackFlags.USE_LARGE_ICON);
     row2.pad[1] = spacing;
     
-    row2.toolop("mesh.translate()", PackFlags.USE_LARGE_ICON);
-    row2.toolop("mesh.scale()", PackFlags.USE_LARGE_ICON);
-    row2.toolop("mesh.rotate()", PackFlags.USE_LARGE_ICON);
-    row2.toolop("mesh.tri2quad(faces=mesh_selected(f))", PackFlags.USE_LARGE_ICON);
+    row2.toolop("mesh.translate()");
+    row2.toolop("mesh.scale()");
+    row2.toolop("mesh.rotate()");
+    row2.toolop("mesh.tri2quad(faces=mesh_selected(f))");
     
-    row2 = col.row()
+    row2 = col.row(undefined, undefined);
     row2.pad[1] = spacing;
-    row2.toolop("mesh.duplicate_transform()", PackFlags.USE_LARGE_ICON);
-    row2.toolop("mesh.bridge_edges(edges=mesh_selected(e))", PackFlags.USE_LARGE_ICON);
-    row2.toolop("mesh.vertsmooth(verts=mesh_selected(v))", PackFlags.USE_LARGE_ICON);
-    row2.toolop("mesh.loopcut()", PackFlags.USE_LARGE_ICON);
+    row2.toolop("mesh.duplicate_transform()");
+    row2.toolop("mesh.bridge_edges(edges=mesh_selected(e))");
+    row2.toolop("mesh.vertsmooth(verts=mesh_selected(v))");
+    row2.toolop("mesh.loopcut()");
     
-    var col = row.col()
-    var row2 = col.row()
+    var col = row.col();
+    var row2 = col.row(undefined, undefined, PackFlags.USE_LARGE_ICON);
     row2.pad[1] = spacing;
-    row2.toolop("mesh.toggle_select_all()", PackFlags.USE_LARGE_ICON);
+    row2.toolop("mesh.toggle_select_all()");
+    row2.toolop("view3d.circle_select()");
     
-    var row2 = col.row()
+    var row2 = col.row(undefined, undefined, PackFlags.USE_LARGE_ICON);
     row2.pad[1] = spacing;
-    row2.toolop("mesh.edgeloop_select_modal()", PackFlags.USE_LARGE_ICON);
+    row2.toolop("mesh.edgeloop_select_modal()");
     
-    var row2 = col.row()
+    var row2 = col.row(undefined, undefined, PackFlags.USE_LARGE_ICON);
     row2.pad[1] = spacing;
-    row2.toolop("mesh.faceloop_select_modal()", PackFlags.USE_LARGE_ICON);
+    row2.toolop("mesh.faceloop_select_modal()");
     
-    var col2 = row.col()
+    var col2 = row.col(undefined, undefined);
     col2.prop("appstate.select_inverse");
     col2.prop("appstate.select_multiple");
     
@@ -239,9 +240,10 @@ class MeshEditor extends View3DEditor {
     col.packflag |= PackFlags.ALIGN_LEFT;
     col.default_packflag = PackFlags.ALIGN_LEFT;
     
+    //IsMobile ? 12 : 12
     col.draw_background = true;
     col.rcorner = 100.0
-    col.pos = [0,0]
+    col.pos = [0, 2]
     col.size = [view3d.size[0], Area.get_barhgt()];
     
     col.label("        Selection Mode:");

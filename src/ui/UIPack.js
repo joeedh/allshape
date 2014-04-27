@@ -11,7 +11,9 @@ var PackFlags = {
   IGNORE_LIMIT :        64, NO_REPACK :       128,
   UI_DATAPATH_IGNORE : 256, USE_ICON :  1024|2048,
   USE_SMALL_ICON :    1024, USE_LARGE_ICON : 2048,
-  ENUM_STRIP :        4096, NO_AUTO_SPACING : 8192
+  ENUM_STRIP :        4096, NO_AUTO_SPACING : 8192,
+  //for colframe, center  y, for rowframe, center x
+  ALIGN_CENTER_Y :    16384, ALIGN_CENTER_X : 32768
 }
 
 class UIPackFrame extends UIFrame {
@@ -292,8 +294,9 @@ class UIPackFrame extends UIFrame {
     }
   }
 
-  row(String path_prefix="", int align=0) { //path_prefix is optional
+  row(String path_prefix="", int align=0, int default_packflag=0) { //path_prefix is optional
     align |= this.default_packflag;
+    this.default_packflag |= default_packflag;
     
     var row = new RowFrame(this.ctx, this.path_prefix);
     this.add(row);
@@ -304,8 +307,9 @@ class UIPackFrame extends UIFrame {
     return row;
   }
 
-  col(String  path_prefix="", int align=0) { //path_prefix is optional
+  col(String  path_prefix="", int align=0, int default_packflag=0) { //path_prefix is optional
     align |= this.default_packflag;
+    this.default_packflag |= default_packflag;
     
     var col = new ColumnFrame(this.ctx, this.path_prefix);
     this.add(col);
