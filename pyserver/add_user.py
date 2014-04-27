@@ -7,6 +7,7 @@ import smtplib
 # Here are the email package modules we'll need
 from email.mime.image import MIMEImage
 from email.mime.multipart import MIMEMultipart
+from email.utils import make_msgid
 
 words = [
   "quick",
@@ -176,6 +177,8 @@ def main(obj):
   msg["Subject"] = "Acceptance into All-Shape Beta"
   msg["From"] = "joeedh@all-shape.com"
   msg["To"] = obj["email"]
+  msg["Message-ID"] = make_msgid()
+  
   msg.preamble = """Welcome to the All-Shape beta.
   
   Below is your user information, including an
