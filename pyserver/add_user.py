@@ -197,7 +197,7 @@ def main(obj):
   
   # Send the email via our own SMTP server.
   s = smtplib.SMTP('localhost')
-  s.sendmail(me, family, msg.as_string())
+  s.sendmail("joeedh@gmail.com", family, msg.as_string())
   s.quit()
   
 main(obj)
