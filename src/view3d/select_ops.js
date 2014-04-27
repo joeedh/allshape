@@ -1,8 +1,8 @@
 class SelectOpAbstract extends ToolOp {
-  constructor(String apiname, String uiname) {
-    ToolOp.call(this, apiname, uiname);
+  constructor(String apiname, String uiname, String description, int icon) {
+    ToolOp.call(this, apiname, uiname, description, icon);
     
-    this._undo_presel = [];
+    this._undo_presel = undefined;
   }
   
   undo_pre(ctx) {
@@ -124,7 +124,7 @@ class SelectOp extends SelectOpAbstract {
 
 class ToggleSelectAllOp extends SelectOpAbstract {
   constructor(mode) {
-    SelectOpAbstract.call(this, "mesh_toggle_select_all", "Select All/None");
+    SelectOpAbstract.call(this, "mesh_toggle_select_all", "Toggle Sel", "Select All/None", Icons.SELECT_ALL);
     
     if (mode == undefined)
       mode = "auto";
@@ -179,8 +179,9 @@ class ToggleSelectAllOp extends SelectOpAbstract {
 }
 
 class EdgeLoopOp extends SelectOpAbstract {
-  constructor(mode) {
-    SelectOpAbstract.call(this, "mesh_eloop_select", "Loop Select");
+  constructor(mode="add") {
+    SelectOpAbstract.call(this, "mesh_eloop_select", "Loop Select", 
+                          "Select edge loop", Icons.EDGE_LOOP_SEL);
     
     this.is_modal = false;
     this.flag = ToolFlags.HIDE_TITLE_IN_LAST_BUTTONS;
@@ -215,9 +216,12 @@ class EdgeLoopOp extends SelectOpAbstract {
         if (vset.has(v))
           break;
           
+        console.log(e.eid, "<--");
+        
         eset.add(e);
         vset.add(v);
         mesh.edges.select(e, mode);
+
         if (flush) {
           mesh.verts.select(e.v1);
           mesh.verts.select(e.v2);
@@ -248,7 +252,10 @@ class EdgeLoopOp extends SelectOpAbstract {
     
     for (var e in this.inputs.eid_es.data) {
       e = ctx.mesh.edges.get(e);
-      this.eloop_select(ctx, e, flush);
+      console.log("edge:", e);
+      
+      if (e != undefined)
+        this.eloop_select(ctx, e, flush);
     }
     
     if (flush) {
@@ -259,9 +266,80 @@ class EdgeLoopOp extends SelectOpAbstract {
   }
 }
 
+class EdgeLoopOpModal extends EdgeLoopOp {
+  constructor(mode="add") {
+    EdgeLoopOp.call(this, mode);
+    
+    this.is_modal = true;
+  }
+  
+  modal_init(Context ctx) {
+    
+  }
+  
+  on_mousemove(MouseEvent evt) {
+    var ctx = this.modal_ctx;
+    
+    /*check that undo_pre was called
+      in theory this should not be
+      necassary, but you never know...
+     */
+    if (this._undo_presel == undefined)
+      this.undo_pre(ctx);
+    
+    g_app_state.screen.handle_active_view3d();
+    
+    if (ctx.view3d == undefined)
+      return;
+    
+    var pos = ctx.view3d.pos;
+        
+    medit = ctx.view3d.editor;
+    
+    if (!(medit instanceof MeshEditor))
+      return;
+    
+    var e = medit.findnearestedge([evt.x-pos[0], evt.y-pos[1]]);
+    if (e == null) return;
+    
+    console.log("edge: ", e.eid);
+    
+    if (g_app_state.select_inverse || event.shiftKey)
+      this.inputs.mode.set_value("subtract");
+    else
+      this.inputs.mode.set_value("add");
+    
+    this.inputs.eid_es.data = new GArray([e.eid]);
+    this.inputs.selmode.set_value(ctx.view3d.selectmode);
+    
+    this.exec(this.modal_tctx);
+  }
+  
+  exec(ToolContext ctx) {
+    if (!(g_app_state.select_multiple || event.altKey))
+      ctx.mesh.api.select_none();
+    else if (this._undo_presel)
+      this.undo(ctx);
+      
+    EdgeLoopOp.prototype.exec.call(this, ctx);
+  }
+  
+  cancel() {
+    this.undo(this.modal_ctx);
+    this.end_modal();
+  }
+  
+  on_mouseup(MouseEvent evt) {
+    if (evt.button == 2)
+      this.cancel();
+    else if (evt.button == 0)
+      this.end_modal();
+  }
+}
+
 class FaceLoopOp extends SelectOpAbstract {
-  constructor(mode) {
-    SelectOpAbstract.call(this, "mesh_floop_select", "Face Loop Select");
+  constructor(String mode="add") {
+    SelectOpAbstract.call(this, "mesh_floop_select", "Face Loop", "Face Loop Select", Icons.FACE_LOOP_SEL);
     
     this.is_modal = false;
     this.flag = ToolFlags.HIDE_TITLE_IN_LAST_BUTTONS;
@@ -324,6 +402,77 @@ class FaceLoopOp extends SelectOpAbstract {
     }
     
     ctx.mesh.regen_colors();
+  }
+}
+
+class FaceLoopOpModal extends FaceLoopOp {
+  constructor(String mode="add") {
+    FaceLoopOp.call(this, mode);
+    
+    this.is_modal = true;
+  }
+  
+  modal_init(Context ctx) {
+    
+  }
+  
+  on_mousemove(MouseEvent evt) {
+    var ctx = this.modal_ctx;
+    
+    /*check that undo_pre was called
+      in theory this should not be
+      necassary, but you never know...
+     */
+    if (this._undo_presel == undefined)
+      this.undo_pre(ctx);
+    
+    g_app_state.screen.handle_active_view3d();
+    
+    if (ctx.view3d == undefined)
+      return;
+    
+    var pos = ctx.view3d.pos;
+        
+    medit = ctx.view3d.editor;
+    
+    if (!(medit instanceof MeshEditor))
+      return;
+    
+    var e = medit.findnearestedge([evt.x-pos[0], evt.y-pos[1]]);
+    if (e == null) return;
+    
+    console.log("edge: ", e.eid);
+    
+    if (g_app_state.select_inverse || event.shiftKey)
+      this.inputs.mode.set_value("subtract");
+    else
+      this.inputs.mode.set_value("add");
+    
+    this.inputs.eid_es.data = new GArray([e.eid]);
+    this.inputs.selmode.set_value(MeshTypes.FACE);
+    
+    this.exec(this.modal_tctx);
+  }
+  
+  exec(ToolContext ctx) {
+    if (!(g_app_state.select_multiple || event.altKey))
+      ctx.mesh.api.select_none();
+    else if (this._undo_presel)
+      this.undo(ctx);
+      
+    FaceLoopOp.prototype.exec.call(this, ctx);
+  }
+  
+  cancel() {
+    this.undo(this.modal_ctx);
+    this.end_modal();
+  }
+  
+  on_mouseup(MouseEvent evt) {
+    if (evt.button == 2)
+      this.cancel();
+    else if (evt.button == 0)
+      this.end_modal();
   }
 }
 

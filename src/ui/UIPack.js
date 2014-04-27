@@ -11,7 +11,7 @@ var PackFlags = {
   IGNORE_LIMIT :        64, NO_REPACK :       128,
   UI_DATAPATH_IGNORE : 256, USE_ICON :  1024|2048,
   USE_SMALL_ICON :    1024, USE_LARGE_ICON : 2048,
-  ENUM_STRIP :        4096
+  ENUM_STRIP :        4096, NO_AUTO_SPACING : 8192
 }
 
 class UIPackFrame extends UIFrame {
@@ -357,8 +357,9 @@ class RowFrame extends UIPackFrame {
   {
     UIPackFrame.call(this, ctx, path_prefix);
     this.packflag |= PackFlags.INHERIT_HEIGHT|align;
+    this.pad = [4, 4];
   }
-
+  
   get_min_size(UICanvas canvas, Boolean isvertical) {
     if (canvas == undefined) {
       console.trace();
@@ -402,9 +403,14 @@ class RowFrame extends UIPackFrame {
     }
     
     var minsize = this.get_min_size(canvas, is_vertical);
-    var spacing = Math.floor((this.size[1] - minsize[1])/this.children.length);
-    if (spacing < 0) spacing = 0;
-    spacing = Math.min(spacing, 4.0);
+    var spacing;
+    
+    if (this.packflag & PackFlags.NO_AUTO_SPACING) {
+      spacing = this.pad[1];
+    } else {
+      var spacing = Math.floor((this.size[1] - minsize[1])/this.children.length);
+      spacing = Math.max(spacing, this.pad[1]);
+    }
     
     var x = 0;
     var y;

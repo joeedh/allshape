@@ -143,7 +143,12 @@ function api_define_object() {
 
 var AppStateStruct = undefined;
 function api_define_appstate() {
+  var sel_multiple_mode = new BoolProperty(false, "select_multiple", "Multiple", "Select multiple elements");
+  var sel_inverse_mode = new BoolProperty(false, "select_inverse", "Deselect", "Deselect Elements");
+    
   AppStateStruct = new DataStruct([
+    new DataPath(sel_multiple_mode, "select_multiple", "select_multiple", true),
+    new DataPath(sel_inverse_mode, "select_inverse", "select_inverse", true)
   ]);
   
   return AppStateStruct;
@@ -157,7 +162,7 @@ function api_define_context() {
     new DataPath(api_define_object(), "object", "ctx.object", false),
     new DataPath(api_define_scene(), "scene", "ctx.scene", false),
     new DataPath(new DataStruct([]), "last_tool", "", false, false, DataFlags.RECALC_CACHE),
-    new DataPath(api_define_appstate(), "appstate", "appstate", false, false)
+    new DataPath(api_define_appstate(), "appstate", "ctx.appstate", false)
   ]);
 }
 
@@ -385,6 +390,18 @@ function api_define_ops() {
           
       return new MeshToolOp(new DissolveFacesOp(args["faces"]));
     },
+    "mesh.edgeloop_select" : function(ctx, args) {
+      return new EdgeLoopOp();
+    },
+    "mesh.edgeloop_select_modal" : function(ctx, args) {
+      return new EdgeLoopOpModal();
+    },
+    "mesh.faceloop_select" : function(ctx, args) {
+      return new FaceLoopOp();
+    },
+    "mesh.faceloop_select_modal" : function(ctx, args) {
+      return new FaceLoopOpModal();
+    },    
     "mesh.loopcut" : function(ctx, args) {
       return new LoopCutOp();
     },

@@ -608,7 +608,7 @@ class View3DHandler extends Area {
       selfound = this.do_alt_select(event, this.mpos, this);
     } else if (event.button == 0) {
       this._mstart = new Vector2(this.mpos);
-      selfound = this.do_select(event, this.mpos, this, this.shift); 
+      selfound = this.do_select(event, this.mpos, this, this.shift|g_app_state.select_multiple); 
     }
 
     if (event.button == 2 && !g_app_state.screen.shift && !g_app_state.screen.ctrl && !g_app_state.screen.alt) {
@@ -965,13 +965,13 @@ class View3DHandler extends Area {
   {
     for (var c in this.rows) {
       if (c.pos[1] > 70)
-        c.pos[1] = this.size[1] - 28;
+        c.pos[1] = this.size[1] - Area.get_barhgt();
         
       c.size[0] = this.size[0];
     }
     
     for (var c in this.cols) {
-      c.size[1] = this.size[1]-28*2;
+      c.size[1] = this.size[1]-Area.get_barhgt()*2;
     }
     
     for (var c in this.children) {
@@ -1061,13 +1061,14 @@ class View3DHandler extends Area {
     this.topbar = col;
     col.packflag |= PackFlags.IGNORE_LIMIT;
     
-    col.size = [this.size[0], 35];
+    col.size = [this.size[0], Area.get_barhgt()];
     col.draw_background = true
     col.rcorner = 100.0
-    col.pos = [0, this.size[1]-33]
+    col.pos = [0, this.size[1]-Area.get_barhgt()]
     
     col.label("                      ");
-    col.toolop("screen.hint_picker()", PackFlags.USE_SMALL_ICON, "?");
+    var iconflag = IsMobile ? PackFlags.USE_LARGE_ICON : PackFlags.USE_SMALL_ICON;
+    col.toolop("screen.hint_picker()", iconflag, "?");
     
     col.add(new UIMenuLabel(this.ctx, "File", undefined, this.gen_file_menu));
     //col.add(new UIMenuLabel(this.ctx, "Tools", undefined, this.gen_tools_menu));

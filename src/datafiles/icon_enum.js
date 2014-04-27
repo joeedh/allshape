@@ -20,5 +20,7 @@ var Icons = {
   LOOP_CUT       : 16,
   UNDO           : 17,
   REDO           : 18,
-  SELECT_ALL     : 19
+  SELECT_ALL     : 19,
+  EDGE_LOOP_SEL  : 20,
+  FACE_LOOP_SEL  : 21
 };

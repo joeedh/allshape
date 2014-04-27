@@ -110,10 +110,10 @@ class ObjectEditor extends View3DEditor {
     var ctx = new Context();
     var row = new RowFrame(ctx);
     
-    row.size = [148, view3d.size[1]-34-30]
+    row.size = [148, view3d.size[1]-Area.get_barhgt()*2.0]
     row.draw_background = true
     row.rcorner = 100.0
-    row.pos = [0, 33]
+    row.pos = [0, Area.get_barhgt()]
     
     view3d.cols.push(row);
     view3d.add(row);
@@ -138,8 +138,8 @@ class ObjectEditor extends View3DEditor {
     
     col.draw_background = true;
     col.rcorner = 100.0
-    col.pos = [0,0]
-    col.size = [view3d.size[0], 35];
+    col.pos = [0, 0]
+    col.size = [view3d.size[0], Area.get_barhgt()];
     
     col.label("        Selection Mode:");
     col.prop("view3d.selectmode", PackFlags.ENUM_STRIP|PackFlags.USE_SMALL_ICON);

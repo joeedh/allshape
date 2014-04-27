@@ -1263,6 +1263,22 @@ function MeshAPI(Mesh mesh) {
       mesh.kill_vert(v);
     }
   }
+    
+  this.select_none = function() {
+    var mesh = this.mesh;
+    
+    for (var v in mesh.verts.selected) {
+      mesh.verts.select(v, false);
+    }
+    
+    for (var e in mesh.edges.selected) {
+      mesh.edges.select(e, false);
+    }
+    
+    for (var f in mesh.faces.selected) {
+      mesh.faces.select(f, false);
+    }
+  }
   
   this.duplicate_geometry = function(CanIter<Element> geometry, 
                                      Boolean deselect_old) 

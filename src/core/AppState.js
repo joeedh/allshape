@@ -166,6 +166,9 @@ class AppState {
     this.screen = screen;
     this.eventhandler = screen : EventHandler;
     
+    this.select_multiple = false; //basically, this is shift key emulation for tablets
+    this.select_inverse = false;  //same as select_mutiple
+    
     this._last_touch_mpos = [0, 0];
     this.notes = new NotificationManager();
     

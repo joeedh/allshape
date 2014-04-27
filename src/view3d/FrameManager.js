@@ -68,7 +68,15 @@ class Area extends UIFrame {
       c.on_resize(newsize, oldsize);
     }
   }
-
+  
+  static get_barhgt() {
+    if (IsMobile) {
+      return 45;
+    } else {
+      return 35;
+    }
+  }
+  
   build_bottombar()
   {
   }

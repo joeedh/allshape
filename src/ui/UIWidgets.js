@@ -407,11 +407,11 @@ class UICheckBox extends UIHoverHint {
   build_draw(UICanvas canvas) {
     canvas.begin(this);
     
-    var csize = [14, 14]
+    var csize = [20, 20]
     function draw_check() {
       var h1 = 7;
       var h2 = -3
-      var ox = 2;
+      var ox = 5;
       var r = 20
       
       var v1 = [0+ox, h1, 0]
@@ -452,7 +452,7 @@ class UICheckBox extends UIHoverHint {
 
   get_min_size(UICanvas canvas, Boolean isvertical)
   {
-    return CACHEARR2(canvas.textsize(this.text)[0]+15, 26);
+    return CACHEARR2(canvas.textsize(this.text)[0]+15, 32);
   }
 }
 
