@@ -208,15 +208,14 @@ class MeshEditor extends View3DEditor {
     var row2 = col.row()
     row2.pad[1] = spacing;
     row2.toolop("mesh.toggle_select_all()", PackFlags.USE_LARGE_ICON);
+    
+    var row2 = col.row()
+    row2.pad[1] = spacing;
+    row2.toolop("mesh.edgeloop_select_modal()", PackFlags.USE_LARGE_ICON);
+    
+    var row2 = col.row()
+    row2.pad[1] = spacing;
     row2.toolop("mesh.faceloop_select_modal()", PackFlags.USE_LARGE_ICON);
-    
-    var row2 = col.row()
-    row2.pad[1] = spacing;
-    row2.toolop("mesh.edgeloop_select_modal()", PackFlags.USE_LARGE_ICON);
-    
-    var row2 = col.row()
-    row2.pad[1] = spacing;
-    row2.toolop("mesh.edgeloop_select_modal()", PackFlags.USE_LARGE_ICON);
     
     var col2 = row.col()
     col2.prop("appstate.select_inverse");
