@@ -174,7 +174,7 @@ def main(obj):
   
   msg = MIMEMultipart()
   msg["Subject"] = "Acceptance into All-Shape Beta"
-  msg["From"] = "joeedh@gmail.com"
+  msg["From"] = "joeedh@all-shape.com"
   msg["To"] = obj["email"]
   msg.preamble = """Welcome to the All-Shape beta.
   
