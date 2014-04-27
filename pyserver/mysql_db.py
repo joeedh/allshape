@@ -212,7 +212,7 @@ class sq:
 def do_sql_error(t, d, extra=None):
   elog("Database security failure")
   alog("Database security failure")
-  raise RuntimeError("Invalid data for database query")
+  raise RuntimeError("Invalid data for database query: type " + str(t) + ", data: " + estr(d))
   
 def param(types, data):
   pass

@@ -126,6 +126,7 @@ class AuthAPI_RefreshToken_WPHack:
       serv.send_error(401)
       return
     
+    cur.execute(qstr);
     ret = cur.fetchone()
     if ret == None:
       serv.send_error(401)
