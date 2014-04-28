@@ -202,6 +202,7 @@ def main(obj):
   s.quit()
   
   cur.execute(qstr)
+  con.commit()
   
 main(obj)
   
