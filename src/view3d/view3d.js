@@ -1024,7 +1024,22 @@ class View3DHandler extends Area {
       "appstate.open()",
       "appstate.new()"]);
   }
-
+  
+  gen_session_menu(Context ctx, uimenulabel)
+  {
+    function callback(entry) {
+      console.log(entry);
+      if (entry.i == 0) {
+        console.log("logging out");
+        g_app_state.session.logout_simple();
+      }
+    }
+    var menu = new UIMenu("", callback);
+    menu.add_item("Log out", "");
+    
+    return menu;
+  }
+  
   gen_tools_menu(Context ctx, uimenulabel)
   {
     return toolop_menu(ctx, "", ["mesh.translate()", "mesh.rotate()", "mesh.scale()"]);
@@ -1071,6 +1086,8 @@ class View3DHandler extends Area {
     col.toolop("screen.hint_picker()", iconflag, "?");
     
     col.add(new UIMenuLabel(this.ctx, "File", undefined, this.gen_file_menu));
+    col.add(new UIMenuLabel(this.ctx, "Session", undefined, this.gen_session_menu));
+    
     //col.add(new UIMenuLabel(this.ctx, "Tools", undefined, this.gen_tools_menu));
     
     col.label("|");

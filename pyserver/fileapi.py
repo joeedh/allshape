@@ -755,8 +755,10 @@ class FileAPI_GetFile:
       fileid = publicid_to_fileid(qs["id"][0])[1]
     
     if fileid == None:
-      serv.send_error(400)
-    
+      serv.send_error(404)
+      return
+      
+    alog("fetching file %s" % fileid);
     f = fetch_file(fileid)
     if f == None:
       serv.send_error(400)

@@ -134,7 +134,6 @@ class FileOpenOp extends ToolOp {
      */
     ctx = new Context();
     var pd = new ProgressDialog(ctx, "Downloading");
-    pd.call(ctx.screen.mpos);
     
     function error(job, owner, msg) {
       pd.end()
@@ -149,6 +148,7 @@ class FileOpenOp extends ToolOp {
         
     function open_callback(dialog, path) {
       console.log("loading...", path);
+      pd.call(ctx.screen.mpos);
       
       function finish(job, owner) {
         pd.end();
@@ -184,7 +184,6 @@ class FileSaveAsOp extends ToolOp {
     //they create ui elements
     ctx = new Context();
     var pd = new ProgressDialog(ctx, "Uploading");
-    pd.call(ctx.screen.mpos);
     
     mesh_data = g_app_state.create_user_file_new().buffer;
     function error(job, owner, msg) {
@@ -203,6 +202,7 @@ class FileSaveAsOp extends ToolOp {
     }
     
     function save_callback(dialog, path) {
+      pd.call(ctx.screen.mpos);
       console.log("saving...", path);
       global allshape_file_ext;
       
@@ -269,7 +269,6 @@ class FileSaveOp extends ToolOp {
      */
     ctx = new Context();
     var pd = new ProgressDialog(ctx, "Uploading");
-    pd.call(ctx.screen.mpos);
     
     function error(job, owner, msg) {
       pd.end()
@@ -288,6 +287,7 @@ class FileSaveOp extends ToolOp {
     }
     
     function save_callback(dialog, path) {
+      pd.call(ctx.screen.mpos);
       console.log("saving...", path);
       global allshape_file_ext;
       
@@ -488,12 +488,21 @@ class FileSaveSTLOp extends ToolOp {
     
     mesh_data = export_stl_str(ctx.mesh).buffer;
     
-    var pd = new ProgressDialog("Exporting STL");
+    /*I should really make these file operations modal, since
+        they create ui elements
+     */
+    ctx = new Context();
+    var pd = new ProgressDialog(ctx, "Uploading");
     
     function error(job, owner, msg) {
-      console.log("network error", msg);
-      
-      pd.end();
+      pd.end()
+      error_dialog(ctx, "Network Error", undefined, true);
+    }
+    
+    function status(job, owner, status) {
+      pd.value = status.progress;
+      pd.bar.do_recalc();
+      console.log("status: ", status.progress, pd.bar.max);
     }
     
     var this2 = this;
@@ -508,19 +517,16 @@ class FileSaveSTLOp extends ToolOp {
       pd.end();
     }
     
-    function status(job, owner, status) {
-      pd.set_value(status.progress);
-      console.log("status: ", status.progress, status);
-    }
-    
     function save_callback(dialog, path) {
+      pd.call(ctx.screen.mpos);
+      
       console.log("saving...", path);
       global allshape_file_ext;
       
-      this2._path = path;
       if (!path.endsWith(".stl")) {
         path = path + ".stl";
       }
+      this2._path = path;
       
       var token = g_app_state.session.tokens.access;
       var url = "/api/files/upload/start?accessToken="+token+"&path="+path
