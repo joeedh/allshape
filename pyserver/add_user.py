@@ -175,7 +175,7 @@ def main(obj):
   
   msg = MIMEMultipart()
   msg["Subject"] = "Acceptance into All-Shape Beta"
-  msg["From"] = "joeedh@all-shape.com"
+  msg["From"] = "no-reply@all-shape.com"
   msg["To"] = obj["email"]
   msg["Message-ID"] = make_msgid()
   
@@ -200,7 +200,7 @@ def main(obj):
   
   # Send the email via our own SMTP server.
   s = smtplib.SMTP('localhost')
-  s.sendmail("joeedh@all-shape.com", obj["email"], msg.as_string())
+  s.sendmail("no-reply@all-shape.com", obj["email"], msg.as_string())
   s.quit()
   
 main(obj)
