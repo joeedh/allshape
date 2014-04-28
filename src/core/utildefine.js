@@ -1,7 +1,5 @@
 var $_mh;
 
-#define NOCACHE
-
 #ifdef NOCACHE
 #define CACHEARR2(a, b) [a, b]
 #define CACHEARR3(a, b, c) [a, b, c]
