@@ -8,6 +8,7 @@ import smtplib
 from email.mime.image import MIMEImage
 from email.mime.multipart import MIMEMultipart
 from email.utils import make_msgid
+from email.mime.text import MIMEText
 
 words = [
   "quick",
@@ -172,14 +173,8 @@ def main(obj):
   
   #XXX
   obj["email"] = "joeedh@gmail.com"
-  
-  msg = MIMEMultipart()
-  msg["Subject"] = "Acceptance into All-Shape Beta"
-  msg["From"] = "no-reply@all-shape.com"
-  msg["To"] = obj["email"]
-  msg["Message-ID"] = make_msgid()
-  
-  msg.preamble = """Welcome to the All-Shape beta.
+
+  body = """Welcome to the All-Shape beta.
   
   Below is your user information, including an
   auto-generated password.  To log into All-Shape,
@@ -194,6 +189,12 @@ def main(obj):
   Your account will also give you access to other parts of All-Shape.com, as they
   come online.
   """ % (obj["name_first"], obj["name_last"], obj["password"], obj["username"], obj["email"])
+  
+  msg = MIMEText(body)
+  msg["Subject"] = "Acceptance into All-Shape Beta"
+  msg["From"] = "no-reply@all-shape.com"
+  msg["To"] = obj["email"]
+  msg["Message-ID"] = make_msgid()
   
   for k in obj:
     print("  %s: %s" % (k, obj[k]))
