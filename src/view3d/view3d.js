@@ -347,12 +347,26 @@ class View3DHandler extends Area {
     this.ctx = new Context();
   }
 
+  on_gl_lost(WebGLRenderingContext new_gl) {
+    this.gl = gl;
+    this.framebuffer = undefined;
+    this.drawlines = new GArray();
+    this.line_2d_shader = new ShaderProgram(gl, "2d_line_vshader", "2d_line_fshader", ["vPosition", "vNormal", "vColor"]);
+    this.csg_render = undefined;
+    
+    for (var e in this.editors) {
+      e.on_gl_lost(new_gl);
+    }
+    
+    prior(View3DHandler, this).on_gl_lost.call(this, new_gl);
+  }
+  
   get_framebuffer() : FrameBuffer
   {
-    if (View3DHandler.framebuffer == undefined)
-      View3DHandler.framebuffer = new FrameBuffer(this.gl, this.size);
+    if (this.framebuffer == undefined)
+      this.framebuffer = new FrameBuffer(this.gl, this.size);
     
-    return View3DHandler.framebuffer;
+    return this.framebuffer;
   }
 
   __hash__() : String {

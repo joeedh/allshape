@@ -29,6 +29,21 @@ class UIFrame extends UIElement {
     this.keymap = undefined;
   }
   
+  on_gl_lost(WebGLRenderingContext new_gl) {
+    if (this.canvas != undefined && !(this.canvas.gl === new_gl)) {
+      this.canvas.on_gl_lost(new_gl);
+    }
+    
+    if (this.children == undefined)
+      return;
+    
+    for (var c in this.children) {
+      c.on_gl_lost(new_gl);
+    }
+    
+    this.do_full_recalc();
+  }
+  
   get_keymaps() {
     return this.keymap != undefined ? [this.keymap] : [];
   }

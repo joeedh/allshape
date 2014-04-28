@@ -119,6 +119,12 @@ class ASObject extends DagNode {
     return ob;
   }
   
+  on_gl_lost(WebGLRenderingContext new_gl) {
+    if (this.subsurf) {
+      this.ss_mesh = undefined;
+    }
+  }
+  
   calc_ss_steps() : int {
     var steps = Math.floor(this.ss_steps / Math.log(this.data.faces.length))+1.0;
     

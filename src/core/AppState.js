@@ -161,6 +161,15 @@ function output_startup_file() : String {
   
   return out;
 }
+
+var ctxloss = undefined;
+function init_ctxloss_ext() {
+  global ctxloss;
+  
+  if (ctxloss == undefined)
+    ctxloss = gl.getExtension("WEBGL_lose_context");
+}
+
 class AppState {
   constructor(FrameManager screen, Mesh mesh, WebGLRenderingContext gl) {
     this.screen = screen;
@@ -205,6 +214,13 @@ class AppState {
     this.mesh = mesh;  
   }
 
+  on_gl_lost(WebGLRenderingContext new_gl) {
+    this.gl = new_gl;
+    this.raster.on_gl_lost(new_gl);
+    this.datalib.on_gl_lost(new_gl);
+    this.screen.on_gl_lost(new_gl);
+  }
+  
   kill_mesh(Mesh m2) {
     m2.do_callbacks(MeshEvents.DESTROY);
     this.jobs.kill_owner_jobs(m2);

@@ -151,6 +151,10 @@ class Mesh extends DataBlock {
     return m;
   }
 
+  on_gl_lost(WebGLRenderingContext new_gl) {
+    this.gen_render_struct();
+  }
+  
   load(m2) {
     this.name = m2.name;
     this.verts = m2.verts;

@@ -58,6 +58,7 @@ function Font(WebGLRenderingContext gl, RasterState raster, int size,
 {
   this.finfo = font_info;
   
+  console.log(gl);
   this.tex = gl.createTexture();
   this.raster = raster;
   

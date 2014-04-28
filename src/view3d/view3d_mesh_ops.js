@@ -100,6 +100,10 @@ class MeshEditor extends View3DEditor {
     this.selectmode = ctx.view3d.selectmode;
   }
   
+  on_gl_lost(WebGLRenderingContext new_gl) {
+    this.gl = gl;
+  }
+  
   draw_object(gl, view3d, object, is_active)
   {
     this.ctx = new Context();

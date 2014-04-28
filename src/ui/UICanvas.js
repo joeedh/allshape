@@ -685,7 +685,36 @@ class UICanvas {
     
     this.flag = 0;
   }
-
+  
+  on_gl_lost(WebGLRenderingContext new_gl) {
+    if (this.gl === new_gl) {
+      console.trace();
+      console.log("Warning: uicanvas.on_gl_lost() called multiple times");
+      return;
+    }
+    
+    this.gl = new_gl;
+    this.drawlists = new GArray();
+    
+    this.iconsheet = g_app_state.raster.iconsheet;
+    this.iconsheet16 = g_app_state.raster.iconsheet16;
+    
+    this.textcache = {};
+    this.textcachelen = 0;
+    
+    this.stack = []
+    this.raster = g_app_state.raster;
+    
+    this.cache = new hashtable();
+    this.oldcache = new hashtable();
+    
+    this.new_trilist();
+    
+    //now that gl data is destroyed,
+    //call .reset to maintain data structure integrity
+    this.reset();
+  }
+  
   push_scissor(pos, size) {
     var oldpos = pos;
     

@@ -22,6 +22,17 @@ class Area extends UIFrame {
     return ob;
   }
 
+  on_gl_lost(WebGLRenderingContext new_gl) {
+    for (var c in this.cols) {
+      c.on_gl_lost();
+    }
+    for (var c in this.rows) {
+      c.on_gl_lost();
+    }
+    
+    prior(Area, this).on_gl_lost.call(this, new_gl);
+  }
+  
   on_add(parent)
   {
     this.build_topbar();
@@ -252,7 +263,16 @@ class ScreenArea extends UIFrame {
     prior(ScreenArea, this).build_draw.call(this, canvas, isVertical);
     //canvas.pop_transform();
   }
-
+  
+  on_gl_lost(WebGLRenderingContext new_gl) {
+    this.gl = gl;
+    
+    this.canvas.on_gl_lost(new_gl);
+    for (var c in this.children) {
+      c.on_gl_lost(new_gl);
+    }
+  }
+  
   on_draw(WebGLRenderingContext gl)
   {
     //reset internal 2d canvas object cache state

@@ -78,6 +78,8 @@ class EventHandler {
   on_mousemove(MouseEvent event) { }
   on_mousedown(MouseEvent event) { }
   
+  on_gl_lost(WebGLRenderingContext new_gl) { }
+  
   //touch events
   on_mouseup2(MouseEvent event) { }
   on_mouseup3(MouseEvent event) { }

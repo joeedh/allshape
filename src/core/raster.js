@@ -54,7 +54,18 @@ class RasterState {
     this.viewport_stack = new CacheStack(2)
     this.scissor_stack = new CacheStack(4)
   }
-
+  
+  on_gl_lost(WebGLRenderingContext gl) {
+    //need to finish fontmanager code
+    this.fonts = new FontManager();
+    
+    this.font = this.fonts.get_font(gl, this, 10);
+    this.pos = [0, 0];
+    
+    this.iconsheet = new IconManager(gl, "content/iconsheet.png", [512, 512], [32, 32]);
+    this.iconsheet16 = new IconManager(gl, "content/iconsheet16.png", [256, 256], [16, 16]);
+  }
+  
   begin_draw(gl, pos, size) {
     this.gl = gl;
     this.pos = pos;

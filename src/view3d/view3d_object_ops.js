@@ -13,6 +13,10 @@ class ObjectEditor extends View3DEditor {
     View3DEditor.call(this, "Object", EditModes.OBJECT, DataTypes.OBJECT, keymap);
     this.define_keymap()
   }
+  
+  on_gl_lost(WebGLRenderingContext new_gl) {
+    this.gl = gl;
+  }
 
   define_keymap() {
     var k = this.keymap;

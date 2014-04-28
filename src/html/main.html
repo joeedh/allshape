@@ -1135,11 +1135,8 @@ function toJSON_intern (ob, tlevel) {
                            gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);    
     }
     
-    function init()
+    function init_gl()
     {
-        //initialize struct pack system
-        init_struct_packer();
-        
         // Initialize
         var gl = initWebGL(
             // The id of the Canvas Element
@@ -1263,7 +1260,20 @@ function toJSON_intern (ob, tlevel) {
         gl.uniform3f(gl.getUniformLocation(program.program, "lightDir1"), l1[0], l1[1], l1[2]);
         gl.uniform3f(gl.getUniformLocation(program.program, "lightDir2"), l2[0], l2[1], l2[2]);
         gl.uniform1i(gl.getUniformLocation(program.program, "sampler2d"), 0);
-
+        
+        return gl;
+    }
+    
+    function init()
+    {
+        //spawn webgl
+        gl = init_gl();
+        
+        init_ctxloss_ext();
+        
+        var program = gl.program;
+        var program2 = gl.program2;
+        
         // Create some matrices to use later and save their locations in the shaders
         g.mvMatrix = new Matrix4();
         g.mvMatrix.rotate(Math.PI/2.0, new Vector3([1, 0, 0]));
@@ -1281,17 +1291,23 @@ function toJSON_intern (ob, tlevel) {
         canvas.width = canvas.clientWidth;
         canvas.height = canvas.clientHeight;
         
-        console.log("initializing data api...");
-        api_define_ops();
-        api_define_context();
+        //init() is called on context restore, too
+        if (g_app_state == undefined) {
+          //initialize struct pack system
+          init_struct_packer();
+          
+          console.log("initializing data api...");
+          api_define_ops();
+          api_define_context();
         
-        g_app_state = new AppState(undefined, undefined, gl);
-        g_app_state.size = [canvas.clientWidth, canvas.clientHeight];
+          g_app_state = new AppState(undefined, undefined, gl);
+          g_app_state.size = [canvas.clientWidth, canvas.clientHeight];
         
-        console.log("generating start file...");
-        gen_default_file([canvas.clientWidth, canvas.clientHeight]);
+          console.log("generating start file...");
+          gen_default_file([canvas.clientWidth, canvas.clientHeight]);
         
-        g_app_state.session.validate_session();
+          g_app_state.session.validate_session();
+        }
         
         return gl;
     }
@@ -1348,7 +1364,8 @@ function toJSON_intern (ob, tlevel) {
           //document.getElementById("tottri").innerHTML = "Tris: " + g.view3d.mesh.faces.length + " Edges: " + g.   view3d.mesh.edges.length + " Verts: " + g.view3d.mesh.verts.length
         }
     }
-
+    
+    _draw_gl = undefined;
     function start()
     {
         var canvas;
@@ -1385,14 +1402,14 @@ function toJSON_intern (ob, tlevel) {
         if (!gl) {
            return;
         }
-
-        currentAngle = 0;
-        incAngle = 0.5;
+        
+        _draw_gl = gl;
+        
         //framerate = new Framerate("framerate");
         var f = function() {
           try {
             if (!_skip_draw) 
-              drawPicture(gl);
+              drawPicture(_draw_gl);
           } catch (_error) {
             print_stack(_error);
             console.log("Draw error: ", _error.message);
@@ -1416,6 +1433,8 @@ function toJSON_intern (ob, tlevel) {
         
         
         function handleTouchMove(e) {
+          if (gl_ctx_lost) return;
+          
           g_app_state.was_touch = true;
           stop_event_propegation(e);
             
@@ -1441,6 +1460,8 @@ function toJSON_intern (ob, tlevel) {
         }
         
         function handleMouseMove(e) {
+          if (gl_ctx_lost) return;
+          
           g_app_state.was_touch = false;
           if (g_app_state.eventhandler != undefined) {
             g_app_state.eventhandler._on_mousemove(new MyMouseEvent(e.pageX, g_app_state.screen.size[1] - e.pageY, 0, MyMouseEvent.MOUSEMOVE));
@@ -1448,6 +1469,8 @@ function toJSON_intern (ob, tlevel) {
         }
 
         function handleMouseWheel(event) {
+          if (gl_ctx_lost) return;
+          
           //code kindly taken from http://www.adomas.org/javascript-mouse-wheel/
           
           var delta = 0;
@@ -1484,6 +1507,8 @@ function toJSON_intern (ob, tlevel) {
         }
         
         function handleTouchCancel(e) {
+          if (gl_ctx_lost) return;
+          
           g_app_state.was_touch = true;
           stop_event_propegation(e);
           
@@ -1532,6 +1557,8 @@ function toJSON_intern (ob, tlevel) {
           }
          
           function handleTouchDown(e) {
+            if (gl_ctx_lost) return;
+          
             g_app_state.was_touch = true;
             stop_event_propegation(e);
             
@@ -1565,6 +1592,8 @@ function toJSON_intern (ob, tlevel) {
          }
           
           function handleTouchUp(e) {
+            if (gl_ctx_lost) return;
+            
             g_app_state.was_touch = true;
             stop_event_propegation(e);
             
@@ -1598,6 +1627,8 @@ function toJSON_intern (ob, tlevel) {
          }
         
         function handleMouseDown(e) {
+          if (gl_ctx_lost) return;
+          
           g_app_state.was_touch = false;
           if (g_app_state.screen != undefined) {
             var e2 = new MyMouseEvent(e.pageX, g_app_state.screen.size[1] - e.pageY, e.button, MyMouseEvent.MOUSEDOWN);
@@ -1616,6 +1647,8 @@ function toJSON_intern (ob, tlevel) {
         }
         
         function handleMouseUp(e) {
+          if (gl_ctx_lost) return;
+          
           g_app_state.was_touch = false;
           if (g_app_state.screen != undefined) {
             var e2 = new MyMouseEvent(e.pageX, g_app_state.screen.size[1] - e.pageY, e.button, MyMouseEvent.MOUSEDOWN);
@@ -1681,6 +1714,8 @@ function toJSON_intern (ob, tlevel) {
         
         function handleKeyDown(e) {
           handle_key_exclude(e);
+          if (gl_ctx_lost) return;
+          
           
           
           if (g_app_state.screen != undefined)
@@ -1689,6 +1724,8 @@ function toJSON_intern (ob, tlevel) {
         
         function handleKeyUp(e) {
           handle_key_exclude(e);
+          if (gl_ctx_lost) return;
+          
           
           if (g_app_state.screen != undefined)
             g_app_state.eventhandler._on_keyup(e);
@@ -1696,6 +1733,8 @@ function toJSON_intern (ob, tlevel) {
         
         function handleKeyPress(e) {
           handle_key_exclude(e);
+          if (gl_ctx_lost) return;
+          
           
           if (g_app_state.screen != undefined) {
             if (e.charCode == 0 || e.charCode == 13 || e.charCode == undefined)
@@ -1714,9 +1753,14 @@ function toJSON_intern (ob, tlevel) {
             g_app_state.eventhandler._on_keyinput(e);
         }
         
+        var gl_ctx_lost = false;
         function handleContextLost(e) {
             e.preventDefault();
             clearLoadingImages();
+            
+            _draw_gl = gl = undefined;
+            
+            gl_ctx_lost = true;
             if (requestId !== undefined) {
                 window.cancelAnimFrame(requestId);
                 requestId = undefined;
@@ -1724,7 +1768,11 @@ function toJSON_intern (ob, tlevel) {
         }
 
         function handleContextRestored() {
-            init();
+            gl = _draw_gl = init();
+            
+            g_app_state.on_gl_lost(_draw_gl);
+            
+            gl_ctx_lost = false;
             f();
         }
     }

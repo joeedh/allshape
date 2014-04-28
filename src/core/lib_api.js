@@ -183,6 +183,15 @@ class DataLib {
     this.idmap = {};
     this.idgen = new EIDGen();
   }
+    
+  on_gl_lost(WebGLRenderingContext new_gl) {
+    for (var k in this.datalists) {
+      var l = this.datalists.get(k);
+      for (var block in l) {
+        block.on_gl_lost(new_gl);
+      }
+    }
+  }  
   
   get_datalist(int typeid) : DataList {
     var dl;
@@ -383,6 +392,7 @@ class DataBlock {
     this.flag = 0;
   }
   
+  on_gl_lost(WebGLRenderingContext new_gl) { }
   on_add(DataLib lib) { }
   on_remove(DataLib lib) { }
   
