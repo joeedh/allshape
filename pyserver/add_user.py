@@ -170,9 +170,6 @@ def main(obj):
   
   rename_key(obj, "last", "name_last")
   rename_key(obj, "first", "name_first")
-  
-  #XXX
-  obj["email"] = "joeedh@gmail.com"
 
   body = """Welcome to the All-Shape beta.
   
@@ -203,6 +200,8 @@ def main(obj):
   s = smtplib.SMTP('localhost')
   s.sendmail("no-reply@all-shape.com", obj["email"], msg.as_string())
   s.quit()
+  
+  cur.execute(qstr)
   
 main(obj)
   
