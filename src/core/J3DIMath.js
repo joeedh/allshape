@@ -1098,6 +1098,12 @@ class Vector3 extends Array {
     return this;
   }
 
+  loadxy(Array<float> vec2, float z=0) {
+    this[0] = vec2[0];
+    this[1] = vec2[1];
+    this[3] = z;
+  }
+  
   load(Array<float> vec3)
   {
     this[0] = vec3[0];

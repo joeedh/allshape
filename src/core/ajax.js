@@ -793,8 +793,15 @@ function api_exec(path, netjob, mode,
         }
       }
     } else if (req.status >= 400) {
-      error(netjob, netjob.owner, req.responseText);
-      console.log(req.readyState, req.status, req.responseText);
+      var resp;
+      try {
+        resp = req.responseText;
+      } catch (err) {
+        resp = "";
+      }
+      
+      error(netjob, netjob.owner, resp);
+      console.log(req.readyState, req.status, resp);
     }
   }
   

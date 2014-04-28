@@ -1,7 +1,7 @@
+"use strict";
 global PackedDialog;
 
-FileDialogModes = {OPEN: "Open", SAVE: "Save"}
-
+var FileDialogModes = {OPEN: "Open", SAVE: "Save"}
 var fdialog_exclude_chars = new set([
   "*",
   "\\",
@@ -64,7 +64,7 @@ class FileDialog extends PackedDialog {
       this2.do_recalc();
     }
     
-    was_closed = false;
+    var was_closed = false;
     function error(job, owner, msg) {
       if (!was_closed) {
         error_dialog(this2.ctx, "Network Error", function() {
@@ -110,7 +110,7 @@ class FileDialog extends PackedDialog {
 function file_dialog(mode, ctx, callback)
 {
   console.log(ctx, ctx.screen);
-  fd = new FileDialog(mode, ctx, callback);
+  var fd = new FileDialog(mode, ctx, callback);
   fd.call(ctx.screen.mpos);  
 }
 
@@ -185,7 +185,7 @@ class FileSaveAsOp extends ToolOp {
     ctx = new Context();
     var pd = new ProgressDialog(ctx, "Uploading");
     
-    mesh_data = g_app_state.create_user_file_new().buffer;
+    var mesh_data = g_app_state.create_user_file_new().buffer;
     function error(job, owner, msg) {
       pd.end()
       error_dialog(ctx, "Network Error", undefined, true);
@@ -262,7 +262,7 @@ class FileSaveOp extends ToolOp {
   exec(ctx) {
     console.log("File save");
     
-    mesh_data = g_app_state.create_user_file_new().buffer;
+    var mesh_data = g_app_state.create_user_file_new().buffer;
     
     /*I should really make these file operations modal, since
         they create ui elements
@@ -466,7 +466,7 @@ function error_dialog(Context ctx, String msg, Function callback=undefined, Bool
 
 function login_dialog(ctx)
 {
-  ld = new LoginDialog(ctx);
+  var ld = new LoginDialog(ctx);
   
   ld.call(new Vector2(ctx.screen.size).mulScalar(0.5).floor());  
 }
@@ -486,7 +486,7 @@ class FileSaveSTLOp extends ToolOp {
   exec(ctx) {
     console.log("Export STL");
     
-    mesh_data = export_stl_str(ctx.mesh).buffer;
+    var mesh_data = export_stl_str(ctx.mesh).buffer;
     
     /*I should really make these file operations modal, since
         they create ui elements
@@ -533,6 +533,88 @@ class FileSaveSTLOp extends ToolOp {
       var url2 = "/api/files/upload?accessToken="+token;
       
       call_api(upload_file, {data:mesh_data, url:url, chunk_url:url2}, finish, error, status);
+    }
+    
+    file_dialog("SAVE", new Context(), save_callback);
+  }
+}
+
+class FileSaveB64Op extends ToolOp {
+  constructor() {
+    ToolOp.call(this, "export_al3_b64", "Export AL3-B64");
+    
+    this.is_modal = false;
+    
+    this.undoflag = UndoFlags.IGNORE_UNDO;
+    this.flag = ToolFlags.HIDE_TITLE_IN_LAST_BUTTONS;
+    
+    this.inputs = {path : new StringProperty("", "path", "File Path", "File Path")};
+  }
+    
+  exec(ctx) {
+    console.log("Export AL3-B64");
+    
+    var buf = g_app_state.create_user_file_new(true, true, true)
+    buf = b64encode(new Uint8Array(buf.buffer));
+    
+    //line wrap
+    var buf2 = ""
+    for (var i=0; i<buf.length; i++) {
+      buf2 += buf[i];
+      if (((i+1)%79) == 0) {
+        buf2 += "\n";
+      }
+    }
+    buf = buf2;
+    
+    var byte_data = [];
+    pack_static_string(byte_data, buf, buf.length);
+    byte_data = new Uint8Array(byte_data).buffer;
+    
+    /*I should really make these file operations modal, since
+        they create ui elements
+     */
+    ctx = new Context();
+    var pd = new ProgressDialog(ctx, "Uploading");
+    
+    function error(job, owner, msg) {
+      pd.end()
+      error_dialog(ctx, "Network Error", undefined, true);
+    }
+    
+    function status(job, owner, status) {
+      pd.value = status.progress;
+      pd.bar.do_recalc();
+      console.log("status: ", status.progress, pd.bar.max);
+    }
+    
+    var this2 = this;
+    function finish(job, owner) {
+      console.log("finished uploading");
+      var url = "/api/files/get?path=/"+this2._path + "&";
+      url += "accessToken="+g_app_state.session.tokens.access;
+      
+      console.log(url)
+      window.open(url);
+      
+      pd.end();
+    }
+    
+    function save_callback(dialog, path) {
+      pd.call(ctx.screen.mpos);
+      
+      console.log("saving...", path);
+      
+      if (!path.endsWith(".al3.b64")) {
+        path = path + ".al3.b64";
+      }
+      this2._path = path;
+      
+      var token = g_app_state.session.tokens.access;
+      var url = "/api/files/upload/start?accessToken="+token+"&path="+path
+      var url2 = "/api/files/upload?accessToken="+token;
+      
+      call_api(upload_file, {data:byte_data, url:url, chunk_url:url2}, finish, error, status);
     }
     
     file_dialog("SAVE", new Context(), save_callback);

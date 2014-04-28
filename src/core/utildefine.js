@@ -1,5 +1,6 @@
 var $_mh;
 
+#define NOCACHE
 
 #ifdef NOCACHE
 #define CACHEARR2(a, b) [a, b]

@@ -189,8 +189,10 @@ class Dialog extends UIFrame {
       this.screen.pop_modal();
     }
     
-    this.screen.remove(this);
-    this.screen.canvas.reset();
+    if (this.screen.children.has(this)) {
+      this.screen.remove(this);
+      this.screen.canvas.reset();
+    }
   }
 }
 

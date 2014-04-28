@@ -181,7 +181,7 @@ class TriList {
     this.viewport = canvas != undefined ? canvas.viewport : undefined;
   }
 
-  add_tri(Vector3 v1, Vector3 v2, Vector3 v3, 
+  add_tri(Array<float> v1, Array<float> v2, Array<float> v3, 
           Array<float> c1, Array<float> c2, Array<float> c3,
           Array<float> t1, Array<float> t2, Array<float> t3) 
   {
@@ -192,7 +192,7 @@ class TriList {
     static v22 =  new Vector3();
     static v32 =  new Vector3();
     
-    v12.load(v1); v22.load(v2); v32.load(v3);
+    v12.loadxy(v1); v22.loadxy(v2); v32.loadxy(v3);
     v1 = v12; v2 = v22; v3 = v32;
     
     this.transform(v1); this.transform(v2); this.transform(v3);
@@ -288,7 +288,7 @@ class TriList {
     //this.line_strip(objcache.getarr(objcache.getarr(v1, v2), objcache.getarr(c1, c2)), undefined, width);
   }
   
-  line_strip(lines, colors, texcos, width=2.0, half=false) {//width, width are optional
+  line_strip(lines, colors, texcos=undefined, width=2.0, half=false) {
     static black = new Vector4([0.0, 0.0, 0.0, 1.0]);
     
     static v0 = new Vector3(), v1 = new Vector3(), v2 = new Vector3();
@@ -304,14 +304,14 @@ class TriList {
       if (lc1 == undefined) lc1 = black;
       if (lc2 == undefined) lc2 = black;
       
-      v1.load(lines[i][0])
-      v2.load(lines[i][1])
+      var z = 0.0;
+
+      v1.loadxy(lines[i][0])
+      v2.loadxy(lines[i][1])
       
       n0.zero(); n1.zero(); n2.zero();
       
-      var z = 0.0;
-      
-      v1.load(lines[i][1]);
+      v1.loadxy(lines[i][1]);
       v1.sub(lines[i][0]);
       v1.normalize();
       
@@ -321,7 +321,7 @@ class TriList {
       n1.normalize()
       
       if (i > 0) {
-        v0.load(lines[i-1][1]);
+        v0.loadxy(lines[i-1][1]);
         v0.sub(lines[i-1][0])
         v0.normalize();
         
@@ -333,11 +333,11 @@ class TriList {
         n0.load(n1);
       }
       
-      v1.load(lines[i][1]);
+      v1.loadxy(lines[i][1]);
       v1.sub(lines[i][0])
       
       if (i < lines.length-1) {
-        v3.load(lines[i+1][1]);
+        v3.loadxy(lines[i+1][1]);
         v3.sub(lines[i+1][0]);
         v3.normalize();
         
@@ -365,12 +365,12 @@ class TriList {
       n1.mulScalar(width*0.5);
       n2.mulScalar(width*0.5);
       
-      v0.load(lines[i][0]);
-      v1.load(lines[i][1]);
+      v0.loadxy(lines[i][0]);
+      v1.loadxy(lines[i][1]);
       
-      v2.load(lines[i][1]);
+      v2.loadxy(lines[i][1]);
       v2.add(n1);
-      v3.load(lines[i][0]);
+      v3.loadxy(lines[i][0]);
       v3.add(n2);
       
       var c1 = _trilist_c1.load(lc1); var c2 = _trilist_c2.load(lc2);
@@ -396,7 +396,7 @@ class TriList {
   }
   
   destroy(Boolean only_gl=false) {
-    if (this.view3d != undefined && !this._dead) {
+    if (this.view3d != undefined) {
       var gl = this.view3d.gl
       
       if (this.vbuf) {
@@ -871,11 +871,7 @@ class UICanvas {
     return [box[0]*size, box[1]*size];
   }
 
-  line(v1, v2, c1, c2, width) {
-    if (c2 == undefined) {
-      c2 = c1;
-    }
-    
+  line(v1, v2, c1, c2=c1, width=2.0) {
     this.line_strip([[v1, v2]], [[c1, c2]], undefined, width);
   }
 
@@ -1320,6 +1316,7 @@ class UICanvas {
     //all cache entries with old size are now bad
     for (var k in this.textcache) {
       if (!this.textcache.hasOwnProperty(k)) continue;
+      
       this.textcache[k].destroy();
     }
     
@@ -1328,6 +1325,7 @@ class UICanvas {
     
     //clear entire cache
     this.destroy();
+    this.reset();
   }
   
   text(Array<float> pos, String text, Array<float> color, Number size, Array<float> scissor_pos, Array<float> scissor_size)
@@ -1389,6 +1387,7 @@ class UICanvas {
             users[j].recalc = true;
             users[j].tdrawbuf = undefined;
           }
+          
           delete this.textcache[k];
           this.textcachelen--;
           
@@ -1407,7 +1406,7 @@ class UICanvas {
     this.textcache[hash].users.push(textdraw);
     
     //-XXX
-    if (0) { //this.drawlists[this.drawlists.length-1] == this.trilist) {
+    if (this.drawlists[this.drawlists.length-1] == this.trilist) {
       this.drawlists.push(textdraw);
       
       this.new_trilist();

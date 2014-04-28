@@ -564,6 +564,9 @@ class FileAPI_UploadStart:
     ustatus.create(utoken, path, userid, fileid)
     ustatus.commit()
     
+    f = open(ustatus.realpath, "w");
+    f.close();
+    
     realpath = ustatus.realpath
     cur, con = mysql_connect()
     
@@ -782,4 +785,6 @@ class FileAPI_GetFile:
     file.close()
     
     serv.gen_headers("GET", len(body), "application/octet-stream")
+    serv.send_header("Content-Disposition", "attachment; filename=\"%s\"" % f["name"])
+    #Content-Disposition: attachment; filename=FILENAME
     serv.wfile.write(body)

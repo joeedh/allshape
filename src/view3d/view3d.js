@@ -109,6 +109,7 @@ class View3DHandler extends Area {
     this.mesh = mesh;
     this.sidmap = {}; //stores objects, and possibly manipulator widgets and the like
     
+    this.framebuffer = undefined : FrameBuffer;
     this.csg_render = undefined;
     this.draw_csg = false;
     this.znear = znear;
@@ -1031,12 +1032,15 @@ class View3DHandler extends Area {
 
   gen_file_menu(Context ctx, uimenulabel)
   {
-    return toolop_menu(ctx, "", 
-      ["appstate.export_stl()",
+    return toolop_menu(ctx, "",    
+      [
+      "appstate.export_al3_b64()",
+      "appstate.export_stl()",
       "appstate.save_as()", 
       "appstate.save()", 
       "appstate.open()",
-      "appstate.new()"]);
+      "appstate.new()"
+      ]);
   }
   
   gen_session_menu(Context ctx, uimenulabel)
@@ -1314,7 +1318,6 @@ class View3DHandler extends Area {
   }
 }
 
-View3DHandler.framebuffer = undefined;
 View3DHandler.STRUCT = STRUCT.inherit(View3DHandler, Area) + """
     use_backbuf_sel : int;
     drawmats        : DrawMats;

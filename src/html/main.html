@@ -1143,7 +1143,12 @@ function toJSON_intern (ob, tlevel) {
             "example");
   
         if (!gl) {
-          return;
+          return undefined;
+        }
+        
+        if (DEBUG.gl_objects) {
+          gld = new WebGLObjManager();
+          gld.patch_gl(gl);
         }
         
         gl.getExtension("OES_TEXTURE_FLOAT");

@@ -435,6 +435,9 @@ function api_define_ops() {
     "appstate.export_stl" : function(ctx, args) {
       return new FileSaveSTLOp();
     },
+    "appstate.export_al3_b64" : function(ctx, args) {
+      return new FileSaveB64Op();
+    },
     "appstate.save" : function(ctx, args) {
       return new FileSaveOp();
     },

@@ -726,8 +726,11 @@ function gpu_subsurf(gl, in_mesh2, steps, ss_mesh) {
   
   if (ss_mesh != undefined) {
       themesh.render = ss_mesh.render;
-      gl.deleteTexture(ss_mesh.render.ss_tex);
-      gl.deleteTexture(ss_mesh.render.util_tex);
+      if (ss_mesh.render.ss_tex != null)
+        gl.deleteTexture(ss_mesh.render.ss_tex);
+      if (ss_mesh.render.util_tex != null)
+        gl.deleteTexture(ss_mesh.render.util_tex);
+      ss_mesh.render.ss_tex = ss_mesh.render.util_tex = null;
   }
   
   themesh.render.ss_tex = gl.createTexture();

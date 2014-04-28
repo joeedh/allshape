@@ -23,6 +23,7 @@ var FEATURES = {
 
 //debug flags
 var DEBUG = {
+  gl_objects : true,
   Struct : false,
   modal : false, 
   datalib : false, 
