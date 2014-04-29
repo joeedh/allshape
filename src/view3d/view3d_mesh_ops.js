@@ -893,7 +893,7 @@ class MeshEditor extends View3DEditor {
   }
   
   //returns list of [face, distance from mpos] pairs
-  sample_area(Array<float> mpos, int size=this.sel_threshold, int samples=25) {
+  sample_area(Array<float> mpos, int size=this.sel_threshold, int samples=IsMobile ? 7 : 25) {
     var points = this._oc_get_cached_points(size, samples);
     var mpos2 = [0, 0];
     var mesh = this.mesh;
