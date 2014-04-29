@@ -214,6 +214,16 @@ class AppState {
     this.mesh = mesh;  
   }
 
+  destroy() { //destroy GL object references
+    var gl = this.gl;
+    
+    for (var m in this.datalib.meshes) {
+      m.render.destroy();
+    }
+    
+    this.screen.destroy();
+  }
+  
   on_gl_lost(WebGLRenderingContext new_gl) {
     this.gl = new_gl;
     this.raster.on_gl_lost(new_gl);

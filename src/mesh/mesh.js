@@ -2,7 +2,7 @@
 
 var Flags = {SELECT: 1, SHADE_SMOOTH: 2, DIRTY: 4, TEMP: 8}
 var MeshTypes = {VERT: 1, EDGE: 2, LOOP: 4, FACE: 8}
-var MeshFlags = {USE_MAP_CO: 1, TESS_JOB_FINISHED: 2}
+var MeshFlags = {USE_MAP_CO: 2, TESS_JOB_FINISHED: 4}
 var MeshEvents = {RECALC : 1, DESTROY : 2}
 
 class TopoError extends Error {

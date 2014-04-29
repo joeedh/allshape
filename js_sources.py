@@ -21,6 +21,7 @@ sources = [
   "src/util/workerutils.js",
 	"src/core/lib_api.js",
 	"src/util/mathlib.js",
+  "src/util/isect.js",
   "src/util/octree.js",
   "src/core/gl_debug.js",
 	"src/util/parseutil.js",

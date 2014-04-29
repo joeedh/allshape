@@ -148,6 +148,25 @@ function get_rect_lines(p, size)
   }
 }
 
+function simple_tri_aabb_isect(v1, v2, v3, min, max) {
+  static vs = [0, 0, 0];
+  
+  vs[0] = v1; vs[1] = v2; vs[2] = v3;
+  for (var i=0; i<3; i++) {
+    var isect = true;
+    
+    for (var j=0; j<3; j++) {
+      if (vs[j][i] < min[i] || vs[j][i] >= max[i])
+        isect = false;
+    }
+    
+    if (isect)
+      return true;
+  }
+  
+  return false;
+}
+
 class MinMax {
   constructor(int totaxis) {
     this.totaxis = totaxis;

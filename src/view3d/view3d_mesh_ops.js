@@ -751,7 +751,42 @@ class MeshEditor extends View3DEditor {
     
     return fpick;
   }
-
+  
+  findnearestface_octree(Vector2 mpos, OcTree octree=undefined) {
+    var mesh = this.ctx.mesh;
+    
+    if (octree == undefined)
+      octree = build_octree(mesh);
+    
+    var size = this.view3d.size;
+    static dir = new Vector3();
+    static r1 = new Vector3(), r2 = new Vector3();
+    static pmat = new Matrix4();
+    
+    dir.loadxy(mpos);
+    
+    dir[0] /= size[0]*0.5; dir[0] -= 1.0;
+    dir[1] /= size[1]*0.5; dir[1] -= 1.0;
+    
+    r1.load(dir);
+    r1[2] = 0.0001;
+    r2.load(dir);
+    r2[2] = 4000.0;
+    
+    pmat.load(this.view3d.drawmats.rendermat);
+    pmat.invert();
+    
+    r1.multVecMatrix(pmat);
+    r2.multVecMatrix(pmat);
+    
+    dir.load(r1).sub(r2).normalize();
+    dir = new Vector3(dir);
+    
+    var ret = octree.isect_ray(r1, dir);
+    
+    return ret;
+  }
+  
   findnearestface(Vector2 mpos) {
     var pmat = new Matrix4(this.view3d.drawmats.rendermat);
     

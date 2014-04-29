@@ -401,7 +401,14 @@ class View3DHandler extends Area {
     this.drawmats.normalmat.load(this.drawmats.cameramat);
     this.drawmats.normalmat.invert();
     this.drawmats.normalmat.transpose();
-
+    
+    if (this.drawmats.cameramat_zoom == undefined)
+      this.drawmats.cameramat_zoom = new Matrix4();
+    
+    this.drawmats.cameramat_zoom.makeIdentity();
+    this.drawmats.cameramat_zoom.translate(0, 0, this.zoomfac);
+    this.drawmats.cameramat_zoom.multiply(this.drawmats.cameramat);
+    
     // Construct the model-view * projection matrix and pass it in
     this.drawmats.rendermat.makeIdentity();
     
@@ -745,6 +752,13 @@ class View3DHandler extends Area {
     prior(View3DHandler, this).on_tick.call(this);
   }
   
+  destroy() {
+    this.canvas.destroy();
+    if (this.framebuffer != undefined) {
+      this.framebuffer.destroy(this.gl);
+    }
+  }
+  
   ensure_csg(Boolean is_enabled=true) {
     this.draw_csg = is_enabled;
     
@@ -760,6 +774,7 @@ class View3DHandler extends Area {
       this.csg_render.scene = this.ctx.scene;
     }
   }
+  
   update_selbuf() {
     this.redo_selbuf = true;
   }
@@ -903,6 +918,35 @@ class View3DHandler extends Area {
         console.log("executing unit tests...");
         window.unit_test_env.execute();
       } else {
+        /*var tree = build_octree(new Context().mesh);
+        
+        var dir = new Vector3([1, 1, 2]);
+        dir.normalize();
+        
+        console.log(tree.isect_ray(new Vector3([0, 0, 0]), dir));*/
+        
+        var octree = build_octree(ctx.mesh);
+        var view3d = g_app_state.active_view3d;
+        
+        var steps = 70;
+        var times = [];
+        
+        for (var i=0; i<steps; i++) {
+          var a = time_ms();
+          var ret = view3d.editor.findnearestface_octree(view3d.mpos, octree);
+          var b = time_ms();
+          
+          times.push(b-a);
+        }
+        times.sort();
+        console.log(times);
+        
+        ctx.mesh.api.select_none();
+        if (ret != undefined) {
+          ctx.mesh.faces.select(ctx.mesh.faces.get(ret[0]));
+        }
+        ctx.mesh.regen_colors();
+        
         //test_progress_dialog();
         //g_app_state.toolstack.reexec_stack();
       }

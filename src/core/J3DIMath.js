@@ -1102,6 +1102,8 @@ class Vector3 extends Array {
     this[0] = vec2[0];
     this[1] = vec2[1];
     this[3] = z;
+    
+    return this;
   }
   
   load(Array<float> vec3)
@@ -1263,7 +1265,19 @@ class Vector3 extends Array {
       
       return this;
   }
-
+  
+  subScalar(float scalar)
+  {
+    this[0] -= scalar; this[1] -= scalar; this[2] -= scalar;
+    return this;
+  }
+  
+  addScalar(float scalar)
+  {
+    this[0] += scalar; this[1] += scalar; this[2] += scalar;
+    return this;
+  }
+  
   mulScalar(float scalar)
   {
       this[0] *= scalar; this[1] *= scalar; this[2] *= scalar;

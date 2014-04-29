@@ -905,12 +905,13 @@ class DrawMats {
   constructor(Matrix4 normalmat, Matrix4 cameramat, Matrix4 persmat) {
     this.normalmat = new Matrix4(normalmat);
     this.cameramat = new Matrix4(cameramat);
+    this.cameramat_zoom = new Matrix4(); //cameramat with zoom applied
     this.persmat = new Matrix4(persmat);
     this.rendermat = new Matrix4(); //private
   }
   
   static fromSTRUCT(reader) {
-    var ret = Object.create(DrawMats.prototype);
+    var ret = new DrawMats();
     reader(ret);    
     return ret;
   }

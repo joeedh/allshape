@@ -20,6 +20,15 @@ class FrameBuffer {
   }
 
   destroy(gl) {
+    if (this.rbuf1 != undefined)
+      gl.deleteRenderbuffer(this.rbuf1);
+    if (this.rbuf2 != undefined)
+      gl.deleteRenderbuffer(this.rbuf2);
+    if (this.fbuf != undefined)
+      gl.deleteFramebuffer(this.fbuf);
+    
+    this.rbuf1 = this.rbuf2 = this.fbuf = undefined;
+    
     if (this.textures != undefined) {
       for (var t in this.textures) {
         gl.deleteTexture(t);
@@ -52,8 +61,6 @@ class FrameBuffer {
   regen() {
     var gl = this.gl;
     
-    gl.getExtension("WEBGL_depth_texture");
-   
     this.size[0] = Math.ceil(this.size[0]);
     this.size[1] = Math.ceil(this.size[1]);
     
@@ -81,6 +88,8 @@ class FrameBuffer {
       gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, 
                                 gl.RENDERBUFFER, this.rbuf2);
     } else {
+      gl.getExtension("WEBGL_depth_texture");
+      
       if (this.textures != undefined) {
         for (var t in this.textures) {
           gl.deleteTexture(t);

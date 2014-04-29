@@ -14,7 +14,11 @@ class Area extends UIFrame {
     
     this.note_area = undefined;
   }
-
+  
+  //destroy GL data
+  destroy() {
+  }
+  
   static fromSTRUCT(reader) {
     var ob = {};
     reader(ob);
@@ -132,7 +136,13 @@ class ScreenArea extends UIFrame {
     if (add_area)
       this.add(area);
   }
-
+  
+  destroy() {
+    for (var c in this.editors) {
+      c.destroy();
+    }
+  }
+  
   static fromSTRUCT(reader) {
     var ob = Object.create(ScreenArea.prototype);
     
@@ -1042,6 +1052,16 @@ class Screen extends UIFrame {
     return ob;
   }
 
+  destroy() {
+    this.canvas.destroy();
+    
+    for (var c in this.children) {
+      if (c instanceof ScreenArea) {
+        c.destroy();
+      }
+    }
+  }
+  
   split_areas() {
     console.log("split areas", this);
     
