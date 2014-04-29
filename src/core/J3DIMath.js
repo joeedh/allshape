@@ -1534,7 +1534,7 @@ function Vector2(Array<float> vec) {
   if (vec[1] == undefined) vec[1] = 0;
   
   if (typeof(vec) == "number" || typeof(vec[0]) != "number")
-    throw new Error("Invalid argument to new Vector2(vec)")
+    throw new Error("Invalid argument to new Vector2(vec): " + JSON.stringify(vec))
   
   this[0] = vec[0];
   this[1] = vec[1];

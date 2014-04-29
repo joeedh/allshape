@@ -49,14 +49,18 @@ class UIElement extends EventHandler {
     this.flash_timer_len = 0.2; //seconds
     this.flash_timer = undefined;
     
-    if (pos == undefined)
-      pos = [0, 0];
+    this.pos = [0, 0];
+    this.size = [0, 0];
     
-    if (size == undefined)
-      size = [0, 0];
+    if (pos != undefined) {
+      this.pos[0] = pos[0];
+      this.pos[1] = pos[1];
+    }
     
-    this.size = size
-    this.pos = pos
+    if (size != undefined) {
+      this.size[0] = size[0];
+      this.size[1] = size[1];
+    }
     
     this.recalc = 0;
     
@@ -354,13 +358,11 @@ class UIHoverBox extends UIElement {
 }
 
 class UIHoverHint extends UIElement {
-  constructor(ctx, path=undefined, pos=undefined, size=undefined) {
+  constructor(Context ctx, String path=undefined, Array<float> pos=undefined, Array<float> size=undefined) {
     global ui_hover_time;
     
     UIElement.call(this, ctx, path, pos, size);
     
-    this.size = size;
-    this.pos = pos;
     this.start_time = 0;
     this.hover_time = ui_hover_time;
     this.hovering = false;

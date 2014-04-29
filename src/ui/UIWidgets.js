@@ -194,8 +194,16 @@ class UIMenuButton extends UIHoverHint {
     this.clicked = false;
     this.text = ""
     this.val = 0;
-    this.pos = pos
-    this.size = size
+    
+    if (pos != undefined) {
+      this.pos[0] = pos[0];
+      this.pos[1] = pos[1];
+    }
+    if (size != undefined) {
+      this.size[0] = size[0];
+      this.size[1] = size[1];
+    }
+    
     this.callback = undefined;
     this.prop = undefined : ToolProperty;
     
@@ -347,8 +355,16 @@ class UICheckBox extends UIHoverHint {
     this.set = false;
     this.mdown = false;
     this.text = text
-    this.pos = pos
-    this.size = size
+
+    if (pos != undefined) {
+      this.pos[0] = pos[0];
+      this.pos[1] = pos[1];
+    }
+    if (size != undefined) {
+      this.size[0] = size[0];
+      this.size[1] = size[1];
+    }
+
     this.callback = undefined;
     
     this.prop = undefined : ToolProperty;
@@ -473,8 +489,14 @@ class UINumBox extends UIHoverHint {
     this.set = true;
     this.text = text
     this.is_int = false;
-    this.pos = pos
-    this.size = size
+    if (pos != undefined) {
+      this.pos[0] = pos[0];
+      this.pos[1] = pos[1];
+    }
+    if (size != undefined) {
+      this.size[0] = size[0];
+      this.size[1] = size[1];
+    }
     this.callback = undefined;
     this.start_mpos = [0, 0];
     
@@ -679,8 +701,14 @@ class UILabel extends UIElement {
     }
 
     this.clicked = false;
-    this.pos = pos
-    this.size = size
+    if (pos != undefined) {
+      this.pos[0] = pos[0];
+      this.pos[1] = pos[1];
+    }
+    if (size != undefined) {
+      this.size[0] = size[0];
+      this.size[1] = size[1];
+    }
     this.callback = undefined;
   }
   
@@ -796,8 +824,14 @@ class UIMenuLabel extends UIElement {
     this.text = text
     
     this.clicked = false;
-    this.pos = pos
-    this.size = size
+    if (pos != undefined) {
+      this.pos[0] = pos[0];
+      this.pos[1] = pos[1];
+    }
+    if (size != undefined) {
+      this.size[0] = size[0];
+      this.size[1] = size[1];
+    }
     this.callback = undefined;
     this.gen_menu = gen_menu_func;
     this.menu_callback = undefined;
@@ -941,8 +975,10 @@ class UIListBox extends ColumnFrame {
     else
       this.size = [500, 350]; //default size;
     
-    if (pos != undefined)
-      this.pos = pos;
+    if (pos != undefined) {
+      this.pos[0] = pos[0];
+      this.pos[1] = pos[1];
+    }
     
     this.active_entry = undefined : UIListEntry;
     this.callback = callback;
@@ -1104,8 +1140,14 @@ class ScrollButton extends UIElement {
     UIElement.call(this, ctx);
     
     this.clicked = false;
-    this.pos = pos
-    this.size = size
+    if (pos != undefined) {
+      this.pos[0] = pos[0];
+      this.pos[1] = pos[1];
+    }
+    if (size != undefined) {
+      this.size[0] = size[0];
+      this.size[1] = size[1];
+    }
     this.callback = callback;
   }
 
@@ -1157,8 +1199,14 @@ class UIVScroll extends UIFrame {
     this.step = undefined : float;
     this.clicked = false;
     this.range = range
-    this.pos = pos
-    this.size = size
+    if (pos != undefined) {
+      this.pos[0] = pos[0];
+      this.pos[1] = pos[1];
+    }
+    if (size != undefined) {
+      this.size[0] = size[0];
+      this.size[1] = size[1];
+    }
     this.val = 0;
     this.callback = callback;
     
@@ -1325,8 +1373,14 @@ class UIIconCheck extends UIHoverHint {
     this.set = false;
     this.mdown = false;
     this.text = text
-    this.pos = pos
-    this.size = size
+    if (pos != undefined) {
+      this.pos[0] = pos[0];
+      this.pos[1] = pos[1];
+    }
+    if (size != undefined) {
+      this.size[0] = size[0];
+      this.size[1] = size[1];
+    }
     this.callback = undefined;
     this.icon = icon;
     

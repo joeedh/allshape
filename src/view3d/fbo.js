@@ -36,6 +36,33 @@ class FrameBuffer {
     }
   }
   
+  get supported() {
+    this.bind();
+    var valid = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
+    
+    return !!((valid & this.gl.FRAMEBUFFER_UNSUPPORTED) == this.gl.FRAMEBUFFER_UNSUPPORTED);
+  }
+  
+  get status() {
+    var gl = this.gl;
+    this.bind();
+    // assumes the framebuffer is bound
+    var valid = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
+    
+    switch(valid){
+        case gl.FRAMEBUFFER_UNSUPPORTED:
+            return 'Framebuffer is unsupported';
+        case gl.FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
+            return 'Framebuffer incomplete attachment';
+        case gl.FRAMEBUFFER_INCOMPLETE_DIMENSIONS:
+            return 'Framebuffer incomplete dimensions';
+        case gl.FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
+            return 'Framebuffer incomplete missing attachment';
+    }
+    
+    return "good";
+  }
+  
   //returns true if the framebuffer needs to be redrawn
   capture(size, caller) {
     size[0] = Math.ceil(size[0]);

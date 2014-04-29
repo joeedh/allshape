@@ -8,10 +8,14 @@ class UITextBox extends UIElement {
     
     this.on_end_edit = undefined;
     
-    if (pos != undefined)
-      this.pos = pos
-    if (size != undefined)
-      this.size = size;
+    if (pos != undefined) {
+      this.pos[0] = pos[0];
+      this.pos[1] = pos[1];
+    }
+    if (size != undefined) {
+      this.size[0] = size[0];
+      this.size[1] = size[1];
+    }
     
     this.prop = undefined;
     this.text = text
