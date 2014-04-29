@@ -554,6 +554,7 @@ class FileSaveB64Op extends ToolOp {
   exec(ctx) {
     console.log("Export AL3-B64");
     
+    //compression is off, for now
     var buf = g_app_state.create_user_file_new(true, true, true)
     buf = b64encode(new Uint8Array(buf.buffer));
     

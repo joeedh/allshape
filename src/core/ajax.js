@@ -573,6 +573,28 @@ function test_utf8()
   return true;
 }
 
+function debug_unpack_bytes(DataView data, unpack_ctx uctx, int length) : String
+{
+  var s = "";
+
+  var arr = new Array(length);
+  arr.length = 0;
+
+  for (var i=0; i<length; i++) {
+    var c = unpack_byte(data, uctx);
+    
+    try {
+      c = c ? String.fromCharCode(c) : "?";
+    } catch (_err) {
+      c = "?";
+    }
+    
+    s += c;
+  }
+  
+  return s;
+}
+
 var _static_arr_uss = new Array(32);
 function unpack_static_string(DataView data, unpack_ctx uctx, int length) : String
 {

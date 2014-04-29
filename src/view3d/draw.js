@@ -1,6 +1,13 @@
 "use strict"
 
-var MeshRecalcFlags = {REGEN_TESS: 1, REGEN_COLORS: 2, REGEN_COS: 4, REGEN_NORS: 8};
+/*keep this and MeshEvents in mesh.js in sync!*/
+var MeshRecalcFlags = {
+  REGEN_TESS: 1, 
+  REGEN_COLORS: 2, 
+  REGEN_COS: 4, 
+  REGEN_NORS: 8,
+  REGEN_ALL: 1|2|4|8
+};
 
 var sel_color = [0.9, 0.6, 0.2, 1.0];
 var highlight_color = [0.9, 0.4, 0.7, 1.0];
@@ -310,14 +317,7 @@ function render() {
   }
 }
 
-function get_element_color(Element e, Element highlight, Boolean use_face_unsel_color, Boolean use_highlight) { 
-//use_face_unsel_color, use_highlight are optional
-
-    if (use_face_unsel_color == undefined)
-      use_face_unsel_color = false;
-    if (use_highlight == undefined)
-      use_highlight = false;
-    
+function get_element_color(Element e, Element highlight, Boolean use_face_unsel_color=false, Boolean use_highlight=false) { 
     if (use_highlight && e == highlight) {
       if (e.flag & Flags.SELECT)
         return highlight_and_sel_color;

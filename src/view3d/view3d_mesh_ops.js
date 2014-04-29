@@ -85,11 +85,9 @@ class MeshEditor extends View3DEditor {
   }
   
   _update_callback(view3d, mesh, event) {
-    if (event == MeshEvents.RECALC) {
-      if (mesh.render.recalc & (MeshRecalcFlags.REGEN_TESS|MeshRecalcFlags.REGEN_COS)) 
-      {
-        view3d.redo_selbuf = true;
-      }
+    if (event & (MeshRecalcFlags.REGEN_TESS|MeshRecalcFlags.REGEN_COS)) 
+    {
+      view3d.redo_selbuf = true;
     }
   }
   
@@ -553,7 +551,7 @@ class MeshEditor extends View3DEditor {
     var mesh = this.mesh;
     
     var vpick=null;
-    var size=75;
+    var size=this.sel_threshold;
     
     /*make sure the backbuffer has the right data*/
     //theoretically, always drawing edges should improve speed
@@ -604,7 +602,7 @@ class MeshEditor extends View3DEditor {
       return this.findnearest_backbuf(mpos, MeshTypes.EDGE);
       
     var epick = null;
-    var limit=750;
+    var limit=this.sel_threshold;
     var dis = limit;
     mpos = new Vector3([mpos[0], mpos[1], 0.0]);
 
@@ -637,7 +635,7 @@ class MeshEditor extends View3DEditor {
       return this.findnearestedge_mapco(mpos);
       
     var epick = null;
-    var limit=75;
+    var limit=this.sel_threshold;
     var dis = limit;
     mpos = new Vector3([mpos[0], mpos[1], 0.0]);
 
@@ -665,7 +663,7 @@ class MeshEditor extends View3DEditor {
       return this.findnearest_backbuf(mpos, MeshTypes.VERT);
     
     var dis = 100000, vpick=null;
-    var limit=75*75;
+    var limit=this.sel_threshold*this.sel_threshold;
     mpos = new Vector3([mpos[0], mpos[1], 0.0]);
     
     for (var v in this.mesh.verts) {
@@ -686,18 +684,59 @@ class MeshEditor extends View3DEditor {
     
     return vpick;
   }
-
-  findnearestvert(Vector2 mpos) {
+  
+  findnearestvert_octree(Array<float> mpos) : Vertex {
+    var pmat = new Matrix4(this.view3d.drawmats.rendermat);
+    
+    //first, find a face
+    var f = this.findnearestface_octree(mpos);
+    if (f == undefined) return undefined;
+    
+    var limit = this.sel_threshold*this.sel_threshold;
+    var vpick = undefined;
+    
+    mpos = new Vector3([mpos[0], mpos[1], 0.0]);
+    
+    /*search face vertices for a match
+      this should be pretty robust*/
+    for (var v in f.verts) {
+      for (var e in v.edges) {
+        var v2 = e.other_vert(v);
+        
+        var co = new Vector3(v2.co);
+        this.view3d.project(co, pmat);
+        
+        co.sub(mpos);
+        var d = co.vectorLength();
+        if (vpick == undefined || d < limit) {
+          vpick = v2;
+          limit = d;
+        }
+      }
+    }
+    
+    return vpick;
+  }
+  
+  get sel_threshold() {
+    return 75;
+  }
+  
+  findnearestvert(Vector2 mpos) : Vertex {
     var pmat = new Matrix4(this.view3d.drawmats.rendermat);
 
-    if (this.view3d.use_backbuf_sel)
-      return this.findnearest_backbuf(mpos, MeshTypes.VERT);
+    if (this.view3d.use_backbuf_sel) {
+      if (use_octree_select)
+        return this.findnearestvert_octree(mpos);
+      else
+        return this.findnearest_backbuf(mpos, MeshTypes.VERT);
+    }
     
     if (this.mesh.flag & MeshFlags.USE_MAP_CO)
       return this.findnearestvert_mapco(mpos);
     
     var dis = 100000, vpick=null;
-    var limit=75*75;
+    var limit=this.sel_threshold*this.sel_threshold;
     var size = this.view3d.size;
     
     mpos = new Vector3([mpos[0], mpos[1], 0.0]);
@@ -730,7 +769,7 @@ class MeshEditor extends View3DEditor {
       return this.findnearest_backbuf(mpos, MeshTypes.FACE);
       
     var dis = 100000, fpick=null;
-    var limit=75;
+    var limit=this.sel_threshold;
     mpos = new Vector3([mpos[0], mpos[1], 0.0]);
     
     for (var f in this.mesh.faces) {
@@ -750,13 +789,135 @@ class MeshEditor extends View3DEditor {
     }
     
     return fpick;
+  } 
+  
+  findnearestface_octree(Vector2 mpos) {
+    var ret = this.sample_octree(mpos);
+    if (ret != undefined)
+      return this.mesh.faces.get(ret[0]);
+    
+    /*nothing directly under the mouse cursor; do a wider sample*/
+    var fs = this.sample_area(mpos, this.sel_threshold);
+    
+    var d = 0;
+    var f = undefined;
+    for (var f2 in fs) {
+      if (f == undefined || f2[1] < d) {
+        f = f2[0];
+        d = f2[1];
+      }
+    }
+
+    return f;
   }
   
-  findnearestface_octree(Vector2 mpos, OcTree octree=undefined) {
-    var mesh = this.ctx.mesh;
+  _oc_get_cached_points(int size, int samples) : Array<int> {
+    static cache = {};
+    
+    var hash = ""+size+":"+samples;
+    if (hash in cache)
+      return cache[hash];
+    
+    //not sure if a spiral is what we want
+    //var points = get_spiral(size);
+    var points = [];
+    for (var x=0; x<size; x++) {
+      for (var y=0; y<size; y++) {
+        points.push([x, y]);
+      }
+    }
+    
+    var len = points.length;
+    
+    var ret = [];
+    var map = {};
+    for (var i=0; i<samples; i++) {
+      var c = Math.floor(Math.random()*len*0.99999);
+      while (c in map)
+        c = Math.floor(Math.random()*len*0.99999);
+      
+      ret.push(c);
+    }
+    
+    //sorting random indices is only useful
+    //if we're using a spiral pattern instead
+    //of a grid.
+    /*ret.sort(function(int a, int b) {
+      return a < b ? -1 : (a > b ? 1 : 0);
+    });*/
+    var ret2 = [];
+    
+    for (i=0; i<ret.length; i++) {
+      ret2.push(points[ret[i]]);
+    }
+    
+    cache[hash] = ret2;
+    
+    return ret2;
+  }
+  
+  //returns list of [face, distance from mpos] pairs
+  sample_area(Array<float> mpos, int size=this.sel_threshold, int samples=25) {
+    var points = this._oc_get_cached_points(size, samples);
+    var mpos2 = [0, 0];
+    var mesh = this.mesh;
+    
+    var halfsize = Math.floor(size/2);
+    var lst = [];
+    
+    for (var i=0; i<points.length; i++) {
+      if (i == 0) {
+        mpos2[0] = mpos[0]; mpos2[1] = mpos[1];
+      } else {
+        mpos2[0] = mpos[0]+points[i][0] - halfsize;
+        mpos2[1] = mpos[1]+points[i][1] - halfsize;
+      }
+      
+      var ret = this.sample_octree(mpos2);
+      if (ret != undefined) {
+        var f = mesh.faces.get(ret[0]);
+        
+        mpos2[0] -= mpos[0];
+        mpos2[1] -= mpos[1];
+        
+        var d = Math.sqrt(mpos2[0]*mpos2[0] + mpos2[1]*mpos2[1]);
+        
+        lst.push([f, d]);
+      }
+    }
+    
+    var map = {};
+    var retlist = new GArray();
+    
+    for (var i=0; i<lst.length; i++) {
+      var l = lst[i];
+      var f = l[0];
+      
+      if (f == undefined)
+        continue;
+      
+      if (f.eid in map) {
+        if (map[f.eid] > l[1]) {
+          map[f.eid] = l[1];
+        }
+      } else {
+        map[f.eid] = l[1];
+        retlist.push([f, l[1]]);
+      }
+    }
+    
+    for (var i=0; i<retlist.length; i++) {
+      retlist[i][1] = map[retlist[i][0].eid];
+    }
+    
+    return retlist;
+  }
+  
+  sample_octree(Array<float> mpos, OcTree octree=undefined) {
+    var mesh = this.mesh;
     
     if (octree == undefined)
-      octree = build_octree(mesh);
+      octree = this.ctx.object.get_octree();
     
     var size = this.view3d.size;
     static dir = new Vector3();
@@ -790,14 +951,18 @@ class MeshEditor extends View3DEditor {
   findnearestface(Vector2 mpos) {
     var pmat = new Matrix4(this.view3d.drawmats.rendermat);
     
-    if (this.view3d.use_backbuf_sel)
-      return this.findnearest_backbuf(mpos, MeshTypes.FACE);
-
+    if (this.view3d.use_backbuf_sel) {
+      if (use_octree_select)
+        return this.findnearestface_octree(mpos);
+      else
+        return this.findnearest_backbuf(mpos, MeshTypes.FACE);
+    }
+    
     if (this.mesh.flag & MeshFlags.USE_MAP_CO)
       return this.findnearestface_mapco(mpos);
       
     var dis = 100000, fpick=null;
-    var limit=75;
+    var limit=this.sel_threshold;
     mpos = new Vector3([mpos[0], mpos[1], 0.0]);
     
     for (var f in this.mesh.faces) {

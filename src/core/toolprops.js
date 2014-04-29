@@ -777,7 +777,7 @@ CollectionProperty.STRUCT = STRUCT.inherit(CollectionProperty, ToolProperty) + "
 """;
 
 class BlankArray {
-  static fromSTRUCT() {
+  static fromSTRUCT(reader) {
     return new GArray();
   }
 }

@@ -3,7 +3,12 @@
 var Flags = {SELECT: 1, SHADE_SMOOTH: 2, DIRTY: 4, TEMP: 8}
 var MeshTypes = {VERT: 1, EDGE: 2, LOOP: 4, FACE: 8}
 var MeshFlags = {USE_MAP_CO: 2, TESS_JOB_FINISHED: 4}
-var MeshEvents = {RECALC : 1, DESTROY : 2}
+
+/*keep this and MeshRecalcFlags in draw.js in sync!*/
+var MeshEvents = {
+  RECALC : MeshRecalcFlags.REGEN_ALL, //first four bits
+  DESTROY : 16
+}
 
 class TopoError extends Error {
   constructor(String msg) {
@@ -544,18 +549,26 @@ class Mesh extends DataBlock {
   regen_positions() {
     this.render.recalc |= MeshRecalcFlags.REGEN_COS;
     
-    this.do_callbacks(MeshEvents.RECALC);
+    this.do_callbacks(this.render.recalc);
   }
 
   regen_normals() {
     this.render.recalc |= MeshRecalcFlags.REGEN_NORS;
     
-    this.do_callbacks(MeshEvents.RECALC);
+    this.do_callbacks(this.render.recalc);
   }
 
   do_callbacks(event) {
     for (var k in this.event_users) {
-      this.event_users.get(k)(k, this, event);
+      var func = this.event_users.get(k);
+      
+      if (func == undefined) {
+        console.trace();
+        console.log("warning, undefined callback in do_callbacks()", k);
+        continue;
+      }
+      
+      func(k, this, event);
     }
   }
 
@@ -565,13 +578,13 @@ class Mesh extends DataBlock {
       f.flag |= Flags.DIRTY;
     }
     
-    this.do_callbacks(MeshEvents.RECALC);
+    this.do_callbacks(this.render.recalc);
   }
 
   regen_colors() {
     this.render.recalc |= MeshRecalcFlags.REGEN_COLORS;
     
-    this.do_callbacks(MeshEvents.RECALC);
+    this.do_callbacks(this.render.recalc);
   }
 
   copy() : Mesh {

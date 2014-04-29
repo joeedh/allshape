@@ -456,8 +456,9 @@ var _st_packers = [
       throw new Error("Bad struct " + val.constructor.name + ", " + JSON.stringify(val) + " passed to write_struct");
     }
     
-    if (stt.id == 0) {
-      //console.log("-------------------------------->", stt);
+    if (stt.id == 0 || stt.id == undefined) {
+      console.log("--------------STRUCT ERROR------------------>", stt, val, field, thestruct);
+      throw new Error("YEEK!");
     }
     packer_debug_start("tstruct '" + stt.name + "'");
     
@@ -977,7 +978,7 @@ class STRUCT {
           console.log(id);
           console.log(thestruct.struct_ids);
           packer_debug_end("tstruct");
-          throw new Error("Unknown struct type " + id + ".");
+          throw new Error(""+uctx.i+": Unknown struct type " + id + ".");
         }
         
         var cls2 = thestruct.get_struct_id(id);
@@ -1003,10 +1004,15 @@ class STRUCT {
       return unpack_funcs[type.type](type);
     }
     
+    var loader_used = false;
     function load(obj) {
       var fields = stt.fields;
       var flen = fields.length;
       
+      loader_used = true;
+      
+      if (DEBUG.Struct)
+        console.log("flen", flen, fields, stt);
       for (var i=0; i<flen; i++) {
         var f = fields[i];
         var val = unpack_field(f.type);
@@ -1021,7 +1027,16 @@ class STRUCT {
     if (cls.fromSTRUCT == undefined) {
       console.log("-------->", cls.name, cls);
     }
-    return cls.fromSTRUCT(load);
+    
+    var ret = cls.fromSTRUCT(load);
+    
+    //make sure fromSTRUCT actually read the data,
+    //so client functions can read succeeding data
+    if (!loader_used) {
+      load({});
+    }
+    
+    return ret;
   }
 }
 

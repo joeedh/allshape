@@ -350,7 +350,7 @@ class UIHoverBox extends UIElement {
     //works correctly.  this size offset shouln't be necassary.
     var size = IsMobile ? this.size : [this.size[0], this.size[1]+2];
 
-    canvas.box([0, 0], size, uicolors["HoverHint"]);
+    canvas.box2([0, 0], size, uicolors["HoverHint"]);
     canvas.text([4, 7], this.text, uicolors["BoxText"]);
     
     canvas.end(this);

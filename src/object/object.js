@@ -37,6 +37,7 @@ class ASObject extends DagNode {
     DataBlock.call(this, DataTypes.OBJECT, name);
     DagNode.call(this);
     
+    //override DagNode's __hash__
     this.__hash__ = DataBlock.prototype.__hash__;
     
     this.scene = undefined : Scene;
@@ -76,10 +77,61 @@ class ASObject extends DagNode {
     this.bb_display = BBDispTypes.Box;
     
     this.parent = undefined : ASObject;
-    this.data = data;
+    this._data = data;
+    
+    this.octree = undefined;
     
     this.layermask = 0x7FFFFFFF;
     this.sid = -1; //only set when obj is added to database
+  }
+  
+  get data() {
+    return this._data;
+  }
+  
+  set data(Mesh data) {
+    if (this._data != undefined && this._data != data && 
+        !(this._data instanceof DataRef) && !(this._data instanceof Array)) 
+    {
+      this._data.remove_callback(this);
+      //
+      //don't handle reference counting automatically,
+      //not without having the rest of the code do it
+      //too.  for now, at least.
+      //this._data.lib_remuser(this, "data");
+    }
+    
+    this._data = data;
+    
+    if (data == undefined || (data instanceof DataRef) || (data instanceof Array))
+      return;
+    
+    //add octree update callback
+    var this2 = this;
+    function octree_callback(owner, mesh, event) {
+      if (event & (MeshRecalcFlags.REGEN_TESS|MeshRecalcFlags.REGEN_COS)) {
+        this2.octree = undefined; //flag octree for recalc;
+      }
+    }
+    
+    console.log("---------==========>", octree_callback);
+    this._data.update_callback(this, octree_callback);
+  }
+  
+  regen_octree() {
+    if (0) { //this.ss_mesh != undefined) {
+      this.octree = build_octree_ss(this.ss_mesh);
+    } else {
+      this.octree = build_octree(this.data);
+    }
+  }
+  
+  get_octree() {
+    if (this.octree == undefined) {
+      this.regen_octree();
+    }
+    
+    return this.octree;
   }
   
   copy() : ASObject {
@@ -152,6 +204,10 @@ class ASObject extends DagNode {
   }
   
   set subsurf(val) {
+    if (!!val != !!(this.flag & ObFlags.SUBSURF)) {
+      this.octree = undefined; //flag octree for regen
+    }
+    
     if (val)
       this.flag |= ObFlags.SUBSURF;
     else 

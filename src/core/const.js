@@ -21,9 +21,11 @@ var FEATURES = {
   save_toolstack : (RELEASE ? false : true)
 }
 
+var use_octree_select = true;
+
 //debug flags
 var DEBUG = {
-  gl_objects : true,
+  gl_objects : false,
   Struct : false,
   modal : false, 
   datalib : false, 

@@ -928,25 +928,28 @@ class View3DHandler extends Area {
         var octree = build_octree(ctx.mesh);
         var view3d = g_app_state.active_view3d;
         
-        var steps = 70;
-        var times = [];
-        
-        for (var i=0; i<steps; i++) {
-          var a = time_ms();
-          var ret = view3d.editor.findnearestface_octree(view3d.mpos, octree);
-          var b = time_ms();
+        if (1) {
+          var steps = 70;
+          var times = [];
           
-          times.push(b-a);
+          for (var i=0; i<steps; i++) {
+            var a = time_ms();
+            var ret = view3d.editor.findnearestface_octree(view3d.mpos, octree);
+            var b = time_ms();
+            
+            times.push(b-a);
+          }
+          times.sort();
+          console.log(times);
         }
-        times.sort();
-        console.log(times);
+        
+        var ret = view3d.editor.findnearestface_octree(view3d.mpos, octree);
         
         ctx.mesh.api.select_none();
         if (ret != undefined) {
-          ctx.mesh.faces.select(ctx.mesh.faces.get(ret[0]));
+          ctx.mesh.faces.select(ret);
         }
         ctx.mesh.regen_colors();
-        
         //test_progress_dialog();
         //g_app_state.toolstack.reexec_stack();
       }

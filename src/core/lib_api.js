@@ -370,6 +370,7 @@ class UserRef {
   }
 }
 
+var _db_hash_id = 1;
 class DataBlock {
   constructor(int type, String name) {
     this.constructor.datablock_type = type;
@@ -379,6 +380,7 @@ class DataBlock {
       name = "unnnamed";
       
     this.name = name;
+    this._hash_id = _db_hash_id++;
     this.lib_id = -1;
     this.lib_lib = undefined; //this will be used for library linking
     
@@ -469,7 +471,7 @@ class DataBlock {
   data_link(block, getblock, getblock_us) { }
 
   __hash__() : String {
-    return "DB" + this.lib_id;
+    return "DB" + this._hash_id;
   }
 
   lib_adduser(Object user, String name, Function remfunc) {
