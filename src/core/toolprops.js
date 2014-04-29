@@ -778,9 +778,10 @@ CollectionProperty.STRUCT = STRUCT.inherit(CollectionProperty, ToolProperty) + "
 
 class BlankArray {
   static fromSTRUCT(reader) {
-    return new GArray();
+    return undefined;
   }
 }
+
 BlankArray.STRUCT = """
   BlankArray {
     length : int | 0;

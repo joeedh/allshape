@@ -625,12 +625,48 @@ class MeshEditor extends View3DEditor {
     return epick;
   }
 
+  findnearestedge_octree(Array<float> mpos) : Edge {
+    var pmat = new Matrix4(this.view3d.drawmats.rendermat);
+    
+    //first, find a face
+    var f = this.findnearestface_octree(mpos);
+    if (f == undefined) return undefined;
+    
+    var limit = this.sel_threshold*this.sel_threshold;
+    var epick = undefined;
+    
+    mpos = new Vector3([mpos[0], mpos[1], 0.0]);
+    static s1 = new Vector3(), s2 = new Vector3();
+    
+    /*search face eertices for a match
+      this should be pretty robust*/
+    for (var e in f.edges) {
+      s1.load(e.v1.co); s2.load(e.v2.co);
+      
+      this.view3d.project(s1, pmat);
+      this.view3d.project(s2, pmat);
+      
+      var d = dist_to_line_v2(mpos, s1, s2);
+      
+      if (d < limit) {
+        epick = e;
+        limit = d;
+      }
+    }
+    
+    return epick;
+  }
+  
   findnearestedge(Vector2 mpos) {
     var pmat = new Matrix4(this.view3d.drawmats.rendermat);
     
-    if (this.view3d.use_backbuf_sel)
-      return this.findnearest_backbuf(mpos, MeshTypes.EDGE);
-      
+    if (this.view3d.use_backbuf_sel) {
+      if (use_octree_select)
+        return this.findnearestedge_octree(mpos);
+      else
+        return this.findnearest_backbuf(mpos, MeshTypes.EDGE);
+    }
+    
     if (this.mesh.flag & MeshFlags.USE_MAP_CO)
       return this.findnearestedge_mapco(mpos);
       

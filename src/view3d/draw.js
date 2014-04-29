@@ -318,6 +318,13 @@ function render() {
 }
 
 function get_element_color(Element e, Element highlight, Boolean use_face_unsel_color=false, Boolean use_highlight=false) { 
+//use_face_unsel_color, use_highlight are optional
+
+    if (use_face_unsel_color == undefined)
+      use_face_unsel_color = false;
+    if (use_highlight == undefined)
+      use_highlight = false;
+    
     if (use_highlight && e == highlight) {
       if (e.flag & Flags.SELECT)
         return highlight_and_sel_color;
@@ -1309,7 +1316,7 @@ function render_mesh_object(WebGLRenderingContext gl, View3DHandler view3d,
     gl.disableVertexAttribArray(3);
     gl.disableVertexAttribArray(4);
     
-    gl.lineWidth(3000.0);
+    //gl.lineWidth(3000.0);
     gl.drawArrays(gl.LINES, 0, mesh.edges.length*2);  
   }
 }

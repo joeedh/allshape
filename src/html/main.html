@@ -779,7 +779,10 @@ window.mobilecheck = function()
 }
 
 IsMobile = window.mobilecheck();
-
+//mobile-specific settings
+if (IsMobile) {
+  use_octree_select = true; //use ray tracing, not the framebuffer, for cull selection mode
+}
 /*
 window.mobilecheck = function() {
 var check = false;
