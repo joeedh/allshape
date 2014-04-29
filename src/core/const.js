@@ -21,7 +21,9 @@ var FEATURES = {
   save_toolstack : (RELEASE ? false : true)
 }
 
+//need a struct to contain constants I'm not compiling in with the preprocessor
 var use_octree_select = true;
+var fuzzy_ui_press_hotspot = 25;
 
 //debug flags
 var DEBUG = {

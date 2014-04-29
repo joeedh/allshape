@@ -60,7 +60,7 @@ class UIButton extends UIHoverHint {
       this.clicked = false;
       this.do_recalc();
       
-      if (inrect_2d([event.x, event.y], [0,0], this.size)) {
+      if (inrect_2d_button([event.x, event.y], [0,0], this.size)) {
         if (this.callback != undefined) {
           this.callback(this);
         }
@@ -280,7 +280,7 @@ class UIMenuButton extends UIHoverHint {
 
   on_mouseup(MouseEvent event) {
     if (event.button == 0 && this.clicked == true) {
-      if (inrect_2d([event.x, event.y], [0,0], this.size)) {
+      if (inrect_2d_button([event.x, event.y], [0,0], this.size)) {
         console.log("clicked")
         
         if (this.callback != undefined) {
@@ -750,7 +750,7 @@ class UILabel extends UIElement {
     if (event.button == 0) {
       this.clicked = false;
       
-      if (inrect_2d([event.x, event.y], [0,0], this.size)) {
+      if (inrect_2d_button([event.x, event.y], [0,0], this.size)) {
         console.log("clicked")
         if (this.callback != undefined) {
           this.callback(this);
@@ -930,7 +930,7 @@ class UIMenuLabel extends UIElement {
     if (event.button == 0 && this.clicked == false) {
       this.clicked = false;
       
-      if (inrect_2d([event.x, event.y], [0,0], this.size)) {
+      if (inrect_2d_button([event.x, event.y], [0,0], this.size)) {
         console.log("clicked")
         if (this.callback != undefined) {
           this.callback(this);

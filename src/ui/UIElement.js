@@ -24,6 +24,23 @@ function close_android_keyboard() {
     
 }
 
+/*utility function, expands tested rect when IsMobile is true*/
+function inrect_2d_button(Array<float> p, Array<float> pos, Array<float> size) : Boolean {
+  static pos2=new Vector2(), size2=new Vector2();
+  
+  if (IsMobile) {
+    pos2.load(pos);
+    size2.load(size);
+    
+    pos2.subScalar(fuzzy_ui_press_hotspot);
+    size2.addScalar(fuzzy_ui_press_hotspot*2.0);
+    
+    return inrect_2d(p, pos2, size2);
+  } else {
+    return inrect_2d(p, pos, size);
+  }
+}
+
 class UIElement extends EventHandler {
   constructor(ctx, path=undefined, pos=undefined, size=undefined) {
     EventHandler.call(this)

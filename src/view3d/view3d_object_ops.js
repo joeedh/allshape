@@ -85,7 +85,12 @@ class ObjectEditor extends View3DEditor {
   }
   reset_selbuf_changed(typemask) {
   }
-  add_menu(view3d, mpos) {
+  
+  add_menu(view3d, mpos, add_title=true) {
+    var oplist = [];
+    var menu = toolop_menu(view3d.ctx, add_title ? "Add" : "", oplist);
+    
+    return menu;
   }
   
   on_inactive(view3d) {

@@ -876,8 +876,12 @@ class View3DHandler extends Area {
     row2.add(redo);
   }
   
-  add_menu() {
-    this.editor.add_menu(this, this.mpos);
+  gen_add_menu(Context ctx, UIMenuLabel label) : UIMenu {
+    return ctx.view3d.add_menu(false);
+  }
+  
+  add_menu(Boolean add_title=true) : UIMenu {
+    return this.editor.add_menu(this, this.mpos, add_title);
   }
 
   define_keymap() {
@@ -1152,6 +1156,7 @@ class View3DHandler extends Area {
     
     col.add(new UIMenuLabel(this.ctx, "File", undefined, this.gen_file_menu));
     col.add(new UIMenuLabel(this.ctx, "Session", undefined, this.gen_session_menu));
+    col.add(new UIMenuLabel(this.ctx, "Add", undefined, this.gen_add_menu));
     
     //col.add(new UIMenuLabel(this.ctx, "Tools", undefined, this.gen_tools_menu));
     

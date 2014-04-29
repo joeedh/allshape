@@ -74,14 +74,15 @@ class MeshEditor extends View3DEditor {
     this.last_selectmode = this.selectmode|typemask;
   }
 
-  add_menu(view3d, mpos) {
+  add_menu(View3DHandler view3d, Array<float> mpos, Boolean add_title=true) {
     this.ctx = new Context();
     
     console.log("Add menu")
      
     var oplist = ["mesh.add_cube()", "mesh.add_circle()"]
-    var menu = toolop_menu(view3d.ctx, "Add", oplist);
-    view3d.call_menu(menu, view3d, mpos);
+    var menu = toolop_menu(view3d.ctx, add_title ? "Add" : "", oplist);
+    
+    return menu;
   }
   
   _update_callback(view3d, mesh, event) {
@@ -288,7 +289,7 @@ class MeshEditor extends View3DEditor {
                "mesh.toggle_select_all()");
     k.add_func(new KeyHandler("A", ["SHIFT"], "Add"), 
                function(ctx) {
-                ctx.view3d.add_menu();
+                  ctx.view3d.call_menu(ctx.view3d.add_menu(), ctx.view3d, ctx.view3d.mpos);
                });
     k.add_tool(new KeyHandler("C", [], "Circle Select"), 
                "view3d.circle_select()");
