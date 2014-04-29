@@ -120,7 +120,7 @@ class ASObject extends DagNode {
   
   regen_octree() {
     console.log("redoing octree");
-    if (0) { //this.ss_mesh != undefined) {
+    if (this.ss_mesh != undefined) {
       this.octree = build_octree_ss(this.ss_mesh);
     } else {
       this.octree = build_octree(this.data);

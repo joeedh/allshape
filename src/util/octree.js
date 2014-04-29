@@ -219,3 +219,38 @@ function build_octree(Mesh mesh) : Octree {
   
   return octree;
 }
+
+
+function build_octree_ss(Mesh mesh) : Octree {
+  var mm = new MinMax(3);
+
+  for (var v in mesh.verts) {
+    mm.minmax(v.co);
+  }
+  
+  var min = new Vector3(mm.min);
+  var max = new Vector3(mm.max);
+  
+  var cent = new Vector3(mm.max).add(mm.min).mulScalar(0.5);
+  
+  min.sub(cent);
+  min.mulScalar(1.25);
+  min.add(cent);
+  
+  max.sub(cent);
+  max.mulScalar(1.25);
+  max.add(cent);
+  
+  var octree = new OcTree(min, max);
+  for (var f in mesh.faces) {
+    if (f.old_face == undefined) continue;
+    var idx = f.old_face.eid;
+    
+    var l = f.looplists[0].loop;
+    
+    octree.add_tri(l.v.co, l.next.v.co, l.next.next.v.co, idx);
+    octree.add_tri(l.v.co, l.next.next.v.co, l.next.next.next.v.co, idx);
+  }
+  
+  return octree;
+}
