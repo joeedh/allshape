@@ -1022,7 +1022,7 @@ class MeshEditor extends View3DEditor {
   }
 
 
-  delete_menu(event) {
+  gen_delete_menu(Boolean add_title=false) {
     var view3d = this.view3d;
     var ctx = new Context();
     
@@ -1042,7 +1042,16 @@ class MeshEditor extends View3DEditor {
       //dissolve_op,
     ]
     
-    var menu = view3d.toolop_menu(ctx, "Delete", ops);
+    var menu = view3d.toolop_menu(ctx, add_title ? "Delete" : "", ops);
+    return menu;
+  }
+  
+  delete_menu(event) {
+    var view3d = this.view3d;
+    var ctx = new Context();
+    
+    var menu = this.gen_delete_menu(true);
+    
     menu.close_on_right = true
     menu.swap_mouse_button = 2;
     

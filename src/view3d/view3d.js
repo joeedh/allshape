@@ -64,6 +64,7 @@ class View3DEditor {
   on_mousemove(MouseEvent event) {}
   do_alt_select(MouseEvent event, Array<float> mpos, View3DHandler view3d) {}
   delete_menu(MouseEvent event) {}
+  gen_delete_menu() : UIMenu {}
 }
 
 View3DEditor.STRUCT = """
@@ -1154,9 +1155,15 @@ class View3DHandler extends Area {
     var iconflag = IsMobile ? PackFlags.USE_LARGE_ICON : PackFlags.USE_SMALL_ICON;
     col.toolop("screen.hint_picker()", iconflag, "?");
     
+    var this2 = this;
+    function gen_del_menu() {
+      return this2.editor.gen_delete_menu();
+    }
+    
     col.add(new UIMenuLabel(this.ctx, "File", undefined, this.gen_file_menu));
     col.add(new UIMenuLabel(this.ctx, "Session", undefined, this.gen_session_menu));
     col.add(new UIMenuLabel(this.ctx, "Add", undefined, this.gen_add_menu));
+    col.add(new UIMenuLabel(this.ctx, "Delete", undefined, gen_del_menu));
     
     //col.add(new UIMenuLabel(this.ctx, "Tools", undefined, this.gen_tools_menu));
     
