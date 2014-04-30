@@ -14,6 +14,7 @@ class UIButton extends UIHoverHint {
     this.text = text;
     this.hint = hint;
     this.callback = callback;
+    this._do_err_on_draw = false;
   }
   
   get_hint() {
@@ -45,6 +46,10 @@ class UIButton extends UIHoverHint {
   }
   
   on_mousedown(MouseEvent event) {
+    if (DEBUG.ui_except_handling) {
+      this._do_err_on_draw = true;
+    }
+    
     if (event.button == 0 && !this.clicked) {
       this.push_modal();
       this.stop_hover();
@@ -75,6 +80,10 @@ class UIButton extends UIHoverHint {
   build_draw(UICanvas canvas) {
     canvas.begin(this);
 
+    if (this._do_err_on_draw) {
+      throw new Error("test exception");
+    }
+    
     if (this.clicked) 
       canvas.invbox([0, 0], this.size);
     else if (this.state & UIFlags.HIGHLIGHT)
@@ -135,6 +144,10 @@ class UIButtonIcon extends UIButton {
   }
   
   build_draw(UICanvas canvas) {
+    if (this._do_err_on_draw) {
+      throw new Error("test exception");
+    }
+    
     static pos = [0, 0];
     static size = [0, 0];
     

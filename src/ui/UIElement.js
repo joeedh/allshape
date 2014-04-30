@@ -349,6 +349,34 @@ class UIHoverBox extends UIElement {
     return this.size;
   }
   
+  on_mousedown(event) {
+    if (this.is_modal) {
+      //pop modal
+      this.pop_modal();
+      
+      //pass event through
+      var mpos = [event.x, event.y];
+      
+      var p = this, lastp;
+      while (p != undefined) {
+        lastp = p;
+       
+        mpos[0] += p.pos[0];
+        mpos[1] += p.pos[1];
+        
+        p = p.parent;
+      }
+      
+      //make sure to remove prior to sending the passthrough event
+      this.parent.remove(this);
+      this.parent.do_recalc();
+      
+      console.log(mpos, this.pos, this.parent.parent);
+      event.x = mpos[0]; event.y = mpos[1];
+      lastp._on_mousedown(event);
+    }
+  }
+  
   on_mousemove(event) {
     if (this.is_modal && !inrect_2d([event.x, event.y], [0, 0], this.size)) {
       this.pop_modal();

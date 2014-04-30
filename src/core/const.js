@@ -29,6 +29,7 @@ var fuzzy_ui_press_hotspot = 25;
 var DEBUG = {
   gl_objects : false,
   Struct : false,
+  ui_except_handling : false,
   modal : false, 
   datalib : false, 
   glext : false, //prints gl extensions to console on startup

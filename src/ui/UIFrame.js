@@ -440,7 +440,18 @@ class UIFrame extends UIElement {
           c.pack(canvas, false);
           
         canvas.push_transform(mat);
-        c.build_draw(canvas);
+        
+        try {
+          c.build_draw(canvas);
+        } catch (_err) {
+          print_stack(_err);
+          
+          //ensure borked element isn't modal
+          if (c == this.modalhandler)
+            c.pop_modal();
+          console.log("Error occured while drawing element ", c);
+        }
+        
         canvas.pop_transform(mat);
         c.recalc = 0;
       }
