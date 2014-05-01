@@ -1,5 +1,14 @@
 "use strict";
 
+class MyKeyboardEvent {
+  constructor(code, shift=false, ctrl=false, alt=false) {
+    this.keyCode = code;
+    this.shiftKey = shift;
+    this.ctrlKey = ctrl;
+    this.altKey = alt;
+  }
+}
+
 class MyMouseEvent {
   constructor(int x, int y, short button, short type) {
     this.x = x; this.y = y;
