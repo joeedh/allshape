@@ -1,7 +1,7 @@
 "use strict";
 
 //private static variable
-var __td_last_startcos = [new Vector3()];
+//var __td_last_startcos = [new Vector3()];
 
 class TransDataType {
   static get_aabb(TransData tdata, int i)       : Array<Vector3>     {}
@@ -312,7 +312,6 @@ class TransData {
     var loops = this.loops;
     
     var i = 0;
-    this.startcos = __td_last_startcos;
     var scos = this.startcos;
     var is_static = false;
     for (var v in this.mesh.verts.selected) {
@@ -322,12 +321,8 @@ class TransData {
       this.center.add(v.co);
       this.verts.push(v);
       
-      if (i < __td_last_startcos.length) {
-        scos[i].load(v.co);
-      } else {
-        scos.push(new Vector3(v.co));
-      }
-      
+      scos.push(new Vector3(v.co));
+    
       for (var l in v.loops) {
         faces.add(l.f);
         loops.add(l);
@@ -472,18 +467,15 @@ class TransformOp extends ToolOp {
   }
   
   on_mousemove(MouseEvent event) {
+    var this2 = this;
+    function cancel_func() {
+      this2.cancel_callback = undefined; //ensure no double calls
+      this2.end_modal();
+      this2.cancel();
+    }
+    
     if (this.cancel_callback != undefined) {
-      var this2 = this;
-      
-      if (this.cached_cancel_func == undefined) {
-        this.cached_cancel_func = function() {
-          this2.cancel_callback = undefined; //ensure no double calls
-          this2.end_modal();
-          this2.cancel();
-        }
-      }
-      
-      this.cancel_callback(this, event, this.cached_cancel_func);
+      this.cancel_callback(this, event, cancel_func);
     }
     
     if (this.first_call == true) {
