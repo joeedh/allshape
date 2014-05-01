@@ -1389,10 +1389,12 @@ class Screen extends UIFrame {
       for (i=0; i<s.length; i++) {
         var c = s[i];
         
-        if (!(c in charmap_latin_1)) continue;
+        if (c in charmap_rev)
+          c = charmap_rev[c];
+        else
+          c = c.charCodeAt(0);
         
-        c = charmap_latin_1[c];
-        
+        console.log(c);
         var event = new MyKeyboardEvent(c);
         this._on_keydown(event);
       }

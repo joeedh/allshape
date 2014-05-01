@@ -264,7 +264,13 @@ for (var k in charmap_latin_1) {
   charmap_latin_1[charmap_latin_1[k]] = k;
 }
 
+var charmap_latin_1_rev = {}
+for (var k in charmap_latin_1) {
+  charmap_latin_1_rev[charmap_latin_1[k]] = k
+}
+
 var charmap = charmap_latin_1;
+var charmap_rev = charmap_latin_1_rev;
 
 class KeyHandler {
   constructor(key, modifiers, uiname, menunum, ignore_charmap_error) { //menunum is optional, defaults to undefined
