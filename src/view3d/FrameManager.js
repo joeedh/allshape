@@ -1382,7 +1382,7 @@ class Screen extends UIFrame {
   //generates keyboard events from the canvas DOM element's
   //innerHTML
   do_mobile_input() { 
-    var canvas = document.getElementById("canvas");
+    var canvas = document.getElementById("example");
     
     if (canvas.textContent != "") {
       for (var c in canvas.textContent) {
