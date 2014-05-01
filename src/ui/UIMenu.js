@@ -48,12 +48,15 @@ class UIMenuEntry extends UIElement{
     
     if (this.state & UIFlags.HIGHLIGHT)
       canvas.simple_box([0, -2], [this.size[0]-3, this.size[1]], uicolors["MenuHighlight"], 35.0)
+   
+    var tsize = canvas.textsize(this.text, menu_text_size);
+    var y = 0.5*(this.size[1]-tsize[1]);
     
-    canvas.text([2, 2], this.text, uicolors["BoxText"]);
+    canvas.text([2, y], this.text, uicolors["BoxText"], menu_text_size);
     if (this.hotkey != undefined) {
-      var twid = canvas.textsize(this.hotkey)[0];
+      var tsize = canvas.textsize(this.hotkey, menu_text_size);
       
-      canvas.text([this.size[0]-twid-8, 2], this.hotkey, uicolors["HotkeyText"]);      
+      canvas.text([this.size[0]-tsize[0]-8, y], this.hotkey, uicolors["HotkeyText"], menu_text_size);
     }
     
     canvas.end(this);
@@ -61,7 +64,7 @@ class UIMenuEntry extends UIElement{
 
   get_min_size(UICanvas canvas, Boolean isvertical)
   {
-    return [canvas.textsize(this.text)[0]+4, 24]
+    return [canvas.textsize(this.text, menu_text_size)[0]+4, 24]
   }
 }
 
@@ -109,7 +112,7 @@ class UIMenu extends UIFrame {
     var maxwid=-1;
     var y = 0;
     
-    var ehgt = 25
+    var ehgt = IsMobile ? 45 : 25;
     var padx = 2
     
     this.ehgt = ehgt
@@ -143,8 +146,8 @@ class UIMenu extends UIFrame {
       if (c.constructor.name != "UIMenuEntry") continue; //there may be other elements present
       
       var st = c.label + "    " + c.hotkey;
-      maxwid = Math.max(canvas.textsize(st)[0]+30, maxwid)
-      hkey_line_pos = Math.max(canvas.textsize(c.label + "    ")[0]+18, hkey_line_pos);
+      maxwid = Math.max(canvas.textsize(st, menu_text_size)[0]+30, maxwid)
+      hkey_line_pos = Math.max(canvas.textsize(c.label + "    ", menu_text_size)[0]+18, hkey_line_pos);
       maxcol = Math.max(st.length, maxcol)
       y += ehgt;
     }
@@ -214,7 +217,7 @@ class UIMenu extends UIFrame {
     }
     
     canvas.simple_box([0, 0], this.size, uicolors["MenuBox"][0], 35.0);
-    canvas.text([24, this.size[1]-22], this.name, uicolors["BoxText"])
+    canvas.text([24, this.size[1]-22], this.name, uicolors["BoxText"], menu_text_size)
     
     var clr = uicolors["MenuSep"]
     var ehgt = this.ehgt

@@ -89,6 +89,8 @@ function Font(WebGLRenderingContext gl, RasterState raster, int size,
     tex.ready = true;
   }
   this.tex.image.src = font_file;
+  console.trace();
+  console.log("----------------->font file", font_file);
   
   this.shader = new ShaderProgram(gl, "2d_text_vshader", "2d_text_fshader", ["vPosition", "vTexCoord"]);
   

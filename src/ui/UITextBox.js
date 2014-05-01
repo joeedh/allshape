@@ -439,10 +439,10 @@ class UITextBox extends UIElement {
     this.ctx.font.calc_string(this.text, calc_callback);
     gmap.push(this.ctx.font.calcsize(this.text)[0]);
     
-    this.text_offx = Math.min(this.text_offx, gmap[gmap.length-1]*default_ui_font_size);
+    this.text_offx = Math.min(this.text_offx, gmap[gmap.length-1]);
     
     for (var i=0; i<gmap.length; i++) {
-      gmap[i] = Math.floor(gmap[i]*default_ui_font_size) + this.text_offx;
+      gmap[i] = Math.floor(gmap[i]) + this.text_offx;
     }
   }
 

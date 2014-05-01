@@ -212,7 +212,7 @@ class TutorialHandler extends EventHandler {
       
       if (this.curp < this.pages.length) {
         this.canvas.reset();
-        this.canvas.text([200, 200], this.pages[this.curp].pritext, [0,0,0,1], 1.0);
+        this.canvas.text([200, 200], this.pages[this.curp].pritext, [0,0,0,1]);
       }
     } else {
       this.cure++;
@@ -289,7 +289,7 @@ class TutorialHandler extends EventHandler {
 
     var v3d = g_app_state.active_view3d;
     this.canvas = new UICanvas(v3d, [g_app_state.screen.pos, g_app_state.screen.size]);
-    this.canvas.text([200, 200], this.pages[this.curp].pritext, [0,0,0,1], 1.0);
+    this.canvas.text([200, 200], this.pages[this.curp].pritext, [0,0,0,1]);
     
     this.do_passpart();
     

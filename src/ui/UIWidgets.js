@@ -966,8 +966,8 @@ class UIMenuLabel extends UIElement {
     //else
     //  canvas.box_outline([0,0], this.size, uicolors["MenuLabel"], 10);
     
-    var tsize = canvas.textsize(this.text);
-    canvas.text([(this.size[0]-tsize[0])*0.5, (this.size[1]-tsize[1])*0.25], this.text);
+    var tsize = canvas.textsize(this.text, menu_text_size);
+    canvas.text([(this.size[0]-tsize[0])*0.5, (this.size[1]-tsize[1])*0.25], this.text, undefined, menu_text_size);
     
     //canvas.pop_scissor();  
     canvas.end(this);
@@ -975,7 +975,7 @@ class UIMenuLabel extends UIElement {
 
   get_min_size(UICanvas canvas, Boolean isvertical)
   {
-    return CACHEARR2(canvas.textsize(this.text)[0]+4, 26);
+    return CACHEARR2(canvas.textsize(this.text, menu_text_size)[0]+4, 26);
   }
 }
 

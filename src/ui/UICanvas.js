@@ -568,7 +568,7 @@ function _save_trilist(TriList trilist) {
 */
 
 class TextDraw {
-  constructor(pos, text, color, view3d, spos, ssize, viewport, size) {
+  constructor(pos, text, color, view3d, spos, ssize, viewport, size, scale) {
     this._id = _canvas_draw_id++;
     
     this.text = text;
@@ -579,7 +579,8 @@ class TextDraw {
     this.spos = spos;
     this.ssize = ssize;
     this.viewport = viewport;
-    this.size = [size[0], size[1], 0];
+    this.scale = [scale[0], scale[1], 0];
+    this.size = size;
     this.raster = g_app_state.raster;
   }
   
@@ -593,8 +594,12 @@ class TextDraw {
     */
   }
   
+  toString() : String {
+    return "TD" + this._id;
+  }
+  
   gen_buffers(gl) {
-    this.tdrawbuf = this.raster.font.gen_text_buffers(gl, this.text, this.color, this.viewport);
+    this.tdrawbuf = this.raster.get_font(this.size).gen_text_buffers(gl, this.text, this.color, this.viewport);
     return this.tdrawbuf;
   }
   
@@ -613,7 +618,7 @@ class TextDraw {
       g_app_state.raster.push_scissor(spos, ssize);
     }
     
-    this.tdrawbuf.on_draw(gl, this.pos, this.size);
+    this.tdrawbuf.on_draw(gl, this.pos, this.scale);
     
     if (this.ssize != undefined) {
       g_app_state.raster.pop_scissor();
@@ -867,8 +872,8 @@ class UICanvas {
   }
 
   textsize(text, size=default_ui_font_size) {
-    var box = this.raster.font.calcsize(text);
-    return [box[0]*size, box[1]*size];
+    var box = this.raster.get_font(size).calcsize(text);
+    return [box[0], box[1]];
   }
 
   line(v1, v2, c1, c2=c1, width=2.0) {
@@ -1328,14 +1333,18 @@ class UICanvas {
     this.reset();
   }
   
-  text(Array<float> pos, String text, Array<float> color, Number size, Array<float> scissor_pos, Array<float> scissor_size)
-  { 
+  text(Array<float> pos, String text, Array<float> color, Number size, 
+       Number scale, Array<float> scissor_pos, Array<float> scissor_size)
+  {
     static loc = new Vector3();
     
-    if (size == undefined) {
-      size = CACHEARR3(default_ui_font_size, default_ui_font_size, default_ui_font_size);
-    } else if (typeof(size) == "number") {
-      size = CACHEARR3(size, size, size);
+    if (size == undefined)
+      size = default_ui_font_size;
+    
+    if (scale == undefined) {
+      scale = CACHEARR3(1.0, 1.0, 1.0);
+    } else if (typeof(scale) == "number") {
+      scale = CACHEARR3(scale, scale, scale);
     }
     
     if (color == undefined) {
@@ -1354,7 +1363,6 @@ class UICanvas {
       scissor_pos.multVecMatrix(this.transmat);
     }
     
-    
     loc[0] = 0; loc[1] = 0; loc[2] = 0;
     loc.multVecMatrix(this.transmat);
     loc[0] += pos[0]
@@ -1368,8 +1376,9 @@ class UICanvas {
     loc[0] = (Math.floor(loc[0])/sx)*2.0; //*2.0-1.0;
     loc[1] = (Math.floor(loc[1])/sy)*2.0; //*2.0-1.0;
     
-    var textdraw = new TextDraw(loc, text, color, this.view3d, scissor_pos, scissor_size, this.viewport, size);
-    var hash = text.toString() + ">>" + this.viewport.toString()
+    var textdraw = new TextDraw(loc, text, color, this.view3d, scissor_pos, 
+                                scissor_size, this.viewport, size, scale);
+    var hash = text.toString() + ">>" + size + "|" + JSON.stringify(this.viewport);
     
     //XXX
     // /*

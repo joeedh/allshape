@@ -55,6 +55,11 @@ class RasterState {
     this.scissor_stack = new CacheStack(4)
   }
   
+  get_font(int size) {
+    var font = this.fonts.get_font(g_app_state.gl, this, size);
+    return font;
+  }
+  
   on_gl_lost(WebGLRenderingContext gl) {
     //need to finish fontmanager code
     this.fonts = new FontManager();
