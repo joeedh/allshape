@@ -302,15 +302,14 @@ class UITextBox extends UIElement {
   }
 
   on_charcode(KeyboardEvent event) {
-    if (!IsMobile)
-      this.insert(event["char"]);
+    this.insert(event["char"]);
   }
 
   on_textinput(ObjectMap event) {
     console.log("text input", event);
     
-    if (IsMobile)
-      this.replace_text(event.text);
+    //if (IsMobile)
+    //  this.replace_text(event.text);
   }
   
   on_keydown(KeyboardEvent event) {
@@ -480,7 +479,7 @@ class UITextBox extends UIElement {
           if (x == undefined)
             x = 0;
           
-          console.log(x, 0, this.size[1], uicolors["HighlightCursor"]);
+          //console.log(x, 0, this.size[1], uicolors["HighlightCursor"]);
           //canvas.pop_scissor();
           //canvas.end(this);
           //return;
