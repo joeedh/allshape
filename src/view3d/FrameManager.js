@@ -1396,7 +1396,7 @@ class Screen extends UIFrame {
         
         console.log(c);
         var event = new MyKeyboardEvent(c);
-        event["char"] = s[o];
+        event["char"] = s[i];
         
         this._on_keydown(event);
         this._on_charcode(event);
