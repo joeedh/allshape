@@ -1241,15 +1241,20 @@ class ToolStack {
   //op is the toolop requesting the cancelation, which allows us to validate
   //the call.
   toolop_cancel(ToolOp op) {
+  
     console.log(this.undostack, this.undocur, op==this.undostack[this.undocur-1]);
     if (this.undostack[this.undocur-1] == op && this.undocur == this.undostack.length) {
       console.log("tool cancel;");
+      this.undo();
+      return;
+      /*
       
       this.undostack.pop(this.undocur);
       this.undocur--;
       
       if (this.undocur < 0) 
         this.undocur = 0;
+      */
     }
   }
   
