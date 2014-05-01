@@ -14,13 +14,13 @@ var _ui_element_id_gen = 1;
 function open_android_keyboard() {
    var canvas = document.getElementById("example")
    canvas.contentEditable = true
-   //canvas.focus()
+   canvas.focus()
 }
 
 function close_android_keyboard() {
     var  canvas = document.getElementById("example")
     canvas.contentEditable = false
-    //canvas.focus()
+    canvas.focus()
 }
 
 /*utility function, expands tested rect when IsMobile is true*/
