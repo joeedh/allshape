@@ -1393,7 +1393,7 @@ class Screen extends UIFrame {
         var event = new MyKeyboardEvent(c);
         this._on_keydown(event);
       }
-      canvas.textContent = "";
+      //canvas.textContent = "";
     }
   }
   
