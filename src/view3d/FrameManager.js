@@ -1396,7 +1396,11 @@ class Screen extends UIFrame {
         
         console.log(c);
         var event = new MyKeyboardEvent(c);
+        event.char = s[o];
+        
         this._on_keydown(event);
+        this._on_charcode(event);
+        this._on_keypress(event);
       }
       
       canvas.textContent = "1";
