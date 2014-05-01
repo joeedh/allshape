@@ -1400,7 +1400,6 @@ class Screen extends UIFrame {
         
         this._on_keydown(event);
         this._on_charcode(event);
-        this._on_keypress(event);
       }
       
       canvas.textContent = "1";
