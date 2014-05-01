@@ -81,6 +81,7 @@ sources = [
   "src/ui/icon.js",
 	"src/ui/UIWidgets.js",
   "src/ui/UITextBox.js",
+  "src/ui/ScreenKeyboard.js",
 	"src/ui/UIMenu.js",
 	"src/ui/RadialMenu.js",
   "src/ui/UIWidgets_special.js",

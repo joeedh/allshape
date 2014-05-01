@@ -11,16 +11,18 @@ var UIFlags = {
 var CanvasFlags = {NOT_ROOT : 1, NO_PROPEGATE : 2}
 
 var _ui_element_id_gen = 1;
-function open_android_keyboard() {
-   var canvas = document.getElementById("example")
-   canvas.contentEditable = true
-   canvas.focus()
+function open_android_keyboard(e) {
+  call_keyboard(e);
+   //var canvas = document.getElementById("example")
+   //canvas.contentEditable = true
+   //canvas.focus()
 }
 
-function close_android_keyboard() {
-    var  canvas = document.getElementById("example")
-    canvas.contentEditable = false
-    canvas.focus()
+function close_android_keyboard(e) {
+  end_keyboard(e);
+    //var  canvas = document.getElementById("example")
+    //canvas.contentEditable = false
+    //canvas.focus()
 }
 
 /*utility function, expands tested rect when IsMobile is true*/
@@ -440,12 +442,13 @@ class UIHoverHint extends UIElement {
     var abspos = [hintbox.pos[0], hintbox.pos[1]];
     var editor = this.parent;
     
-    while (!(editor instanceof Area)) {
+    while (editor != undefined && !(editor instanceof Area)) {
       abspos[0] += editor.pos[0];
       abspos[1] += editor.pos[1];
       
       editor = editor.parent;
     }
+      
     var abspos2 = [abspos[0], abspos[1]];
     
     if (editor == undefined)

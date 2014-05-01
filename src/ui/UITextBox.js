@@ -155,7 +155,7 @@ class UITextBox extends UIElement {
     this.sel = [0, this.text.length];
     this.clicked = true;
     
-    open_android_keyboard();
+    open_android_keyboard(this);
   }
 
   end_edit(cancel) { //cancel is optional, defaults to false

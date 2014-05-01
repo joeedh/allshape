@@ -273,6 +273,28 @@ class UIFrame extends UIElement {
     return this.active != undefined;
   }
 
+  prepend(UIElement e, int packflag) {
+    e.defunct = false;
+    this.children.prepend(e);
+    
+    if (!(e instanceof UIFrame)) {
+      this.leafcount++;
+    } else {
+      this.framecount++;
+    }
+    
+    if (packflag != undefined)
+      e.packflag |= packflag;
+    
+    e.parent = this;
+    if (e.canvas == undefined)
+      e.canvas = this.canvas;
+    
+    e.on_add(this);
+    
+    this.do_recalc();
+  }
+  
   add(UIElement e, int packflag) { //packflag is optional
     e.defunct = false;
     this.children.push(e);

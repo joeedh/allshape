@@ -23,5 +23,8 @@ var Icons = {
   SELECT_ALL     : 19,
   EDGE_LOOP_SEL  : 20,
   FACE_LOOP_SEL  : 21,
-  CIRCLE_SEL     : 22
+  CIRCLE_SEL     : 22,
+  BACKSPACE      : 23,
+  LEFT_ARROW     : 24,
+  RIGHT_ARROW    : 25
 };
