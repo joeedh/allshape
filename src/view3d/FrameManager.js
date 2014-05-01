@@ -1382,10 +1382,9 @@ class Screen extends UIFrame {
   //generates keyboard events from the canvas DOM element's
   //innerHTML
   do_mobile_input() { 
-    return;
     var canvas = document.getElementById("example");
     
-    if (canvas.textContent != "") {
+    if (canvas.textContent != "1" && canvas.textContent.length > 1) {
       for (var c in canvas.textContent) {
         if (!(c in charmap_latin_1)) continue;
         
@@ -1394,7 +1393,8 @@ class Screen extends UIFrame {
         var event = new MyKeyboardEvent(c);
         this._on_keydown(event);
       }
-      //canvas.textContent = "";
+      
+      canvas.textContent = "1";
     }
   }
   
