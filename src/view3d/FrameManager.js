@@ -1385,7 +1385,10 @@ class Screen extends UIFrame {
     var canvas = document.getElementById("example");
     
     if (canvas.textContent != "1" && canvas.textContent.length > 1) {
-      for (var c in canvas.textContent) {
+      var s = "" + canvas.textContent; //turn into string
+      for (i=0; i<s.length; i++) {
+        var c = s[i];
+        
         if (!(c in charmap_latin_1)) continue;
         
         c = charmap_latin_1[c];
