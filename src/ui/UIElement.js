@@ -12,16 +12,15 @@ var CanvasFlags = {NOT_ROOT : 1, NO_PROPEGATE : 2}
 
 var _ui_element_id_gen = 1;
 function open_android_keyboard() {
-   //var canvas = document.getElementById("example")
-   //canvas.contentEditable = true
+   var canvas = document.getElementById("example")
+   canvas.contentEditable = true
    //canvas.focus()
 }
 
 function close_android_keyboard() {
-    //var  canvas = document.getElementById("example")
-    //canvas.contentEditable = false
+    var  canvas = document.getElementById("example")
+    canvas.contentEditable = false
     //canvas.focus()
-    
 }
 
 /*utility function, expands tested rect when IsMobile is true*/
