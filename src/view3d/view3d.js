@@ -419,15 +419,19 @@ class View3DHandler extends Area {
     this.drawmats.rendermat.isPersp = true;
   }
 
-  change_zoom(float delta) {
-    this.zoomwheel += delta
-    this.zoomwheel = Math.max(Math.min(this.zoomwheel+delta, this.zoom_wheelrange[1]), this.zoom_wheelrange[0]);
+  set_zoom(float zoom) {
+    this.zoomwheel = zoom
+    this.zoomwheel = Math.max(Math.min(this.zoomwheel, this.zoom_wheelrange[1]), this.zoom_wheelrange[0]);
 
     this.zoomfac = (this.zoomwheel-this.zoom_wheelrange[0]) / (this.zoom_wheelrange[1]-this.zoom_wheelrange[0]);
     this.zoomfac = this.zoom_range[0] + (this.zoom_range[1] - this.zoom_range[0]) * this.zoomfac;
     
     this.gen_rendermats();
     this.on_view_change();
+  }
+  
+  change_zoom(float delta) {
+    this.set_zoom(this.zoomwheel+delta);
   }
 
   set_drawmats(DrawMats drawmats) {
@@ -606,7 +610,7 @@ class View3DHandler extends Area {
   rightclick_menu(MouseEvent event) {
     this.editor.rightclick_menu(event, this);
   }
-
+  
   on_mousedown(MouseEvent event) {
     if (prior(View3DHandler, this).on_mousedown.call(this, event))
       return;
@@ -614,7 +618,13 @@ class View3DHandler extends Area {
     var selfound = false;
     var is_middle = event.button == 1 || (event.button == 2 && g_app_state.screen.ctrl);
     
-    if (is_middle && this.shift) {
+    var tottouch = g_app_state.screen.tottouch;
+    console.log("tottouch", tottouch);
+    
+    if (tottouch >= 2) {
+      console.log("Touch screen rotate/pan/zoom combo");
+      g_app_state.toolstack.exec_tool(new ViewRotateZoomPanOp());
+    } else if (is_middle && this.shift) {
       console.log("Panning");
       g_app_state.toolstack.exec_tool(new ViewPanOp());
     } else if (is_middle) { //middle mouse
@@ -642,12 +652,16 @@ class View3DHandler extends Area {
   on_mouseup(MouseEvent event) {
     this._mstart = null;
     
+    console.log("t", event.touches);
+    
     if (prior(View3DHandler, this).on_mouseup.call(this, event))
       return;
   }
 
   on_mousemove(MyMouseEvent event) {
     //console.log("->", event, event.touches);
+    
+    //console.log("t", JSON.stringify(event.touches));
     
     var mpos = new Vector3([event.x, event.y, 0])
     this.mpos = mpos;
@@ -658,7 +672,23 @@ class View3DHandler extends Area {
     
       /*handle drag translate*/
       if (vec.vectorLength() > 10) {
-        g_app_state.toolstack.exec_tool(new TranslateOp(EditModes.GEOMETRY));
+        var top = new TranslateOp(EditModes.GEOMETRY);
+        
+        /*callback to cancel drag translate if 
+          multiple touch hotspots show up.
+         */
+         
+        var this2 = this;
+        function switch_on_multitouch(TranslateOp op, MouseEvent event, cancel_func) {
+          if (g_app_state.screen.tottouch > 1) {
+            this2._mstart = null;
+            cancel_func();
+            g_app_state.toolstack.exec_tool(new ViewRotateZoomPanOp());
+          }
+        }
+        
+        top.cancel_callback = switch_on_multitouch;
+        g_app_state.toolstack.exec_tool(top);
         this._mstart = null;
         return;
       }

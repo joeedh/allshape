@@ -370,6 +370,12 @@ class TransformOp extends ToolOp {
     this.selecting_axis = false;
     this.constrain_plane = false;
     
+    //called in on_mousemove, used to implement things like switching 
+    //from drag translate to multitouch rotate/zoom
+    //prototype: function(transformop, event, function_to_cancel_op);
+    this.cancel_callback = undefined;
+    this.cached_cancel_func = undefined;
+    
     this.first_mdown = true;
     
     this.axis_drawlines = new GArray<drawline>();
@@ -394,6 +400,10 @@ class TransformOp extends ToolOp {
       this.datatype = TransMeshType;
     else
       this.datatype = TransObjectType;
+  }
+  
+  cancel(ctx) {
+    g_app_state.toolstack.toolop_cancel(this);
   }
   
   gen_transdata(ToolContext ctx) : TransData {
@@ -462,6 +472,20 @@ class TransformOp extends ToolOp {
   }
   
   on_mousemove(MouseEvent event) {
+    if (this.cancel_callback != undefined) {
+      var this2 = this;
+      
+      if (this.cached_cancel_func == undefined) {
+        this.cached_cancel_func = function() {
+          this2.cancel_callback = undefined; //ensure no double calls
+          this2.end_modal();
+          this2.cancel();
+        }
+      }
+      
+      this.cancel_callback(this, event, this.cached_cancel_func);
+    }
+    
     if (this.first_call == true) {
       this.first_call = false;
       this.start_mpos = new Vector3([event.x, event.y, 0]);

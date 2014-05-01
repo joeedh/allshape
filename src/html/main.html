@@ -1558,7 +1558,8 @@ function toJSON_intern (ob, tlevel) {
               if (id == undefined) 
                 id = i;
               
-              ts[id] = [g_app_state.screen[1] - in_ts[i].PageY, in_ts[i].PageX];
+              //console.log("-", in_ts[i]);
+              ts[id] = [in_ts[i].pageX, g_app_state.screen.size[1] - in_ts[i].pageY];
             }
             
             return ts;

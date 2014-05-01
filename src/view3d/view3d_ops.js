@@ -1,3 +1,245 @@
+"use strict";
+
+//multitouch
+class ViewRotateZoomPanOp extends ToolOp {
+  constructor() {
+    ToolOp.call(this, "view3d_orbit", "Orbit");
+
+    this.undoflag = UndoFlags.IGNORE_UNDO;
+
+    this.transdata = null;
+    this.is_modal = true;
+
+    this.inputs = {}
+                   
+    this.outputs = {}
+    
+    this.first_call = false;
+    this.start_mat = undefined;
+    this.startcos = [undefined, undefined, undefined];
+    this.startids = [undefined, undefined, undefined];
+    this.start_zoom = 0;
+    
+    this.mv1 = new Vector3();
+    this.mv2 = new Vector3();
+    
+    this.mv3 = new Vector3();
+    this.mv4 = new Vector3();
+    
+    this.mv5 = new Vector3();
+    this.mv6 = new Vector3();
+  }
+
+  can_call(Context ctx) {
+    return true;
+  }
+
+  modal_init(Context ctx) {
+    this.start_mat = new Matrix4(ctx.view3d.drawmats.cameramat);
+    this.first_call = true;
+    this.start_zoom = ctx.view3d.zoomwheel;
+  }
+  
+  proj(Vector3 out, Array<float> mpos) {
+    var size = this.modal_ctx.view3d.size;
+    
+    out.loadxy(mpos);
+    out[0] = out[0] / (size[0]*0.5) - 1.0;
+    out[1] = out[1] / (size[1]*0.5) - 1.0;
+  }
+  
+  on_mousemove(event) {
+    var ctx = this.modal_ctx;
+    var view3d = ctx.view3d;
+    var screen = g_app_state.screen;
+    
+    //sanity check for dual mouse/multitouch systems; if no touches, return
+    if (screen.tottouch == 0) {
+      this.end_modal();
+    }
+    
+    //always called with at least 2 touches
+    if (this.first_call == true) {
+      var touches = [];
+      for (var k in screen.touchstate) {
+        touches.push(k);
+      }
+      
+      this.first_call = false;
+      
+      var v1 = new Vector3();
+      var v2 = new Vector3();
+      this.proj(v1, screen.touchstate[touches[0]]);
+      this.proj(v2, screen.touchstate[touches[1]]);
+      
+      this.startids = [touches[0], touches[1], undefined];
+      this.startcos = [v1, v2, undefined];
+      
+      this.mv1.load(v1); this.mv2.load(v1);
+      this.mv3.load(v2); this.mv4.load(v2);
+      
+      this.exec(this.modal_tctx);
+    }
+    
+    if (screen.tottouch == 2 && this.startids[2] != undefined)
+      this.transition("rotate");
+    
+    console.log(JSON.stringify(screen.touchstate));
+    
+    //detect third touch hotspot
+    if (this.startids[2] == undefined) {
+      for (var k in screen.touchstate) {
+        if (k != this.startids[0] && k != this.startids[1]) {
+          this.startids[2] = k;
+          this.startcos[2] = new Vector3();
+          this.proj(this.startcos[2], screen.touchstate[k]);
+          
+          this.mv5.load(this.startcos[2]);
+          
+          this.transition("pan");
+          break;
+        }
+      }
+    }
+    
+    if (this.startids[0] in screen.touchstate) {
+      this.proj(this.mv2, screen.touchstate[this.startids[0]]);
+    }
+    if (this.startids[1] in screen.touchstate) {
+      this.proj(this.mv4, screen.touchstate[this.startids[1]]);
+    }
+    if (this.startids[2] != undefined && this.startids[2] in screen.touchstate) {
+      this.proj(this.mv6, screen.touchstate[this.startids[2]]);
+    }
+    
+    this.exec(this.modal_tctx);
+  }
+
+  exec(ctx) {
+    ctx = this.modal_ctx;
+    
+    var v1 = new Vector3(this.mv1);
+    var v2 = new Vector3(this.mv2);
+    
+    var newmat;
+    if (this.startids[2] == undefined) {
+      //console.log(v1.vectorDistance(v2), v1, v2);
+      if (v1.vectorDistance(v2) < 0.01)
+        return;
+      
+      var vec = new Vector3(v2);
+      vec.sub(v1);
+      
+      var perp = new Vector3([-vec[1], vec[0], 0.0]);
+      var q = new Quat();
+      q.axisAngleToQuat(perp, vec.vectorLength()*2);
+      var mat = q.toMatrix();
+      
+      newmat = new Matrix4(mat);
+      newmat.multiply(this.start_mat);
+    } else {
+      newmat = ctx.view3d.drawmats.cameramat;
+    }
+    
+    //zoom
+    var v3 = this.mv3, v4 = this.mv4;
+    var startdis = v3.vectorDistance(v1);
+    var zoom;
+    
+    if (startdis > 0.01) {
+      zoom = v4.vectorDistance(v2) / startdis;
+    } else {
+      zoom = v4.vectorDistance(v2);
+    }
+    
+    var view3d = ctx.view3d;
+    console.log(zoom);
+    
+    //normalize existing zoom into 0..1 range
+    var range = (view3d.zoom_wheelrange[1]-view3d.zoom_wheelrange[0]);
+    var zoom2 = (this.start_zoom - view3d.zoom_wheelrange[0]) / range;
+    
+    
+    //multiply by touch zoom fac
+    zoom2 *= zoom;
+   //console.log("zoomfac", zoom, startdis, v3, v4);
+    //denormalize
+    zoom2 = zoom2*range + view3d.zoom_wheelrange[0];
+    
+    view3d.drawmats.cameramat = newmat;
+    view3d.set_zoom(zoom2);
+    
+    view3d.gen_rendermats();
+    view3d.on_view_change();
+    
+    if (this.startids[2] != undefined)
+      this.exec_pan(ctx);
+  }
+  
+  exec_pan(ctx) {
+    static v1 = new Vector3(), v2 = new Vector3();
+    var view3d = ctx.view3d;
+    
+    v1.load(this.mv5);
+    v2.load(this.mv6);
+    
+    v1[2] = 0.9;
+    v2[2] = 0.9;
+    
+    var iprojmat = new Matrix4(ctx.view3d.drawmats.rendermat);
+    iprojmat.invert();
+    
+    var scenter = new Vector3(this.center);
+    scenter.multVecMatrix(ctx.view3d.drawmats.rendermat);
+    
+    if (isNaN(scenter[2]))
+      scenter[2] = 0.0;
+    
+    v1[2] = scenter[2];
+    v2[2] = scenter[2];
+    
+    v1.multVecMatrix(iprojmat);
+    v2.multVecMatrix(iprojmat);
+    
+    var vec = new Vector3(v2);
+    vec.sub(v1);
+    
+    newmat = new Matrix4(this.start_mat);
+    
+    if (isNaN(vec[0]) || isNaN(vec[1]) || isNaN(vec[2]))
+      return;
+      
+    newmat.translate(vec);  
+    view3d.drawmats.cameramat = newmat;
+    
+    view3d.gen_rendermats();
+  }
+  
+  transition(String mode) {
+    this.start_mat = new Matrix4(this.modal_ctx.view3d.drawmats.cameramat);
+    
+    if (mode == "rotate") {
+      this.startids[2] = undefined;
+      this.startcos[0].load(this.mv2);
+      this.mv1.load(this.mv2);
+    }
+  }
+  
+  on_mouseup(event) {
+    if (DEBUG.modal)
+      console.log("modal end");
+    
+    for (var k in event.touches) {
+      if (this.startids[2] == k) {
+        this.transition("rotate");
+      }
+    }
+    
+    if (g_app_state.screen.tottouch == 0)
+      this.end_modal();
+  }
+}
+
 class ViewRotateOp extends ToolOp {
   constructor() {
     ToolOp.call(this, "view3d_orbit", "Orbit");
@@ -30,7 +272,7 @@ class ViewRotateOp extends ToolOp {
       this.start_mpos[1] = this.start_mpos[1]/(this.modal_ctx.view3d.size[1]/2) - 1.0;
     }
     
-    mstart = new Vector3(this.start_mpos);
+    var mstart = new Vector3(this.start_mpos);
 
     var mend = new Vector3([event.x, event.y, 0.0]);
     mend[0] = mend[0]/(this.modal_ctx.view3d.size[0]/2) - 1.0;

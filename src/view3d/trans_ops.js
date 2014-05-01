@@ -69,6 +69,8 @@ class TranslateOp extends TransformOp {
     }
     
     this.datatype.update(td);
+    
+    TransformOp.prototype.cancel.call(this, ctx);
   }
 
   exec(ctx) {
@@ -289,6 +291,8 @@ class RotateOp extends TransformOp {
     
     td.mesh.regen_positions();
     td.mesh.regen_normals();
+    
+    TransformOp.prototype.cancel.call(this, ctx);
   }
 
   on_mousemove(event) {
@@ -487,7 +491,9 @@ class ScaleOp extends TransformOp {
     
     td.mesh.regen_positions();
     td.mesh.regen_normals();
-  }
+    
+    TransformOp.prototype.cancel.call(this, ctx);
+}
 
   on_mousemove(event) {
     TransformOp.prototype.on_mousemove.call(this, event);

@@ -782,7 +782,7 @@ class ScreenBorder extends UIElement {
     
     return ret;
   }
-
+    
   on_mousedown(event) {
     if (event.button == 0 
       && !this.moving 
@@ -996,6 +996,10 @@ class Screen extends UIFrame {
     
     this.gl = gl;
     
+    this.touchstate = {};
+    this.touch_ms = {};
+    this.tottouch = 0;
+    
     this.session_timer = new Timer(60000);
     
     //this is used to delay keyup events for modifiers
@@ -1086,6 +1090,35 @@ class Screen extends UIFrame {
     // */
   }
 
+  set_touchstate(MouseEvent event, String type) {
+    for (var k in event.touches) {
+      this.touch_ms[k] = time_ms();
+      
+      if (type == "down" || type == "move") {
+        this.touchstate[k] = event.touches[k];
+      } else if (type == "up") {
+        delete this.touchstate[k];
+      }
+    }
+    
+    var threshold = 4000;
+    this.tottouch = 0;
+    for (var k in this.touchstate) {
+      if (time_ms() - this.touch_ms[k] > threshold) {
+        console.log("Destroying stale touch state");
+        
+        var event = new MyMouseEvent(event.x, event.y, 0, MyMouseEvent.MOUSEUP);
+        event.touches = {k : this.touchstate[k]};
+        
+        //prevent infinite recursion
+        this.touch_ms[k] = time_ms();
+        this.on_mouseup(event);
+        delete this.touchstate[k];
+      }
+      this.tottouch++;
+    }
+  }
+  
   _on_mousemove(MouseEvent e)
   {
     if (DEBUG.mousemove)
@@ -1097,7 +1130,9 @@ class Screen extends UIFrame {
     }
     
     e = this.handle_event_modifiers(e);
+    this.set_touchstate(e, "move");
     
+    //console.log("t", e.touches, this.tottouch);
     UIFrame.prototype._on_mousemove.call(this, e);
   }
 
@@ -1133,7 +1168,9 @@ class Screen extends UIFrame {
     }
     
     e = this.handle_event_modifiers(e);
+    this.set_touchstate(e, "down");
     
+    //console.log("t", e.touches, this.tottouch);
     UIFrame.prototype._on_mousedown.call(this, e);
   }
 
@@ -1149,7 +1186,9 @@ class Screen extends UIFrame {
     }
     
     e = this.handle_event_modifiers(e);
+    this.set_touchstate(e, "up");
     
+    //console.log("t", e.touches, this.tottouch);
     UIFrame.prototype._on_mouseup.call(this, e);
   }
 
