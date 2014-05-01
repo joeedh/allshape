@@ -1378,41 +1378,16 @@ class Screen extends UIFrame {
     g_app_state.raster.pop_scissor();
     gl.disable(gl.SCISSOR_TEST);
   }
-
-  //generates keyboard events from the canvas DOM element's
-  //innerHTML
-  do_mobile_input() { 
-    var canvas = document.getElementById("example");
+  
+  clear_textinput() {
+    var canvas  = document.getElementById("example");
     
-    if (canvas.textContent != "1" && canvas.textContent.length > 1) {
-      var s = "" + canvas.textContent; //turn into string
-      for (i=0; i<s.length; i++) {
-        var c = s[i];
-        
-        if (c in charmap_rev)
-          c = charmap_rev[c];
-        else
-          c = c.charCodeAt(0);
-        
-        console.log(c);
-        var event = new MyKeyboardEvent(c);
-        event["char"] = s[i];
-        
-        this._on_keydown(event);
-        this._on_charcode(event);
-      }
-      
-      canvas.textContent = "1";
-    }
+    canvas.textContent = "&nbsp";
   }
   
   on_tick()
   {
     this.handle_active_view3d();
-    
-    if (IsMobile) {
-      this.do_mobile_input();
-    }
     
     g_app_state.notes.on_tick();
     

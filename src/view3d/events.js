@@ -79,7 +79,8 @@ class EventHandler {
     this.modalhandler = null;
     this.keymap = null;
   }
-
+  
+  on_textinput(Object event) { }
   on_keydown(KeyboardEvent event) { }
   on_charcode(KeyboardEvent event) { }
   on_keyinput(KeyboardEvent event) { }
@@ -137,7 +138,15 @@ class EventHandler {
   { 
     this.on_resize(event);
   }
-
+  
+  _on_textinput(ObjectMap event)
+  {
+    if (this.modalhandler != null)
+      this.modalhandler.on_textinput(event);
+    else
+      this.on_textinput(event);
+  }
+  
   _on_keydown(KeyboardEvent event) 
   { 
     if (this.modalhandler != null)

@@ -302,9 +302,17 @@ class UITextBox extends UIElement {
   }
 
   on_charcode(KeyboardEvent event) {
-    this.insert(event["char"]);
+    if (!IsMobile)
+      this.insert(event["char"]);
   }
 
+  on_textinput(ObjectMap event) {
+    console.log("text input", event);
+    
+    if (IsMobile)
+      this.replace_text(event.text);
+  }
+  
   on_keydown(KeyboardEvent event) {
     var this2 = this;
     

@@ -240,6 +240,14 @@ class UIFrame extends UIElement {
     return this.active != undefined;
   }
 
+  on_textinput(e) {
+    if (this.active != undefined) {
+      this.active._on_textinput(e);
+    }
+    
+    return this.active != undefined;
+  }
+  
   on_keydown(KeyboardEvent e) {
     if (this.active != undefined) {
       this.active._on_keydown(e);

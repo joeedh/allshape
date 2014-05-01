@@ -1404,7 +1404,8 @@ function toJSON_intern (ob, tlevel) {
         document.addEventListener("keyup", handleKeyUp, false);
         
         document.addEventListener("keypress", handleKeyPress, false);
-        document.addEventListener("textinput", handleKeyInput, false);
+        document.addEventListener("textinput", handleTextInput);
+        document.addEventListener("input",     handleTextInput);
         
         var gl = init();
         if (!gl) {
@@ -1754,12 +1755,24 @@ function toJSON_intern (ob, tlevel) {
           }
         }
         
-        function handleKeyInput(e, e2) {
+        function handleTextInput(e, e2) {
           console.log("ya0", e, e2);
           
           uevt = e;
-          if (g_app_state.screen != undefined)
-            g_app_state.eventhandler._on_keyinput(e);
+          if (g_app_state.screen != undefined) {
+            var canvas = document.getElementById("example");
+            var text = ""+canvas.textContent;
+            
+            //we have to maintain something in the text buffer at 
+            //at times for the mobile keyboard to show up.
+            if (text.length == 0)
+              canvas.textContent = "<TK>";
+            
+            text = text.replace(/\<TK\>/g, "");
+            
+            console.log("textinput event");
+            g_app_state.eventhandler._on_textinput({text : text});
+          }
         }
         
         var gl_ctx_lost = false;
@@ -1801,7 +1814,7 @@ function toJSON_intern (ob, tlevel) {
 
 <body onload="start()">
 
-<canvas height="404" width="1171" id="example">1</canvas>
+<canvas height="404" width="1171" id="example"><TK></canvas>
 <!-- <div id="framerate">Framerate:51fps</div> -->
 <!-- <div id="tottri">Number of tris: </div> -->
 
