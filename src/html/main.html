@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <script id="ss_vshader" type="x-shader/x-vertex">
-  precision highp float;
+  precision mediump float;
   uniform mat4 u_modelViewProjMatrix;
   uniform mat4 u_cameraMatrix;
   uniform mat4 u_normalMatrix;
@@ -188,14 +188,14 @@
 
 <script id="compute_fshader" type="x-shader/x-fragment">
     #version 100
-    precision highp float;
-    precision highp int;
+    precision mediump float;
+    precision mediump int;
 
     uniform sampler2D sampler2d;
     uniform sampler2D sampler2d_util_tab;
-    uniform highp float width;
-    uniform highp float height;
-    uniform highp float util_w;
+    uniform mediump float width;
+    uniform mediump float height;
+    uniform mediump float util_w;
 
     varying vec4 clr;
     varying vec3 v_Normal;
@@ -203,49 +203,49 @@
     int float_prec=0, float_min=0, float_max=0;
 
     //the glsl spec doesn't seem to guarantee support for bit shifting operations
-    highp float lshift(highp float i, highp float count)
+    mediump float lshift(mediump float i, mediump float count)
     {
       //count += 0.01;
       count = floor(count);
-      highp float c1 = texture2D(sampler2d_util_tab, vec2((count*2.0)/util_w+0.0001, 0.0))[3]*255.0;
-      highp float c2 = texture2D(sampler2d_util_tab, vec2((count*2.0+1.0)/util_w+0.0001, 0.0))[3]*255.0;
+      mediump float c1 = texture2D(sampler2d_util_tab, vec2((count*2.0)/util_w+0.0001, 0.0))[3]*255.0;
+      mediump float c2 = texture2D(sampler2d_util_tab, vec2((count*2.0+1.0)/util_w+0.0001, 0.0))[3]*255.0;
       return floor(i*c1*c2);
     }
 
-    highp float rshift(highp float i, highp float count)
+    mediump float rshift(mediump float i, mediump float count)
     {
       //count += 0.01;
       count = floor(count);
-      highp float c1 =  float(texture2D(sampler2d_util_tab, vec2((count*2.0)/util_w+0.0001, 0.0))[3]*255.0);
-      highp float c2 =  float(texture2D(sampler2d_util_tab, vec2((count*2.0+1.0)/util_w+0.0001, 0.0))[3]*255.0);
+      mediump float c1 =  float(texture2D(sampler2d_util_tab, vec2((count*2.0)/util_w+0.0001, 0.0))[3]*255.0);
+      mediump float c2 =  float(texture2D(sampler2d_util_tab, vec2((count*2.0+1.0)/util_w+0.0001, 0.0))[3]*255.0);
       return floor(i/c1/c2);
     }
 
-    highp float single_and(highp float a, highp float b)
+    mediump float single_and(mediump float a, mediump float b)
     {
       a += 0.000001;
       b += 0.000001;
-      highp float p = pow(2.0, b);
-      highp float n = floor(a/p);
+      mediump float p = pow(2.0, b);
+      mediump float n = floor(a/p);
       
       return p*mod(n, 2.0);
     }
     
-    /*packs highp floats into RGBA color vectors, suitable for transferrence
+    /*packs mediump floats into RGBA color vectors, suitable for transferrence
       through the stupid glReadPixels function*/
-    vec4 pack_float(highp float f)
+    vec4 pack_float(mediump float f)
     {
-      highp float sign = (float(int(f < 0.0)));
-      highp float tst = abs(f);
-      highp float norm = floor(tst);
+      mediump float sign = (float(int(f < 0.0)));
+      mediump float tst = abs(f);
+      mediump float norm = floor(tst);
       
       /*exponent is simply the 2-log of tst, floored*/
-      highp float expo = floor(log2(tst));
-      highp float pw = pow(2.0, expo);
+      mediump float expo = floor(log2(tst));
+      mediump float pw = pow(2.0, expo);
       
-      highp float n = fract(tst/pw); // - 1.0;
-      highp float n2 = 1.0;
-      highp float fi;
+      mediump float n = fract(tst/pw); // - 1.0;
+      mediump float n2 = 1.0;
+      mediump float fi;
       
       /*generate mantissa*/
       for (int i=0; i<23; i++) {
@@ -255,7 +255,7 @@
         n2 += lshift(1.0, float(22-i))*fi;
         n = fract(n);
       }
-      highp float mant = n2; //*4.2;
+      mediump float mant = n2; //*4.2;
       mant = lshift(1.0, 15.0);
       
       /*bias expo, to avoid negative value*/
@@ -263,7 +263,7 @@
       
       /*build bytes*/
       vec4 bs = vec4(0.0, 0.0, 0.0, 0.0);
-      highp float mant_shifted = rshift(mant, 8.0);
+      mediump float mant_shifted = rshift(mant, 8.0);
       
       for (int i=0; i<8; i++) {
         bs[0] += single_and(mant, float(i));
@@ -293,7 +293,7 @@
       vec4 pos = gl_FragCoord;
       
       vec4 clr = texture2D(sampler2d, vec2(pos[0]/width, pos[1]/height));
-      highp float tst = 25.112;
+      mediump float tst = 25.112;
       gl_FragColor = pack_float(tst);
     }
 </script>
@@ -420,7 +420,7 @@ body, html {
 </script>
 
 <script id="vshader" type="x-shader/x-vertex">
-    precision highp float;
+    precision mediump float;
     
     uniform mat4 u_modelViewProjMatrix;
     uniform mat4 u_cameraMatrix;
@@ -466,7 +466,7 @@ body, html {
 
 
 <script id="editvshader" type="x-shader/x-vertex">
-    precision highp float;
+    precision mediump float;
     
     uniform mat4 u_modelViewProjMatrix;
     uniform mat4 u_normalMatrix;
@@ -510,7 +510,7 @@ body, html {
 </script>
 
 <script id="editv_fshader" type="x-shader/x-fragment">
-    precision highp float;
+    precision mediump float;
     
     uniform sampler2D sampler2d;
     uniform float alpha_mul;
@@ -526,7 +526,7 @@ body, html {
 
 
 <script id="selbuf_vshader" type="x-shader/x-vertex">
-    precision highp float;
+    precision mediump float;
     
     uniform mat4 u_modelViewProjMatrix;
     
@@ -546,7 +546,7 @@ body, html {
 </script>
 
 <script id="selbuf_fshader" type="x-shader/x-fragment">
-    precision highp float;
+    precision mediump float;
 
     uniform sampler2D sampler2d;
     uniform float alpha_mul;
@@ -561,7 +561,7 @@ body, html {
 </script>
 
 <script id="fshader" type="x-shader/x-fragment">
-    precision highp float;
+    precision mediump float;
     uniform mat4 u_modelViewProjMatrix;
     uniform mat4 u_cameraMatrix;
     uniform mat4 u_normalMatrix;
@@ -608,7 +608,7 @@ body, html {
 </script>
 
 <script id="fshader_flat" type="x-shader/x-fragment">
-    precision highp float;
+    precision mediump float;
     uniform vec4 color;
     
     void main()
@@ -618,7 +618,7 @@ body, html {
 </script>
 
 <script id="fshader_simple" type="x-shader/x-fragment">
-    precision highp float;
+    precision mediump float;
     uniform mat4 u_modelViewProjMatrix;
     uniform mat4 u_cameraMatrix;
     uniform mat4 u_normalMatrix;

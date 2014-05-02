@@ -1,5 +1,5 @@
 var csg_vert_shader = """//vertex
-    precision highp float;
+    precision mediump float;
     
     uniform mat4 u_modelViewProjMatrix;
     uniform mat4 u_cameraMatrix;

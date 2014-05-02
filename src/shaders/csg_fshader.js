@@ -1,5 +1,5 @@
 var csg_draw_shader = """//fragment
-    precision highp float;
+    precision mediump float;
     uniform mat4 u_modelViewProjMatrix;
     uniform mat4 u_cameraMatrix;
     uniform mat4 u_normalMatrix;
@@ -17,7 +17,7 @@ var csg_draw_shader = """//fragment
 """
 
 var csg_draw_shader2 = """//fragment
-    precision highp float;
+    precision mediump float;
     uniform mat4 u_modelViewProjMatrix;
     uniform mat4 u_cameraMatrix;
     uniform mat4 u_normalMatrix;
