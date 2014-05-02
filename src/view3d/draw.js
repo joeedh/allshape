@@ -882,9 +882,10 @@ class ShaderProgram {
           var error = gl.getProgramInfoLog (program);
           log("Error in program linking:"+error);
 
-          gl.deleteProgram(program);
-          gl.deleteProgram(fragmentShader);
-          gl.deleteProgram(vertexShader);
+          //do nothing
+          //gl.deleteProgram(program);
+          //gl.deleteProgram(fragmentShader);
+          //gl.deleteProgram(vertexShader);
 
           return null;
       }
