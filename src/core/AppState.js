@@ -676,7 +676,7 @@ class AppState {
       //load data into appstate
       this2.datalib = datalib;
       if (this2.screen.canvas == undefined) {
-        this2.screen.canvas = new UICanvas(this2.active_view3d, [new Vector2(this2.screen.pos), new Vector2(this2.screen.size)])
+        this2.screen.canvas = new UICanvas([new Vector2(this2.screen.pos), new Vector2(this2.screen.size)])
       }
       
       this2.eventhandler = this2.screen;
@@ -914,7 +914,7 @@ class AppState {
     
     if (screen != undefined) {
       if (screen.canvas == undefined) {
-        screen.canvas = new UICanvas(this.active_view3d, [new Vector2(screen.pos), new Vector2(screen.size)])
+        screen.canvas = new UICanvas([new Vector2(screen.pos), new Vector2(screen.size)])
       }
       
       screen.on_resize(this.size);

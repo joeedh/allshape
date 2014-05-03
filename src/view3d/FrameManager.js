@@ -77,31 +77,31 @@ class Area extends UIFrame {
   {
     throw new Error("Error: unimplemented area_duplicate() in editor");
   }
-
+  
   on_resize(Array<int> newsize, Array<int> oldsize)
   {
     oldsize = this.size;
     this.size = newsize;
     
-    /*recalculate root scissor box*/
-    g_app_state.raster.reset_scissor_stack();
-    
     for (var c in this.rows) {
-      if (c.pos[1] > 30)
-        c.pos[1] = this.size[1] - 28;
+      if (c.pos[1] > 70)
+        c.pos[1] = this.size[1] - Area.get_barhgt();
         
       c.size[0] = this.size[0];
     }
     
     for (var c in this.cols) {
-      c.size[1] = this.size[1]-28*2;
+      c.size[1] = this.size[1]-Area.get_barhgt()*2;
     }
     
     for (var c in this.children) {
+      if (this.canvas != undefined) 
+        c.canvas = this.canvas;
+      
       c.on_resize(newsize, oldsize);
     }
   }
-  
+
   static get_barhgt() {
     if (IsMobile) {
       return 45;
@@ -1040,7 +1040,7 @@ class Screen extends UIFrame {
       g_app_state.set_startup_file();
     });
     
-    this.canvas = new UICanvas({gl: g_app_state.gl}, [[0, 0], this.size]);
+    this.canvas = new UICanvas([[0, 0], this.size]);
   }
 
   static fromSTRUCT(reader) {
@@ -1600,7 +1600,7 @@ class Screen extends UIFrame {
     }
     
     if (child instanceof ScreenArea) {
-      var canvas = new UICanvas(view3d);
+      var canvas = new UICanvas([child.pos, child.size]);
       
       child.canvas = canvas;
       for (var k in child.editors) {
@@ -1720,7 +1720,7 @@ function gen_screen(WebGLRenderingContext gl, View3DHandler view3d, int width, i
   view3d.pos = [0, 0];
   
   scr.ctx = new Context();
-  scr.canvas = new UICanvas(view3d, [[0, 0], [width, height]]);
+  scr.canvas = new UICanvas([[0, 0], [width, height]]);
   
   scr.add(new ScreenArea(view3d, scr.ctx, view3d.pos, view3d.size));
 

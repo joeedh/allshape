@@ -4,19 +4,34 @@ var DataFlags = {NO_CACHE : 1, RECALC_CACHE : 2};
 var TinyParserError = {"TinyParserError":0};
 
 class DataPath {
-  constructor(prop, name, path, dest_is_prop, use_path, flag=0) { //dest_is_prop is optional, defaults to false
-    if (dest_is_prop == undefined)
-      dest_is_prop = false;
-    if (use_path == undefined) 
-      use_path = true;
-    
+  constructor(prop, name, path, dest_is_prop=false, use_path=true, flag=0) { 
     this.flag = flag;
     
     this.dest_is_prop = dest_is_prop
-    this.type = dest_is_prop ? DataPathTypes.PROP : DataPathTypes.STRUCT;
     
-    if (prop != undefined && !dest_is_prop) {
+    //need to get rid of dest_is_prop paramter;
+    //for now, use as sanity variable.
+    if (prop == undefined)
+      this.type = dest_is_prop ? DataPathTypes.PROP : DataPathTypes.STRUCT;
+    
+    if (prop != undefined && prop instanceof ToolProperty) {
+      this.type = DataPathTypes.PROP;
+    } else if (prop != undefined && prop instanceof DataStruct) {
+      this.type = DataPathTypes.STRUCT;
       prop.parent = this;
+      
+      //XXX need to fold DataPath/Struct/StructArray
+      //instead of linking member variables in struct/structarray
+      //with containing datapath
+      this.pathmap = prop.pathmap;
+    } else if (prop != undefined && prop instanceof DataStructArray) {
+      this.type = DataPathTypes.STRUCT_ARRAY;
+      prop.parent = this;
+      
+      //XXX need to fold DataPath/Struct/StructArray
+      //instead of linking member variables in struct/structarray
+      //with containing datapath
+      this.getter = prop.getter;
     }
     
     this.name = name
@@ -106,7 +121,7 @@ class DataStruct {
       }
     }
     
-    this.type = PropTypes.STRUCT;
+    this.type = DataPathTypes.STRUCT;
   }
 
   __iterator__() {
@@ -628,77 +643,244 @@ class DataAPI {
     
     return ret;
   }
+
+  _build_path(dp) {
+    var s = "";
+    while (dp != undefined) {
+      if (dp instanceof DataPath)
+        s = dp.path + "." + s;
+      
+      dp = dp.parent;
+    }
+    
+    s = s.slice(0, s.length-1); //get rid of trailing '.' 
+    return s;
+  }
   
-  resolve_path_new(ctx, str) {  
+  resolve_path_new_intern(ctx, str) {  
+    try {
+      return this.resolve_path_new_intern2(ctx, str);
+    } catch (_err) {
+      print_stack(_err);
+      console.log("error: ", str);
+    }
+  }
+  
+  resolve_path_new_intern2(ctx, str) {  
     var parser = apiparser();
     
-    function do_eval(node, scope) {
+    var arr_index = undefined;
+    var build_path = this._build_path;
+    var pathout = [""];
+    var spathout = ["ContextStruct"];
+    
+    function do_eval(node, scope, pathout, spathout) {
       if (node.type == "ID") {
-        return scope.pathmap[node.val];
+        var ret = scope.pathmap[node.val];
+        
+        if (ret == undefined)
+          return undefined;
+         
+        if (ret.use_path)
+          pathout[0] = pathout[0] + "." + ret.path;
+        spathout[0] = spathout[0] + ".pathmap." + node.val;
+        
+        return ret;
       } else if (node.type == ".") {
-        var n2 = do_eval(node.children[0], scope);
+        var n2 = do_eval(node.children[0], scope, pathout, spathout);
+        
         if (n2 != undefined) {
-          n2 = n2.data;
-          return do_eval(node.children[1], n2);
+          if (n2 instanceof DataPath)
+            n2 = n2.data;
+          
+          return do_eval(node.children[1], n2, pathout, spathout);
         }
+      } else if (node.type == "ARRAY") {
+        var array = do_eval(node.children[0], scope, pathout, spathout);
+        var index = do_eval(node.children[1], scope, pathout, spathout);
+        
+        arr_index = index;
+        
+        if (array.type == DataPathTypes.PROP && array.data.type == PropTypes.FLAG) {
+          spathout[0] += ".data.data & "+index;
+        } else if (array.type == DataPathTypes.PROP) {
+          spathout[0] += ".data.data["+index+"]";
+        }
+        
+        if (!array.use_path) {
+          return array;
+        } else {
+          var path = pathout[0];
+          
+          path = path.slice(1, path.length);
+          
+          if (array.type == DataPathTypes.PROP && array.data.type == PropTypes.FLAG) {
+            pathout[0] += "&"+index;
+          } else {
+            pathout[0] += "["+index+"]";
+          }
+          
+          //console.log("--------ss->", pathout[0]);
+          
+          if (array.type == DataPathTypes.STRUCT_ARRAY) {
+            var stt = array.data.getter(eval(path)[index]);
+            stt.parent = array;
+            
+            spathout[0] += ".getter(" + path + "[" + index + "]" + ")";
+            return stt;
+          } else {
+            return array;
+          }
+        }
+      } else if (node.type == "NUM") {
+        return node.val;
       }
-      
-      console.log("eek -->", '"', node, '"');
-   }
+    }
     
     var ast = parser.parse(str);
-    return do_eval(ast, ContextStruct);
+    var sret = [0, 0, 0];
+    
+    sret[0] = do_eval(ast, ContextStruct, pathout, spathout);
+    pathout[0] = pathout[0].slice(1, pathout[0].length);
+    sret[1] = pathout[0];
+    sret[2] = spathout[0];
+    
+    //console.log("pathout: ", pathout[0]);
+    //console.log("spathout: ", spathout[0]);
+    //console.log("ret: ", sret[0]);
+    
+    return sret;
   }
   
   get_prop_new(ctx, str) {
     var parser = apiparser();
     
-    function get_val(dp) {
-      var s = "";
-      while (dp != undefined) {
-        if (dp instanceof DataPath)
-          s = dp.path + "." + s;
+    var ret = this.resolve_path_new_intern(ctx, str);
+    if (ret == undefined) return ret;
+    
+    var val = ret[0];
+    
+    if (ret[0].type == DataPathTypes.PROP) {
+      if (ret[0].use_path) {
+        var path = ret[1];
+        //console.log("===>", path, ret[1]);
+        val = eval(path);
+        //console.log("val", val);
+      } else {
+        val = eval(ret[2]);
         
-        dp = dp.parent;
+        if (val instanceof DataPath)
+          val = val.data;
+        if (val instanceof ToolProperty)
+          val = val.data;
+        //console.log("=1=>", ret[0], ret[1]);
+        //val = ret[0].data;
       }
       
-      s = s.slice(0, s.length-1); //get rid of trailing '.' 
-      return s;
+      var prop = ret[0].data;
+      if (prop.type == PropTypes.ENUM && (val in prop.keys))
+        val = prop.keys[val];
     }
     
-    function do_eval(node, scope, path) {
-      if (node.type == "ID") {
-        return scope.pathmap[node.val];
-      } else if (node.type == ".") {
-        var n2 = do_eval(node.children[0], scope, path);
-        
-        if (n2 != undefined) {
-          n2 = n2.data;
-          return do_eval(node.children[1], n2, path);
-        }
-      } else if (node.type == "ARRAY") {
-        var array = do_eval(node.children[0], scope, path);
-        var index = do_eval(node.children[1], scope, path);
-        
-        if (!array.use_path) {
-          return array.data[index];
-        } else {
-          var path = get_val(array);
-          return eval(path);
-        }
-      } else if (node.type == "NUM") {
-        return node.val;
+    return val;
+  }
+  
+  set_prop_new(ctx, str, value) {
+    var parser = apiparser();
+    
+    var ret = this.resolve_path_new_intern(ctx, str);
+    if (ret == undefined) return ret;
+    
+    if (ret[0].type != DataPathTypes.PROP) {
+      console.trace();
+      console.log("Error: non-property in set_prop_new()", ret[0], ret[1], ret[2]);
+      return;
+    }
+    
+    if (ret[0].type == DataPathTypes.PROP) {
+      var path;
+      
+      if (ret[0].use_path) {
+        path = ret[1];
+      } else {
+        path = ret[2];
       }
-     
-      console.log("eek -->", '"', node, '"');
+      
+      var prop = ret[0].data;
+      prop.ctx = ctx;
+      if (prop.type == PropTypes.FLAG) {
+        if (path.contains("&")) {
+          //handle "struct.flag[bit] = boolean" form.
+          var mask = Number.parseInt(path.slice(path.find("&")+1, path.length).trim());
+          var path2 = path.slice(0, path.find("&"));
+          
+          var val = eval(path2);
+          
+          if (value)
+            val |= mask;
+          else
+            val &= ~mask;
+          
+          prop.set_data(val);
+        } else {
+          //handle "struct.flag = integer bitmask" form
+          path += " = " + value;
+          eval(path);
+          
+          prop.set_data(value);
+        }
+      } else {
+        if (prop.type == PropTypes.ENUM) {
+          value = prop.values[value];
+          if (value instanceof String || typeof value == "string") {
+            value = '"'+value+'"';
+          }
+        } else if (prop.type == PropTypes.STRING) {
+          value = '"' + value + '"';
+        }
+        
+        console.log("proptype", prop.type);
+        
+        var valpath = path;
+        if (path.endsWith("]")) {
+          var i = path.length-1;
+          while (i >= 0 && path[i] != "[") i--;
+          valpath = path.slice(0, i);
+          
+          console.log("valpath:", valpath);
+        } else if (!ret[0].use_path) {
+          //erg, stupid hackyness
+          valpath += ".data.data";
+          path += ".data.data";
+        }
+        
+        var oval = eval(path);
+        
+        path += " = " + value;
+        eval(path);
+        
+        console.log(prop, prop.set_data, prop.update);
+        
+        prop.set_data(eval(valpath));
+      }
+      
+      if (ret[0].update != undefined)
+        ret[0].update.call(ret[0]);
     }
-    
-    var ast = parser.parse(str);
-    return do_eval(ast, ContextStruct);
+  }
+  
+  get_struct_new(ctx, str) {
+    var ret = this.get_prop_new(ctx, str);
+    if (ret instanceof DataPath)
+      ret = ret.data;
+    return ret;
   }
   
   get_prop_meta_new(ctx, str) {
-    return this.resolve_path_new(ctx, str);
+    var ret = this.resolve_path_new_intern(ctx, str);
+    if (ret == undefined || ret[0] == undefined) return undefined;
+    
+    return ret[0].data;
   }
   
   resolve_path(ctx, str) {
@@ -750,6 +932,8 @@ class DataAPI {
   }
   
   get_struct(ctx, str) {
+    if (new_api_parser) return this.get_struct_new(ctx, str);
+    
     var ret = this.resolve_path(ctx, str)
     if (ret == undefined) return ret;
     
@@ -757,6 +941,8 @@ class DataAPI {
   }
   
   get_prop_meta(ctx, str) {
+    if (new_api_parser) return this.get_prop_meta_new(ctx, str);
+    
     var ret = this.resolve_path(ctx, str)
     if (ret == undefined) return ret;
     
@@ -764,6 +950,8 @@ class DataAPI {
   }
   
   set_prop(ctx, str, value) {
+    if (new_api_parser) return this.set_prop_new(ctx, str, value);
+    
     var ret = this.resolve_path(ctx, str);
 
     if (ret == undefined) 
@@ -836,6 +1024,8 @@ class DataAPI {
   }
   
   get_prop(Context ctx, String str) : Object {
+    if (new_api_parser) return this.get_prop_new(ctx, str);
+    
     var ret = this.resolve_path(ctx, str);
     
     if (ret == undefined) {

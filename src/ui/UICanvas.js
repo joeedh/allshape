@@ -50,9 +50,9 @@ class TriListAlloc {
     this.usedcount = 0;
   }
   
-  alloc(View3DHandler view3d, UICanvas canvas, Boolean use_small_icons=false) : TriList {
+  alloc(UICanvas canvas, Boolean use_small_icons=false) : TriList {
     #ifdef NOCACHE
-    return new TriList(view3d, canvas, use_small_icons);
+    return new TriList(canvas, use_small_icons);
     #endif
     
     if (this.freecount == 0) {
@@ -61,7 +61,7 @@ class TriListAlloc {
       //ensure a saturated cache
       if (this.usedcount == 0) {
         for (var i=0; i<TRILIST_CACHE_SIZE; i++) {
-          var tl = new TriList(view3d, canvas, use_small_icons);
+          var tl = new TriList(canvas, use_small_icons);
           tl.cache_destroy();
           this.freelist.push(tl);
           this.freecount++;
@@ -71,12 +71,12 @@ class TriListAlloc {
       }
       
       this.usedcount++;
-      return new TriList(view3d, canvas, use_small_icons);
+      return new TriList(canvas, use_small_icons);
     } else {
       //console.log("using cached trilist", this.freecount, this.freelist.length);
       var ret = this.freelist.pop();
       
-      ret.cache_init(view3d, canvas, use_small_icons);
+      ret.cache_init(canvas, use_small_icons);
       
       this.freecount--;
       this.usedcount++;
@@ -115,7 +115,6 @@ class TriList {
     this.colors.length = 0;
     this.tottri = 0;
     
-    //this.view3d = undefined;
     //this.canvas = undefined;
     //this.iconsheet = undefined;
     //this.viewport = undefined;
@@ -130,11 +129,10 @@ class TriList {
     F32FREE(this.texbuf);
   }
   
-  cache_init(View3DHandler view3d, UICanvas canvas, Boolean use_small_icons=false) {
+  cache_init(UICanvas canvas, Boolean use_small_icons=false) {
     this._dead = false;
     this.use_tex = 1;
     this.tex = 0 : WebGLTexture;
-    this.view3d = view3d : View3DHandler;
     this.iconsheet = use_small_icons ? g_app_state.raster.iconsheet16 : g_app_state.raster.iconsheet;
     this.small_icons = use_small_icons;
     
@@ -152,7 +150,7 @@ class TriList {
     this.viewport = canvas != undefined ? canvas.viewport : undefined;
   }
   
-  constructor(View3DHandler view3d, UICanvas canvas, Boolean use_small_icons=false) {
+  constructor(UICanvas canvas, Boolean use_small_icons=false) {
     this._id = _canvas_draw_id++;
     
     this.verts = [];
@@ -167,7 +165,6 @@ class TriList {
     
     this.use_tex = 1;
     this.tex = 0 : WebGLTexture;
-    this.view3d = view3d : View3DHandler;
     this.iconsheet = use_small_icons ? g_app_state.raster.iconsheet16 : g_app_state.raster.iconsheet;
     this.small_icons = use_small_icons;
     
@@ -396,22 +393,20 @@ class TriList {
   }
   
   destroy(Boolean only_gl=false) {
-    if (this.view3d != undefined) {
-      var gl = this.view3d.gl
-      
-      if (this.vbuf) {
-        gl.deleteBuffer(this.vbuf);
-        gl.deleteBuffer(this.cbuf);
-      }
-      
-      if (this.tbuf) {
-        gl.deleteBuffer(this.tbuf);
-      }  
-      
-      
-      this.vbuf = this.cbuf = this.tbuf = undefined;
-      this.recalc = 1;
+    var gl = g_app_state.gl;
+    
+    if (this.vbuf) {
+      gl.deleteBuffer(this.vbuf);
+      gl.deleteBuffer(this.cbuf);
     }
+    
+    if (this.tbuf) {
+      gl.deleteBuffer(this.tbuf);
+    }  
+    
+    
+    this.vbuf = this.cbuf = this.tbuf = undefined;
+    this.recalc = 1;
     
     this._free_typed();
     
@@ -551,12 +546,12 @@ function _reset_trilist_frame_counter() {
   _trilist_frame_counter = 0;
 }
 
-function _new_trilist(View3DHandler view3d, UICanvas canvas) {
+function _new_trilist(UICanvas canvas) {
   if (_trilist_frame_counter = 0 >= MAX_TRILIST_CACHE) {
-    return new TriList(view3d, canvas);
+    return new TriList(canvas);
   } else {
     var list = objcache.fetch(_trilist_template)
-    TriList.call(list, view3d, canvas);
+    TriList.call(list, canvas);
   }
 }
 
@@ -568,13 +563,12 @@ function _save_trilist(TriList trilist) {
 */
 
 class TextDraw {
-  constructor(pos, text, color, view3d, spos, ssize, viewport, size, scale) {
+  constructor(pos, text, color, spos, ssize, viewport, size, scale) {
     this._id = _canvas_draw_id++;
     
     this.text = text;
     this.pos = [pos[0], pos[1], pos[2]];
     this.color = color;
-    this.view3d = view3d
     this.tdrawbuf = undefined : TextDrawBuffer;
     this.spos = spos;
     this.ssize = ssize;
@@ -651,9 +645,8 @@ function _box_process_clr(default_cs, clr) {
   return cs;
 }
 
-//viewport is optional, defaults to view3d.size
 class UICanvas {
-  constructor(view3d, viewport) { 
+  constructor(viewport) { 
     static _id = 1;
     
     this._id = _id++;
@@ -661,16 +654,11 @@ class UICanvas {
     this.iconsheet = g_app_state.raster.iconsheet;
     this.iconsheet16 = g_app_state.raster.iconsheet16;
     
-    if (viewport == undefined)
-      this.viewport = [view3d.pos, view3d.size];
-    else
-      this.viewport = viewport;
+    this.viewport = viewport;
     
     this.raster = g_app_state.raster;
     
-    this.trilist = _talloc.alloc(view3d, this); //new TriList(view3d, this)
-    this.view3d = view3d;
-    this.trilist.view3d = view3d
+    this.trilist = _talloc.alloc(this); //new TriList(this)
     
     this.textcache = {};
     this.textcachelen = 0;
@@ -751,7 +739,7 @@ class UICanvas {
     //flag canvas for memory leak detection, see active_canvases's definition
     active_canvases[this._id] = this;
     
-    this.trilist = _talloc.alloc(this.view3d, this, use_small_icons); //new TriList(this.view3d, this, use_small_icons);
+    this.trilist = _talloc.alloc(this, use_small_icons); //new TriList(this, use_small_icons);
     
     if (this.scissor_stack.length > 0) {
       this.trilist.spos = this.scissor_stack[this.scissor_stack.length-1][0];
@@ -1376,7 +1364,7 @@ class UICanvas {
     loc[0] = (Math.floor(loc[0])/sx)*2.0; //*2.0-1.0;
     loc[1] = (Math.floor(loc[1])/sy)*2.0; //*2.0-1.0;
     
-    var textdraw = new TextDraw(loc, text, color, this.view3d, scissor_pos, 
+    var textdraw = new TextDraw(loc, text, color, scissor_pos, 
                                 scissor_size, this.viewport, size, scale);
     var hash = text.toString() + ">>" + size + "|" + JSON.stringify(this.viewport);
     

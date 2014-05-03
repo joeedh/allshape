@@ -95,7 +95,7 @@ function apiparser() {
       args.push(varnode(arg, val));
       
       var t = p.next();
-      console.log("=>", t.type, t.value);
+      //console.log("=>", t.type, t.value);
       
       if (t.type == "RPARAM") {
         break;
@@ -109,7 +109,7 @@ function apiparser() {
   }  
   
   function p_Expr(p, end_chars="") {
-    console.log(p);
+    //console.log(p);
     
     var t = p.peeknext();
     var ast;
@@ -176,9 +176,10 @@ function fmt_ast(ast, tlevel=0) {
 function test_dapi_parser() {
   var p = apiparser();
   
-  var tst = "view3d.test[0]";
+  var tst = "operator_stack[0].name";
   var tree = p.parse(tst);
   console.log(fmt_ast(tree));
   
   console.log(g_app_state.api.get_prop_new(new Context(), tst));
+  g_app_state.api.set_prop_new(new Context(), "view3d.zoomfac", 0.5);
 }

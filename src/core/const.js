@@ -25,6 +25,8 @@ var FEATURES = {
 var use_octree_select = true;
 var fuzzy_ui_press_hotspot = 25;
 
+var new_api_parser = true;
+
 //debug flags
 var DEBUG = {
   gl_objects : false,

@@ -85,8 +85,8 @@ function api_define_view3d() {
 function api_define_mesh() {
 
   var totvert = new IntProperty(0, "totvert", "Verts", 
-                                            "Number of vertices in this mesh", 
-                                            [0, 60000000], [0, 60000000]);
+                                "Number of vertices in this mesh", 
+                                [0, 60000000], [0, 60000000]);
 
   var totedge = new IntProperty(0, "totedge", "Edges", 
                                             "Number of edges in this mesh", 
@@ -156,11 +156,19 @@ function api_define_appstate() {
 }
 
 function get_tool_struct(tool) { 
-  var name = new StringProperty("", "name", "name", "Name", TPropFlags.LABEL);
-  return new DataStruct([
-    new DataPath(name, "name", "ctx.appstate.session.username")
-  ]);
+  var name = new StringProperty("name", "name", "name", "Name", TPropFlags.LABEL);
+  var test_flagprop = new FlagProperty(1, {FLAG_1 : 1, FLAG_2 : 2, FLAG_3 : 4, FLAG_4 : 3}, undefined, "flagprop", "Flag Property", "");
+  test_flagprop.data = 1;
   
+  static ret = undefined;
+  if (ret == undefined) {
+    ret = new DataStruct([
+            new DataPath(name, "name", "uiname", true, true),
+            new DataPath(test_flagprop, "test", "", true, false)
+          ]);
+  }
+  
+  return ret;
   /*
   if (tool._datastruct != undefined)
     return tool._datastruct;
@@ -179,7 +187,7 @@ function api_define_context() {
     new DataPath(api_define_scene(), "scene", "ctx.scene", false),
     new DataPath(new DataStruct([]), "last_tool", "", false, false, DataFlags.RECALC_CACHE),
     new DataPath(api_define_appstate(), "appstate", "ctx.appstate", false),
-    new DataPath(DataStructArray(get_tool_struct), "operator_stack", 
+    new DataPath(new DataStructArray(get_tool_struct), "operator_stack", 
                  "ctx.appstate.toolstack.undostack", false)
   ]);
 }
