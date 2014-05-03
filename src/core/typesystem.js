@@ -367,6 +367,18 @@ function inherit_multiple(obj, parents) {
   }
 }
 
+function subclass_of(child, parent) {
+  var clsorder = child.__clsorder__;
+  for (var i=0; i<clsorder.length; i++) {
+    var p = clsorder[i];
+    
+    if (p == parent || p.name == parent.name)
+      return true;
+  }
+  
+  return false;
+}
+
 function __instance_of(child, parent) {
   if (parent == undefined)
     return child == undefined;

@@ -116,6 +116,7 @@ class UIButtonIcon extends UIButton {
     UIButton.call(this, ctx, text, pos, size, path, callback, hint);
     this.icon = icon;
     this.small_icon = use_small_icon;
+    this.bgmode = "button";
     this.pad = 2;
     this._min_size = [0, 0];
   }
@@ -177,12 +178,22 @@ class UIButtonIcon extends UIButton {
     //size[0] = isize[0]+pad*2.0;
     //size[1] = isize[1]+pad*2.0;
     
-    if (this.clicked) 
-      canvas.invbox(pos, size);
-    else if (this.state & UIFlags.HIGHLIGHT)
-      canvas.hlightbox(pos, size)
-    else 
-      canvas.box(pos, size);
+    if (this.bgmode == "button") {
+      if (this.clicked) 
+        canvas.invbox(pos, size);
+      else if (this.state & UIFlags.HIGHLIGHT)
+        canvas.hlightbox(pos, size)
+      else 
+        canvas.box(pos, size);
+    } else if (this.bgmode == "flat") {
+      static high_clr = [0.9, 0.9, 0.9, 0.2];
+      static inset_clr = [0.3, 0.3, 0.3, 0.2];
+      
+      if (this.clicked) 
+        canvas.box(pos, size, inset_clr);
+      else if (this.state & UIFlags.HIGHLIGHT)
+        canvas.box(pos, size, high_clr);
+    }
     
     pos[0] += (size[0]-isize[0])*0.5;
     pos[1] += (size[1]-isize[1])*0.5;
@@ -200,7 +211,7 @@ class UIMenuButton extends UIHoverHint {
   constructor(ctx, menu, pos, size, path, description="") {//menu can be undefined, if path is defined
     UIHoverHint.call(this, ctx, path);
     
-    this.menu = undefined : UIMenu;
+    this.menu = menu : UIMenu;
     
     this.description = "";
     this.ctx = ctx;
@@ -222,6 +233,18 @@ class UIMenuButton extends UIHoverHint {
     
     if (this.state & UIFlags.USE_PATH) {
       this.build_menu();
+    } else {
+      var subcallback = menu.callback;
+      var this2 = this;
+      
+      function callback(entry, id) {
+        this2.text = entry.label;
+        this2.do_recalc();
+        
+        subcallback(entry, id);
+      }
+      
+      menu.callback = callback;
     }
   }
   
@@ -246,7 +269,7 @@ class UIMenuButton extends UIHoverHint {
       }
     }
     
-    if (this.menu.closed) {
+    if (this.menu != undefined && this.menu.closed) {
       if (this.clicked) {
         this.do_recalc();
       }

@@ -1148,6 +1148,8 @@ class ToolStack {
     
     this.appstate = appstate;
     this.valcache = appstate.toolop_input_cache;
+    
+    this.do_truncate = false;
   }
   
   reexec_stack() {
@@ -1224,7 +1226,7 @@ class ToolStack {
     tool.default_inputs(ctx, get_default);
   }
   
-  undo_push(ToolOp tool) {
+  truncate_stack() {
     if (this.undocur != this.undostack.length) {
       if (this.undocur == 0) {
         this.undostack = new GArray();
@@ -1232,8 +1234,16 @@ class ToolStack {
         this.undostack = this.undostack.slice(0, this.undocur);
       }
     }
+  }
+  
+  undo_push(ToolOp tool) {
+    if (this.do_truncate) {
+      this.truncate_stack();      
+      this.undostack.push(tool);
+    } else {
+      this.undostack.insert(this.undocur, tool);
+    }
     
-    this.undostack.push(tool);
     this.undocur++;
   }
 
@@ -1269,6 +1279,9 @@ class ToolStack {
       
       this.undocur--;
       this.undostack[this.undocur].undo(new Context());
+      
+      if (this.undocur > 0)
+        this.rebuild_last_tool(this.undostack[this.undocur-1]);
     }
   }
 
@@ -1282,6 +1295,7 @@ class ToolStack {
       if (!(tool.undoflag & UndoFlags.IGNORE_UNDO)) {
         tool.undo_pre(ctx);
       }
+      
       var tctx = new ToolContext();
       
       tool.exec_pre(tctx);
@@ -1289,6 +1303,9 @@ class ToolStack {
       
       this.undocur++;
       this.appstate.jobs.kill_owner_jobs(this.appstate.mesh);
+      
+      if (this.undocur > 0)
+        this.rebuild_last_tool(this.undostack[this.undocur-1]);
     }
   }
 

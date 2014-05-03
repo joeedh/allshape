@@ -27,7 +27,15 @@ class GArray extends Array {
       }
     }
   }
-
+  
+  slice(int a, int b) : GArray {
+    var ret = Array.prototype.slice.call(this, a, b);
+    if (!(ret instanceof GArray))
+      ret = new GArray(ret);
+    
+    return ret;
+  }
+  
   pack(Array<byte> data) {
     pack_int(data, this.length);
     for (var i=0; i<this.length; i++) {

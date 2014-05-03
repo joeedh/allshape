@@ -60,6 +60,7 @@ var uicolors = {
   ],
   "Highlight": [1.0, 0.75, 0.21, 1],
   "MenuHighlight": [1.0, 1, 1, 1],
+  "CollapsingPanel" : [0.7, 0.7, 0.7, 0.5],
   "SimpleBox": [
     darken([0.5, 0.5, 0.5, 0.4], 1),
     darken([0.5, 0.5, 0.5, 0.4], 1),

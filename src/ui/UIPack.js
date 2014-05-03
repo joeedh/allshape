@@ -41,7 +41,13 @@ class UIPackFrame extends UIFrame {
     //if (canvas != undefined)
     //  this.pack(canvas, false);
   }
-
+  
+  add(UIElement child) {
+    child.packflag |= this.default_packflag;
+    
+    UIFrame.prototype.add.call(this, child);
+  }
+  
   toolop(path, inherit_flag=0, label=undefined) {
     var ctx = this.ctx;
     var opname = ctx.api.get_op_uiname(ctx, path);

@@ -1,4 +1,4 @@
-var DataPathTypes = {PROP: 0, STRUCT: 1};
+var DataPathTypes = {PROP: 0, STRUCT: 1, STRUCT_ARRAY : 2};
 var DataFlags = {NO_CACHE : 1, RECALC_CACHE : 2};
 
 var TinyParserError = {"TinyParserError":0};
@@ -14,6 +14,10 @@ class DataPath {
     
     this.dest_is_prop = dest_is_prop
     this.type = dest_is_prop ? DataPathTypes.PROP : DataPathTypes.STRUCT;
+    
+    if (prop != undefined && !dest_is_prop) {
+      prop.parent = this;
+    }
     
     this.name = name
     this.data = prop;
@@ -74,6 +78,18 @@ class DataStructIter {
   }
 }
 
+/*array_item_struct_getter is a function that takes
+  one of the array items in path, and returns 
+  a struct definition
+ */
+class DataStructArray {
+  constructor(array_item_struct_getter) {
+    this.getter = array_item_struct_getter;
+    
+    this.type = DataPathTypes.STRUCT_ARRAY;
+  }
+}
+
 class DataStruct {
   constructor(paths) {
     this.paths = new GArray(paths);
@@ -83,6 +99,7 @@ class DataStruct {
     this._flag = 0;
     
     for (var p in this.paths) {
+      p.parent = this;
       this.pathmap[p.name] = p
       if (p.type == DataPathTypes.PROP) {
         p.data.path = p.path;
@@ -550,7 +567,7 @@ class DataAPI {
         p.expect(_TOKEN, _RS);
         if (p.peek() != undefined) {
           console.log("Error: expected EOF after array/obj lookup");
-          throw TinyParserError;
+          throw TinyParserError;  
         }
       } else if (p.peek() != undefined) {
         p.expect(_TOKEN, _DT);
@@ -610,6 +627,78 @@ class DataAPI {
     }
     
     return ret;
+  }
+  
+  resolve_path_new(ctx, str) {  
+    var parser = apiparser();
+    
+    function do_eval(node, scope) {
+      if (node.type == "ID") {
+        return scope.pathmap[node.val];
+      } else if (node.type == ".") {
+        var n2 = do_eval(node.children[0], scope);
+        if (n2 != undefined) {
+          n2 = n2.data;
+          return do_eval(node.children[1], n2);
+        }
+      }
+      
+      console.log("eek -->", '"', node, '"');
+   }
+    
+    var ast = parser.parse(str);
+    return do_eval(ast, ContextStruct);
+  }
+  
+  get_prop_new(ctx, str) {
+    var parser = apiparser();
+    
+    function get_val(dp) {
+      var s = "";
+      while (dp != undefined) {
+        if (dp instanceof DataPath)
+          s = dp.path + "." + s;
+        
+        dp = dp.parent;
+      }
+      
+      s = s.slice(0, s.length-1); //get rid of trailing '.' 
+      return s;
+    }
+    
+    function do_eval(node, scope, path) {
+      if (node.type == "ID") {
+        return scope.pathmap[node.val];
+      } else if (node.type == ".") {
+        var n2 = do_eval(node.children[0], scope, path);
+        
+        if (n2 != undefined) {
+          n2 = n2.data;
+          return do_eval(node.children[1], n2, path);
+        }
+      } else if (node.type == "ARRAY") {
+        var array = do_eval(node.children[0], scope, path);
+        var index = do_eval(node.children[1], scope, path);
+        
+        if (!array.use_path) {
+          return array.data[index];
+        } else {
+          var path = get_val(array);
+          return eval(path);
+        }
+      } else if (node.type == "NUM") {
+        return node.val;
+      }
+     
+      console.log("eek -->", '"', node, '"');
+    }
+    
+    var ast = parser.parse(str);
+    return do_eval(ast, ContextStruct);
+  }
+  
+  get_prop_meta_new(ctx, str) {
+    return this.resolve_path_new(ctx, str);
   }
   
   resolve_path(ctx, str) {

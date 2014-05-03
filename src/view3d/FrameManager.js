@@ -4,9 +4,10 @@ var Area_Types = new set(["View3DHandler"]);
 
 //this should have been named ScreenEditor, ger
 class Area extends UIFrame {
-  constructor(type, ctx, pos, size) {
+  constructor(String type, String uiname, Context ctx, Array<float> pos, Array<float> size) {
     UIFrame.call(this, ctx, undefined, undefined, pos, size);
     
+    this.uiname = uiname;
     this.type = type;
     
     this.rows = new GArray();
@@ -14,6 +15,9 @@ class Area extends UIFrame {
     
     this.note_area = undefined;
   }
+  
+  static default_new(Context ctx, ScreenArea scr, WebGLRenderingContext gl, 
+                     Array<float> pos, Array<float> size) {}
   
   //destroy GL data
   destroy() {
@@ -26,6 +30,9 @@ class Area extends UIFrame {
     return ob;
   }
 
+  define_keymap() {
+  }
+  
   on_gl_lost(WebGLRenderingContext new_gl) {
     for (var c in this.cols) {
       c.on_gl_lost();
@@ -39,6 +46,16 @@ class Area extends UIFrame {
   
   on_add(parent)
   {
+    for (var c in this.rows) {
+      this.remove(c);
+    }
+    for (var c in this.cols) {
+      this.remove(c);
+    }
+    
+    this.rows = new GArray();
+    this.cols = new GArray();
+    
     this.build_topbar();
     this.build_sidebar1();
     this.build_bottombar();
@@ -58,6 +75,7 @@ class Area extends UIFrame {
 
   area_duplicate()
   {
+    throw new Error("Error: unimplemented area_duplicate() in editor");
   }
 
   on_resize(Array<int> newsize, Array<int> oldsize)
@@ -133,6 +151,8 @@ class ScreenArea extends UIFrame {
     this.area = area;
     area.pos[0] = 0; area.pos[1] = 0;
     
+    this.type = undefined;
+    
     if (add_area)
       this.add(area);
   }
@@ -143,13 +163,39 @@ class ScreenArea extends UIFrame {
     }
   }
   
+  switch_editor(cls) {
+    if (!(cls.name in this.editors)) {
+      console.log("creating new editor ", cls.name);
+      
+      this.editors[cls.name] = cls.default_new(new Context(), this, g_app_state.gl, this.pos, this.size);
+      this.add(this.editors[cls.name]);
+      this.editors[cls.name].do_recalc();
+    }
+    var area = this.editors[cls.name];
+    
+    this.area.on_area_inactive();
+    this.remove(this.area);
+
+    this.add(area);
+    this.area = this.active = area;
+    this.area.canvas = this.canvas;
+    this.canvas.reset();
+    
+    this.area.do_full_recalc();
+    
+    area.on_area_active();
+    area.on_resize(this.size, new Vector2(area.size));
+    
+    this.type = cls.name;
+  }
+  
   static fromSTRUCT(reader) {
     var ob = Object.create(ScreenArea.prototype);
     
     reader(ob);
     
+    var act = ob.area;
     var editarr = new GArray(ob.editors);
-    ob.area = editarr[0];
     
     var screens2 = {}
     for (var scr in editarr) {
@@ -160,6 +206,9 @@ class ScreenArea extends UIFrame {
       screens2[scr.constructor.name] = scr;
     }
     
+    if (!(ob.area instanceof Area))
+      ob.area = editarr[0];
+    
     ScreenArea.call(ob, ob.area, new Context(), ob.pos, ob.size, false);
     ob.editors = screens2;
     
@@ -169,6 +218,7 @@ class ScreenArea extends UIFrame {
   data_link(block, getblock, getblock_us) {
     this.ctx = new Context();
     this.area.ctx = new Context();
+    this.active = this.area;
     
     for (var k in this.editors) {
       var area = this.editors[k];
@@ -182,6 +232,8 @@ class ScreenArea extends UIFrame {
 
   on_add(parent)
   {
+    this.active = this.area;
+    
     for (var c in this.children) {
       c.on_add(this);
     }
@@ -190,63 +242,6 @@ class ScreenArea extends UIFrame {
   on_close()
   {
     this.area.on_area_inactive();
-  }
-
-  toJSON() 
-  {
-    var obj =  {size : [this.size[0], this.size[1]], pos : [this.pos[0], this.pos[1]], };
-    
-    var areas = [];
-    obj.areas = areas;
-    var active = 0;
-    
-    var i = 0;
-    for (var k in this.editors) {
-      var a = this.editors[k];
-      
-      areas.push(a.toJSON());
-      if (a == this.area)
-        active = i;
-      i++;
-    }
-    
-    return obj;
-  }
-
-  static fromJSON(scrarea)
-  {
-    var areas = {}
-    
-    var active = undefined;
-    for (var i=0; i<scrarea.areas.length; i++) {
-      var a = scrarea.areas[i];
-      
-      if (0) { // !(a.type in Area_Types)) {
-        console.log("Error: bad area type " + a.type + " in ScreenArea.fromJSON()")
-        console.trace();
-        continue;
-      }
-      
-      var area;
-      if (1) { //a.type == View3DHandler.name)
-        area = View3DHandler.fromJSON(a);
-      } else {
-        throw new Error("Invalid area " + a.type)
-      }
-      
-      areas[a.type] = area;
-      
-      if (i == scrarea.active || active == undefined)
-        active = area;
-    }
-    
-    if (active == undefined)
-      throw new Error("couldn't find any screens");
-      
-    var sa = new ScreenArea(active, undefined, scrarea.pos, scrarea.size);
-    sa.areas = areas;
-    
-    return sa;
   }
 
   area_duplicate()
@@ -266,6 +261,7 @@ class ScreenArea extends UIFrame {
 
   build_draw(canvas, isVertical)
   {
+    this.active = this.area;
     //var mat = new Matrix4();
     //mat.translate(this.pos[0], this.pos[1], 0.0);
     
@@ -302,23 +298,28 @@ class ScreenArea extends UIFrame {
   }
 
   add(child, packflag) {
-    if ((child instanceof Area) && this.type == undefined) {
-      this.type = child.constructor.name;
-      //XXX probably need more boilerplate code than this
+    if (child instanceof Area) {
+      if (this.type == undefined) {
+        //XXX probably need more boilerplate code than this
+        this.type = child.constructor.name;
+      }
     }
     
     prior(ScreenArea, this).add.call(this, child, packflag);
   }
-
-  remove(child) {
-    if ((child instanceof Area) && this.type == child.constructor.name) {
-      this.type = undefined
-      //XXX deal with this code, should switch to another editor
-      //or perhaps raise an exception disallowing the removal of editors
-      //altogether?
-    }
+  
+  /*on_mousedown(MouseEvent event) {
+    this.area._on_mousedown(event);
   }
-
+  
+  on_mousemove(MouseEvent event) {
+    this.area._on_mousemove(event);
+  }
+  
+  on_mouseup(MouseEvent event) {
+    this.area._on_mouseup(event);
+  }*/
+  
   on_resize(Array<int> newsize, Array<int> oldsize)
   {
     var oldsize = new Vector2(this.area.size);
@@ -1601,6 +1602,7 @@ class Screen extends UIFrame {
     if (child instanceof ScreenArea) {
       var canvas = new UICanvas(view3d);
       
+      child.canvas = canvas;
       for (var k in child.editors) {
         child.editors[k].canvas  = canvas;
       }

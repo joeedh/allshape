@@ -26,5 +26,7 @@ var Icons = {
   CIRCLE_SEL     : 22,
   BACKSPACE      : 23,
   LEFT_ARROW     : 24,
-  RIGHT_ARROW    : 25
+  RIGHT_ARROW    : 25,
+  UI_EXPAND      : 26, //triangle
+  UI_COLLAPSE    : 27  //triangle
 };

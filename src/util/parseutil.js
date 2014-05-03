@@ -131,6 +131,16 @@ PUTL.lexer.prototype.peek = function() {
   return tok;
 }
 
+PUTL.lexer.prototype.peek_i = function(int i) {
+  while (this.peeked_tokens.length <= i) {
+    var t = this.peek();
+    if (t == undefined)
+      return undefined;
+  }
+  
+  return this.peeked_tokens[i];
+}
+
 PUTL.lexer.prototype.at_end = function() {
   return this.lexpos >= this.lexdata.length && this.peeked_tokens.length == 0;
 }
@@ -264,6 +274,18 @@ PUTL.parser.prototype.peek = function() {
     tok.parser = this;
     
   return tok;
+}
+
+PUTL.parser.prototype.peek_i = function(int i) {
+  var tok = this.lexer.peek_i(i);
+  if (tok != undefined)
+    tok.parser = this;
+    
+  return tok;
+}
+
+PUTL.parser.prototype.peeknext = function() {
+  return this.peek_i(0);
 }
 
 PUTL.parser.prototype.next = function() {

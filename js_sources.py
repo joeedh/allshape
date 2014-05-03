@@ -37,6 +37,7 @@ sources = [
 	"src/core/AppState.js",
 	"src/core/units.js",
 	"src/core/data_api.js",
+  "src/core/data_api_parser.js",
 	"src/core/schema.js",
 	"src/core/fileapi.js",
   
@@ -108,7 +109,9 @@ sources = [
 	"src/object/scenegraph.js",
 	"src/object/scene.js",
 	"src/object/object_ops.js",
+  "src/editor_ops/ops_editor.js",
 	"src/core/data_api_define.js",
+  "src/core/data_api_opdefine.js",
   
   "src/font/fontgen10.png",
   "src/font/fontgen12.png",

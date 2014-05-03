@@ -498,14 +498,23 @@ class UIFrame extends UIElement {
   //pre_func is optional, and is called before each child's on_tick is executed
   on_tick(pre_func) {
     for (var c in this.children) {
-      if (pre_func != undefined)
-        pre_func(c);
-      
-      c.on_tick();
-      
-      if (c.status_timer != undefined) {
-        c.inc_flash_timer();
-        c.do_recalc();
+      try {
+        if (pre_func != undefined)
+          pre_func(c);
+        
+        c.on_tick();
+        
+        if (c.status_timer != undefined) {
+          c.inc_flash_timer();
+          c.do_recalc();
+        }
+      } catch (_err) {
+        print_stack(_err);
+        
+        //ensure borked element isn't modal
+        if (c == this.modalhandler)
+          c.pop_modal();
+        console.log("Error occured in UIFrame.on_tick ", c);
       }
     }
   }

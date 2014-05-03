@@ -100,6 +100,7 @@ class View3DHandler extends Area {
     this.drawmats = drawmats;
     this.transmat = new Mat4Stack();
     this.topbar = undefined;
+    this.test = new Vector3();
     
     if (drawmats != undefined) {
       drawmats.cameramat.load([0.920457286330552, 0.05884240153177518, -0.386388348456536, 0, 0.373664711170723,
@@ -169,7 +170,7 @@ class View3DHandler extends Area {
     
     this.line_2d_shader = new ShaderProgram(gl, "2d_line_vshader", "2d_line_fshader", ["vPosition", "vNormal", "vColor"]);
     
-    Area.call(this, View3DHandler.name, new Context(), [x, y], [width, height]);
+    Area.call(this, View3DHandler.name, "3D Viewport", new Context(), [x, y], [width, height]);
     
     this.keymap = new KeyMap()
     this.define_keymap();
@@ -784,10 +785,12 @@ class View3DHandler extends Area {
   }
   
   destroy() {
-    this.canvas.destroy();
     if (this.framebuffer != undefined) {
       this.framebuffer.destroy(this.gl);
+      this.framebuffer = undefined;
     }
+   
+    Area.prototype.destroy.call(this);
   }
   
   ensure_csg(Boolean is_enabled=true) {
@@ -953,16 +956,19 @@ class View3DHandler extends Area {
         console.log("executing unit tests...");
         window.unit_test_env.execute();
       } else {
+        //console.log(g_app_state.api.get_prop(ctx, "operator_stack[0].test"));
+        test_dapi_parser();
+        
         /*var tree = build_octree(new Context().mesh);
         
         var dir = new Vector3([1, 1, 2]);
         dir.normalize();
         
         console.log(tree.isect_ray(new Vector3([0, 0, 0]), dir));*/
-        
+        /*
         var octree = build_octree(ctx.mesh);
         var view3d = g_app_state.active_view3d;
-        
+       
         if (1) {
           var steps = 70;
           var times = [];
@@ -985,6 +991,7 @@ class View3DHandler extends Area {
           ctx.mesh.faces.select(ret);
         }
         ctx.mesh.regen_colors();
+        */
         //test_progress_dialog();
         //g_app_state.toolstack.reexec_stack();
       }
@@ -1085,6 +1092,14 @@ class View3DHandler extends Area {
     this.on_view_change();
   }
 
+  static default_new(Context ctx, ScreenArea scr, WebGLRenderingContext gl, 
+                     Array<float> pos, Array<float> size) {
+    var ret = new View3DHandler(gl, ctx.mesh, gl.program2, gl.program, 
+                               new DrawMats(), pos[0], pos[1], size[0], 
+                               size[1], 0.1, 100000);
+    return ret;
+  }
+  
   area_duplicate()
   {
     var cpy = new View3DHandler(this.gl, this.mesh, this.vprogram, this.fprogram, this.mesh.drawmats, 0, 0, this.size[0], this.size[1], this.znear, this.zfar);
@@ -1147,11 +1162,22 @@ class View3DHandler extends Area {
 
   on_area_inactive()
   {
+    this.destroy();
     this.editor.on_area_inactive(this);
+    
+    Area.prototype.on_area_inactive.call(this);
   }
-
+  
   on_area_active()
   {
+    if (this.canvas != undefined)
+      this.canvas.reset();
+    
+    for (var e in this.editors) {
+      e.canvas = this.canvas;
+    }
+    
+    Area.prototype.on_area_active.call(this);
   }
 
   build_bottombar() {
@@ -1420,3 +1446,5 @@ View3DHandler.STRUCT = STRUCT.inherit(View3DHandler, Area) + """
     editor          : int | obj.editors.indexOf(obj.editor);
   }
 """
+
+View3DHandler.uiname = "3D Viewport";

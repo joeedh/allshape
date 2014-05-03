@@ -295,7 +295,7 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="4.037829"
-     inkscape:cx="310.80547"
+     inkscape:cx="333.60114"
      inkscape:cy="463.69437"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
@@ -1662,5 +1662,15 @@
        x="232.55075"
        y="587.55243"
        transform="matrix(1,0,0.06880209,0.99763033,0,0)" />
+    <path
+       style="fill:#000000;fill-opacity:1;stroke:none"
+       d="m 321.18507,595.5725 0.0216,9.15095 29.5639,-14.62088 -29.12752,-16.34197 z"
+       id="path5370-5-1-2-1"
+       inkscape:connector-curvature="0" />
+    <path
+       style="fill:#000000;fill-opacity:1;stroke:none"
+       d="m 362.43774,574.05986 -9.14936,0.17181 15.10419,29.31992 15.86165,-29.39185 z"
+       id="path5370-5-1-2-1-7"
+       inkscape:connector-curvature="0" />
   </g>
 </svg>
