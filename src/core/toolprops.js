@@ -24,7 +24,11 @@ var PropTypes = {
   COLLECTION : 20
 };
 
-var TPropFlags = {PRIVATE : 1, LABEL : 2, STRICT_COLL : 4};
+var TPropFlags = {
+  PRIVATE : 1, 
+  LABEL : 2, 
+  COLL_LOOSE_TYPE : 4
+};
 
 class ToolProperty {
   constructor(type, apiname="", uiname=apiname, description="", flag=0) {
@@ -727,6 +731,8 @@ class CollectionProperty extends ToolProperty {
   constructor(data, Array<Function> filter_types, apiname, uiname, description, flag) {
     ToolProperty.call(this, PropTypes.COLLECTION, apiname, uiname, description, flag);
     
+    this.flag |= TPropFlags.COLL_LOOSE_TYPE;
+    
     this.types = filter_types;
     this._data = undefined;
     this._ctx = undefined;
@@ -754,7 +760,7 @@ class CollectionProperty extends ToolProperty {
     if ("__tooliter__" in data && typeof  data.__tooliter__ == "function") {
       this.set_data(data.__tooliter__());
       return;
-    } else if ((this.flag & TPropFlags.STRICT_COLL) && !(data instanceof TPropIterable)) {
+    } else if (!(this.flag & TPropFlags.COLL_LOOSE_TYPE) && !(data instanceof TPropIterable)) {
       console.trace();
       console.log("ERROR: bad data '", data, "' was passed to CollectionProperty.set_data!");
       

@@ -1463,6 +1463,7 @@ class ToolStack {
     while (stacktool.parent != undefined) {
       stacktool = stacktool.parent;
     }
+    
     function update_dataprop(d) {
       this2.reexec_tool(stacktool);
     }
@@ -1520,8 +1521,33 @@ class ToolStack {
     
     ContextStruct.replace(s);
   }
-
+  
+  set_tool_coll_flag(ToolOp tool) {
+    //find any collectionproperties, and ensure
+    //they validate their data strictly, so it
+    //can be serialized
+    
+    for (var k in tool.inputs) {
+      var p = tool.inputs[k];
+      if (p instanceof CollectionProperty)
+        p.flag &= ~TPropFlags.COLL_LOOSE_TYPE;
+    }
+    for (var k in tool.outputs) {
+      var p = tool.inputs[k];
+      if (p instanceof CollectionProperty)
+        p.flag &= ~TPropFlags.COLL_LOOSE_TYPE;
+    }
+    
+    if (tool instanceof ToolMacro) {
+      for (var t2 in tool.tools) {
+        this.set_tool_coll_flag(t2);
+      }
+    }
+  }
+  
   exec_tool(ToolOp tool) {
+    this.set_tool_coll_flag(tool);
+    
     /*if (this.appstate.screen && 
         this.appstate.screen.active instanceof ScreenArea 
         && this.appstate.screen.active.area instanceof View3DHandler)
@@ -1601,6 +1627,7 @@ class ToolStack {
     ts.undostack = new GArray(ts.undostack);
     for (var i=0; i<ts.undostack.length; i++) {
       ts.undostack[i].stack_index = i;
+      ts.set_tool_coll_flag(ts.undostack[i]);
     }
     
     return ts;

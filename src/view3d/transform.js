@@ -194,6 +194,12 @@ class TransObjectType {
 class TransData {
   //objlist is only valid for objectmode transforms
   constructor(Context ctx, TransformOp top, Object obj, Object objlist, int datamode) {
+    if (obj == undefined) {
+      console.trace();
+      console.log("warning: bad obj in TransData.constructor()");
+      obj = ctx.object;
+    }
+    
     if (ctx.constructor == Context) {
       this.projmat = new Matrix4(ctx.view3d.drawmats.rendermat);
       this.iprojmat = new Matrix4(this.projmat);

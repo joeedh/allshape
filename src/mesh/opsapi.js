@@ -576,7 +576,8 @@ class VertSmoothOp extends MeshOp {
       repeat: new IntProperty(1, "repeat", "Repeat", "How many times to repeat smoothing", [1, 50])
     }
     
-    this.inputs.verts.set_data(vertiter);
+    if (vertiter != undefined)
+      this.inputs.verts.set_data(vertiter);
   }
 
   exec(op, mesh) {
@@ -602,7 +603,8 @@ class ExtrudeFacesOp extends MeshOp {
       group_no: new Vec3Property(new Vector3(), "group_no", "normal", "")
     }
     
-    this.inputs.input_faces.set_data(faceiter);
+    if (faceiter != undefined)
+      this.inputs.input_faces.set_data(faceiter);
   }
 
   exec(op, mesh) {
@@ -724,7 +726,8 @@ class ExtrudeEdgesOp extends MeshOp {
       group_no: new Vec3Property(new Vector3(), "group_no", "normal", "")
     }
     
-    this.inputs.input_edges.set_data(edgeiter);
+    if (edgeiter != undefined)
+      this.inputs.input_edges.set_data(edgeiter);
   }
 
   exec(op, mesh) {
@@ -802,7 +805,8 @@ class ExtrudeVertsOp extends MeshOp {
       group_no: new Vec3Property(new Vector3(), "group_no", "normal", "")
     }
     
-    this.inputs.input_verts.set_data(vertiter);
+    if (vertiter != undefined)
+      this.inputs.input_verts.set_data(vertiter);
   }
 
   exec(op, mesh) {
@@ -860,7 +864,8 @@ class ExtrudeAllOp extends MeshOp {
       group_no: new Vec3Property(new Vector3(), "group_no", "normal", "")
     }
     
-    this.inputs.elements.set_data(elementiter);
+    if (elementiter != undefined)
+      this.inputs.elements.set_data(elementiter);
   }
 
   exec(op, mesh) {
@@ -913,9 +918,16 @@ class ExtrudeAllOp extends MeshOp {
       }
     }
     
-    var fop = new ExtrudeFacesOp(faces);
-    var eop = new ExtrudeEdgesOp(edges);
-    var vop = new ExtrudeVertsOp(verts);
+    var fop = new ExtrudeFacesOp();
+    var eop = new ExtrudeEdgesOp();
+    var vop = new ExtrudeVertsOp();
+   
+    fop.inputs.input_faces.flag |= TPropFlags.COLL_LOOSE_TYPE;
+    fop.inputs.input_faces.set_data(faces);
+    eop.inputs.input_edges.flag |= TPropFlags.COLL_LOOSE_TYPE;
+    eop.inputs.input_edges.set_data(edges);
+    vop.inputs.input_verts.flag |= TPropFlags.COLL_LOOSE_TYPE;
+    vop.inputs.input_verts.set_data(verts);
     
     mesh.ops.call_op(fop);
     mesh.ops.call_op(eop);

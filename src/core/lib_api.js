@@ -70,6 +70,7 @@ var get_data_typemap = function() {
 class DataRef extends Array {
   constructor(block_or_id, lib=undefined) {
     Array.call(this, 2);
+    this.length = 2;
     
     if (lib != undefined && lib instanceof DataLib)
       lib = lib.id;
@@ -113,6 +114,7 @@ class DataRef extends Array {
   
   static fromSTRUCT(reader) {
     var ret = new DataRef(0);
+    
     reader(ret);
     
     return ret;

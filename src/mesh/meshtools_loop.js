@@ -279,6 +279,7 @@ class LoopCutOp extends ToolOp {
   }
 
   cancel(ctx) {
+    this.inputs.cuts.set_data(0);
     this.end_modal();
   }
 
