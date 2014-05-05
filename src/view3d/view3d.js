@@ -691,6 +691,7 @@ class View3DHandler extends Area {
         top.cancel_callback = switch_on_multitouch;
         g_app_state.toolstack.exec_tool(top);
         this._mstart = null;
+        
         return;
       }
     }

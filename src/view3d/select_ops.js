@@ -514,7 +514,7 @@ class CircleDraw extends UIElement {
 }
 
 class CircleSelectOp extends SelectOpAbstract {
-  constructor(selectmode) {
+  constructor(selectmode=undefined) {
     SelectOpAbstract.call(this, "mesh_circle_select", "Circle Select", " ", Icons.CIRCLE_SEL);
     
     this.is_modal = true;
@@ -533,7 +533,8 @@ class CircleSelectOp extends SelectOpAbstract {
     this.unselset = new set();
     
     var selmode_enum = selectmode_enum.copy();
-    selmode_enum.set_value(selectmode);
+    if (selectmode != undefined)
+      selmode_enum.set_value(selectmode);
     
     var mode_vals = ["add", "subtract"];
     this.inputs = {sel_eids: new ElementBufProperty([], "sel_geometry", "SelGeometry", "Geometry to select"),

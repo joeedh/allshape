@@ -376,6 +376,7 @@ class TransformOp extends ToolOp {
     //prototype: function(transformop, event, function_to_cancel_op);
     this.cancel_callback = undefined;
     this.cached_cancel_func = undefined;
+    this.cancelled = false;
     
     this.first_mdown = true;
     
@@ -404,6 +405,7 @@ class TransformOp extends ToolOp {
   }
   
   cancel(ctx) {
+    this.cancelled = true;
     g_app_state.toolstack.toolop_cancel(this);
   }
   
@@ -467,6 +469,7 @@ class TransformOp extends ToolOp {
   }
   
   modal_init(Context ctx) {
+    this.cancelled = false;
     this.first_mdown = true;
     this.inputs.object.set_data(ctx.object);
     this.inputs.datamode.set_data(ctx.view3d.selectmode);
@@ -474,15 +477,18 @@ class TransformOp extends ToolOp {
   
   on_mousemove(MouseEvent event) {
     var this2 = this;
+    
     function cancel_func() {
       this2.cancel_callback = undefined; //ensure no double calls
       this2.end_modal();
       this2.cancel();
     }
-    
     if (this.cancel_callback != undefined) {
       this.cancel_callback(this, event, cancel_func);
     }
+    
+    if (this.cancelled) 
+      return false;
     
     if (this.first_call == true) {
       this.first_call = false;
@@ -557,7 +563,7 @@ class TransformOp extends ToolOp {
       }      
     }
     
-    this.exec(this.modal_tctx);
+    return true;
   }
 
   gen_axis(Vector3 axis, Vector3 center) : Array<drawline> {

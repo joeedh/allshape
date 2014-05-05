@@ -69,7 +69,6 @@ class TranslateOp extends TransformOp {
     }
     
     this.datatype.update(td);
-    
     TransformOp.prototype.cancel.call(this, ctx);
   }
 
@@ -108,7 +107,8 @@ class TranslateOp extends TransformOp {
   on_mousemove(event) {
     var td = this.transdata;
     
-    TransformOp.prototype.on_mousemove.call(this, event);
+    if (!TransformOp.prototype.on_mousemove.call(this, event))
+      return;
     
     var mstart = new Vector3(td.start_mpos);
     var mstart2d = new Vector3(mstart)
@@ -296,7 +296,8 @@ class RotateOp extends TransformOp {
   }
 
   on_mousemove(event) {
-    TransformOp.prototype.on_mousemove.call(this, event);
+    if (!TransformOp.prototype.on_mousemove.call(this, event))
+      return;
 
     if (this.first) {
       this.first = false;
@@ -438,7 +439,7 @@ class RotateOp extends TransformOp {
 
 class ScaleOp extends TransformOp {
   constructor(int mode) {
-    TransformOp.call(this, "scale", "Scale", mode, "Scale selection", Icons.scale);
+    TransformOp.call(this, "scale", "Scale", mode, "Scale selection", Icons.SCALE);
     
     this.transdata = null;
     this.is_modal = true;
@@ -496,7 +497,8 @@ class ScaleOp extends TransformOp {
 }
 
   on_mousemove(event) {
-    TransformOp.prototype.on_mousemove.call(this, event);
+    if (!TransformOp.prototype.on_mousemove.call(this, event))
+      return;
     
     var ctx = this.modal_ctx;
     

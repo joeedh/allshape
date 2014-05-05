@@ -84,7 +84,7 @@ class ViewRotateZoomPanOp extends ToolOp {
     if (screen.tottouch == 2 && this.startids[2] != undefined)
       this.transition("rotate");
     
-    console.log(JSON.stringify(screen.touchstate));
+    //console.log(JSON.stringify(screen.touchstate));
     
     //detect third touch hotspot
     if (this.startids[2] == undefined) {
@@ -153,7 +153,7 @@ class ViewRotateZoomPanOp extends ToolOp {
     }
     
     var view3d = ctx.view3d;
-    console.log(zoom);
+    //console.log(zoom);
     
     //normalize existing zoom into 0..1 range
     var range = (view3d.zoom_wheelrange[1]-view3d.zoom_wheelrange[0]);

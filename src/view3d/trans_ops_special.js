@@ -243,7 +243,8 @@ class InsetOp extends TransformOp {
   }
 
   on_mousemove(event) {
-    TransformOp.prototype.on_mousemove.call(this, event);
+    if (!TransformOp.prototype.on_mousemove.call(this, event))
+      return;
     
     var ctx = this.modal_ctx;
     

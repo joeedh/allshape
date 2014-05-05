@@ -274,7 +274,6 @@ class LoopCutOp extends ToolOp {
 
   finish(ctx) {
     this.exec(ctx);
-    
     this.end_modal();
   }
 
