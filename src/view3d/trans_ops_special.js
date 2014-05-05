@@ -64,13 +64,13 @@ class InsetOp extends TransformOp {
     this.is_modal = true;
     this.first = true;
     
-    this.inputs = {SCALE: new FloatProperty(0, "inset", "Inset", "Amount of insetting, in -1...1 range."),
-    MV1: new Vec3Property(new Vector3(), "mvector1", "mvector1", "mvector1", TPropFlags.PRIVATE),
-    MV2: new Vec3Property(new Vector3(), "mvector2", "mvector2", "mvector2", TPropFlags.PRIVATE),
-    AXIS: new Vec3Property(new Vector3(), "cons_axis", "Constraint Axis", "Axis to constrain too during transform", TPropFlags.PRIVATE)};
+    this.inputs = {
+      scale: new FloatProperty(0, "inset", "Inset", "Amount of insetting, in -1...1 range."),
+      AXIS: new Vec3Property(new Vector3(), "cons_axis", "Constraint Axis", "Axis to constrain too during transform", TPropFlags.PRIVATE)
+    };
     
-    this.inputs.SCALE.range = [-2.0, 2.0];
-    this.inputs.SCALE.ui_range = [-1.0, 1.0];
+    this.inputs.scale.range = [-2.0, 2.0];
+    this.inputs.scale.ui_range = [-1.0, 1.0];
     
     TransformOp.default_slots(this, EditModes.GEOMETRY);
     
@@ -219,7 +219,7 @@ class InsetOp extends TransformOp {
       }
     }
     
-    console.log(loops.length)
+    //console.log(loops.length)
     this._loops = loops;
     
     td.calc_aabb();
@@ -228,7 +228,7 @@ class InsetOp extends TransformOp {
     this.rangefac = Math.pow(size[0]*size[1], 1.0/2.0);
     this.rangefac = (this.rangefac+Math.pow(size[1]*size[2], 1.0/2.0))*0.5;
     this.rangefac = 1.0; //XXX
-    console.log(this.rangefac);
+    //console.log(this.rangefac);
   }
 
   cancel(ctx) {
@@ -247,8 +247,8 @@ class InsetOp extends TransformOp {
     
     var ctx = this.modal_ctx;
     
-    var v1 = new Vector3(this.inputs.MV1.data);
-    var v2 = new Vector3(this.inputs.MV2.data);
+    var v1 = new Vector3(this.mv1);
+    var v2 = new Vector3(this.mv2);
     
     if (v1.vectorDistance(v2) < 0.01)
       return;
@@ -284,7 +284,7 @@ class InsetOp extends TransformOp {
     //clamp to -2, 1 range
     fac = Math.min(Math.max(fac, -2), 2); //XXX 2 should be 1
     
-    this.inputs.SCALE.data = fac;
+    this.inputs.scale.data = fac;
     this.exec(this.modal_ctx);
   }
 
@@ -294,7 +294,7 @@ class InsetOp extends TransformOp {
       this.find_loops(ctx);
     }
     
-    var fac = this.inputs.SCALE.data;
+    var fac = this.inputs.scale.data;
     var td = this.transdata;
     
     //clamp to -2, 2 range

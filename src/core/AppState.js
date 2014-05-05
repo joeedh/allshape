@@ -1113,6 +1113,28 @@ class Context {
     this.api = g_app_state.api;
   }
   
+  get opseditor() : OpStackEditor {
+    if (g_app_state.screen.draw_active instanceof ScreenArea &&
+        g_app_state.screen.draw_active.area instanceof OpStackEditor) 
+    {
+      return g_app_state.screen.draw_active.area;
+    }
+    
+    if (g_app_state.screen.active instanceof ScreenArea &&
+        g_app_state.screen.active.area instanceof OpStackEditor) 
+    {
+      return g_app_state.screen.active.area;
+    }
+    
+    if (g_app_state.screen.modalhandler instanceof ScreenArea &&
+        g_app_state.screen.modalhandler.area instanceof OpStackEditor) 
+    {
+      return g_app_state.screen.modalhandler.area;
+    }
+    
+    return undefined;
+  }
+  
   get scene() {
     return this.datalib.get_active(DataTypes.SCENE);
   }

@@ -46,6 +46,7 @@ class ToolProperty {
     
     this.hotkey_ref = undefined;
     this.unit = undefined;
+    this.icon = -1;
   }
   
   load_ui_data(ToolProperty prop) {
@@ -331,6 +332,7 @@ class FlagProperty extends ToolProperty {
     var t = new FlagProperty()
     reader(t)
     
+    /*
     var keys = {}
     var values = {}
     
@@ -338,6 +340,7 @@ class FlagProperty extends ToolProperty {
       var k = t.keys[i];
       var start = k.search(" ");
       
+      console.log("->->->", k);
       var n = parseInt(k.splice(0, start).trim());
       
       keys[n] = k.splice(start+1, k.length);
@@ -346,14 +349,13 @@ class FlagProperty extends ToolProperty {
     
     this.keys = keys;
     this.values = values;
-    
+    */
     return t;
   }
 }
 
 FlagProperty.STRUCT = STRUCT.inherit(FlagProperty, ToolProperty) + """
   data : int;
-  keys : iter(k, static_string[16]) | obj.keys[k].toString + " " + k;
 }
 """;
 
@@ -371,8 +373,10 @@ class FloatProperty extends ToolProperty {
   }
   
   static fromSTRUCT(reader) {
-    var t = new FlagProperty();
+    var t = new FloatProperty();
+    
     reader(t);
+    
     return t;
   }
 }

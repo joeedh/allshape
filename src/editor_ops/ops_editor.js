@@ -91,15 +91,37 @@ class OpStackFrame extends RowFrame {
     prior(OpStackFrame, this).on_tick.call(this);
   }
   
+  is_selop(ToolOp op) : Boolean {
+    var ret;
+    
+    if (op instanceof ToolMacro) {
+      ret = true;
+      
+      for (var t in op.tools) {
+        if (!this.is_selop(t)) {
+          ret = false;
+          break;
+        }
+      }
+    } else {
+      ret = op instanceof SelectOpAbstract;
+      ret = ret || op instanceof SelectObjAbstract;
+    }
+    
+    return ret;
+  }
+  
   build() {
     var oplist = g_app_state.toolstack.undostack;
     var pmap = this.panelmap;
     var keepset = new set();
     var undocur = g_app_state.toolstack.undocur;
     var reflow = false;
+    var filter_sel = this.parent.filter_sel;
     
     /*update tool panels*/
     for (var tool in oplist) {
+      if (filter_sel && this.is_selop(tool)) continue;
       //if (tool.undoflag & UndoFlags.UNDO_BARRIER) continue;
       //if (tool.flag & ToolFlags.HIDE_TITLE_IN_LAST_BUTTONS) continue;
       
@@ -156,6 +178,8 @@ class OpStackFrame extends RowFrame {
   }
 }
 
+
+/******************* main area struct ********************************/
 class OpStackEditor extends Area {
   constructor(x, y, width, height) {
     Area.call(this, OpStackEditor.name, OpStackEditor.uiname, new Context(), [x, y], [width, height]);
@@ -165,6 +189,7 @@ class OpStackEditor extends Area {
     
     this.drawlines = new GArray<drawlines>();
     
+    this._filter_sel = false;
     this.gl = undefined;
     this.ctx = new Context();
     
@@ -175,6 +200,15 @@ class OpStackEditor extends Area {
     this.subframe.velpan = new VelocityPan();
     
     this.add(this.subframe);
+  }
+  
+  get filter_sel() : Boolean {
+    return this._filter_sel;
+  }
+  
+  set filter_sel(Boolean val) {
+    this._filter_sel = !!val;
+    this.subframe.do_full_recalc();
   }
   
   define_keymap() {
@@ -217,6 +251,25 @@ class OpStackEditor extends Area {
     Area.prototype.destroy.call(this);
   }
   
+  build_topbar()
+  {
+    this.ctx = new Context();
+    
+    var col = new ColumnFrame(this.ctx, undefined, PackFlags.ALIGN_LEFT);
+    
+    this.topbar = col;
+    col.packflag |= PackFlags.IGNORE_LIMIT;
+    
+    col.size = [this.size[0], Area.get_barhgt()];
+    col.draw_background = true
+    col.rcorner = 100.0
+    col.pos = [0, this.size[1]-Area.get_barhgt()]
+    
+    col.prop("opseditor.filter_sel", PackFlags.USE_SMALL_ICON);
+    
+    this.rows.push(col);
+    this.add(col);
+  }
   build_bottombar() {
     var ctx = new Context();
     var col = new ColumnFrame(ctx);
@@ -257,7 +310,7 @@ class OpStackEditor extends Area {
     
     //paranoid check
     this.subframe.size[0] = this.size[0];
-    this.subframe.size[1] = this.size[1]-this.subframe.pos[1];
+    this.subframe.size[1] = this.size[1]-this.subframe.pos[1]-Area.get_barhgt();
     this.subframe.canvas.viewport = this.canvas.viewport; //set_viewport([this.parent.pos, this.parent.size]);
     
     //gl.getExtension("OES_TEXTURE_FLOAT");
@@ -298,6 +351,11 @@ class OpStackEditor extends Area {
     var obj = new OpStackEditor(0, 0, 1, 1);
     reader(obj);
     
+    if (obj.pan != undefined) {
+      obj.velpan = new VelocityPan();
+      obj.velpan.pan = new Vector2(obj.pan);
+    }
+    
     return obj;
   }
   
@@ -307,7 +365,8 @@ class OpStackEditor extends Area {
 }
 
 OpStackEditor.STRUCT = STRUCT.inherit(OpStackEditor, Area) + """
-    pan : array(float);
+    pan : array(float) | obj.velpan != undefined ? obj.velpan.pan : [0, 0];
+    filter_sel : int | obj._filter_sel;
   }
 """
 

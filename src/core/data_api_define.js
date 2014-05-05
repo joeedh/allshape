@@ -38,6 +38,18 @@ csg_mode_enum.ui_value_names = {
     UNION : "Union"
 }
 
+var OpsEditorStruct = undefined;
+function api_define_opseditor() {
+  var filter_sel = new BoolProperty(0, "filter_sel", "Filter Sel", "Exclude selection ops");
+  filter_sel.icon = Icons.FILTER_SEL_OPS;
+  
+  OpsEditorStruct = new DataStruct([
+    new DataPath(filter_sel, "filter_sel", "filter_sel", true)
+  ]);
+  
+  return OpsEditorStruct;
+}
+
 function api_define_view3d() {
   var selmode = selectmode_enum.copy();
   
@@ -170,6 +182,7 @@ var ContextStruct = undefined;
 function api_define_context() {
   ContextStruct = new DataStruct([
     new DataPath(api_define_view3d(), "view3d", "ctx.view3d", false),
+    new DataPath(api_define_opseditor(), "opseditor", "ctx.opseditor", false),
     new DataPath(api_define_mesh(), "mesh", "ctx.mesh", false),
     new DataPath(api_define_object(), "object", "ctx.object", false),
     new DataPath(api_define_scene(), "scene", "ctx.scene", false),

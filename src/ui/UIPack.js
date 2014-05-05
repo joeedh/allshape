@@ -256,7 +256,14 @@ class UIPackFrame extends UIFrame {
     } else if (prop.type == PropTypes.STRING && (prop.flag & TPropFlags.LABEL)) {
       this.label(path, true, packflag);
     } else if (prop.type == PropTypes.BOOL) {
-      var check = new UICheckBox(ctx, prop.uiname, undefined, undefined, path);
+      var check;
+      
+      if (packflag & PackFlags.USE_ICON) {
+        check = new UIIconCheck(ctx, "", prop.icon, undefined, undefined, path);
+      } else {
+        check = new UICheckBox(ctx, prop.uiname, undefined, undefined, path);
+      }
+      
       check.packflag |= packflag;
       this.add(check);
     } else if (prop.type == PropTypes.FLAG) {

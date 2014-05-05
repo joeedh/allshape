@@ -1236,46 +1236,6 @@ class View3DHandler extends Area {
     this.add(col);
   }
 
-  static fromJSON(ObjectMap obj)
-  {
-    var gl = g_app_state.gl;
-    var view3d = new View3DHandler(gl, g_app_state.mesh, gl.program, gl.program2, DrawMats.fromJSON(obj.drawmats), obj.pos[0], obj.pos[1], obj.size[0], obj.size[1], obj.znear, obj.zfar);
-    
-    view3d.selectmode = obj.selectmode;
-    
-    view3d.zoomfac = obj.zoomfac;
-    view3d.zoomwheel = obj.zoomwheel;
-    
-    view3d.gen_persmat();
-    view3d.gen_rendermats();
-    
-    view3d.pos[0] = obj.pos[0]; view3d.pos[1] = obj.pos[1];
-    view3d.size[0] = obj.size[0]; view3d.size[1] = obj.size[1];
-    
-    view3d.use_backbuf_sel = obj.use_backbuf_sel;
-    
-    return view3d;
-  }
-
-  toJSON() {
-    var obj = prior(View3DHandler, this).toJSON.call(this);
-    
-    obj.type = View3DHandler.name;
-    
-    obj.zoomfac = this.zoomfac;
-    obj.zoomwheel = this.zoomwheel;
-    
-    obj.drawmats = this.drawmats.toJSON();
-    obj.selectmode = this._selectmode;
-    
-    obj.znear = this.znear;
-    obj.zfar = this.zfar;
-    
-    obj.use_backbuf_sel = this.use_backbuf_sel;
-    
-    return obj;
-  }
-  
   switch_editor(View3DEditor editortype) {
     if (editortype == undefined) {
       console.log("Undefined passed to switch_editor()");

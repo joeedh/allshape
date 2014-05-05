@@ -1000,6 +1000,7 @@ class Screen extends UIFrame {
     this.size = [width, height];
     this.pos = [0, 0];
     this.use_old_size = false; //use old size on next on_resize call, but only that call
+    this.draw_active = undefined; //currently being drawn screenarea
     
     this.gl = gl;
     
@@ -1359,6 +1360,7 @@ class Screen extends UIFrame {
       //only call draw for screenarea children
       if (!(c instanceof ScreenArea)) continue;
      
+      this.draw_active = c;
       g_app_state.raster.push_scissor(c.pos, c.size);
       
       this.recalc_child_borders(c);
@@ -1366,7 +1368,8 @@ class Screen extends UIFrame {
 
       g_app_state.raster.pop_scissor();
     }
-    
+    this.draw_active = undefined;
+  
     gl.enable(gl.BLEND);
     gl_blend_func(gl);
      
@@ -1413,11 +1416,12 @@ class Screen extends UIFrame {
       g_app_state.session.validate_session();
     }
     
-    prior(Screen, this).on_tick.call(this, function(c) {
-      if (c instanceof ScreenArea && c.area instanceof View3DHandler) {
-        //g_app_state.active_view3d = c.area;
-      }
-    });
+    for (var c in this.children) {
+      this.draw_active = c;
+      c.on_tick();
+    }
+    
+    this.draw_active = undefined;
   }
 
   on_resize(Array<int> newsize, Array<int> oldsize) 

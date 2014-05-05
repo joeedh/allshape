@@ -1486,8 +1486,11 @@ class UIIconCheck extends UIHoverHint {
     if (this.state & UIFlags.HIGHLIGHT) {
       canvas.simple_box([0, 0], [this.size[0], csize[1]])
       
-      var mul = this.set ? 0.3 : 1.0;
-      canvas.hlightbox([0, 0], this.size, mul, 2)
+      if (this.set) {
+        canvas.invbox([0, 0], this.size, 0.9, 2);
+      } else {
+        canvas.hlightbox([0, 0], this.size);
+      }
     } else if(this.set) {
       canvas.invbox([0, 0], this.size, undefined, 2);
     } else {
