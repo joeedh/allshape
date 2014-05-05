@@ -33,7 +33,7 @@
   
   1. DROPPED, Constructor should take a single, SavedContext parameter.
   2. XXX, decided against this for now -> Combine inputs and outputs into slots.
-  3. Normalize input/output names (e.g. TRANSLATION -> translation).
+  3. DONE. Normalize input/output names (e.g. TRANSLATION -> translation).
   4. DONE: Exec only gets ToolContext; access view3d in modal mode,
      with .modal_ctx.
   5. DONE: A RuntimeSavedContext class?  ToolExecContext?

@@ -7,12 +7,12 @@ class ObjectDuplicateOp extends ToolOp {
     this.is_modal = false;
     
     this.inputs = {
-      OBJECTS : new RefListProperty(obs, DataTypes.OBJECT, "objects", "Objects", "Objects to duplicate"),
-      TRANSFORM : new TransformProperty(undefined, "transform", "Transform", "Transformation to apply to duplicates")
+      objects : new RefListProperty(obs, DataTypes.OBJECT, "objects", "Objects", "Objects to duplicate"),
+      transform : new TransformProperty(undefined, "transform", "Transform", "Transformation to apply to duplicates")
     }
     
     this.outputs = {
-      OBJECTS :  new RefListProperty(undefined, DataTypes.OBJECT, "objects", "Objects", "Duplicated objects")
+      objects :  new RefListProperty(undefined, DataTypes.OBJECT, "objects", "Objects", "Duplicated objects")
     }
   }
   
@@ -29,7 +29,7 @@ class ObjectDuplicateOp extends ToolOp {
     var scene = ctx.scene;
     var active = undefined;
     
-    for (var ob in this.inputs.OBJECTS.data) {
+    for (var ob in this.inputs.objects.data) {
       console.log(ob);
       var ob2 = ob.copy();
       ob2.data = ob2.data.copy();
@@ -42,7 +42,7 @@ class ObjectDuplicateOp extends ToolOp {
         scene.set_active(ob2);
     }
     
-    for (var ob in list(this.inputs.OBJECTS.data)) {
+    for (var ob in list(this.inputs.objects.data)) {
       scene.objects.select(ob, false);
     }
     

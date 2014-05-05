@@ -147,7 +147,7 @@ function api_define_ops() {
       var transop = new TranslateOp(EditModes.GEOMETRY)
       macro.add_tool(transop);
 
-      macro.connect_tools(op.outputs.group_no, transop.inputs.AXIS);
+      macro.connect_tools(op.outputs.group_no, transop.inputs.axis);
       
       return macro;
     },

@@ -66,7 +66,7 @@ class InsetOp extends TransformOp {
     
     this.inputs = {
       scale: new FloatProperty(0, "inset", "Inset", "Amount of insetting, in -1...1 range."),
-      AXIS: new Vec3Property(new Vector3(), "cons_axis", "Constraint Axis", "Axis to constrain too during transform", TPropFlags.PRIVATE)
+      axis: new Vec3Property(new Vector3(), "cons_axis", "Constraint Axis", "Axis to constrain too during transform", TPropFlags.PRIVATE)
     };
     
     this.inputs.scale.range = [-2.0, 2.0];
@@ -74,7 +74,7 @@ class InsetOp extends TransformOp {
     
     TransformOp.default_slots(this, EditModes.GEOMETRY);
     
-    this.outputs = {SCALE: new Vec4Property(new Vector3(), "inset", "Inset", "Amount of insetting, in -1..1 range.")}
+    this.outputs = {scale: new Vec4Property(new Vector3(), "inset", "Inset", "Amount of insetting, in -1..1 range.")}
     
     this._loops = new GArray();
     this.rangefac = 1.0;

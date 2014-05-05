@@ -7,25 +7,25 @@ class TranslateOp extends TransformOp {
     this.transdata = null;
     this.is_modal = true;
     
-    this.inputs = {TRANSLATION: new Vec3Property(new Vector3(), "translation", "Translation", "Amount of translation."), 
-                   AXIS: new Vec3Property(new Vector3(), "cons_axis", "Constraint Axis", "Axis to constrain too during transform", TPropFlags.PRIVATE)}
-    this.outputs = {TRANSLATION: new Vec3Property(new Vector3(), "translation", "Translation", "Amount of translation.")}
+    this.inputs = {translation: new Vec3Property(new Vector3(), "translation", "Translation", "Amount of translation."), 
+                   axis: new Vec3Property(new Vector3(), "cons_axis", "Constraint Axis", "Axis to constrain too during transform", TPropFlags.PRIVATE)}
+    this.outputs = {translation: new Vec3Property(new Vector3(), "translation", "Translation", "Amount of translation.")}
     
     //XXX should set some sort of uirange instead? or is range uirange?
-    this.inputs.TRANSLATION.range = [-150.0, 150.0];
+    this.inputs.translation.range = [-150.0, 150.0];
     
     if (ob_active == undefined)
       ob_active = (new Context()).object;
     
     TransformOp.default_slots(this, mode, ob_active);
     if (ob_active != undefined)
-      this.inputs.OBJECT.set_data(ob_active);
+      this.inputs.object.set_data(ob_active);
   }
 
   can_call(ctx) {
     var totsel = 0;
     
-    if (this.inputs.DATAMODE.data & EditModes.GEOMETRY) {
+    if (this.inputs.datamode.data & EditModes.GEOMETRY) {
       for (var v in ctx.mesh.verts) {
         if ((v.flag & Flags.SELECT) != 0)
           totsel++;
@@ -42,8 +42,8 @@ class TranslateOp extends TransformOp {
     this.transdata = this.gen_transdata(ctx);
     this.first_call = true;
     
-    if (this.inputs.AXIS.data.vectorLength() > 0) {
-      var axis = new Vector3(this.inputs.AXIS.data)
+    if (this.inputs.axis.data.vectorLength() > 0) {
+      var axis = new Vector3(this.inputs.axis.data)
       
       var center = this.transdata.center
       var scenter = this.transdata.scenter
@@ -78,9 +78,9 @@ class TranslateOp extends TransformOp {
       this.transdata = this.gen_transdata(ctx);
 
     var td = this.transdata;
-    var vec = this.inputs.TRANSLATION.data;
+    var vec = this.inputs.translation.data;
     
-    if (this.inputs.DATAMODE.data & EditModes.GEOMETRY) {
+    if (this.inputs.datamode.data & EditModes.GEOMETRY) {
       for (var i=0; i<td.verts.length; i++) {
         var v = td.verts[i];
         var co = new Vector3(td.startcos[i]);
@@ -92,7 +92,7 @@ class TranslateOp extends TransformOp {
       this.do_normals(ctx);
       
       this.datatype.update(td);
-    } else if (this.inputs.DATAMODE.data == EditModes.OBJECT) {
+    } else if (this.inputs.datamode.data == EditModes.OBJECT) {
       for (var i=0; i<td.objects.length; i++) {
         var obj = td.objects[i];
         var co = obj.loc;
@@ -124,7 +124,7 @@ class TranslateOp extends TransformOp {
     var mend2d = new Vector3(mend)
     mend[2] = td.scenter[2];
     
-    if (this.inputs.AXIS.data.dot(this.inputs.AXIS.data) > 0) {
+    if (this.inputs.axis.data.dot(this.inputs.axis.data) > 0) {
       var viewvec = new Vector3(mpos);
       viewvec[2] = td.scenter[2];
       
@@ -138,8 +138,8 @@ class TranslateOp extends TransformOp {
       //viewvec.mulScalar(-1.0);
       viewvec.normalize();
       
-      var n = this.inputs.AXIS.data;
-      var axis = new Vector3(this.inputs.AXIS.data);
+      var n = this.inputs.axis.data;
+      var axis = new Vector3(this.inputs.axis.data);
       
       if (!this.consrain_plane) {
       var cross = new Vector3(viewvec);
@@ -162,8 +162,8 @@ class TranslateOp extends TransformOp {
     
     mend.multVecMatrix(td.iprojmat);
     
-    if (!this.constrain_plane && this.inputs.AXIS.data.dot(this.inputs.AXIS.data) != 0.0) {
-        var axis = new Vector3(this.inputs.AXIS.data);
+    if (!this.constrain_plane && this.inputs.axis.data.dot(this.inputs.axis.data) != 0.0) {
+        var axis = new Vector3(this.inputs.axis.data);
         axis.add(td.center);
         axis.multVecMatrix(td.projmat)
         
@@ -199,10 +199,10 @@ class TranslateOp extends TransformOp {
         //t2.load(mend);
         //t2.sub(td.center)
         t = t2.vectorLength()
-        if (t2.dot(this.inputs.AXIS.data) < 0.0)
+        if (t2.dot(this.inputs.axis.data) < 0.0)
           t = -t;
         
-        var vec = new Vector3(this.inputs.AXIS.data)
+        var vec = new Vector3(this.inputs.axis.data)
         vec.mulScalar(t)
         //vec.add(td.center)
         
@@ -215,7 +215,7 @@ class TranslateOp extends TransformOp {
         vec.sub(mstart);
     }
     
-    this.inputs.TRANSLATION.data = vec;
+    this.inputs.translation.data = vec;
     this.exec(td.ctx);
   }
 }
@@ -239,12 +239,12 @@ class RotateOp extends TransformOp {
     this.asp = 1.0;
     
     this.inputs = {
-      ROTATION: new Vec4Property(new Vector4(), "rotation", "Quaternion", "Amount of rotation."), 
-      AXIS: new Vec3Property(new Vector3(), "cons_axis", "Constraint Axis", "Axis to constrain too during transform", TPropFlags.PRIVATE)
+      rotation: new Vec4Property(new Vector4(), "rotation", "Quaternion", "Amount of rotation."), 
+      axis: new Vec3Property(new Vector3(), "cons_axis", "Constraint Axis", "Axis to constrain too during transform", TPropFlags.PRIVATE)
     };
     
     this.outputs = {
-      ROTATION: new Vec4Property(new Vector3(), "rotation", "Rotation", "Amount of rotation.")
+      rotation: new Vec4Property(new Vector3(), "rotation", "Rotation", "Amount of rotation.")
     };
     
     TransformOp.default_slots(this, mode);
@@ -331,7 +331,7 @@ class RotateOp extends TransformOp {
       perp = new Vector3([-vec[1], vec[0], 0.0]);
       q = new Quat()
       q.axisAngleToQuat(perp, vec.vectorLength()*2)
-      this.inputs.ROTATION.set_data(new Vector4(q));
+      this.inputs.rotation.set_data(new Vector4(q));
     } else { //simple rotation
       v1 = new Vector3(this.mv3);
       var cent = new Vector3(this.transdata.scenter);
@@ -372,7 +372,7 @@ class RotateOp extends TransformOp {
       }
 
       q.axisAngleToQuat(axis, this.rot_sum);
-      this.inputs.ROTATION.set_data(new Vector4(q));
+      this.inputs.rotation.set_data(new Vector4(q));
       this.mv3.load(this.mv2);
     }
     
@@ -415,7 +415,7 @@ class RotateOp extends TransformOp {
     var mat, q = new Quat();
     var td = this.transdata;
     
-    q.load(this.inputs.ROTATION.data);
+    q.load(this.inputs.rotation.data);
     q.normalize();
     var mat = q.toMatrix();
     
@@ -438,19 +438,19 @@ class RotateOp extends TransformOp {
 
 class ScaleOp extends TransformOp {
   constructor(int mode) {
-    TransformOp.call(this, "scale", "Scale", mode, "Scale selection", Icons.SCALE);
+    TransformOp.call(this, "scale", "Scale", mode, "Scale selection", Icons.scale);
     
     this.transdata = null;
     this.is_modal = true;
     this.first = true;
     
     this.inputs = {
-      SCALE: new Vec3Property(new Vector3(), "scale", "Scale", "Amount of scale."),
-      AXIS: new Vec3Property(new Vector3(), "cons_axis", "Constraint Axis", "Axis to constrain too during transform", TPropFlags.PRIVATE)
+      scale: new Vec3Property(new Vector3(), "scale", "Scale", "Amount of scale."),
+      axis: new Vec3Property(new Vector3(), "cons_axis", "Constraint Axis", "Axis to constrain too during transform", TPropFlags.PRIVATE)
     };
       
     this.outputs = {
-      SCALE: new Vec4Property(new Vector3(), "scale", "Scale", "Amount of scaling.")
+      scale: new Vec4Property(new Vector3(), "scale", "Scale", "Amount of scaling.")
     };
     
     TransformOp.default_slots(this, mode);
@@ -504,7 +504,7 @@ class ScaleOp extends TransformOp {
     var v2 = new Vector3(this.mv2);
     
     if (v1.vectorDistance(v2) < 0.01) {
-      this.inputs.SCALE.data = new Vector3([1.0, 1.0, 1.0]);
+      this.inputs.scale.data = new Vector3([1.0, 1.0, 1.0]);
       this.exec(this.modal_tctx);
       return;
     }
@@ -531,7 +531,7 @@ class ScaleOp extends TransformOp {
       fac = v2.vectorDistance(cent)/v1.vectorDistance(cent);
     }
     
-    var cons_axis = new Vector3(this.inputs.AXIS.data);
+    var cons_axis = new Vector3(this.inputs.axis.data);
     if (cons_axis[0]+cons_axis[1]+cons_axis[2] != 3.0) {
       if (cons_axis[0] == 1.0) {
         cons_axis[1] = 1.0/fac;
@@ -547,8 +547,8 @@ class ScaleOp extends TransformOp {
       }    
     }
     
-    this.inputs.SCALE.data = new Vector3([fac, fac, fac]);
-    this.inputs.SCALE.data.mul(cons_axis);
+    this.inputs.scale.data = new Vector3([fac, fac, fac]);
+    this.inputs.scale.data.mul(cons_axis);
     this.exec(this.modal_tctx);
   }
 
@@ -556,7 +556,7 @@ class ScaleOp extends TransformOp {
     if (!this.is_modal)
       this.transdata = this.gen_transdata(ctx);
     
-    var fac = this.inputs.SCALE.data;
+    var fac = this.inputs.scale.data;
     var mat = new Matrix4();
     
     mat.scale(fac[0], fac[1], fac[2]);

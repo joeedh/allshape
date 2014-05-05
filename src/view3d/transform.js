@@ -129,12 +129,12 @@ class TransObjectType {
   static undo_pre(TransformOp top, TransData tdata, ToolContext ctx) {
     var undo;
     top._undo = undo = [new GArray(), new GArray()];
-    var active = top.inputs.OBJECT.data;
+    var active = top.inputs.object.data;
     
     if (active != undefined) 
       active = ctx.datalib.get(active);
       
-    for (var ob in top.inputs.OBJECTS.data) {
+    for (var ob in top.inputs.objects.data) {
       if (ob == active)
         continue;
       
@@ -142,7 +142,7 @@ class TransObjectType {
     }
     
     //make sure active object goes last
-    if (top.inputs.OBJECT.data)
+    if (top.inputs.object.data)
       undo[0].push(active);
     
     //store vectors in a flat array, this lets us avoid
@@ -381,17 +381,17 @@ class TransformOp extends ToolOp {
   }
 
   static default_slots(ASObject obj, int mode, ASObject asob) {
-    obj.inputs["DATAMODE"] = selectmode_enum.copy();
-    obj.inputs["DATAMODE"].flag |= TPropFlags.PRIVATE;
-    obj.inputs["OBJECT"] = new DataRefProperty(asob, DataTypes.OBJECT, "object", "Object", "Object to transform", undefined);
-    obj.inputs["OBJECTS"] = new RefListProperty([], DataTypes.OBJECT, "objects", "Objects", "Objects to transform, if applicable", undefined);
+    obj.inputs.datamode = selectmode_enum.copy();
+    obj.inputs.datamode.flag |= TPropFlags.PRIVATE;
+    obj.inputs.object = new DataRefProperty(asob, DataTypes.OBJECT, "object", "Object", "Object to transform", undefined);
+    obj.inputs.objects = new RefListProperty([], DataTypes.OBJECT, "objects", "Objects", "Objects to transform, if applicable", undefined);
     
     if (mode != 0)
-      obj.inputs.DATAMODE.set_data(mode);
+      obj.inputs.datamode.set_data(mode);
   } 
   
   exec_pre(ToolContext ctx) {
-    if (this.inputs.DATAMODE.get_value() & EditModes.GEOMETRY)
+    if (this.inputs.datamode.get_value() & EditModes.GEOMETRY)
       this.datatype = TransMeshType;
     else
       this.datatype = TransObjectType;
@@ -402,18 +402,18 @@ class TransformOp extends ToolOp {
   }
   
   gen_transdata(ToolContext ctx) : TransData {
-    if (this.inputs.DATAMODE.get_value() & EditModes.GEOMETRY)
+    if (this.inputs.datamode.get_value() & EditModes.GEOMETRY)
       this.datatype = TransMeshType;
     else
       this.datatype = TransObjectType;
     
     if (DEBUG.transform) {
       console.log("1-", ctx.object);
-      console.log("2-", this.inputs.OBJECT.data);
-      console.log("3-", this.inputs.OBJECT.get_block(ctx));
+      console.log("2-", this.inputs.object.data);
+      console.log("3-", this.inputs.object.get_block(ctx));
     }
-    return new TransData(ctx, this, this.inputs.OBJECT.get_block(ctx), 
-                          this.inputs.OBJECTS.data, this.inputs.DATAMODE.data);
+    return new TransData(ctx, this, this.inputs.object.get_block(ctx), 
+                          this.inputs.object.data, this.inputs.datamode.data);
   }
  
   undo_pre(Context ctx) {
@@ -462,8 +462,8 @@ class TransformOp extends ToolOp {
   
   modal_init(Context ctx) {
     this.first_mdown = true;
-    this.inputs.OBJECT.set_data(ctx.object);
-    this.inputs.DATAMODE.set_data(ctx.view3d.selectmode);
+    this.inputs.object.set_data(ctx.object);
+    this.inputs.datamode.set_data(ctx.view3d.selectmode);
   }
   
   on_mousemove(MouseEvent event) {
@@ -543,11 +543,11 @@ class TransformOp extends ToolOp {
       this.axis_line2 = npick2;
       
       if (this.constrain_plane) {
-        this.inputs.AXIS.data = new Vector3([1.0, 1.0, 1.0]);
-        this.inputs.AXIS.data[apick] = 0.0;
+        this.inputs.axis.data = new Vector3([1.0, 1.0, 1.0]);
+        this.inputs.axis.data[apick] = 0.0;
       } else {
-        this.inputs.AXIS.data = new Vector3();
-        this.inputs.AXIS.data[apick] = 1.0;
+        this.inputs.axis.data = new Vector3();
+        this.inputs.axis.data[apick] = 1.0;
       }      
     }
     
@@ -674,7 +674,7 @@ class TransformOp extends ToolOp {
   }
 
   end_modal() {
-    if (this.inputs.DATAMODE.data & EditModes.GEOMETRY) 
+    if (this.inputs.datamode.data & EditModes.GEOMETRY) 
       this.do_normals(this.modal_ctx);
     
     for (var dl in this.axis_drawlines) {
@@ -707,8 +707,8 @@ class TransformOp extends ToolOp {
       if (this.axis_line2 != null) this.modal_ctx.view3d.kill_drawline(this.axis_line2);
       
       if (this.constrain_plane) {
-        this.inputs.AXIS.data = new Vector3([1.0, 1.0, 1.0]);
-        this.inputs.AXIS.data[apick] = 0.0;
+        this.inputs.axis.data = new Vector3([1.0, 1.0, 1.0]);
+        this.inputs.axis.data[apick] = 0.0;
       } else {
         var ret = this.gen_axis(apick, this.transdata.center);
         this.axis_line1 = ret[0];
@@ -717,8 +717,8 @@ class TransformOp extends ToolOp {
         this.axis_line2.clr = axclrs[apick];
         
         
-        this.inputs.AXIS.data = new Vector3();
-        this.inputs.AXIS.data[apick] = 1.0;
+        this.inputs.axis.data = new Vector3();
+        this.inputs.axis.data[apick] = 1.0;
       }
     }
   }
