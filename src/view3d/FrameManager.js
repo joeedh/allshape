@@ -22,8 +22,10 @@ class Area extends UIFrame {
   //destroy GL data
   destroy() {
     for (var c in this.children) {
-      c.destroy(g_app_state.gl);
+      if ("destroy" in c)
+        c.destroy(g_app_state.gl);
     }
+    
     this.canvas.destroy(g_app_state.gl);
   }
   

@@ -19,18 +19,22 @@ var UIFlags = {
 var CanvasFlags = {NOT_ROOT : 1, NO_PROPEGATE : 2}
 
 var _ui_element_id_gen = 1;
-function open_android_keyboard(e) {
-  call_keyboard(e);
-   //var canvas = document.getElementById("example")
-   //canvas.contentEditable = true
-   //canvas.focus()
+function open_mobile_keyboard(e, on_close=function(){}) {
+  //stupid android on screen keyboard doesn't interface
+  //with javascript very well, ger.
+  if (IsMobile)
+    call_keyboard(e, on_close);
+ //var canvas = document.getElementById("example")
+ //canvas.contentEditable = true
+ //canvas.focus()
 }
 
-function close_android_keyboard(e) {
-  end_keyboard(e);
-    //var  canvas = document.getElementById("example")
-    //canvas.contentEditable = false
-    //canvas.focus()
+function close_mobile_keyboard(e) {
+  if (IsMobile)
+    end_keyboard(e);
+  //var  canvas = document.getElementById("example")
+  //canvas.contentEditable = false
+  //canvas.focus()
 }
 
 /*utility function, expands tested rect when IsMobile is true*/
@@ -270,17 +274,19 @@ class UIElement extends EventHandler {
   //relative to this element,
   //*not* this element's parent frame
   abs_transform(Array<float> pos) {
-    var e = this, lastf = this;
+    var e = this;
     
     while (e != undefined) {
       pos[0] += e.pos[0];
       pos[1] += e.pos[1];
-      if (e.state & UIFlags.HAS_PAN) {
+      console.log(e.pos);
+      
+      if ((e instanceof UIFrame) && (e.state & UIFlags.HAS_PAN)) {
         pos[0] += e.velpan.pan[0];
         pos[1] += e.velpan.pan[1];
+        console.log("   ", pos);
       }
       
-      lastf = e;
       e = e.parent;
     }
   }
@@ -471,33 +477,27 @@ class UIHoverHint extends UIElement {
     if (!hint) return;
     
     var size = new Vector2(this.ctx.font.calcsize(hint));
+    
     size.add([8.0, 12.0]);
-    var pos = new Vector2(this.pos); //this.parent.mpos);
     
-    pos[1] -= size[1];
-    //pos.sub([Math.floor(size[0]*0.5), Math.floor(size[1]*0.5)]);
-    
+    var pos = new Vector2([this.pos[0], this.pos[1]-size[1]]);
     var hintbox = new UIHoverBox(this.ctx, hint, is_modal, pos, size);
     
     /*ensure hint is fully within view*/
-    var abspos = [0, 0];
+    var abspos = [0, -size[1]];
     this.abs_transform(abspos);
     
-    //find a top-level frame
-    var editor = this.parent;
-    //while (editor != undefined) && !(editor instanceof Area)) {
-    //  editor = editor.parent;
-    //}
     var screen = g_app_state.screen;
     var abspos2 = [abspos[0], abspos[1]];
     
-    abspos[0] = Math.min(Math.max(0, abspos[0]), screen.size[0]-hintbox.size[0]);
-    
     //move above element, if necassary
+    console.log("hint y", abspos[1], "x", abspos[0]);
     if (abspos[1] < 0) {
       abspos[1] += size[1] + this.size[1];
     }
+    
     //clamp to within view, in case above code failed
+    abspos[0] = Math.min(Math.max(0, abspos[0]), screen.size[0]-hintbox.size[0]);
     abspos[1] = Math.min(Math.max(0, abspos[1]), screen.size[1]-hintbox.size[1]);
     
     hintbox.pos[0] += abspos[0] - abspos2[0];

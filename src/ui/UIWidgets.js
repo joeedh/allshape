@@ -65,8 +65,7 @@ class UIButton extends UIHoverHint {
       this.clicked = false;
       this.do_recalc();
       
-      console.trace();
-      console.log(event.x, event.y, this.size[0], this.size[1]);
+      console.log("button mouseup: ", event.x, event.y, this.size[0], this.size[1]);
       
       if (inrect_2d_button([event.x, event.y], [0, 0], this.size)) {
         if (this.callback != undefined) {

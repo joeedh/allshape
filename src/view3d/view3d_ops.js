@@ -931,6 +931,32 @@ class ToggleSubSurfOp extends ToolOp {
   }
 }
 
+class BasicFileDataOp extends ToolOp {
+  constructor(String data) {
+    ToolOp.call(this, "basic_file_with_data", "internal op (with data)", "Root operator; creates a scene with a simple cube");
+    
+    this.is_modal = false;
+    this.undoflag = UndoFlags.IGNORE_UNDO|UndoFlags.IS_ROOT_OPERATOR|UndoFlags.UNDO_BARRIER;
+    
+    this.inputs = {
+      data : new StringProperty(data, "filedata", "file data in base64")
+    };
+    
+    this.inputs.data.flag |= TPropFlags.PRIVATE;
+    this.outputs = {};
+    
+    //make empty saved_context
+    this.saved_context = new SavedContext();
+  }
+  
+  exec(ToolContext ctx) {
+    var data = new DataView(b64decode(this.inputs.data.data).buffer);
+    
+    console.log(this.inputs.data.data.length, data.byteLength);
+    g_app_state.load_scene_file(data);
+  }
+}
+
 class BasicFileOp extends ToolOp {
   constructor() {
     ToolOp.call(this, "basic_file", "internal op", "Root operator; creates a scene with a simple cube");

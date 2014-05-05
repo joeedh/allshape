@@ -155,12 +155,15 @@ class UITextBox extends UIElement {
     this.sel = [0, this.text.length];
     this.clicked = true;
     
-    open_android_keyboard(this);
+    var this2 = this;
+    function end_edit() {
+      this2.end_edit(false, false);
+    }
+    
+    open_mobile_keyboard(this, end_edit);
   }
 
-  end_edit(cancel) { //cancel is optional, defaults to false
-    if (cancel == undefined) cancel = false;
-    
+  end_edit(Boolean cancel=false, Boolean close_keyboard=true) {
     if (cancel) {
       this.text = this.start_text;
     }
@@ -180,7 +183,8 @@ class UITextBox extends UIElement {
       this.set_prop_data(this.text);
     }
     
-    close_android_keyboard()
+    if (close_keyboard)
+      close_mobile_keyboard()
     
     if (this.on_end_edit)
       this.on_end_edit(this, cancel);

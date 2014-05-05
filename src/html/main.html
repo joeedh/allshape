@@ -1361,6 +1361,9 @@ function toJSON_intern (ob, tlevel) {
         g.canvas = canvas = document.getElementById('example');
 		
         if (g != undefined && g.eventhandler != undefined) {
+          if (DEBUG.alias_g_app_state) {
+            G = g_app_state;
+          }
           g.eventhandler.on_draw(gl);
           
           gl.colorMask(false, false, false, true);

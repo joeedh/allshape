@@ -239,23 +239,25 @@ function inset_make_holes(op, mesh) {
   }
 }
 
-function InsetRegionsOp(faceiter) {
-  this.prototype = Object.create(MeshOp.prototype);
-  MeshOp.call(this);
+class InsetRegionsOp extends MeshOp {
+  constructor(Iterator faceiter=undefined) {
+    MeshOp.call(this, "inset_regions", "Inset", "Make a hole in faces", Icons.BRIDGE);
+    
+    this.uiname = "Inset Regions"
+    this.name = "inset_regions";
+    this.inputs = {
+      faces: new CollectionProperty(undefined, [Face], "faces", "Faces", ""),
+      make_holes: new BoolProperty(true, "make_holes", "Make Holes", "")
+    }
+    
+    this.outputs = {
+    }
   
-  this.uiname = "Inset Regions"
-  this.name = "inset_regions";
-  this.inputs = {
-    faces: new CollectionProperty(undefined, [Face], "faces", "Faces", ""),
-    make_holes: new BoolProperty(true, "make_holes", "Make Holes", "")
+    if (faceiter != undefined)
+      this.inputs.faces.set_data(faceiter);
   }
   
-  this.outputs = {
-  }
-  
-  this.inputs.faces.set_data(faceiter);
-  
-  this.exec = function(op, mesh) {
+  exec(op, mesh) {
     if (this.inputs.make_holes == false) {
       inset_extrude(op, mesh);
     } else {
@@ -268,20 +270,22 @@ function bridge_two_loops(mesh, vloop1, vloop2) {
   
 }
 
-function BridgeOp(edgeiter) {
-  this.prototype = Object.create(MeshOp.prototype);
-  MeshOp.call(this, "bridge_edges", "Bridge Edges", "Bridge edge loops with faces", Icons.BRIDGE);
-  
-  this.inputs = {
-    edges: new CollectionProperty(undefined, [Edge], "faces", "Faces", ""),
+class BridgeOp extends MeshOp {
+  constructor(Iterator<Edge> edgeiter=undefined) {
+    MeshOp.call(this, "bridge_edges", "Bridge Edges", "Bridge edge loops with faces", Icons.BRIDGE);
+    
+    this.inputs = {
+      edges: new CollectionProperty(undefined, [Edge], "faces", "Faces", ""),
+    }
+    
+    this.outputs = {
+    }
+    
+    if (edgeiter != undefined)
+      this.inputs.edges.set_data(edgeiter);
   }
   
-  this.outputs = {
-  }
-  
-  this.inputs.edges.set_data(edgeiter);
-  
-  this.exec = function(op, mesh) {
+  exec (op, mesh) {
     var eset = new set(this.edgeiter);
     
     var visit = new set();

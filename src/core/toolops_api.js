@@ -4,7 +4,7 @@
   basic design of tool ops:
   
   a carbon copy (sort of) of Blender's tool system.  each tool has
-  a list of parameters, and are also passed a Context struct (a kindof
+  a list of parameters, and are also passed a Context struct (a sort of
   bundle of common tool paramters).
   
   The main difference is that undo is implemented on top of this system.
@@ -12,6 +12,9 @@
   of the data state.  This is to get new tools up and running quickly; 
   all tools should eventually get their own, faster callbacks (or at least
   inherit from super-classes with faster defaults, like SelectOpAbstract).
+  
+  Note that for some tools, serialization the app state prior to undo is
+  unavoidable.
   
   RULES:
   1. Tools must store all (non-undo) state data in slots.
@@ -28,7 +31,7 @@
 /*
   toolop refactor:
   
-  1. Constructor should take a single, SavedContext parameter.
+  1. DROPPED, Constructor should take a single, SavedContext parameter.
   2. XXX, decided against this for now -> Combine inputs and outputs into slots.
   3. Normalize input/output names (e.g. TRANSLATION -> translation).
   4. DONE: Exec only gets ToolContext; access view3d in modal mode,
@@ -52,7 +55,22 @@
   
 */
 
-var _tool_op_idgen = 1;
+var UndoFlags = {
+  IGNORE_UNDO      :  2, 
+  IS_ROOT_OPERATOR :  4, 
+  UNDO_BARRIER     :  8,
+  HAS_UNDO_DATA    : 16
+};
+
+var ToolFlags = {
+  HIDE_TITLE_IN_LAST_BUTTONS : 1, 
+  USE_PARTIAL_UNDO           : 2,
+  USE_DEFAULT_INPUT          : 4
+};
+
+//XXX need to do this properly at some point; toolops should
+//an idgen that is saved in each file
+var _tool_op_idgen = 1; 
 
 class ToolOpAbstract {
   constructor(apiname, uiname, description=undefined, icon=-1) {
@@ -67,6 +85,15 @@ class ToolOpAbstract {
     
     this.inputs = {};
     this.outputs = {};
+  }
+  
+  get_saved_context() {
+    if (this.saved_context == undefined) {
+      console.log("warning : invalid saved_context in "+this.constructor.name + ".get_saved_context()");
+      this.saved_context = new SavedContext(new Context());
+    }
+    
+    return this.saved_context;
   }
   
   __hash__() : String {
@@ -103,7 +130,7 @@ class ToolOpAbstract {
 ToolOpAbstract.STRUCT = """
   ToolOpAbstract {
       flag    : int;
-      saved_context  : SavedContext;
+      saved_context  : SavedContext | obj.get_saved_context();
       inputs  : iter(k, PropPair) | new PropPair(k, obj.inputs[k]);
       outputs : iter(k, PropPair) | new PropPair(k, obj.outputs[k]);
   }
@@ -127,14 +154,6 @@ PropPair.STRUCT = """
     value : abstract(ToolProperty);
   }
 """;
-
-var UndoFlags = {IGNORE_UNDO: 2, IS_ROOT_OPERATOR : 4, UNDO_BARRIER : 8};
-
-var ToolFlags = {
-  HIDE_TITLE_IN_LAST_BUTTONS: 1, 
-  USE_PARTIAL_UNDO : 2,
-  USE_DEFAULT_INPUT : 4
-};
 
 class ToolOp extends EventHandler, ToolOpAbstract {
   constructor(String apiname="(undefined)", 
@@ -281,7 +300,7 @@ class ToolOp extends EventHandler, ToolOpAbstract {
 ToolOp.STRUCT = """
   ToolOp {
       flag    : int;
-      saved_context  : SavedContext;
+      saved_context  : SavedContext | obj.get_saved_context();
       inputs  : iter(k, PropPair) | new PropPair(k, obj.inputs[k]);
       outputs : iter(k, PropPair) | new PropPair(k, obj.outputs[k]);
   }
@@ -350,6 +369,8 @@ class ToolMacro extends ToolOp {
       
       op.exec_pre(ctx);
       op.undo_pre(ctx);    
+      op.undoflag |= UndoFlags.HAS_UNDO_DATA;
+      
       op.exec(ctx);
     }
   }
@@ -379,7 +400,9 @@ class ToolMacro extends ToolOp {
         
         op.saved_context = this.saved_context;
         
-        op.undo_pre(ctx);      
+        op.undo_pre(ctx);
+        op.undoflag |= UndoFlags.HAS_UNDO_DATA;
+        
         return op.modal_init(ctx);
       } else {
         for (var k in op.inputs) {
@@ -392,6 +415,8 @@ class ToolMacro extends ToolOp {
         
         op.exec_pre(ctx);
         op.undo_pre(ctx);
+        op.undoflag |= UndoFlags.HAS_UNDO_DATA;
+        
         op.exec(ctx);
       }
     }
@@ -416,6 +441,7 @@ class ToolMacro extends ToolOp {
       prior(ToolMacro, this)._end_modal();
     } else {
       this.tools[this.cur_modal].undo_pre(ctx);
+      this.tools[this.cur_modal].undoflag |= UndoFlags.HAS_UNDO_DATA;
       this.tools[this.cur_modal].modal_init(ctx);
     }
   }
@@ -454,12 +480,18 @@ class ToolMacro extends ToolOp {
     var ret = STRUCT.chain_fromSTRUCT(ToolMacro, reader);
     ret.tools = new GArray(ret.tools);
     
+    for (var t in ret.tools) {  
+      t.parent = this;
+    }
+    
     return ret;
   }
 }
 
 ToolMacro.STRUCT = STRUCT.inherit(ToolMacro, ToolOp) + """
-  tools : array(abstract(ToolOp));
+  tools   : array(abstract(ToolOp));
+  apiname : static_string[32];
+  uiname  : static_string[32];
 }
 """
 
@@ -472,16 +504,36 @@ function init_toolop_structs() {
   function gen_fromSTRUCT(cls1) {
     function fromSTRUCT(reader) {
       var op = new cls1();
+      //property templates
+      var inputs = op.inputs, outputs = op.outputs;
+      
       reader(op);
       
-      var ins = {};
+      //we need be able to handle new properties
+      //so, copy default inputs/output slots,
+      //then override.
+      var ins = Object.create(inputs), outs = Object.create(outputs);
+      
       for (var i=0; i<op.inputs.length; i++) {
-        ins[op.inputs[i].key] = op.inputs[i].value;
+        var k = op.inputs[i].key;
+        ins[k] = op.inputs[i].value;
+        
+        if (k in inputs) {
+          ins[k].load_ui_data(inputs[k]);
+        } else {
+          ins[k].uiname = ins[k].apiname = k;
+        }
       }
       
-      var outs = {};
       for (var i=0; i<op.outputs.length; i++) {
-        outs[op.outputs[i].key] = op.outputs[i].value;
+        var k = op.outputs[i].key;
+        outs[k] = op.outputs[i].value;
+        
+        if (k in outputs) {
+          outs[k].load_ui_data(outputs[k]);
+        } else {
+          outs[k].uiname = outs[k].apiname = k;
+        }
       }
       
       op.inputs = ins;
@@ -518,7 +570,7 @@ function init_toolop_structs() {
         outputs : iter(k, PropPair) | new PropPair(k, obj.outputs[k]);
       """
       if (is_toolop)
-        cls.STRUCT += "    saved_context  : SavedContext;\n";
+        cls.STRUCT += "    saved_context  : SavedContext | obj.get_saved_context();\n";
       
       cls.STRUCT += "  }";
     }

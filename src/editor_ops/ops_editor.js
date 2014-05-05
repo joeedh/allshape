@@ -96,13 +96,18 @@ class OpStackFrame extends RowFrame {
     var pmap = this.panelmap;
     var keepset = new set();
     var undocur = g_app_state.toolstack.undocur;
+    var reflow = false;
     
     /*update tool panels*/
     for (var tool in oplist) {
-      if (tool.undoflag & UndoFlags.UNDO_BARRIER) continue;
+      //if (tool.undoflag & UndoFlags.UNDO_BARRIER) continue;
       //if (tool.flag & ToolFlags.HIDE_TITLE_IN_LAST_BUTTONS) continue;
       
       keepset.add(tool);
+      if (!pmap.has(tool)) {
+        reflow = true;
+      }
+      
       var panel = this.get_panel(tool);
       
       if (tool.stack_index == undocur-1) {
@@ -113,7 +118,6 @@ class OpStackFrame extends RowFrame {
       }
       
       //auto-collapse panels
-      
       if (tool.stack_index != undocur-1 && !panel.user_opened) {
         panel.collapsed = true;
       } else if (tool.stack_index == undocur-1 && !panel.user_closed) {
@@ -127,6 +131,22 @@ class OpStackFrame extends RowFrame {
         var panel = pmap.get(tool);
         this.remove(panel);
         pmap.remove(tool);
+      }
+    }
+    
+    /*ensure panels are in correct order*/
+    if (reflow) {
+      for (var k in pmap) {
+        var panel = pmap.get(k);
+        this.remove(panel);
+      }
+      
+      for (var tool in oplist) {
+        if (!pmap.has(tool))
+          continue;
+         
+        var panel = pmap.get(tool)
+        this.add(panel);
       }
     }
   }

@@ -14,6 +14,8 @@ var fdialog_exclude_chars = new set([
 class FileDialog extends PackedDialog {
   constructor(mode, ctx, callback) {
     PackedDialog.call(this, FileDialogModes[mode], ctx, ctx.screen);
+    
+    this.subframe.default_packflag |= PackFlags.INHERIT_WIDTH;
 
     this.pos = [0,0];
 
@@ -21,6 +23,7 @@ class FileDialog extends PackedDialog {
     this.callback = callback;
 
     var col = this.subframe.col();
+    col.default_packflag &= ~PackFlags.INHERIT_WIDTH;
     col.add(Dialog.okay_button(ctx));
     col.add(Dialog.cancel_button(ctx));
 

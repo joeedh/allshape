@@ -305,10 +305,42 @@ class AppState {
     localStorage.startup_file = buf;
   }
 
+  //file minus ui data, used by BasicFileDataOp
+  create_scene_file() {
+    var buf = this.create_user_file_new(true, false, false, false);
+    
+    return buf;
+  }
+  
   create_undo_file() {
     var buf = this.create_user_file_new(true, false, false, false);
     
     return buf;
+  }
+  
+  //used by BasicFileDataOp, which 
+  //is a root toolop that stores
+  //saved data
+  load_scene_file(scenefile) {
+    var screen = this.screen;
+    var toolstack = this.toolstack;
+    var view3d = this.active_view3d;
+    
+    console.log(scenefile);
+    
+    var datalib = new DataLib();
+    this.datalib = datalib;
+    var filedata = this.load_blocks(scenefile);
+    
+    this.link_blocks(datalib, filedata);
+    
+    //this.load_user_file_new(scenefile);
+    this.screen = screen;
+    this.eventhandler = screen;
+    this.active_view3d = view3d;
+    
+    this.toolstack = toolstack;
+    this.screen.ctx = new Context();
   }
   
   load_undo_file(undofile) {
@@ -507,6 +539,29 @@ class AppState {
     }
   }
 
+  do_versions_post(float version) {
+    if (version < 0.044) {
+      var stack = this.toolstack.undostack;
+      
+      //remove any existing, broken root operators
+      for (var tool in stack) {
+        if (tool.flag & UndoFlags.IS_ROOT_OPERATOR) {
+          stack.remove(tool);
+        }
+      }
+      
+      var data = this.create_scene_file();
+      
+      data = b64encode(new Uint8Array(data.buffer));
+      var op = new BasicFileDataOp(data);
+      
+      stack.reset();
+      stack.push(op);
+      op.stack_index = 0;
+      this.toolstack.undocur = 1;
+    }
+  }
+  
   load_user_file_new(DataView data, unpack_ctx uctx, use_existing_screen=false) {
     //fixes a bug where some files loaded with squished
     //size.  probably need to track down actual cause, though.
@@ -706,6 +761,8 @@ class AppState {
         if (t instanceof ToolMacro)
           add_macro(p1, p2, t);
         
+        t.parent = tool;
+        
         p1.push(t);
         p2.push(tool.saved_context);
       }
@@ -734,7 +791,8 @@ class AppState {
         
         //add undo barrier flag, since we don't serialize undo
         //data.
-        tool.undoflag |= UndoFlags.UNDO_BARRIER;
+        //UPDATE: no longer necassary, due to new HAS_UNDO_DATA flag
+        //tool.undoflag |= UndoFlags.UNDO_BARRIER;
         
         //tools in the undostack
         patch_tools1.push(tool);
@@ -752,6 +810,11 @@ class AppState {
         }
       }
       
+      for (var i=0; i<this.toolstack.undostack.length; i++) {
+        var tool = this.toolstack.undostack[i];
+        tool.stack_index = i;
+      }
+      
       //set toolproperty contexts
       for (var i=0; i<patch_tools1.length; i++) {
         var tool = patch_tools1[i];
@@ -766,6 +829,8 @@ class AppState {
         }
       }
     }
+    
+    this.do_versions_post(version);
   }
 
   load_blocks(DataView data, unpack_ctx uctx) {
@@ -1199,14 +1264,12 @@ class ToolStack {
       
       if (!(tool.undoflag & UndoFlags.IGNORE_UNDO)) {
         console.log("undo pre");
+
         tool.undo_pre(ctx);
-        console.log(tool._undo);
+        tool.undoflag |= UndoFlags.HAS_UNDO_DATA;
       }
       
       tool.exec(ctx);
-      
-      if (i != 0)
-        tool.undoflag &= ~UndoFlags.UNDO_BARRIER;
     }
   }
   
@@ -1254,6 +1317,12 @@ class ToolStack {
       this.undostack.push(tool);
     } else {
       this.undostack.insert(this.undocur, tool);
+      
+      for (var i=this.undocur-1; i<this.undostack.length; i++) {
+        if (i < 0) continue;
+        
+        this.undostack[i].stack_index = i;
+      }
     }
     
     tool.stack_index = this.undostack.indexOf(tool);
@@ -1286,6 +1355,8 @@ class ToolStack {
   undo() {
     if (this.undocur > 0 && (this.undostack[this.undocur-1].undoflag & UndoFlags.UNDO_BARRIER))
       return;
+    if (this.undocur > 0 && !(this.undostack[this.undocur-1].undoflag & UndoFlags.HAS_UNDO_DATA))
+      return;
       
     if (this.undocur > 0) {
       this.appstate.jobs.kill_owner_jobs(this.appstate.mesh);
@@ -1307,6 +1378,7 @@ class ToolStack {
       
       if (!(tool.undoflag & UndoFlags.IGNORE_UNDO)) {
         tool.undo_pre(ctx);
+        tool.undoflag |= UndoFlags.HAS_UNDO_DATA;
       }
       
       var tctx = new ToolContext();
@@ -1323,6 +1395,16 @@ class ToolStack {
   }
   
   reexec_tool(ToolOp tool) {
+    if (!(tool.undoflag & UndoFlags.HAS_UNDO_DATA)) {
+      this.reexec_stack();
+    }
+    
+    if (tool.stack_index == -1) {
+      for (var i=0; i<this.undostack.length; i++) {
+        this.undostack[i].stack_index = i;
+      }
+    }
+    
     if (tool === this.undostack[this.undocur-1]) {
       this.undo();
       this.redo();
@@ -1342,6 +1424,11 @@ class ToolStack {
     }
     
     tool.saved_context = new SavedContext(new Context());
+  }
+  
+  kill_opstack() {
+    this.undostack = new GArray();
+    this.undocur = 0;
   }
   
   gen_tool_datastruct(ToolOp tool) {
@@ -1461,6 +1548,7 @@ class ToolStack {
       tool.exec_pre(tool.modal_tctx);
       if (!(tool.undoflag & UndoFlags.IGNORE_UNDO)) {
         tool.undo_pre(ctx);
+        tool.undoflag |= UndoFlags.HAS_UNDO_DATA;
       }
       
       tool.modal_init(ctx);
@@ -1472,6 +1560,7 @@ class ToolStack {
       if (!(tool.undoflag & UndoFlags.IGNORE_UNDO)) {
         //undo callbacks, unlike .exec, get full context structure
         tool.undo_pre(ctx);
+        tool.undoflag |= UndoFlags.HAS_UNDO_DATA;
       }
       
       tool.exec_pre(tctx);

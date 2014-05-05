@@ -284,8 +284,10 @@ class EdgeLoopOpModal extends EdgeLoopOp {
       in theory this should not be
       necassary, but you never know...
      */
-    if (this._undo_presel == undefined)
+    if (this._undo_presel == undefined) {
       this.undo_pre(ctx);
+      this.undoflag |= UndoFlags.HAS_UNDO_DATA;
+    }
     
     g_app_state.screen.handle_active_view3d();
     
@@ -423,8 +425,10 @@ class FaceLoopOpModal extends FaceLoopOp {
       in theory this should not be
       necassary, but you never know...
      */
-    if (this._undo_presel == undefined)
+    if (this._undo_presel == undefined) {
       this.undo_pre(ctx);
+      this.undoflag |= UndoFlags.HAS_UNDO_DATA;
+    }
     
     g_app_state.screen.handle_active_view3d();
     

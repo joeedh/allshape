@@ -47,7 +47,15 @@ class ToolProperty {
     this.hotkey_ref = undefined;
     this.unit = undefined;
   }
-
+  
+  load_ui_data(ToolProperty prop) {
+    this.uiname = prop.uiname;
+    this.apiname = prop.apiname;
+    this.description = prop.description;
+    this.unit = prop.unit;
+    this.hotkey_ref = prop.hotkey_ref;
+  }
+  
   user_set_data(this_input) { }
   update(prop_this) { }
   api_update(ctx, path) { }
@@ -251,6 +259,14 @@ class FlagProperty extends ToolProperty {
   {
     ToolProperty.call(this, PropTypes.FLAG, apiname, uiname, description, flag);
     
+    //detect if we were called by fromSTRUCT
+    if (value == undefined && maskmap == undefined) {
+      this.ui_value_names = {};
+      this.keys = {};
+      this.values = {};
+      return;
+    }
+    
     this.data = 0 : int;
     
     if (uinames == undefined) {
@@ -323,6 +339,7 @@ class FlagProperty extends ToolProperty {
       var start = k.search(" ");
       
       var n = parseInt(k.splice(0, start).trim());
+      
       keys[n] = k.splice(start+1, k.length);
       values[n] = n;
     }
@@ -428,7 +445,7 @@ class StringProperty extends ToolProperty {
       string = "";
     
     ToolProperty.call(this, PropTypes.STRING, apiname, uiname, description, flag);
-    this.data = new String(string)
+    this.data = string;
   }
    
   pack(data) {   
@@ -506,6 +523,15 @@ class EnumProperty extends ToolProperty {
     }
     
     this.iconmap = {};
+  }
+  
+  load_ui_data(ToolProperty prop) {
+    ToolProperty.prototype.load_ui_data.call(this, prop);
+    
+    this.ui_value_names = Object.create(prop.ui_value_names);
+    this.iconmap = Object.create(prop.iconmap);
+    this.values = Object.create(prop.values);
+    this.keys = Object.create(prop.keys);
   }
   
   add_icons(iconmap) {

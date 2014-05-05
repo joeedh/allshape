@@ -6,7 +6,7 @@
 var allshape_file_ext = ".al3";
 
 //application version
-var g_app_version = 0.043;
+var g_app_version = 0.044;
 
 /*all selection bitflags flags must use this value, even if they define
   their own enumeration member, e.g. MeshFlags.SELECT*/
@@ -18,7 +18,7 @@ var SELECT = 1;
 
 var UNIT_TESTER = false;
 var FEATURES = {
-  save_toolstack : (RELEASE ? false : true)
+  save_toolstack : true //(RELEASE ? false : true)
 }
 
 //need a struct to contain constants I'm not compiling in with the preprocessor
@@ -29,6 +29,7 @@ var new_api_parser = true;
 
 //debug flags
 var DEBUG = {
+  alias_g_app_state : true, //make a G alias to g_app_state at runtime
   gl_objects : false,
   Struct : false,
   ui_except_handling : false,

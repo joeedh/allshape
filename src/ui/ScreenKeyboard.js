@@ -1,12 +1,13 @@
 "use strict";
 
 class ScreenKeyboard extends RowFrame {
-  constructor(Context ctx, EventHandler client) {
+  constructor(Context ctx, EventHandler client, Function on_close) {
     RowFrame.call(this, ctx);
     
     this.size = [0, 0];
     this.pos = [0, 0];
     this.abspos = [0, 0];
+    this.on_close = on_close;
     
     this.client = client;
     
@@ -151,6 +152,10 @@ class ScreenKeyboard extends RowFrame {
     }
   }
   
+  do_Space(UIButton but) {
+    this.firechar(" ");
+  }
+  
   do_Close(UIButton but) {
     this.end();
   }
@@ -205,14 +210,18 @@ class ScreenKeyboard extends RowFrame {
       this.parent.remove(this);
       this.parent.do_recalc();
     }
+    
+    if (this.on_close) {
+      this.on_close();
+    }
   }
 }
 
 var _ui_keyboard = undefined;
-function call_keyboard(UIElement e) {
+function call_keyboard(UIElement e, Function on_close) {
   var ctx = new Context();
   var screen = ctx.screen;
-  var board = new ScreenKeyboard(ctx, e);
+  var board = new ScreenKeyboard(ctx, e, on_close);
   
   board.size[0] = screen.size[0];
   board.size[1] = screen.size[0] <= screen.size[1] ? screen.size[1]/3.0 : screen.size[1]/2.0;

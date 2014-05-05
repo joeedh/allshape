@@ -202,7 +202,7 @@ class PackedDialog extends Dialog {
     this.remove(this.subframe);
     
     this.subframe = new RowFrame(ctx, undefined, PackFlags.ALIGN_BOTTOM|PackFlags.ALIGN_CENTER);
-    this.add(this.subframe);
+    this.add(this.subframe, PackFlags.INHERIT_WIDTH);
   }
 
   call(pos) {
