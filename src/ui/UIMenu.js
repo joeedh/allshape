@@ -252,20 +252,17 @@ class UIMenu extends UIFrame {
 
 //is_menu_open is defined in RadialMenu.js
 
-function ui_call_menu(menu, frame, pos, center, min_width)//center is optional, defaults to true
+function ui_call_menu(menu, frame, pos, center=true, min_width=20)//center is optional, defaults to true
 {
-  var off = [pos[0], pos[1]];
-  
   console.log("menu call");
-  if (center == undefined) {
-    center = true;
-  }
+  
+  var off = [pos[0], pos[1]];
+  if (frame.parent != undefined)
+    frame.parent.abs_transform(off);
   
   while (frame.parent != undefined) {
     frame = frame.parent;
-    off[0] += frame.pos[0]; off[1] += frame.pos[1]
   }
-  
   off[0] -= frame.pos[0]; off[1] -= frame.pos[1];
   
   menu.closed = false;

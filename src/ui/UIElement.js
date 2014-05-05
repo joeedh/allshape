@@ -218,13 +218,10 @@ class UIElement extends EventHandler {
   }
 
   //calls a menu at an element's screen position, offset by off
-  call_menu(menu, off, min_width) { //off, min_width are optional
+  call_menu(menu, off=undefined, min_width=20) { //off, min_width are optional
     if (off == undefined) {
       off = [0, 0];
     }
-    
-    off[0] += this.pos[0];
-    off[1] += this.pos[1];
     
     var frame;
     if (this.parent == undefined) {
@@ -233,13 +230,10 @@ class UIElement extends EventHandler {
       frame = this.parent;
     }
     
+    this.abs_transform(off);
     while (frame.parent != undefined) {
-      off[0] += frame.pos[0];
-      off[1] += frame.pos[1];
       frame = frame.parent;
     }
-    off[0] += frame.pos[0];
-    off[1] += frame.pos[1];
     
     ui_call_menu(menu, frame, off, false, min_width);
   }

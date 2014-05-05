@@ -671,8 +671,8 @@ class UIFrame extends UIElement {
     var off = [e.pos[0], e.pos[1]];
     var frame = this;
     
+    this.abs_transform(off);
     while (frame.parent != undefined) {
-      off[0] += frame.pos[0]; off[1] += frame.pos[1]
       frame = frame.parent;
     }
     

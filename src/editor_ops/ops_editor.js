@@ -199,7 +199,7 @@ class OpStackEditor extends Area {
     this.subframe.state |= UIFlags.HAS_PAN|UIFlags.IS_CANVAS_ROOT|UIFlags.PAN_CANVAS_MAT;
     this.subframe.velpan = new VelocityPan();
     
-    this.add(this.subframe);
+    this.prepend(this.subframe);
   }
   
   get filter_sel() : Boolean {
@@ -290,8 +290,6 @@ class OpStackEditor extends Area {
   }
   
   build_draw(UICanvas canvas, Boolean isVertical) {
-    canvas.simple_box([0, Area.get_barhgt()], this.size, [0.2, 0.2, 0.2, 0.8]);
-    
     prior(OpStackEditor, this).build_draw.call(this, canvas, isVertical);
   }
   
@@ -316,15 +314,15 @@ class OpStackEditor extends Area {
     //gl.getExtension("OES_TEXTURE_FLOAT");
     //this.draw_lines(gl)data;
     
-    g_app_state.raster.push_scissor(this.parent.pos, this.parent.size);
-    Area.prototype.on_draw.call(this, gl);
-    g_app_state.raster.pop_scissor();
-    
     //scissor subframe seperately
     var p = [this.parent.pos[0] + this.subframe.pos[0], this.parent.pos[1] + this.subframe.pos[1]];
     var s = [this.parent.size[0] - this.subframe.pos[0], this.parent.size[1] - this.subframe.pos[1]];
     g_app_state.raster.push_scissor(p, s);
     this.subframe.on_draw(gl);
+    g_app_state.raster.pop_scissor();
+    
+    g_app_state.raster.push_scissor(this.parent.pos, this.parent.size);
+    Area.prototype.on_draw.call(this, gl);
     g_app_state.raster.pop_scissor();
   }
   
