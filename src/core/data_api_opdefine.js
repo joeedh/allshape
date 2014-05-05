@@ -86,7 +86,7 @@ function api_define_ops() {
       if (!("faces" in args))
         throw TinyParserError;
       
-      var macro = new ToolMacro("Smooth Subdivide")
+      var macro = new ToolMacro("smooth_subdivide", "Smooth Subdivide")
       
       var meshop = new QuadSubdOp(args["faces"], 1);
       var smoothop = new VertSmoothOp(new element_iter_convert(args["faces"], MeshTypes.VERT), 1);

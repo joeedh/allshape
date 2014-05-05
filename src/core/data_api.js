@@ -738,7 +738,7 @@ class DataAPI {
     }
     
     var ast = parser.parse(str);
-    var sret = [0, 0, 0];
+    static sret = [0, 0, 0];
     
     sret[0] = do_eval(ast, ContextStruct, pathout, spathout);
     pathout[0] = pathout[0].slice(1, pathout[0].length);
@@ -839,7 +839,7 @@ class DataAPI {
           value = '"' + value + '"';
         }
         
-        console.log("proptype", prop.type);
+        //console.log("proptype", prop.type);
         
         var valpath = path;
         if (path.endsWith("]")) {
@@ -847,7 +847,7 @@ class DataAPI {
           while (i >= 0 && path[i] != "[") i--;
           valpath = path.slice(0, i);
           
-          console.log("valpath:", valpath);
+          //console.log("valpath:", valpath);
         } else if (!ret[0].use_path) {
           //erg, stupid hackyness
           valpath += ".data.data";
@@ -859,7 +859,7 @@ class DataAPI {
         path += " = " + value;
         eval(path);
         
-        console.log(prop, prop.set_data, prop.update);
+        //console.log(prop, prop.set_data, prop.update);
         
         prop.set_data(eval(valpath));
       }

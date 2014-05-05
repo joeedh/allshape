@@ -508,6 +508,11 @@ class AppState {
   }
 
   load_user_file_new(DataView data, unpack_ctx uctx, use_existing_screen=false) {
+    //fixes a bug where some files loaded with squished
+    //size.  probably need to track down actual cause, though.
+    if (this.screen != undefined)
+      this.size = new Vector2(this.screen.size);
+    
     if (uctx == undefined) {
       uctx = new unpack_ctx();
     }
@@ -642,19 +647,17 @@ class AppState {
         }
       }
       
+      var size =  new Vector2(this2.size);
       if (screen == undefined) {
         //generate default UI layout
-        var size =  new Vector2(this2.size);
         gen_default_file(this2.size);
-        this2.size = size;
         this2.datalib = datalib;
         screen = this2.screen;
       } else {
-        var size =  new Vector2(this2.size);
         this2.reset_state(screen, undefined);
-        this2.size = size;
         this2.datalib = datalib;
       }
+      this2.size = size;
       
       //stupid. . .
       for (var sa in screen.areas) {
@@ -719,6 +722,15 @@ class AppState {
       //set tool property contexts
       for (var i=0; i<this.toolstack.undostack.length; i++) {
         var tool = this.toolstack.undostack[i];
+        
+        //handle mangled names
+        if (tool.uiname == "(undefined)" || tool.uiname == undefined || tool.uiname == "") {
+          tool.uiname = tool.name;
+          
+          if (tool.uiname == "(undefined)" || tool.uiname == undefined || tool.uiname == "") {
+            tool.uiname = "Macro";
+          }
+        }
         
         //add undo barrier flag, since we don't serialize undo
         //data.
@@ -1244,6 +1256,7 @@ class ToolStack {
       this.undostack.insert(this.undocur, tool);
     }
     
+    tool.stack_index = this.undostack.indexOf(tool);
     this.undocur++;
   }
 
@@ -1308,16 +1321,41 @@ class ToolStack {
         this.rebuild_last_tool(this.undostack[this.undocur-1]);
     }
   }
-
+  
+  reexec_tool(ToolOp tool) {
+    if (tool === this.undostack[this.undocur-1]) {
+      this.undo();
+      this.redo();
+    } else if (this.undocur > tool.stack_index) {
+      var i = 0;
+      while (this.undocur != tool.stack_index) {
+        this.undo();
+        i++;
+      }
+      
+      while (i >= 0) {
+        this.redo();
+        i--;
+      }
+    } else {
+      console.log("reexec_tool: can't reexec tool in inactive portion of stack");
+    }
+    
+    tool.saved_context = new SavedContext(new Context());
+  }
+  
   gen_tool_datastruct(ToolOp tool) {
     var datastruct = new DataStruct([]);
-    
     var this2 = this;
+    
+    /*find outermost parent macro for reexecution
+      callback*/
+    var stacktool = tool;
+    while (stacktool.parent != undefined) {
+      stacktool = stacktool.parent;
+    }
     function update_dataprop(d) {
-      this2.undo();
-      this2.redo();
-      var tool = this2.undostack[this2.undocur-1]; //XXX this MUST be correct
-      tool.saved_context = new SavedContext(new Context());
+      this2.reexec_tool(stacktool);
     }
     
     var prop = new StringProperty(tool.uiname, tool.uiname, tool.uiname, "Tool Name");
@@ -1339,6 +1377,19 @@ class ToolStack {
       dataprop.update = update_dataprop;
       
       datastruct.add(dataprop);
+    }
+    
+    if (tool instanceof ToolMacro) {
+      var this2 = this;
+      function gen_subtool_struct(tool) {
+        if (tool.apistruct == undefined)
+          tool.apistruct = this2.gen_tool_datastruct(tool);
+        return tool.apistruct;
+      }
+      
+      var tarr = new DataStructArray(gen_subtool_struct);
+      var toolsprop = new DataPath(tarr, "tools", "tools", false);
+      datastruct.add(toolsprop);
     }
     
     return datastruct;
@@ -1435,8 +1486,11 @@ class ToolStack {
   static fromSTRUCT(reader) {
     var ts = new ToolStack(g_app_state);
     reader(ts);
-    
+      
     ts.undostack = new GArray(ts.undostack);
+    for (var i=0; i<ts.undostack.length; i++) {
+      ts.undostack[i].stack_index = i;
+    }
     
     return ts;
   }

@@ -21,6 +21,10 @@ class Area extends UIFrame {
   
   //destroy GL data
   destroy() {
+    for (var c in this.children) {
+      c.destroy(g_app_state.gl);
+    }
+    this.canvas.destroy(g_app_state.gl);
   }
   
   static fromSTRUCT(reader) {
@@ -95,7 +99,7 @@ class Area extends UIFrame {
     }
     
     for (var c in this.children) {
-      if (this.canvas != undefined) 
+      if (this.canvas != undefined && c.canvas == undefined) 
         c.canvas = this.canvas;
       
       c.on_resize(newsize, oldsize);

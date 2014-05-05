@@ -87,6 +87,7 @@ class EventHandler {
   on_keyup(KeyboardEvent event) { }
   on_mousemove(MouseEvent event) { }
   on_mousedown(MouseEvent event) { }
+  on_pan(Array<float> pan, Array<float> last_pan) { }
   
   on_gl_lost(WebGLRenderingContext new_gl) { }
   
@@ -116,8 +117,6 @@ class EventHandler {
       this.modalstack.push(this.modalhandler);
     }
     this.modalhandler = handler;
-    
-    //console.log("Pushing modal handler", handler.constructor.name, this.modalstack.length);
   }
 
   pop_modal() 
@@ -137,6 +136,14 @@ class EventHandler {
   _on_resize(Array<int> newsize) 
   { 
     this.on_resize(event);
+  }
+  
+  _on_pan(Array<float> pan, Array<float> last_pan)
+  {
+    if (this.modalhandler != null)
+      this.modalhandler.on_pan(event);
+    else
+      this.on_pan(event);
   }
   
   _on_textinput(ObjectMap event)
@@ -409,5 +416,79 @@ class ToolKeyHandler extends KeyHandlerCls {
 class FuncKeyHandler extends KeyHandlerCls {
   constructor(func) {
     this.handle = func;
+  }
+}
+
+//helper class for implementing velocity pan
+class VelocityPan extends EventHandler {
+  constructor() {
+    this.start_mpos = new Vector2();
+    this.mpos = new Vector2();
+
+    this.start_time = 0;
+    this.owner = undefined : EventHandler;
+    
+    this.panning = false;
+    this.was_touch = false;
+    
+    this.vel = new Vector2();
+    this.pan = new Vector2();
+    this.damp = 0.9;
+    
+    this.start_pan = new Vector2();
+  }
+  
+  start(Array<float> mpos, UIElement owner) {
+    if (this.panning) {
+      console.log("warning, duplicate call to VelocityPan.start()");
+      this.end();
+    }
+    
+    //console.log("mpos", mpos);
+    
+    this.panning = true;
+    
+    this.owner = owner;
+    
+    this.start_pan.load(this.pan);
+    this.start_mpos.load(mpos);
+    
+    this.start_time = time_ms();
+    this.was_touch = g_app_state.was_touch;
+    
+    //feed a mousemove event
+    this.do_mousemove(mpos);
+  }
+  
+  end() {
+    if (this.panning) {
+      this.owner.pop_modal();
+    }
+    this.panning = false;
+  }
+  
+  do_mousemove(Array<float> mpos) {
+    //console.log("mpos", mpos);
+    
+    this.mpos.load(mpos);
+    
+    this.pan[0] = this.start_pan[0] + mpos[0] - this.start_mpos[0];
+    this.pan[1] = this.start_pan[1] + mpos[1] - this.start_mpos[1];
+    
+    var bs = this.owner.pan_bounds;
+    var p = this.pan;
+    for (var i=0; i<2; i++) {
+      p[i] = Math.min(Math.max(bs[0][i], p[i]), bs[1][i]);
+    }
+    
+    this.owner.on_pan(this.pan, this.start_pan);
+  }
+  
+  on_mouseup(MouseEvent event) {
+    this.end();
+  }
+  
+  on_mousemove(MouseEvent event) {
+    this.do_mousemove([event.x, event.y]);
   }
 }

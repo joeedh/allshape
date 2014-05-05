@@ -371,7 +371,7 @@ body, html {
     
     void main()
     {
-        gl_Position = vPosition;
+        gl_Position = mat * vPosition;
         v_texCoord = vTexCoord.st;
         g_Color = vColor;    
     }

@@ -1,3 +1,6 @@
+/*this system needs a minor amount of refactoring, e.g.
+  get rid the is_prop parameter to DataPath*/
+
 var selectmode_enum = new EnumProperty("FACE", 
   {
     VERT : EditModes.VERT, 
@@ -156,26 +159,11 @@ function api_define_appstate() {
 }
 
 function get_tool_struct(tool) { 
-  var name = new StringProperty("name", "name", "name", "Name", TPropFlags.LABEL);
-  var test_flagprop = new FlagProperty(1, {FLAG_1 : 1, FLAG_2 : 2, FLAG_3 : 4, FLAG_4 : 3}, undefined, "flagprop", "Flag Property", "");
-  test_flagprop.data = 1;
+  if (tool.apistruct != undefined)
+    return tool.apistruct;
   
-  static ret = undefined;
-  if (ret == undefined) {
-    ret = new DataStruct([
-            new DataPath(name, "name", "uiname", true, true),
-            new DataPath(test_flagprop, "test", "", true, false)
-          ]);
-  }
-  
-  return ret;
-  /*
-  if (tool._datastruct != undefined)
-    return tool._datastruct;
-  
-  tool._datastruct = g_app_state.toolstack.gen_tool_datastruct(tool);
-  return tool._datastruct;
- // */
+  tool.apistruct = g_app_state.toolstack.gen_tool_datastruct(tool);
+  return tool.apistruct;
 }
 
 var ContextStruct = undefined;

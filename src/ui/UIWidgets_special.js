@@ -52,7 +52,11 @@ class UIPanel extends RowFrame {
     this.stored_children = new GArray();
     
     this.default_packflag |= PackFlags.INHERIT_WIDTH;
+    
+    //store whether the user manually changed
+    //the collapsed state
     this.user_opened = false;
+    this.user_closed = false;
     
     /*collapser triangle*/
     var this2 = this;
@@ -61,6 +65,7 @@ class UIPanel extends RowFrame {
       
       this2.collapsed ^= true;
       this2.user_opened = !this2.collapsed;
+      this2.user_closed = this2.collapsed;
     }
     
     var tri = new UICollapseIcon(ctx, is_collapsed, callback1);
@@ -78,6 +83,7 @@ class UIPanel extends RowFrame {
     
     this._collapsed = false;
     this.collapsed = is_collapsed;
+    this._color = uicolors["CollapsingPanel"];
     
     this.start_child = this.children.length;
   }
@@ -86,17 +92,46 @@ class UIPanel extends RowFrame {
     return this._collapsed;
   }
   
-  set collapsed(Boolean is_collapsed) {
-    this._collapsed = is_collapsed;
-    this.user_opened = false;
-    
-    if (!is_collapsed && this.stored_children.length > 0) {
-      for (var c in this.stored_children) {
-        this.add(c);
+  get color() : Array<float> {
+    return this._color;
+  }
+  
+  set color(Array<float> color) : Array<float> {
+    for (var i=0; i<4; i++) {
+      if (color[i] != this._color[i]) {
+        this.do_recalc();
+        break;
       }
+    }
+    
+    this._color = color;
+  }
+  
+  set collapsed(Boolean is_collapsed) {
+    if (!!is_collapsed == this._collapsed)
+      return;
+    
+    if (is_collapsed != this._collapsed && this.parent != undefined)
+      this.parent.do_full_recalc(); //reflow
+    
+    this.tri.collapsed = is_collapsed;
+    this._collapsed = is_collapsed;
+    
+    //cleared manually opened/closed flags;
+    //the triangle button's callback will
+    //set them again if necassary.
+    this.user_opened = false;
+    this.user_closed = false;
+    
+    if (!is_collapsed) {
+      if (this.stored_children.length > 0) {
+        for (var c in this.stored_children) {
+          this.add(c);
+        }
       
-      this.stored_children = new GArray();
-    } else {
+        this.stored_children = new GArray();
+      }
+    } else if (this.children.length > this.start_child) {
       this.stored_children = this.children.slice(this.start_child, this.children.length);
       this.children = this.children.slice(0, this.start_child);
       this.do_recalc();
@@ -114,7 +149,7 @@ class UIPanel extends RowFrame {
   }
   
   build_draw(UICanvas canvas, Boolean isVertical) {
-    canvas.simple_box([0, 0], this.size, uicolors["CollapsingPanel"]);
+    canvas.simple_box([0, 0], this.size, this.color);
     
     prior(UIPanel, this).build_draw.call(this, canvas, isVertical);
   }

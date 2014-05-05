@@ -523,7 +523,7 @@ class MeshEditor extends View3DEditor {
     if (e == undefined)
       return false;
     
-    var macro = new ToolMacro("Loop Select");
+    var macro = new ToolMacro("select_loop", "Loop Select");
     macro.flag = ToolFlags.HIDE_TITLE_IN_LAST_BUTTONS;
      
     var op = this.selectmode == MeshTypes.FACE ? new FaceLoopOp() : new EdgeLoopOp();

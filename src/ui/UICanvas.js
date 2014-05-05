@@ -131,6 +131,7 @@ class TriList {
   
   cache_init(UICanvas canvas, Boolean use_small_icons=false) {
     this._dead = false;
+    this.global_matrix = canvas.global_matrix;
     this.use_tex = 1;
     this.tex = 0 : WebGLTexture;
     this.iconsheet = use_small_icons ? g_app_state.raster.iconsheet16 : g_app_state.raster.iconsheet;
@@ -153,6 +154,7 @@ class TriList {
   constructor(UICanvas canvas, Boolean use_small_icons=false) {
     this._id = _canvas_draw_id++;
     
+    this.global_matrix = canvas.global_matrix;
     this.verts = [];
     this.colors = [];
     this.texcos = [];
@@ -520,6 +522,8 @@ class TriList {
     gl.bindTexture(gl.TEXTURE_2D, this.iconsheet.tex);
 
     gl.useProgram(gl.basic2d.program);
+    
+    this.global_matrix.setUniform(gl, gl.basic2d.uniformloc(gl, "mat"));
     gl.uniform1i(gl.basic2d.uniformloc(gl, "iconsampler"), 4);
     
     //console.log(this.verts);
@@ -563,9 +567,10 @@ function _save_trilist(TriList trilist) {
 */
 
 class TextDraw {
-  constructor(pos, text, color, spos, ssize, viewport, size, scale) {
+  constructor(pos, text, color, spos, ssize, viewport, size, scale, global_matrix) {
     this._id = _canvas_draw_id++;
     
+    this.global_matrix = global_matrix;
     this.text = text;
     this.pos = [pos[0], pos[1], pos[2]];
     this.color = color;
@@ -612,7 +617,12 @@ class TextDraw {
       g_app_state.raster.push_scissor(spos, ssize);
     }
     
-    this.tdrawbuf.on_draw(gl, this.pos, this.scale);
+    static pos = new Vector3();
+    
+    pos.loadxy(this.pos);
+    pos.multVecMatrix(this.global_matrix);
+    
+    this.tdrawbuf.on_draw(gl, pos, this.scale);
     
     if (this.ssize != undefined) {
       g_app_state.raster.pop_scissor();
@@ -650,6 +660,7 @@ class UICanvas {
     static _id = 1;
     
     this._id = _id++;
+    this.global_matrix = new Matrix4();
     
     this.iconsheet = g_app_state.raster.iconsheet;
     this.iconsheet16 = g_app_state.raster.iconsheet16;
@@ -678,6 +689,21 @@ class UICanvas {
     
     this.flag = 0;
   }
+  
+  set_viewport(viewport) {
+    var bad = false;
+    
+    for (var i=0; i<3; i++) {
+      if (viewport[1][i] != this.viewport[1][i])
+        bad = true;
+    }
+    
+    this.viewport = viewport;
+    
+    if (bad) {
+      this.on_resize(viewport[1], viewport[1]);
+    }
+  }  
   
   on_gl_lost(WebGLRenderingContext new_gl) {
     if (this.gl === new_gl) {
@@ -750,8 +776,12 @@ class UICanvas {
     
     return this.trilist;
   }
-
-  push_transform(mat) {
+  
+  translate(Array<float> off) {
+    this.transmat.translate(off[0], off[1], 0.0);
+  }
+  
+  push_transform(mat=new Matrix4()) {
     this.trans_stack.push(this.transmat)
     
     this.transmat = new Matrix4(this.transmat)
@@ -966,6 +996,9 @@ class UICanvas {
   }
 
   on_draw(gl) {
+    //Set the viewport and projection matrix for the scene
+    gl.viewport(this.viewport[0][0], this.viewport[0][1], this.viewport[1][0], this.viewport[1][1]);
+    
     var len = this.drawlists.length;
     for (var i=0; i<len; i++) {
       this.drawlists[i].on_draw(gl);
@@ -1365,7 +1398,7 @@ class UICanvas {
     loc[1] = (Math.floor(loc[1])/sy)*2.0; //*2.0-1.0;
     
     var textdraw = new TextDraw(loc, text, color, scissor_pos, 
-                                scissor_size, this.viewport, size, scale);
+                                scissor_size, this.viewport, size, scale, this.global_matrix);
     var hash = text.toString() + ">>" + size + "|" + JSON.stringify(this.viewport);
     
     //XXX

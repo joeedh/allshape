@@ -3,15 +3,18 @@
 /************** ui frame **************/
 var _static_mat = new Matrix4();
 var _ufbd_v1 = new Vector3();
+
 //hack for spreading updates across frames
 var _canvas_threshold = 1.0;
 class UIFrame extends UIElement {
   constructor(ctx, canvas, path, pos, size) { //path, pos, size are optional
     UIElement.call(this, ctx, path, pos, size);
     
+    this.pan_bounds = [[0, 0], [0, 0]];
     this.ctx = ctx;
     this.children = new GArray([])
     this.active = undefined;
+    this.velpan = undefined;
     
     //current mouse position relative to this.pos
     this.mpos = [0, 0];
@@ -20,7 +23,6 @@ class UIFrame extends UIElement {
     
     if (canvas != undefined) {
       this.canvas = canvas;
-      this.view3d = canvas.view3d;
     }
     
     this.leafcount = 0;
@@ -42,6 +44,57 @@ class UIFrame extends UIElement {
     }
     
     this.do_full_recalc();
+  }
+  
+  start_pan(MouseEvent event=undefined, int button=0) {
+    if (!(this.state & UIFlags.HAS_PAN)) {
+      if (this.parent == undefined) {
+        console.trace();
+        console.log("Warning: UIFrame.start_pan: no parent frame with pan support");
+      } else {
+        if (event != undefined) {
+          event.x += this.pos[0];
+          event.y += this.pos[1];
+        }
+        this.parent.start_pan(event, button);
+      }
+    } else {
+      this.start_pan_main(event, button);
+    }
+  }
+  /*callback functions to start or 
+    end panning, enable with UIFlags.HAS_PAN*/
+  start_pan_main(MouseEvent event=undefined, int button=0) {
+    if (event != undefined) {
+      this._offset_mpos(event);
+      this.mpos[0] = event.x; this.mpos[1] = event.y;
+    }
+    
+    if (this.velpan == undefined)
+      this.velpan = new VelocityPan();
+    
+    var mpos = [this.mpos[0], this.mpos[1]];
+    this.abs_transform(mpos);
+    
+    var f = this;
+    while (f.parent != undefined) {
+      f = f.parent;
+    }
+    
+    this.velpan.start(mpos, this);
+    f.push_modal(this.velpan);
+  }
+  
+  /*forcibly exit pan mode*/
+  end_pan() {
+    if (this.modalhandler == this.velpan) {
+      this.velpan.end();
+      this.pop_modal();
+    } else {
+      console.trace();
+      console.log("Warning: UIFrame.end_pan called when not in panning mode");
+      return;
+    }
   }
   
   get_keymaps() {
@@ -87,17 +140,53 @@ class UIFrame extends UIElement {
   push_modal(e) {
     UIElement.prototype.push_modal.call(this, e);
   }
-
+  
   pop_modal() {
     UIElement.prototype.pop_modal.call(this);
   }
-
+ 
+  _offset_mpos(MouseEvent event) {
+    if (this.modalhandler != null && this.modalhandler instanceof UIElement) {
+      event.x -= this.modalhandler.pos[0];
+      event.y -= this.modalhandler.pos[1];
+    }
+    
+    if ((this.state & UIFlags.HAS_PAN) && this.velpan != undefined) {
+      event.x -= this.velpan.pan[0];
+      event.y -= this.velpan.pan[1];
+    }
+  }
+  
+  _unoffset_mpos(MouseEvent event) {
+    if (this.state & UIFlags.HAS_PAN) {
+      event.x += this.velpan.pan[0];
+      event.y += this.velpan.pan[1];
+    }
+  }
+  
+  set_pan() {
+    if (this.state & UIFlags.PAN_CANVAS_MAT)
+      this.on_pan(this.velpan.pan, this.velpan.pan);
+  }
+  
+  on_pan(Array<float> pan, Array<float> old_pan) {
+    if (this.state & UIFlags.PAN_CANVAS_MAT) {
+      var mat = this.canvas.global_matrix
+      var s = this.canvas.viewport[1];
+      
+      var x = (pan[0]/s[0])*2.0;
+      var y = (pan[1]/s[1])*2.0;
+      
+      mat.makeIdentity();
+      mat.translate(x, y, 0);
+    } else {
+      this.do_full_recalc();
+    }
+  }
+  
   _on_mousemove(MouseEvent event) {
     if (this.modalhandler != null) {
-      if (this.modalhandler instanceof UIElement) {
-        event.x -= this.modalhandler.pos[0]
-        event.y -= this.modalhandler.pos[1]
-      }
+      this._offset_mpos(event);
       this.modalhandler._on_mousemove(event);
       
       return true;
@@ -107,10 +196,10 @@ class UIFrame extends UIElement {
   }
 
   on_mousemove(MouseEvent e) {
-    var mpos = [e.x, e.y]
+    this._offset_mpos(e);
+
     //current mouse position relative to this.pos
-    this.mpos = mpos;
-    
+    var mpos = this.mpos = [e.x, e.y];
     var found = false;
     
     for (var i=this.children.length-1; i >= 0; i--) {
@@ -155,15 +244,14 @@ class UIFrame extends UIElement {
       e.y += this.active.pos[1];
     }
     
+    this._unoffset_mpos(e);
     return this.active != undefined;
   }
 
   _on_mousedown(MouseEvent event) {
     if (this.modalhandler != null) {
-      if (this.modalhandler["pos"] != undefined) {
-        event.x -= this.modalhandler.pos[0]
-        event.y -= this.modalhandler.pos[1]
-      }
+      this._offset_mpos(event);
+      
       this.modalhandler._on_mousedown(event);
     } else {
       this.on_mousedown(event);
@@ -171,14 +259,10 @@ class UIFrame extends UIElement {
   }
 
   on_mousedown(MouseEvent e) {
-    var mpos = [e.x, e.y];
-    
-    //current mouse position relative to this.pos
-    this.mpos = mpos;
-    
     this.on_mousemove(e);
-    e.x = mpos[0];
-    e.y = mpos[1];
+    
+    this._offset_mpos(e);
+    var mpos = this.mpos = [e.x, e.y];
     
     if (this.active != undefined) {
       e.x -= this.active.pos[0];
@@ -187,16 +271,19 @@ class UIFrame extends UIElement {
       this.active.on_mousedown(e);
     }
     
+    if ((this.state & UIFlags.USE_PAN) && this.active == undefined) {
+      console.log("panning");
+      this.start_pan();
+    }
+    
+    this._unoffset_mpos(e);
     return this.active != undefined;
   }
 
 
   _on_mouseup(MouseEvent event) {
     if (this.modalhandler != null) {
-      if (this.modalhandler["pos"] != undefined) {
-        event.x -= this.modalhandler.pos[0]
-        event.y -= this.modalhandler.pos[1]
-      }
+      this._offset_mpos(event);
       this.modalhandler._on_mouseup(event);
     } else {
       this.on_mouseup(event);
@@ -204,6 +291,8 @@ class UIFrame extends UIElement {
   }
 
   on_mouseup(MouseEvent e) {
+    this._offset_mpos(e);
+    
     if (this.active != undefined) {
       e.x -= this.active.pos[0];
       e.y -= this.active.pos[1];
@@ -211,6 +300,7 @@ class UIFrame extends UIElement {
       this.active.on_mouseup(e);
     }
     
+    this._unoffset_mpos(e);
     return this.active != undefined;
   }
 
@@ -295,7 +385,21 @@ class UIFrame extends UIElement {
     this.do_recalc();
   }
   
+  _set_pan(UIElement e) {
+    e.state |= UIFlags.USE_PAN;
+    if (e instanceof UIFrame) {
+      for (var c in e.children) {
+        this._set_pan(c);
+      }
+    }
+  }
+  
   add(UIElement e, int packflag) { //packflag is optional
+    if (this.state & (UIFlags.HAS_PAN|UIFlags.USE_PAN)) {
+      this.state |= UIFlags.USE_PAN;
+      this._set_pan(e);
+    }
+    
     e.defunct = false;
     this.children.push(e);
     
@@ -366,24 +470,24 @@ class UIFrame extends UIElement {
       for (var c in n.children) {
         if (c.canvas != undefined) continue;
         
-        c.canvas = this.canvas;
-        
+        c.canvas = canvas;
         if (c instanceof UIFrame)
           descend(c, canvas);
       }
     }
     
     if (this.recalc && this.is_canvas_root() && this.get_canvas() != undefined) {
-      this.canvas = this.get_canvas();
-      
+      if (this.canvas == undefined)
+        this.canvas = this.get_canvas();
       if (this.canvas != undefined)
         descend(this, this.canvas);
       
       this.canvas.reset();
       if (DEBUG.ui_canvas)
-        console.log("------------->Build draw called in " + this.constructor.name + ".on_draw()");
+        console.log("------------->Build draw call in " + this.constructor.name + ".on_draw()");
       
-      this.build_draw(this.canvas);
+      this.pack(this.canvas, false);
+      this.build_draw(this.canvas, false);
     }
     
     if (this.canvas != undefined) {
@@ -399,15 +503,23 @@ class UIFrame extends UIElement {
     }
   }
 
-  build_draw(canvas, skip_box) { //skip_box is optional
+  build_draw(canvas, isVertical) {
     var mat = _static_mat;
     
     if (this.framecount == 0) {
       canvas.frame_begin(this);
     }
-    
     if (this.parent == undefined) {
       this.abspos[0] = this.pos[0]; this.abspos[1] = this.pos[1];
+    }
+    
+    if (this.state & UIFlags.HAS_PAN && this.velpan != undefined) {
+      if (!(this.state & UIFlags.PAN_CANVAS_MAT)) {
+        canvas.push_transform();
+        canvas.translate(this.velpan.pan);
+      }
+      this.abspos[0] += this.velpan.pan[0];
+      this.abspos[1] += this.velpan.pan[1];
     }
     
     if (this.pos == undefined) {
@@ -416,7 +528,7 @@ class UIFrame extends UIElement {
       console.trace();
     }
     
-    if (!skip_box && this.draw_background) {
+    if (this.draw_background) {
       canvas.simple_box([0, 0], this.size, undefined, this.rcorner);
     }
     
@@ -426,11 +538,11 @@ class UIFrame extends UIElement {
     var viewport = g_app_state.raster.viewport;
     
     for (var c in this.children) {
-      c.abspos[0] = c.pos[0] + this.pos[0];
-      c.abspos[1] = c.pos[1] + this.pos[1];
+      c.abspos[0] = c.pos[0] + this.abspos[0];
+      c.abspos[1] = c.pos[1] + this.abspos[1];
      
       if (!aabb_isect_2d(c.abspos, c.size, viewport[0], viewport[1])) {
-        continue;
+        //continue; //XXX
       }
       
       if (c.pos == undefined) {
@@ -445,10 +557,17 @@ class UIFrame extends UIElement {
       
       mat.translate(_ufbd_v1);
       
-      if (c.canvas != undefined && c.canvas != this.get_canvas())
+      //child draws itself; make sure it gets repacked
+      if ((c.canvas != undefined && c.canvas != this.get_canvas()) ||
+           c.is_canvas_root())
+      {
+        if (c.recalc && !(c.packflag & PackFlags.NO_REPACK)) {
+          c.build_draw(c.get_canvas(), isVertical);
+          c.pack(canvas, false);
+        }
+        
         continue;
-      if (c.is_canvas_root())
-        continue;
+      }
       
       var do_skip = !c.recalc;
       
@@ -472,7 +591,7 @@ class UIFrame extends UIElement {
         canvas.push_transform(mat);
         
         try {
-          c.build_draw(canvas);
+          c.build_draw(canvas, isVertical);
         } catch (_err) {
           print_stack(_err);
           
@@ -493,10 +612,31 @@ class UIFrame extends UIElement {
     
     if (retag_recalc)
       this.do_recalc();
+      
+    if (this.state & UIFlags.HAS_PAN && this.velpan != undefined) {
+      if (!(this.state & UIFlags.PAN_CANVAS_MAT)) {
+        canvas.pop_transform();
+      }
+    }
   }
 
   //pre_func is optional, and is called before each child's on_tick is executed
   on_tick(pre_func) {
+    if (this.state & UIFlags.HAS_PAN && this.valpan == undefined) {
+      this.valpan = new VelocityPan();
+     
+      this.state |= UIFlags.USE_PAN;
+      function recurse(f) {
+        for (var c in f.children) {
+          c.state |= UIFlags.USE_PAN;
+          if (c instanceof UIFrame)
+            recurse(c);
+        }
+      }
+      
+      recurse(this);
+    }
+    
     for (var c in this.children) {
       try {
         if (pre_func != undefined)
@@ -519,10 +659,10 @@ class UIFrame extends UIElement {
     }
   }
 
-  pack(UICanvas canvas, Boolean isvertical) {
+  pack(UICanvas canvas, Boolean isVertical) {
     for (var c in this.children) {
       if (!(c.packflag & PackFlags.NO_REPACK))
-        c.pack(canvas, isvertical);
+        c.pack(canvas, isVertical);
     }  
   }
   
@@ -536,7 +676,9 @@ class UIFrame extends UIElement {
       frame = frame.parent;
     }
     
-    e.canvas = frame.get_canvas();
+    if (e.canvas == undefined)
+      e.canvas = frame.get_canvas();
+    
     e.do_recalc();
     
     if (center) {

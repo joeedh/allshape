@@ -52,6 +52,8 @@
   
 */
 
+var _tool_op_idgen = 1;
+
 class ToolOpAbstract {
   constructor(apiname, uiname, description=undefined, icon=-1) {
     this.uiname = uiname;
@@ -59,8 +61,16 @@ class ToolOpAbstract {
     this.description = description == undefined ? "" : description;
     this.icon = icon;
     
+    this.apistruct = undefined : DataStruct; //may or may not be set
+    this.op_id = _tool_op_idgen++;
+    this.stack_index = -1;
+    
     this.inputs = {};
     this.outputs = {};
+  }
+  
+  __hash__() : String {
+    return "TO" + this.op_id;
   }
   
   exec(tctx) { }
@@ -148,6 +158,7 @@ class ToolOp extends EventHandler, ToolOpAbstract {
     this.outputs = { }
     
     this.keyhandler = undefined;
+    this.parent = undefined; //parent macro
   }
 
   pack(data) {
@@ -290,8 +301,9 @@ class ToolMacro extends ToolOp {
   }
 
   add_tool(ToolOp tool) {
-    this.tools.push(tool);
+    tool.parent = this;
     
+    this.tools.push(tool);
     if (tool.is_modal)
       this.is_modal = true;
   }

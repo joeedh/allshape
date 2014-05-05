@@ -4,23 +4,134 @@ class OpStackFrame extends RowFrame {
   constructor(Context ctx, Array<float> size) {
     RowFrame.call(this, ctx);
     
+    this.pan_bounds = [[0, 0], [0, 0]];
+
     this.pos = [0, 0];
     this.size = size;
+    this.build_ms = time_ms();
+    this.last_undocur = g_app_state.toolstack.undocur;
     
-    this.packflag |= PackFlags.ALIGN_TOP;
+    this.packflag |= PackFlags.IGNORE_LIMIT|PackFlags.ALIGN_TOP|PackFlags.NO_AUTO_SPACING;
     this.default_packflag |= PackFlags.INHERIT_WIDTH;
     
-    var test_panel = new UIPanel(ctx, "Test Panel");
-    test_panel.add(new UIButton(ctx, "test panel"));
-    test_panel.add(new UIButton(ctx, "test panel"));
-    test_panel.add(new UIButton(ctx, "test panel"));
+    //var test_panel = new UIPanel(ctx, "Test Panel");
     
-    this.add(test_panel);
+    //test_panel.add(new UIButton(ctx, "test panel"));
+    //test_panel.add(new UIButton(ctx, "test panel"));
+    //test_panel.add(new UIButton(ctx, "test panel"));
+    
+    this.panelmap = new hashtable();
+  }
+  
+  on_mousedown(MouseEvent event) {
+    if (event.button == 1 && !g_app_state.was_touch) {
+      this.start_pan(event, 1);
+    } else {
+      prior(OpStackFrame, this).on_mousedown.call(this, event);
+    }
+  }
+  
+  pack(UICanvas canvas, Boolean isVertical) {
+    var minsize = this.get_min_size(canvas, isVertical);
+    
+    //this.pan_bounds[1][0] = minsize[0];
+    this.pan_bounds[1][1] = Math.max(minsize[1]-this.size[1], 0);
+    prior(OpStackFrame, this).pack.call(this, canvas, isVertical);
+  }
+  
+  gen_panel(ToolOp tool, String path) {
+    var panel = new UIPanel(this.ctx, tool.uiname);
+     
+    if (!(tool instanceof ToolMacro)) {
+      var toolframe = new ToolOpFrame(this.ctx, path);
+      toolframe.packflag |= PackFlags.INHERIT_WIDTH;
+      panel.add(toolframe);
+    } else {
+      var i = 0;
+      for (var t in tool.tools) {
+        var subpanel = this.gen_panel(t, path+".tools["+i+"]");
+        
+        var col = panel.col();
+        col.default_packflag &= ~PackFlags.INHERIT_WIDTH;
+        col.packflag |= PackFlags.INHERIT_WIDTH; //default_packflag
+        subpanel.packflag |= PackFlags.INHERIT_WIDTH;
+        col.label(" "); 
+        col.add(subpanel);
+        //panel.add(subpanel);
+        i++;
+      }
+    }
+    
+    return panel;
+  }
+  
+  get_panel(ToolOp tool) {
+    var undocur = g_app_state.toolstack.undocur;
+    
+    if (!this.panelmap.has(tool)) {
+      var panel = this.gen_panel(tool, "operator_stack["+tool.stack_index+"]");
+      this.add(panel);
+      
+      panel.collapsed = tool.stack_index != undocur-1;
+      this.do_full_recalc();
+      
+      this.panelmap.set(tool, panel);
+      return panel;
+    }
+    
+    return this.panelmap.get(tool);
+  }
+  
+  on_tick() {
+    if (time_ms() - this.build_ms > 400) {
+      this.build();
+      this.build_ms = time_ms();
+    }
+    
+    prior(OpStackFrame, this).on_tick.call(this);
+  }
+  
+  build() {
+    var oplist = g_app_state.toolstack.undostack;
+    var pmap = this.panelmap;
+    var keepset = new set();
+    var undocur = g_app_state.toolstack.undocur;
+    
+    /*update tool panels*/
+    for (var tool in oplist) {
+      if (tool.undoflag & UndoFlags.UNDO_BARRIER) continue;
+      //if (tool.flag & ToolFlags.HIDE_TITLE_IN_LAST_BUTTONS) continue;
+      
+      keepset.add(tool);
+      var panel = this.get_panel(tool);
+      
+      if (tool.stack_index == undocur-1) {
+        //change panel color
+        panel.color = uicolors["ActivePanel"];
+      } else {
+        panel.color = uicolors["CollapsingPanel"];
+      }
+      
+      //auto-collapse panels
+      
+      if (tool.stack_index != undocur-1 && !panel.user_opened) {
+        panel.collapsed = true;
+      } else if (tool.stack_index == undocur-1 && !panel.user_closed) {
+        panel.collapsed = false;
+      }
+    }
+    
+    /*remove any dead panels*/
+    for (var tool in pmap) {
+      if (!keepset.has(tool)) {
+        var panel = pmap.get(tool);
+        this.remove(panel);
+        pmap.remove(tool);
+      }
+    }
   }
   
   build_draw(UICanvas canvas, Boolean isVertical) {
-    canvas.simple_box([0, Area.get_barhgt()], this.size, [0.2, 0.2, 0.2, 0.8]);
-    
     prior(OpStackFrame, this).build_draw.call(this, canvas, isVertical);
   }
 }
@@ -34,12 +145,33 @@ class OpStackEditor extends Area {
     
     this.drawlines = new GArray<drawlines>();
     
-    this.pan = new Vector2();
     this.gl = undefined;
     this.ctx = new Context();
     
     this.subframe = new OpStackFrame(new Context(), this.size);
+    this.subframe.pos = [0, 0]; //XXX this should work: [0, Area.get_barhgt()];
+    this.subframe.canvas = new UICanvas([this.pos, this.size]);
+    this.subframe.state |= UIFlags.HAS_PAN|UIFlags.IS_CANVAS_ROOT|UIFlags.PAN_CANVAS_MAT;
+    this.subframe.velpan = new VelocityPan();
+    
     this.add(this.subframe);
+  }
+  
+  define_keymap() {
+    var k = this.keymap;
+    
+    k.add(new KeyHandler("Z", ["CTRL", "SHIFT"], "Redo"), new FuncKeyHandler(function(ctx) {
+      console.log("Redo")
+      ctx.toolstack.redo();
+    }));
+    k.add(new KeyHandler("Y", ["CTRL"], "Redo"), new FuncKeyHandler(function(ctx) {
+      console.log("Redo")
+      ctx.toolstack.redo();
+    }));
+    k.add(new KeyHandler("Z", ["CTRL"], "Undo"), new FuncKeyHandler(function(ctx) {
+      console.log("Undo");
+      ctx.toolstack.undo();
+    }));
   }
   
   static default_new(Context ctx, ScreenArea scr, WebGLRenderingContext gl, 
@@ -49,13 +181,19 @@ class OpStackEditor extends Area {
     return ret;
   }
   
+  on_area_inactive() {
+    this.destroy();
+    prior(OpStackEditor, this).on_area_inactive.call(this);
+  }
+    
   area_duplicate() : OpStackEditor {
     var ret = new OpStackEditor(this.pos[0], this.pos[1], this.size[0], this.size[1]);
     
     return ret;
-  }
+  } 
   
   destroy() {
+    this.subframe.canvas.destroy(g_app_state.gl);
     Area.prototype.destroy.call(this);
   }
   
@@ -66,7 +204,7 @@ class OpStackEditor extends Area {
     col.packflag |= PackFlags.ALIGN_LEFT;
     col.default_packflag = PackFlags.ALIGN_LEFT;
     
-    //IsMobile ? 12 : 12
+      //IsMobile ? 12 : 12
     col.draw_background = true;
     col.rcorner = 100.0
     col.pos = [0, 2]
@@ -78,6 +216,12 @@ class OpStackEditor extends Area {
     this.add(col);
   }
   
+  build_draw(UICanvas canvas, Boolean isVertical) {
+    canvas.simple_box([0, Area.get_barhgt()], this.size, [0.2, 0.2, 0.2, 0.8]);
+    
+    prior(OpStackEditor, this).build_draw.call(this, canvas, isVertical);
+  }
+  
   set_canvasbox() {
     this.asp = this.size[0] / this.size[1];
     
@@ -86,18 +230,29 @@ class OpStackEditor extends Area {
   }
   
   on_draw(WebGLRenderingContext gl, test) {
+    this.subframe.set_pan();
+    
     this.gl = gl;
     var ctx = this.ctx = new Context();
     
+    //paranoid check
     this.subframe.size[0] = this.size[0];
-    this.subframe.size[1] = this.size[1];
-    this.subframe.canvas = this.canvas;
+    this.subframe.size[1] = this.size[1]-this.subframe.pos[1];
+    this.subframe.canvas.viewport = this.canvas.viewport; //set_viewport([this.parent.pos, this.parent.size]);
     
     //gl.getExtension("OES_TEXTURE_FLOAT");
     //this.draw_lines(gl)data;
-
-    this.set_canvasbox();
-    Area.prototype.on_draw.call(this, gl)
+    
+    g_app_state.raster.push_scissor(this.parent.pos, this.parent.size);
+    Area.prototype.on_draw.call(this, gl);
+    g_app_state.raster.pop_scissor();
+    
+    //scissor subframe seperately
+    var p = [this.parent.pos[0] + this.subframe.pos[0], this.parent.pos[1] + this.subframe.pos[1]];
+    var s = [this.parent.size[0] - this.subframe.pos[0], this.parent.size[1] - this.subframe.pos[1]];
+    g_app_state.raster.push_scissor(p, s);
+    this.subframe.on_draw(gl);
+    g_app_state.raster.pop_scissor();
   }
   
   on_keyup(KeyboardEvent event) {
@@ -107,12 +262,16 @@ class OpStackEditor extends Area {
     if (ret != undefined) {
       ret.handle(ctx);
     }
+    
+    Area.prototype.on_keyup.call(this, event);
   }
   
   on_keydown(Keyboard event) {
     this.shift = event.shiftKey;
     this.alt = event.altKey;
     this.ctrl = event.ctrlKey;
+    
+    Area.prototype.on_keydown.call(this, event);
   }
  
   static fromSTRUCT(reader) {

@@ -5,7 +5,15 @@ var UIFlags = {
   FOCUS: 4, GREYED: 8, 
   REDERROR: 16, WARNING: 32, 
   USE_PATH : 64, NO_RECALC: 128,
-  FLASH : (16|32), SKIP_DRAW : 256
+  FLASH : (16|32), SKIP_DRAW : 256,
+  
+  //- has_pan flags uiframes with pan callbacks, 
+  //- use_pan tells elements to use those callbacks,
+  //          e.g. if a tablet user touches a button, then drags,
+  //          execute pan
+  //- pan_canvas_mat : change canvas global matrix, not frame position
+  HAS_PAN : 512, USE_PAN : 1024, PAN_CANVAS_MAT : 2048,
+  IS_CANVAS_ROOT : 4096
 };
 
 var CanvasFlags = {NOT_ROOT : 1, NO_PROPEGATE : 2}
@@ -257,11 +265,27 @@ class UIElement extends EventHandler {
       this.parent.do_recalc();
     }
   }
-
-  push_modal(e) {
-    if (e == undefined)
-      e = this;
+  
+  //calculates absolute position of pos,
+  //relative to this element,
+  //*not* this element's parent frame
+  abs_transform(Array<float> pos) {
+    var e = this, lastf = this;
     
+    while (e != undefined) {
+      pos[0] += e.pos[0];
+      pos[1] += e.pos[1];
+      if (e.state & UIFlags.HAS_PAN) {
+        pos[0] += e.velpan.pan[0];
+        pos[1] += e.velpan.pan[1];
+      }
+      
+      lastf = e;
+      e = e.parent;
+    }
+  }
+  
+  push_modal(UIElement e=this) {
     EventHandler.prototype.push_modal.call(this, e);
     
     var p = this.parent
@@ -286,6 +310,7 @@ class UIElement extends EventHandler {
 
   get_canvas() {
     var frame = this;
+    
     while (frame.parent != undefined && frame.canvas == undefined) {
       frame = frame.parent;
     }
@@ -296,6 +321,7 @@ class UIElement extends EventHandler {
   is_canvas_root() : Boolean {
     var ret = this.parent == undefined || this.parent.canvas == undefined || (this.parent.canvas != this.canvas);
     
+    ret = ret || this.state & UIFlags.IS_CANVAS_ROOT;
     ret = ret || this instanceof ScreenArea;
     ret = ret || this instanceof Area;
     ret = ret && this.canvas != undefined;
@@ -310,6 +336,21 @@ class UIElement extends EventHandler {
       return prop.description != "" ? prop.description : undefined;
     } else {
       return this.description;
+    }
+  }
+  
+  start_pan(MouseEvent event=undefined, int button=0) {
+    if (!(this.state & UIFlags.HAS_PAN)) {
+      if (this.parent == undefined) {
+        console.trace();
+        console.log("Warning: UIFrame.start_pan: no parent frame with pan support");
+      } else {
+        if (event != undefined) {
+          event.x += this.pos[0];
+          event.y += this.pos[1];
+        }
+        this.parent.start_pan(event, button);
+      }
     }
   }
   
@@ -439,29 +480,25 @@ class UIHoverHint extends UIElement {
     var hintbox = new UIHoverBox(this.ctx, hint, is_modal, pos, size);
     
     /*ensure hint is fully within view*/
-    var abspos = [hintbox.pos[0], hintbox.pos[1]];
-    var editor = this.parent;
+    var abspos = [0, 0];
+    this.abs_transform(abspos);
     
-    while (editor != undefined && !(editor instanceof Area)) {
-      abspos[0] += editor.pos[0];
-      abspos[1] += editor.pos[1];
-      
-      editor = editor.parent;
-    }
-      
+    //find a top-level frame
+    var editor = this.parent;
+    //while (editor != undefined) && !(editor instanceof Area)) {
+    //  editor = editor.parent;
+    //}
+    var screen = g_app_state.screen;
     var abspos2 = [abspos[0], abspos[1]];
     
-    if (editor == undefined)
-      editor = g_app_state.screen;
-    
-    abspos[0] = Math.min(Math.max(0, abspos[0]), editor.size[0]-hintbox.size[0]);
+    abspos[0] = Math.min(Math.max(0, abspos[0]), screen.size[0]-hintbox.size[0]);
     
     //move above element, if necassary
     if (abspos[1] < 0) {
       abspos[1] += size[1] + this.size[1];
     }
     //clamp to within view, in case above code failed
-    abspos[1] = Math.min(Math.max(0, abspos[1]), editor.size[1]-hintbox.size[1]);
+    abspos[1] = Math.min(Math.max(0, abspos[1]), screen.size[1]-hintbox.size[1]);
     
     hintbox.pos[0] += abspos[0] - abspos2[0];
     hintbox.pos[1] += abspos[1] - abspos2[1];
