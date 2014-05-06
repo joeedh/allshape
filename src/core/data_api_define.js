@@ -143,6 +143,98 @@ function api_define_scene() {
   return SceneStruct;
 }
 
+function get_theme_color(color) {
+  var st;
+  
+  var name = new StringProperty("", "name", "name", "name");
+  name = new DataPath(name, "name", "[0]", true);
+  
+  if (color[1] instanceof BoxColor4) {
+    var type = new StringProperty("Corners", "type", "type");
+    var c1 = new Vec4Property(new Vector4(), "c1", "c1", "Color 1");
+    var c2 = new Vec4Property(new Vector4(), "c2", "c2", "Color 2");
+    var c3 = new Vec4Property(new Vector4(), "c3", "c3", "Color 3");
+    var c4 = new Vec4Property(new Vector4(), "c4", "c4", "Color 4");
+    
+    function gen_func(i) {
+      function update() {
+        //color[1].colors[i] = this.data;
+        g_theme.gen_globals();
+      }
+    }
+    c1.update = gen_func(0); c2.update = gen_func(1); 
+    c3.update = gen_func(2); c4.update = gen_func(3);
+    
+    st = new DataStruct([
+      new DataPath(type, "type", "type", true, false),
+      name,
+      new DataPath(c1, "c1", "[1].colors[0]", true),
+      new DataPath(c2, "c2", "[1].colors[1]", true),
+      new DataPath(c3, "c3", "[1].colors[2]", true),
+      new DataPath(c4, "c4", "[1].colors[3]", true)
+    ]);
+  } else if (color[1] instanceof BoxWColor) {
+    var type = new StringProperty("Weighted", "type", "type");
+    var clr = new Vec4Property(new Vector4(), "color", "color", "color");
+    var weights = new Vec4Property(new Vector4(), "weight", "weight", "weight");
+    
+    clr.update = function() {
+      //color.color = this.data;
+      g_theme.gen_globals();
+    }
+    
+    weights.update = function() {
+      //color.weights = this.data;
+      g_theme.gen_globals();
+    }
+    
+    st = new DataStruct([
+      new DataPath(type, "type", "type", true, false),
+      name,
+      new DataPath(clr, "color", "[1].color", true),
+      new DataPath(weights, "weights", "[1].weights", true)
+    ]);
+  } else {
+    var clr = new Vec4Property(new Vector4(), "color", "color", "color");
+    clr.update = function() {
+      /*for (var i=0; i<4; i++) {
+        color[1][i] = this.data[i];
+      }*/
+      g_theme.gen_globals();
+    }
+    
+    var type = new StringProperty("Simple", "type", "type");
+    st = new DataStruct([
+      new DataPath(type, "type", "type", true, false),
+      name,
+      new DataPath(clr, "color", "[1]", true)
+    ]);
+  }
+  
+  return st;
+}
+
+var ColorThemeStruct = undefined;
+function api_define_colortheme() {
+  ColorThemeStruct = new DataStruct([
+    new DataPath(new DataStructArray(get_theme_color), "colors", "flat_colors", false)
+  ]);
+  
+  return ColorThemeStruct;
+}
+
+var ThemeStruct = undefined;
+function api_define_theme() {
+  api_define_colortheme();
+  
+  ThemeStruct = new DataStruct([
+    new DataPath(ColorThemeStruct, "ui", "ui", false),
+    new DataPath(ColorThemeStruct, "view3d", "view3d", false)
+  ]);
+  
+  return ThemeStruct;
+}
+
 var ObjectStruct = undefined;
 function api_define_object() {
   
@@ -155,7 +247,7 @@ function api_define_object() {
     this.ctx.object.csg_mode = this.values[this.data];
   }
   
-  var ObjectStruct = new DataStruct([
+  ObjectStruct = new DataStruct([
     new DataPath(name, "name", "name", true),
     new DataPath(use_subsurf, "use_subsurf", "subsurf", true),
     new DataPath(use_csg, "use_csg", "csg", true),
@@ -198,7 +290,8 @@ function api_define_context() {
     new DataPath(new DataStruct([]), "last_tool", "", false, false, DataFlags.RECALC_CACHE),
     new DataPath(api_define_appstate(), "appstate", "ctx.appstate", false),
     new DataPath(new DataStructArray(get_tool_struct), "operator_stack", 
-                 "ctx.appstate.toolstack.undostack", false)
+                 "ctx.appstate.toolstack.undostack", false),
+    new DataPath(api_define_theme(), "theme", "g_theme", false)
   ]);
 }
 

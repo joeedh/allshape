@@ -676,13 +676,22 @@ class DataAPI {
     
     function do_eval(node, scope, pathout, spathout) {
       if (node.type == "ID") {
+        if (scope == undefined) {
+          console.log("data api error: ", str + ", " + pathout[0] + ", " + spathout[0]);
+        }
+        
         var ret = scope.pathmap[node.val];
         
         if (ret == undefined)
           return undefined;
          
-        if (ret.use_path)
-          pathout[0] = pathout[0] + "." + ret.path;
+        if (ret.use_path) {
+          if (ret.path[0] != "[" && ret.path[0] != "(")
+            pathout[0] = pathout[0] + "." + ret.path;
+          else
+            pathout[0] += ret.path
+        }
+        
         spathout[0] = spathout[0] + ".pathmap." + node.val;
         
         return ret;
