@@ -86,6 +86,7 @@ sources = [
 	"src/ui/UIMenu.js",
 	"src/ui/RadialMenu.js",
   "src/ui/UIWidgets_special.js",
+  "src/ui/UITabPanel.js",
   "src/core/utildefine.js",
 	"src/view3d/dialog.js",
 	"src/view3d/dialogs.js",
@@ -110,6 +111,7 @@ sources = [
 	"src/object/scene.js",
 	"src/object/object_ops.js",
   "src/editor_ops/ops_editor.js",
+  "src/editor_settings/SettingsEditor.js",
 	"src/core/data_api_define.js",
   "src/core/data_api_opdefine.js",
   

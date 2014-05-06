@@ -326,25 +326,6 @@ class OpStackEditor extends Area {
     g_app_state.raster.pop_scissor();
   }
   
-  on_keyup(KeyboardEvent event) {
-    var ctx = new Context();
-    var ret = this.keymap.process_event(ctx, event);
-    
-    if (ret != undefined) {
-      ret.handle(ctx);
-    }
-    
-    Area.prototype.on_keyup.call(this, event);
-  }
-  
-  on_keydown(Keyboard event) {
-    this.shift = event.shiftKey;
-    this.alt = event.altKey;
-    this.ctrl = event.ctrlKey;
-    
-    Area.prototype.on_keydown.call(this, event);
-  }
- 
   static fromSTRUCT(reader) {
     var obj = new OpStackEditor(0, 0, 1, 1);
     reader(obj);

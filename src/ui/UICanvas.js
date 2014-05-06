@@ -567,9 +567,10 @@ function _save_trilist(TriList trilist) {
 */
 
 class TextDraw {
-  constructor(pos, text, color, spos, ssize, viewport, size, scale, global_matrix) {
+  constructor(pos, text, color, spos, ssize, viewport, size, scale, global_matrix, rot=0) {
     this._id = _canvas_draw_id++;
     
+    this.rot = rot;
     this.global_matrix = global_matrix;
     this.text = text;
     this.pos = [pos[0], pos[1], pos[2]];
@@ -577,10 +578,25 @@ class TextDraw {
     this.tdrawbuf = undefined : TextDrawBuffer;
     this.spos = spos;
     this.ssize = ssize;
+    this.asp = viewport[1][1] / viewport[1][0];
     this.viewport = viewport;
     this.scale = [scale[0], scale[1], 0];
     this.size = size;
     this.raster = g_app_state.raster;
+    
+    var mat = new Matrix4();
+    mat.translate(this.pos[0], this.pos[1], 0.0);
+    
+    //denormalize to avoid squashed rotations
+    mat.scale(1, 1.0/this.asp, 1);
+    
+    mat.rotate(0, 0, rot);
+    mat.scale(this.scale);
+    
+    //norrmalize again
+    mat.scale(1, this.asp, 1);
+    
+    this.mat = mat;
   }
   
   destroy() {
@@ -617,12 +633,11 @@ class TextDraw {
       g_app_state.raster.push_scissor(spos, ssize);
     }
     
-    static pos = new Vector3();
+    static mat = new Matrix4();
+    mat.load(this.global_matrix);
+    mat.multiply(this.mat);
     
-    pos.loadxy(this.pos);
-    pos.multVecMatrix(this.global_matrix);
-    
-    this.tdrawbuf.on_draw(gl, pos, this.scale);
+    this.tdrawbuf.on_draw(gl, mat);
     
     if (this.ssize != undefined) {
       g_app_state.raster.pop_scissor();
@@ -1146,7 +1161,7 @@ class UICanvas {
     var cs = uicolors["SimpleBox"]
     
     cs = _box_process_clr(cs, clr);
-      
+       
     this.box(pos, size, cs, r);
   }
 
@@ -1192,7 +1207,7 @@ class UICanvas {
   }
   
   box(pos, size, clr, rfac, outline_only) {
-    if (IsMobile)
+    if (IsMobile || rfac == 0.0)
       return this.box2(pos, size, clr, rfac, outline_only);
     else
       return this.box1(pos, size, clr, rfac, outline_only);
@@ -1354,11 +1369,14 @@ class UICanvas {
     this.reset();
   }
   
-  text(Array<float> pos, String text, Array<float> color, Number size, 
-       Number scale, Array<float> scissor_pos, Array<float> scissor_size)
+  text(Array<float> pos, String text, Array<float> color, float size, 
+       float scale, float rot, Array<float> scissor_pos, Array<float> scissor_size)
   {
     static loc = new Vector3();
     
+    if (rot == undefined)
+      rot = 0.0;
+      
     if (size == undefined)
       size = default_ui_font_size;
     
@@ -1398,7 +1416,8 @@ class UICanvas {
     loc[1] = (Math.floor(loc[1])/sy)*2.0; //*2.0-1.0;
     
     var textdraw = new TextDraw(loc, text, color, scissor_pos, 
-                                scissor_size, this.viewport, size, scale, this.global_matrix);
+                                scissor_size, this.viewport, size, scale, 
+                                this.global_matrix, rot);
     var hash = text.toString() + ">>" + size + "|" + JSON.stringify(this.viewport);
     
     //XXX

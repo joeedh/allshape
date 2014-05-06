@@ -1113,26 +1113,28 @@ class Context {
     this.api = g_app_state.api;
   }
   
+  /*need to figure out a better way to pass active editor types
+    around API*/
+  get settings_editor() : SettingsEditor {
+    return Area.context_area(SettingsEditor);
+  }
+  
+  /*need to figure out a better way to pass active editor types
+    around API*/
   get opseditor() : OpStackEditor {
-    if (g_app_state.screen.draw_active instanceof ScreenArea &&
-        g_app_state.screen.draw_active.area instanceof OpStackEditor) 
-    {
-      return g_app_state.screen.draw_active.area;
-    }
-    
-    if (g_app_state.screen.active instanceof ScreenArea &&
-        g_app_state.screen.active.area instanceof OpStackEditor) 
-    {
-      return g_app_state.screen.active.area;
-    }
-    
-    if (g_app_state.screen.modalhandler instanceof ScreenArea &&
-        g_app_state.screen.modalhandler.area instanceof OpStackEditor) 
-    {
-      return g_app_state.screen.modalhandler.area;
-    }
-    
-    return undefined;
+    return Area.context_area(OpStackEditor);
+  }
+  
+  /*need to figure out a better way to pass active editor types
+    around API.  this one in particular is evil, a holdover fro
+    the days when View3DHandler encapsulated the entire application
+    state*/
+  get view3d() {
+    var ret = Area.context_area(View3DHandler);
+    if (ret == undefined)
+      ret = g_app_state.active_view3d;
+      
+    return ret; //g_app_state.active_view3d;
   }
   
   get scene() {
@@ -1152,11 +1154,7 @@ class Context {
     
     return sce.objects.active;
   }
-  
-  get view3d() {
-    return g_app_state.active_view3d;
-  }
-  
+
   get screen() {
     return g_app_state.screen;
   }

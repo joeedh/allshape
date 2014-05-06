@@ -109,6 +109,8 @@ class ObjectEditor extends View3DEditor {
   }
   
   on_tick(ctx) {
+    if (ctx.view3d == undefined) return;
+    
     this.object = ctx.object;
   }
   

@@ -724,8 +724,7 @@ body, html {
 <script id="2d_text_vshader" type="x-shader/x-vertex">
     precision mediump float;
     uniform vec4 uColor;
-    uniform vec3 uLoc;
-    uniform vec3 uSize;
+    uniform mat4 uMatrix;
     
     attribute vec2 vPosition;
     attribute vec2 vTexCoord;
@@ -734,8 +733,10 @@ body, html {
     varying vec2 g_TexCoord;
     void main()
     {
-       gl_Position = vec4(vPosition[0]*uSize[0]+uLoc[0], vPosition[1]*uSize[1]+uLoc[1], uLoc[2], 1.0);
-
+       vec4 pos = uMatrix * vec4(vPosition[0], vPosition[1], 0, 1);
+       pos[3] = 1.0;
+       
+       gl_Position = pos;
        g_TexCoord = vTexCoord;
        g_Color = uColor;
     }

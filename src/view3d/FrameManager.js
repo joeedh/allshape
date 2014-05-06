@@ -2,6 +2,17 @@
 
 var Area_Types = new set(["View3DHandler"]);
 
+var _area_active_stacks = {}
+var _area_active_lasts = {};
+function _get_area_stack(cls) {
+  var h = cls.name;
+  
+  if (!(h in _area_active_stacks)) {
+    _area_active_stacks[h] = new GArray();
+  }
+  
+  return _area_active_stacks[h];
+}
 //this should have been named ScreenEditor, ger
 class Area extends UIFrame {
   constructor(String type, String uiname, Context ctx, Array<float> pos, Array<float> size) {
@@ -14,6 +25,34 @@ class Area extends UIFrame {
     this.cols = new GArray();
     
     this.note_area = undefined;
+  }
+  
+  /*stupidly, we store the "active" area (of each type)
+    globally (or rather, they're accessible through the Context
+    struct).  this is done to simplify the datapath api code.
+    it's a bit stupid.*/
+  static context_area(cls) {
+    var stack = _get_area_stack(cls.name);
+    
+    if (stack.length == 0) 
+      return _area_active_lasts[cls.name];
+    else 
+      return stack[stack.length-1];
+  }
+  push_ctx_active() {
+    var stack = _get_area_stack(this.constructor);
+    stack.push(this);
+    _area_active_lasts[this.constructor.name] = this;
+  }
+  pop_ctx_active() {
+    var stack = _get_area_stack(this.constructor);
+    if (stack.length == 0 || stack[stack.length-1] != this) {
+      console.trace();
+      console.log("Warning: invalid Area.pop_active() call");
+      return;
+    }
+    
+    stack.pop(stack.length-1);
   }
   
   static default_new(Context ctx, ScreenArea scr, WebGLRenderingContext gl, 
@@ -116,6 +155,25 @@ class Area extends UIFrame {
     }
   }
   
+  on_keyup(KeyboardEvent event) {
+    var ctx = new Context();
+    var ret = this.keymap.process_event(ctx, event);
+    
+    if (ret != undefined) {
+      ret.handle(ctx);
+    }
+    
+    prior(Area, this).on_keyup.call(this, event);
+  }
+  
+  on_keydown(Keyboard event) {
+    this.shift = event.shiftKey;
+    this.alt = event.altKey;
+    this.ctrl = event.ctrlKey;
+    
+    prior(Area, this).on_keydown.call(this, event);
+  }
+
   build_bottombar()
   {
   }
@@ -173,15 +231,25 @@ class ScreenArea extends UIFrame {
     if (!(cls.name in this.editors)) {
       console.log("creating new editor ", cls.name);
       
-      this.editors[cls.name] = cls.default_new(new Context(), this, g_app_state.gl, this.pos, this.size);
-      this.add(this.editors[cls.name]);
+      var area = cls.default_new(new Context(), this, g_app_state.gl, this.pos, this.size);
+      this.editors[cls.name] = area;
+      this.add(area);
       this.editors[cls.name].do_recalc();
     }
     var area = this.editors[cls.name];
     
+    this.area.push_ctx_active(); //push
     this.area.on_area_inactive();
     this.remove(this.area);
-
+    this.area.pop_ctx_active(); //pop
+    
+    area.push_ctx_active(); //push
+    
+    area.size[0] = this.size[0];
+    area.size[1] = this.size[1];
+    area.pos[0] = this.pos[0];
+    area.pos[1] = this.pos[1];
+    
     this.add(area);
     this.area = this.active = area;
     this.area.canvas = this.canvas;
@@ -191,6 +259,7 @@ class ScreenArea extends UIFrame {
     
     area.on_area_active();
     area.on_resize(this.size, new Vector2(area.size));
+    area.pop_ctx_active(); //pop 
     
     this.type = cls.name;
   }
@@ -1127,6 +1196,19 @@ class Screen extends UIFrame {
     }
   }
   
+  area_event_push() {
+    if (this.active instanceof ScreenArea) {
+      this.active.area.push_ctx_active();
+      return this.active.area;
+    }
+  }
+  
+  area_event_pop(Area area) {
+    if (area != undefined) {
+      area.pop_ctx_active();
+    }
+  }
+  
   _on_mousemove(MouseEvent e)
   {
     if (DEBUG.mousemove)
@@ -1141,9 +1223,11 @@ class Screen extends UIFrame {
     this.set_touchstate(e, "move");
     
     //console.log("t", e.touches, this.tottouch);
+    var area = this.area_event_push();
     UIFrame.prototype._on_mousemove.call(this, e);
+    this.area_event_pop(area);
   }
-
+  
   get_active_view3d() {
     var view3d = undefined;
     
@@ -1178,8 +1262,11 @@ class Screen extends UIFrame {
     e = this.handle_event_modifiers(e);
     this.set_touchstate(e, "down");
     
-    //console.log("t", e.touches, this.tottouch);
+    var area = this.area_event_push();
     UIFrame.prototype._on_mousedown.call(this, e);
+    this.area_event_pop(area);
+    
+    //console.log("t", e.touches, this.tottouch);
   }
 
   _on_mouseup(MouseEvent e)
@@ -1196,8 +1283,11 @@ class Screen extends UIFrame {
     e = this.handle_event_modifiers(e);
     this.set_touchstate(e, "up");
     
-    //console.log("t", e.touches, this.tottouch);
+    var area = this.area_event_push();
     UIFrame.prototype._on_mouseup.call(this, e);
+    this.area_event_pop(area);
+    
+    //console.log("t", e.touches, this.tottouch);
   }
 
   _on_mousewheel(MouseEvent e, float delta)
@@ -1209,7 +1299,9 @@ class Screen extends UIFrame {
       c.mpos = new Vector2([e.x-c.pos[0], e.y-c.pos[1]])
     }
     
+    var area = this.area_event_push();
     UIFrame.prototype._on_mousewheel.call(this, e, delta);
+    this.area_event_pop(area);
   }
 
   handle_event_modifiers(KeyboardEvent event) {
@@ -1282,7 +1374,9 @@ class Screen extends UIFrame {
     this.ctrl = event.ctrlKey;
     this.alt = event.altKey;
     
-    prior(Screen, this)._on_keydown.call(this, event);
+    var area = this.area_event_push();
+    UIFrame.prototype._on_keydown.call(this, event);
+    this.area_event_pop(area);
   }
 
   on_keyup(KeyboardEvent event) {
@@ -1364,8 +1458,11 @@ class Screen extends UIFrame {
       g_app_state.raster.push_scissor(c.pos, c.size);
       
       this.recalc_child_borders(c);
+      
+      c.area.push_ctx_active();
       c.on_draw(gl);
-
+      c.area.pop_ctx_active();
+      
       g_app_state.raster.pop_scissor();
     }
     this.draw_active = undefined;

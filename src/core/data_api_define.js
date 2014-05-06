@@ -50,6 +50,14 @@ function api_define_opseditor() {
   return OpsEditorStruct;
 }
 
+var SettingsEditorStruct = undefined;
+function api_define_seditor() {
+  SettingsEditorStruct = new DataStruct([
+  ]);
+  
+  return SettingsEditorStruct;
+}
+
 function api_define_view3d() {
   var selmode = selectmode_enum.copy();
   
@@ -183,6 +191,7 @@ function api_define_context() {
   ContextStruct = new DataStruct([
     new DataPath(api_define_view3d(), "view3d", "ctx.view3d", false),
     new DataPath(api_define_opseditor(), "opseditor", "ctx.opseditor", false),
+    new DataPath(api_define_seditor(), "settings_editor", "ctx.settings_editor", false),
     new DataPath(api_define_mesh(), "mesh", "ctx.mesh", false),
     new DataPath(api_define_object(), "object", "ctx.object", false),
     new DataPath(api_define_scene(), "scene", "ctx.scene", false),

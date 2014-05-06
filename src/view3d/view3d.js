@@ -781,6 +781,8 @@ class View3DHandler extends Area {
   }
 
   on_tick() {
+    return;
+    
     this.editor.on_tick(this.ctx);
     prior(View3DHandler, this).on_tick.call(this);
   }
@@ -1046,24 +1048,6 @@ class View3DHandler extends Area {
     this.ctrl = this.editor.ctrl = event.ctrlKey;
     
     prior(View3DHandler, this)._on_keyup.call(this, event);
-  }
-
-  on_keyup(KeyboardEvent event) {
-    var ctx = new Context();
-    var ret = this.keymap.process_event(ctx, event);
-    
-    if (ret == undefined)
-      ret = this.editor.keymap.process_event(ctx, event);
-    
-    if (ret != undefined) {
-      ret.handle(ctx);
-    }
-  }
-
-  on_keydown(Keyboard event) {
-    this.shift = event.shiftKey;
-    this.alt = event.altKey;
-    this.ctrl = event.ctrlKey;
   }
 
   on_resize(Array<int> newsize, Array<int> oldsize)

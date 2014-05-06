@@ -94,12 +94,12 @@ function Font(WebGLRenderingContext gl, RasterState raster, int size,
   
   this.shader = new ShaderProgram(gl, "2d_text_vshader", "2d_text_fshader", ["vPosition", "vTexCoord"]);
   
-  this.calclength = function(String text) : float {
+  this.calclength = function(String text="") : float {
     return this.calcsize(text)[0];
   }
   
   this._static_minmax = new MinMax(2);
-  this.calcsize = function(String text) : Array<float> {
+  this.calcsize = function(String text="") : Array<float> {
     var mm = this._static_minmax;
     
     mm.reset();
@@ -445,12 +445,13 @@ function Font(WebGLRenderingContext gl, RasterState raster, int size,
     gl.bindBuffer(gl.ARRAY_BUFFER, tbuf);
     gl.bufferData(gl.ARRAY_BUFFER, texcos, gl.STATIC_DRAW);
     
-    return new TextDrawBuffer(vbuf, tbuf, verts.length, clr, gl, this.shader, this.tex, cent);
+    var asp = viewport[1][1] / viewport[1][0];
+    return new TextDrawBuffer(vbuf, tbuf, verts.length, clr, gl, this.shader, this.tex, cent, asp);
   }
 }
 
 class TextDrawBuffer {
-  constructor(vbuf, tbuf, vlen, clr, gl, shader, tex, origin) {
+  constructor(vbuf, tbuf, vlen, clr, gl, shader, tex, origin, asp) {
     this.vbuf = vbuf;
     this.tbuf = tbuf;
     this.is_dead = false;
@@ -459,11 +460,17 @@ class TextDrawBuffer {
     this.clr = new Float32Array(clr);
     this.gl = gl;
     this.tex = tex;
+    this.asp = asp;
     this.shader = shader;
     this.users = []; //XXX possible evil!
+    this.mat = new Matrix4();
+    this.mat2 = new Matrix4();
+    
+    if (origin != undefined)
+      this.mat.translate(origin[0], origin[1], origin[2]);
   }
 
-  on_draw(gl, loc=[0,0,0], size=[1,1,1]) {
+  on_draw(gl, Matrix4 matrix) {
     if (!this.tex.ready)
       return;
     
@@ -481,12 +488,17 @@ class TextDrawBuffer {
     gl.bindTexture(gl.TEXTURE_2D, this.tex);
     
     var origin = this.origin;
-    var l = CACHEARR3(loc[0]+origin[0], loc[1]+origin[1], loc[2]+origin[2]);
     
+    var mat = this.mat2;
+    mat.load(this.mat);
+    mat.multiply(matrix);
+    
+    //mat.translate(l[0], l[1], l[2]);
+    //mat.scale(size[0], size[1], size[2]);
+    
+    mat.setUniform(gl, shader.uniformloc(gl, "uMatrix"));
     gl.uniform1i(shader.uniformloc(gl, "sampler2d"), 0);
     gl.uniform4fv(shader.uniformloc(gl, "uColor"), this.clr);
-    gl.uniform3fv(shader.uniformloc(gl, "uLoc"), l);
-    gl.uniform3fv(shader.uniformloc(gl, "uSize"), size);
     
     gl.disableVertexAttribArray(2);
     gl.disableVertexAttribArray(3);

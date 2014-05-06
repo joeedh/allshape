@@ -93,6 +93,8 @@ class MeshEditor extends View3DEditor {
   }
   
   on_tick(ctx) {
+    if (ctx.view3d == undefined) return;
+    
     this.ctx = ctx;
     this.mesh = ctx.mesh;
     this.object = ctx.object;

@@ -483,6 +483,7 @@ class ColumnFrame extends UIPackFrame {
   {
     UIPackFrame.call(this, ctx, path_prefix);
     this.packflag |= PackFlags.INHERIT_WIDTH|align
+    this.pad = [2, 2];
   }
 
   get_min_size(UICanvas canvas, Boolean isvertical) {
@@ -521,15 +522,21 @@ class ColumnFrame extends UIPackFrame {
       return;
     }
 
+    if (!(this.packflag & PackFlags.ALIGN_LEFT) && !(this.packflag & PackFlags.ALIGN_RIGHT))
+      this.packflag |= PackFlags.ALIGN_CENTER;
+      
     if (this.size[0] == 0 && this.size[1] == 0) {
       this.size[0] = this.parent.size[0];
       this.size[1] = this.parent.size[1];
     }
     
     var minsize = this.get_min_size(canvas, is_vertical);
-    var spacing = Math.floor((this.size[0] - minsize[0])/this.children.length);
-    if (spacing < 0) spacing = 0;
-    spacing = Math.min(spacing, 4.0);
+    if (this.packflag & PackFlags.NO_AUTO_SPACING) {
+      spacing = this.pad[0];
+    } else {
+      var spacing = Math.floor((this.size[0] - minsize[0])/(this.children.length));
+      spacing = Math.max(spacing, this.pad[0]);
+    }
     
     var sum=0;
     var max_wid = 0;
@@ -546,19 +553,25 @@ class ColumnFrame extends UIPackFrame {
       max_hgt = Math.max(s[1], max_hgt);
       sum += s[0];
     }
+    if (!(this.packflag & PackFlags.IGNORE_LIMIT))
+      max_wid *= ((this.size[0])/sum);
     
     var x;
-    var y = (this.size[1] - max_hgt)*0.5;
-    var pad = 4;
-    max_wid *= ((this.size[0])/sum);
+    var y;
+    if (this.packflag & PackFlags.ALIGN_BOTTOM) {
+      y = this.pad[1];
+    } else if (this.packflag & PackFlags.ALIGN_TOP) {
+      y = this.size[1] - max_hgt - this.pad[1];
+    } else {
+      y = (this.size[1]-max_hgt)*0.5;
+    }
     
-    if (!(this.packflag & PackFlags.ALIGN_LEFT) && !(this.packflag & PackFlags.ALIGN_RIGHT))
-      this.packflag |= PackFlags.ALIGN_CENTER;
+    var pad = this.pad[0];
       
     if (this.packflag & PackFlags.ALIGN_RIGHT) {
-      x = this.size[0]-3;
+      x = this.size[0]-pad;
     } else if (this.packflag & PackFlags.ALIGN_LEFT) {
-      x = 3;
+      x = this.pad[0];
     } else {
       x = 0;
     }

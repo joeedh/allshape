@@ -46,7 +46,7 @@ class UICollapseIcon extends UIButtonIcon {
 }
 
 class UIPanel extends RowFrame {
-  constructor(Context ctx, String name, is_collapsed=false) {
+  constructor(Context ctx, String name="", is_collapsed=false) {
     RowFrame.call(this, ctx);
     
     this.stored_children = new GArray();
@@ -75,11 +75,13 @@ class UIPanel extends RowFrame {
     
     var col = this.col();
     
+    this.packflag |= PackFlags.NO_AUTO_SPACING;
+    
     col.packflag |= PackFlags.ALIGN_LEFT;
     col.default_packflag &= ~PackFlags.INHERIT_WIDTH;
     col.add(tri);
     
-    this.label = col.label(name);
+    this.title = col.label(name);
     
     this._collapsed = false;
     this.collapsed = is_collapsed;
