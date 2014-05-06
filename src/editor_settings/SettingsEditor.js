@@ -24,25 +24,25 @@ class SettingsEditor extends Area {
     panel.label("Yay");
     panel.label("Label");
     panel.add(new UIButton(ctx, "a buttton"));
+    panel.add(new UIColorField(ctx));
     
-    var panel2 = new RowFrame(ctx);
+    var panel2 = new ColumnFrame(ctx);
     panel2.packflag |= PackFlags.INHERIT_WIDTH;
     panel2.label("Yay2");
     panel2.add(new UIButton(ctx, "a buttton"));
     panel2.label("Label");
     panel2.add(new UIButton(ctx, "a buttton"));
     
-    var panel3 = new RowFrame(ctx);
+    var panel3 = new ColumnFrame(ctx);
     panel3.packflag |= PackFlags.INHERIT_WIDTH;
     panel3.label("Yay3");
     panel3.add(new UIButton(ctx, "a buttton2"));
     panel3.label("Label2");
     panel3.add(new UIButton(ctx, "a buttton"));
     
-    this.subframe.add_tab("Translate", panel);
+    this.subframe.add_tab("TRANSLATE", panel);
     this.subframe.add_tab("Tab two", panel2);
     this.subframe.add_tab("Tab three", panel3);
-    //this.subframe.add_tab("Three", panel);
     
     this.add(this.subframe);
   }

@@ -106,12 +106,12 @@ class UITabBar extends UIElement {
   on_mousedown(MouseEvent event) {
     if (this.highlight != undefined) {
       if (this.highlight != this.active) {
+        this.active = this.highlight;
         this.do_recalc();
         if (this.callback != undefined) {
           this.callback(this.active.text, this.active.id);
         }
       }
-      this.active = this.highlight;
     }
   }
   
@@ -170,7 +170,7 @@ class UITabPanel extends UIFrame {
   }
   
   tab_callback(String text, Object id) {
-    console.log("tab callback");
+    console.log("tab callback", id);
     var content = this.content;
     
     for (var c in list(content.children)) {
@@ -179,6 +179,8 @@ class UITabPanel extends UIFrame {
     
     if (id != undefined)
       content.add(id);
+    
+    //content.do_full_recalc();
   }
   
   add_tab(String text, UIFrame frame, String description) {

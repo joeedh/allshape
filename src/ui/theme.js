@@ -189,7 +189,7 @@ var UITheme = new ColorTheme({
   "ErrorBox"  : ui_weight_clr([1.0, 0.3, 0.2, 0.9], [0.7, 0.8, 1.05, 1.05]),
   "ErrorText" : [1.0, 0.2, 0.2, 1.0],
   "ErrorTextBG" : ui_weight_clr([1.0, 1.0, 1.0, 1.0], [0.9, 0.9, 1.0, 1.0]),
-  "ShadowBox" : ui_weight_clr([0.0, 0.0, 0.0, 1.0], [1.0, 1.0, 1.0, 1.0]),
+  "ShadowBox" : ui_weight_clr([0.0, 0.0, 0.0, 0.1], [1.0, 1.0, 1.0, 1.0]),
   "ProgressBar" : ui_weight_clr([0.4, 0.73, 0.9, 0.9], [0.75, 0.75, 1.0, 1.0]),
   "ProgressBarBG" : ui_weight_clr([0.7, 0.7, 0.7, 0.7], [1.0, 1.0, 1.0, 1.0]),
   "WarningBox": new BoxColor4([

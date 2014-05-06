@@ -201,3 +201,67 @@ function gen_editor_switcher(Context ctx, Area parent) {
   
   return e;
 }
+
+class UIColorField extends UIElement {
+  constructor(ctx) {
+    UIElement.call(this, ctx);
+    this.h = 0;
+    this.s = 0;
+    this.v = 0;
+  }
+  
+  get_min_size(UICanvas canvas, Boolean isVertical) {
+    return [150, 175];
+  }
+  
+  build_draw(UICanvas canvas, Boolean isVertical) {
+    canvas.simple_box([0, 0], this.size);
+    
+    var cs = [
+      [1, 0, 0, 1], 
+      [1, 1, 0, 1], 
+      [0, 1, 0, 1], 
+      [0, 1, 1, 1], 
+      [0, 0, 1, 1], 
+      [1, 0, 1, 1]
+    ];
+    
+    var cs2 = [];
+    for (var i=0; i<cs.length; i++) {
+      cs2.push(cs[i]);
+      if (i%2 == 0)
+        cs2.push(cs[i]);
+    }
+    //cs = cs2;
+    
+    var segs = cs.length;
+    var wid = Math.ceil((this.size[0]-2) / cs.length);
+    static v1=new Vector2(), v2=new Vector2(), v3=new Vector2(), v4=new Vector2();
+    
+    //hue box
+    canvas.box([0, 0], [this.size[0], 26], [0, 0, 0, 1], 0, true);
+    var y = 25;
+    for (var i=0; i<segs; i++) {
+      var i2 = (i+1) % cs.length;
+      var c1 = cs[i], c2 = cs[i2], c3 = cs[i2], c4 = cs[i];
+      
+      v1[0] = i*wid+1; v1[1] = 1;
+      v2[0] = i*wid+1; v2[1] = y;
+      v3[0] = i*wid+wid+1; v3[1] = y;
+      v4[0] = i*wid+wid+1, v4[1] = 1;
+      
+      canvas.quad(v2, v3, v4, v1, c1, c2, c3, c4);
+    }
+    
+    //saturation/lightness box
+    v1[0] = 0; v1[1] = 27;
+    v2[0] = 0; v2[1] = this.size[0];
+    v3[0] = this.size[0]; v3[1] = this.size[0];
+    v4[0] = this.size[0]; v4[1] = 27;
+    
+    c1 = [0, 0, 0, 1]; c2 = [0, 0, 0, 1];
+    c3 = [0.7, 1, 0.5, 1]; c4 = [1, 1, 1, 1];
+    
+    canvas.quad(v1, v2, v3, v4, c1, c2, c3, c4);
+  }
+}

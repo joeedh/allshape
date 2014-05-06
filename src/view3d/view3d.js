@@ -781,8 +781,6 @@ class View3DHandler extends Area {
   }
 
   on_tick() {
-    return;
-    
     this.editor.on_tick(this.ctx);
     prior(View3DHandler, this).on_tick.call(this);
   }
