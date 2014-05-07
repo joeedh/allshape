@@ -216,8 +216,6 @@ class EdgeLoopOp extends SelectOpAbstract {
         if (vset.has(v))
           break;
           
-        console.log(e.eid, "<--");
-        
         eset.add(e);
         vset.add(v);
         mesh.edges.select(e, mode);
@@ -252,7 +250,6 @@ class EdgeLoopOp extends SelectOpAbstract {
     
     for (var e in this.inputs.eid_es.data) {
       e = ctx.mesh.edges.get(e);
-      console.log("edge:", e);
       
       if (e != undefined)
         this.eloop_select(ctx, e, flush);
@@ -303,8 +300,6 @@ class EdgeLoopOpModal extends EdgeLoopOp {
     
     var e = medit.findnearestedge([evt.x-pos[0], evt.y-pos[1]]);
     if (e == null) return;
-    
-    console.log("edge: ", e.eid);
     
     if (g_app_state.select_inverse || event.shiftKey)
       this.inputs.mode.set_value("subtract");
@@ -366,7 +361,6 @@ class FaceLoopOp extends SelectOpAbstract {
     
     var ls = list(edge.loops);
     
-    console.log("eh?", ls.length);
     for (var l in ls) {
       e = edge;
       do {
@@ -444,8 +438,6 @@ class FaceLoopOpModal extends FaceLoopOp {
     
     var e = medit.findnearestedge([evt.x-pos[0], evt.y-pos[1]]);
     if (e == null) return;
-    
-    console.log("edge: ", e.eid);
     
     if (g_app_state.select_inverse || event.shiftKey)
       this.inputs.mode.set_value("subtract");
@@ -573,8 +565,6 @@ class CircleSelectOp extends SelectOpAbstract {
     var selmode = view3d.selectmode;
     var mesh = this.modal_ctx.mesh;
     
-    console.log("transparent sel", this.doing);
-    
     var pmat = new Matrix4(view3d.drawmats.rendermat);
     var use_mapco = mesh.flag & MeshFlags.USE_MAP_CO;
     
@@ -597,8 +587,6 @@ class CircleSelectOp extends SelectOpAbstract {
     
     if (selmode & MeshTypes.VERT) {
       var co = new Vector3();
-      
-      console.log("mesh", mesh);
       
       for (var v in mesh.verts) {
         if (use_mapco)
@@ -804,8 +792,6 @@ class CircleSelectOp extends SelectOpAbstract {
       this.end_modal();
       return;
     }
-    
-    console.log(event.keyCode);
     
     if (event.keyCode == charmap["Up"] || event.keyCode == charmap["="] || event.keyCode == charmap["NumPlus"]) {
       this.step_radius(1);

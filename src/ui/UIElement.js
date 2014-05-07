@@ -65,6 +65,7 @@ class UIElement extends EventHandler {
     this.description = "";
     
     this.abspos = [0, 0];
+    this._minsize = [0, 0]; //cached variable;
     
     //cached hash string
     this._h12 = undefined : String;
@@ -93,6 +94,7 @@ class UIElement extends EventHandler {
     }
     
     this.recalc = 0;
+    this.recalc_minsize = 0;
     
     if (path != undefined) {
       this.state |= UIFlags.USE_PATH;
@@ -258,6 +260,7 @@ class UIElement extends EventHandler {
 
   do_recalc() {
     this.recalc = 1;
+    this.recalc_minsize = 1;
     
     if (this.parent != undefined && !this.is_canvas_root()) {
       this.parent.do_recalc();
@@ -273,12 +276,10 @@ class UIElement extends EventHandler {
     while (e != undefined) {
       pos[0] += e.pos[0];
       pos[1] += e.pos[1];
-      console.log(e.pos);
       
       if ((e instanceof UIFrame) && (e.state & UIFlags.HAS_PAN)) {
         pos[0] += e.velpan.pan[0];
         pos[1] += e.velpan.pan[1];
-        console.log("   ", pos);
       }
       
       e = e.parent;
@@ -363,6 +364,20 @@ class UIElement extends EventHandler {
   on_mouseup(MouseEvent event) { }
   on_contextchange(Object event) { }
   update_data(Context ctx) { }
+  
+  /* maintains a cached minimum size, updated when this.recalc is true */
+  cached_min_size(UICanvas canvas, Boolean isVertical) {
+    if (this.recalc_minsize) {
+      this.recalc_minsize = 0;
+      var ret = this.get_min_size(canvas, isVertical);
+      
+      this._minsize[0] = ret[0];
+      this._minsize[1] = ret[1];
+    }
+    
+    return this._minsize;
+  }
+  
   get_min_size(UICanvas canvas, Boolean isvertical) 
   {
     static ret = [1, 1];

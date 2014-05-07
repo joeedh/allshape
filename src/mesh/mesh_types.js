@@ -706,9 +706,9 @@ class GeoArray {
       set_eid = true;
     
     if (set_eid) {
-      item.eid = this.idgen.gen_eid();
+      item.eid = this.idgen.gen_eid(item.type);
     } else {
-      this.idgen.max_cur(item.eid);
+      this.idgen.eid_max_cur(item.eid);
     }
     
     this.eidmap[item.eid] = item;

@@ -417,7 +417,7 @@ class UIFrame extends UIElement {
       e.canvas = this.canvas;
     
     e.on_add(this);
-    this.do_recalc();
+    e.do_recalc();
   }
 
   replace(UIElement a, UIElement b) {
@@ -438,8 +438,7 @@ class UIFrame extends UIElement {
       b.ctx = this.ctx;
     
     b.on_add(this);
-    
-    this.do_recalc();
+    b.do_recalc();
   }
 
   remove(UIElement e) {
@@ -486,7 +485,8 @@ class UIFrame extends UIElement {
       if (DEBUG.ui_canvas)
         console.log("------------->Build draw call in " + this.constructor.name + ".on_draw()");
       
-      this.pack(this.canvas, false);
+      //if (this instanceof UIPackFrame)
+      //  this.pack(this.canvas, false);
       this.build_draw(this.canvas, false);
     }
     
@@ -538,11 +538,11 @@ class UIFrame extends UIElement {
     var viewport = g_app_state.raster.viewport;
     
     for (var c in this.children) {
-      c.abspos[0] = c.pos[0] + this.abspos[0];
-      c.abspos[1] = c.pos[1] + this.abspos[1];
+      c.abspos[0] = 0; c.abspos[1] = 0;
+      c.abs_transform(c.abspos);
      
       if (!aabb_isect_2d(c.abspos, c.size, viewport[0], viewport[1])) {
-        //continue; //XXX
+        continue; //XXX
       }
       
       if (c.pos == undefined) {
@@ -562,8 +562,8 @@ class UIFrame extends UIElement {
            c.is_canvas_root())
       {
         if (c.recalc && !(c.packflag & PackFlags.NO_REPACK)) {
-          c.build_draw(c.get_canvas(), isVertical);
           c.pack(canvas, false);
+          c.build_draw(c.get_canvas(), isVertical);
         }
         
         continue;
@@ -585,7 +585,7 @@ class UIFrame extends UIElement {
       } else {
         var r = this.recalc;
         
-        if (!(c.packflag & PackFlags.NO_REPACK))
+        if (c.recalc && !(c.packflag & PackFlags.NO_REPACK))
           c.pack(canvas, false);
           
         canvas.push_transform(mat);
@@ -661,7 +661,7 @@ class UIFrame extends UIElement {
 
   pack(UICanvas canvas, Boolean isVertical) {
     for (var c in this.children) {
-      if (!(c.packflag & PackFlags.NO_REPACK))
+      if (c.recalc && !(c.packflag & PackFlags.NO_REPACK))
         c.pack(canvas, isVertical);
     }  
   }

@@ -238,9 +238,6 @@ class TriList {
     static clr = [1.0, 1.0, 1.0, 1.0];
     clr[3] = alpha;
     
-    var dx = 1.0 / this.viewport[0];
-    var dy = 1.0 / this.viewport[1];
-    
     var cw = this.iconsheet.cellsize[0], ch = this.iconsheet.cellsize[1];
     
     var v1 = new Vector3([pos[0], pos[1], 0.0]);
@@ -1422,8 +1419,8 @@ class UICanvas {
     
     //yes, raster is supposed to be a nasty global
     var port = g_app_state.raster.viewport
-    var sx = port[1][0] - port[0][0]
-    var sy = port[1][1] - port[0][1]
+    var sx = port[1][0]
+    var sy = port[1][1]
     
     loc[0] = (Math.floor(loc[0])/sx)*2.0; //*2.0-1.0;
     loc[1] = (Math.floor(loc[1])/sy)*2.0; //*2.0-1.0;

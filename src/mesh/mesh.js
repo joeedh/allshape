@@ -463,7 +463,7 @@ class Mesh extends DataBlock {
           l.f = f;
           loops[l.eid] = l;
           loops2[l.eid] = l;
-          idgen.max_cur(l.eid);
+          idgen.eid_max_cur(l.eid);
         }
       }
     }
@@ -821,7 +821,11 @@ class Mesh extends DataBlock {
   }
 
   _radial_loop_remove(Edge e, Loop l) {
-    if (l.f == l.v.loop.f) {
+    if (l.v.loop == undefined) {
+      console.log("mesh integrity error; l.v.loop is null", l.v);
+    }
+    
+    if (l.v.loop != null && l.f == l.v.loop.f) {
       var l2 = l;
       
       do {
@@ -850,7 +854,7 @@ class Mesh extends DataBlock {
       console.trace();
     }
     
-    if (e.loop.f == l.f) {
+    if (e.loop != null && e.loop.f == l.f) {
       /*multiple loops from the same face may share an edge, so make sure we
         find a loop with a different face*/
       var i = 0;
@@ -866,7 +870,7 @@ class Mesh extends DataBlock {
       } while (e.loop.f != l.f);
     }
     
-    if (e.loop.f == l.f)
+    if (e.loop != null && e.loop.f == l.f)
       e.loop = null;
    
     /*
@@ -951,7 +955,7 @@ class Mesh extends DataBlock {
       if (lstart == null) lstart = l;
       
       l.e = e;
-      l.eid = this.idgen.gen_eid();
+      l.eid = this.idgen.gen_eid(MeshTypes.LOOP);
       
       this._radial_loop_insert(e, l);
       lprev = l;
@@ -1018,7 +1022,7 @@ class Mesh extends DataBlock {
         
         var l = new Loop(v1, e);
         
-        l.eid = this.idgen.gen_eid();
+        l.eid = this.idgen.gen_eid(MeshTypes.LOOP);
         
         l.list = loops;
         totvert++;

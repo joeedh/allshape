@@ -18,6 +18,8 @@ class Area extends UIFrame {
   constructor(String type, String uiname, Context ctx, Array<float> pos, Array<float> size) {
     UIFrame.call(this, ctx, undefined, undefined, pos, size);
     
+    this.keymap = new KeyMap();
+    
     this.uiname = uiname;
     this.type = type;
     
@@ -58,7 +60,12 @@ class Area extends UIFrame {
   static default_new(Context ctx, ScreenArea scr, WebGLRenderingContext gl, 
                      Array<float> pos, Array<float> size) {}
   
-  //destroy GL data
+ 
+  get_keymaps() {
+    return [this.keymap];
+  }
+  
+ //destroy GL data
   destroy() {
     for (var c in this.children) {
       if ("destroy" in c)
@@ -157,10 +164,15 @@ class Area extends UIFrame {
   
   on_keyup(KeyboardEvent event) {
     var ctx = new Context();
-    var ret = this.keymap.process_event(ctx, event);
+    var maps = this.get_keymaps();
     
-    if (ret != undefined) {
-      ret.handle(ctx);
+    for (var i=0; i<maps.length; i++) {
+      var ret = maps[i].process_event(ctx, event);
+      
+      if (ret != undefined) {
+        ret.handle(ctx);
+        break;
+      }
     }
     
     prior(Area, this).on_keyup.call(this, event);
@@ -365,7 +377,7 @@ class ScreenArea extends UIFrame {
     this.area.size[0] = this.size[0];
     this.area.size[1] = this.size[1];
     
-    g_app_state.raster.push_viewport(this.area.pos, this.area.size);
+    g_app_state.raster.push_viewport(this.pos, this.size);
     this.area.on_draw(gl);
     g_app_state.raster.pop_viewport();
     
@@ -1378,7 +1390,7 @@ class Screen extends UIFrame {
     UIFrame.prototype._on_keydown.call(this, event);
     this.area_event_pop(area);
   }
-
+  
   on_keyup(KeyboardEvent event) {
     this.handle_active_view3d();
     

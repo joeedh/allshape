@@ -862,9 +862,18 @@ class DataAPI {
         
         var oval = eval(path);
         
-        //don't override array references
-        if (prop.type == PropTypes.VEC3 || prop.type == PropTypes.VEC4) {
+        /*don't override array references
+          e.g. struct.some_array = [0, 1, 2, 3]
+          shouldn't assign the array expression's reference
+          to some_array, it should load the contents.*/
+        
+        //need a better way to detect array assignments 
+        //  (some.array = [0, 0, 0] instead of some.array[0] = 0).
+        if (typeof value != "number" &&
+           (prop.type == PropTypes.VEC3 || prop.type == PropTypes.VEC4))
+        {
           var arr = eval(path);
+          
           for (var i=0; i<arr.length; i++) {
             arr[i] = value[i];
           }

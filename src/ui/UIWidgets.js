@@ -510,7 +510,7 @@ class UICheckBox extends UIHoverHint {
 
   get_min_size(UICanvas canvas, Boolean isvertical)
   {
-    return CACHEARR2(canvas.textsize(this.text)[0]+15, 22);
+    return CACHEARR2(canvas.textsize(this.text)[0]+22, 22);
   }
 }
 
@@ -606,7 +606,9 @@ class UINumBox extends UIHoverHint {
       this.pop_modal();
       
       this.clicked = false;
-      if (Math.abs(this.start_mpos[0]-event.x) <= 1 && Math.abs(this.start_mpos[1]-event.y) <= 1) { 
+      
+      var limit = g_app_state.was_touch ? 5 : 1;
+      if (Math.abs(this.start_mpos[0]-event.x) <= limit && Math.abs(this.start_mpos[1]-event.y) <= limit) { 
         var df = Math.min((this.range[1] - this.range[0])*0.1, 1.0);
         if (event.x < this.size[0]/2.0) {
           df = -df;
@@ -660,9 +662,10 @@ class UINumBox extends UIHoverHint {
       var sign = df < 0.0 ? -1.0 : 1.0;
       
       if (!this.is_int) {
+        var odf = df;
         df = Math.pow(df, this.slide_power)*this.slide_mul;
         if (df == NaN)
-          df = 0.0;
+          df = odf*odf;
         df *= sign;
       }
       
@@ -700,7 +703,7 @@ class UINumBox extends UIHoverHint {
       canvas.box([0, 0], this.size, this.do_flash_color(clr));
     
     var unit = this.unit;    
-    var valstr = Unit.gen_string(this.val, unit);
+    var valstr = this.is_int ? this.val.toString() : Unit.gen_string(this.val, unit);
     
     var str = this.text + " " + valstr
     var pad = 15

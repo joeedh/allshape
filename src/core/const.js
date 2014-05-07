@@ -6,7 +6,7 @@
 var allshape_file_ext = ".al3";
 
 //application version
-var g_app_version = 0.044;
+var g_app_version = 0.045;
 
 /*all selection bitflags flags must use this value, even if they define
   their own enumeration member, e.g. MeshFlags.SELECT*/
@@ -50,7 +50,7 @@ var DEBUG = {
   ui_canvas : false,
   dag : false,
   icons : false,
-  complex_ui_recalc : false
+  complex_ui_recalc : 0
 };
 
 //private macro helper global for utildefine.js

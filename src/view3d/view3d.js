@@ -1183,7 +1183,7 @@ class View3DHandler extends Area {
     var col = new ColumnFrame(this.ctx, undefined, PackFlags.ALIGN_LEFT);
     
     this.topbar = col;
-    col.packflag |= PackFlags.IGNORE_LIMIT;
+    col.packflag |= PackFlags.IGNORE_LIMIT|PackFlags.NO_AUTO_SPACING;
     
     col.size = [this.size[0], Area.get_barhgt()];
     col.draw_background = true

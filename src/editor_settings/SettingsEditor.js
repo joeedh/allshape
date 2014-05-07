@@ -1,7 +1,8 @@
 "use strict";
 
 /******************* main area struct ********************************/
-class SettingsEditor extends Area {
+
+class SettingsEditor extends UIFrame { //Area {
   constructor(Context ctx, Array<float> pos, Array<float> size) {
     Area.call(this, SettingsEditor.name, SettingsEditor.uiname, new Context(), pos, size);
 

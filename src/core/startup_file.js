@@ -3,7 +3,8 @@
 //still need to write the code to use this, instead of gen_default_file's manual
 //building of the data structures
 
-var startup_file_str = 
+var startup_file_str = undefined;
+/*
 """Bx0UIBAAAEAAAAAAAAAArEoMiChKGAAkUDD0GAIPFw4UghxAAXgAEIAWvAGjA0A+UAuvAAYNISiiD0B
 YkFZzEgdT4KAcCk6D+SIXAoDRNAuRPDAi4aoAUBMVbzAAp2PzMTSMnsBQpKEymiLVAqQmuZAiPAxMn9
 AAlIAAIJ/sDgoY7Amcrq9apqia4uI4gtMEoZExrrtAECWWAsaRFXKAos7qbu7qDMAYon1sCgg8TM3C5
@@ -151,3 +152,4 @@ aZZW5foodfcNJ3ky7tt8HKfyXLnOspUbyGvI0Nht76Mo84HQwXjhlGAsK/lttrbBu20uBq9TfFAAxZh
 2VN1+edcC6Yf0VesKmSXLzs4ErdVHnr/FU9kvtVcUTxrgNEVq+K6QJ3xhV9gZXHB4OyQdsNaaWGWq1v
 hNVeblOVjQllgbDI0ZsSuLMTbX0mCHddJoaLyU3OsPHOVtI8c2o1deqzndWxqvJfdSr382tGNtN7qs6
 002vL4UX7o3WtRt6R76cH12CAA""";
+*/

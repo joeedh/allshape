@@ -53,7 +53,7 @@ class OpStackFrame extends RowFrame {
         
         var col = panel.col();
         col.default_packflag &= ~PackFlags.INHERIT_WIDTH;
-        col.packflag |= PackFlags.INHERIT_WIDTH; //default_packflag
+        col.packflag |= PackFlags.INHERIT_WIDTH|PackFlags.NO_AUTO_SPACING; //default_packflag
         subpanel.packflag |= PackFlags.INHERIT_WIDTH;
         col.label(" "); 
         col.add(subpanel);

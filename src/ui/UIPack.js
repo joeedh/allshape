@@ -32,6 +32,13 @@ class UIPackFrame extends UIFrame {
     this.last_size = new Vector2();
     this.default_packflag = 0;
   }
+  
+  build_draw(UICanvas canvas, Boolean isVertical) {
+    if (this.is_canvas_root())
+      this.pack(canvas, isVertical);
+      
+    UIFrame.prototype.build_draw.call(this, canvas, isVertical);
+  }
  
   on_resize(Array<int> newsize, Array<int> oldsize)
   {
@@ -417,9 +424,9 @@ class RowFrame extends UIPackFrame {
       var size;
       
       if (!(c.packflag & PackFlags.NO_REPACK))
-        size = c.get_min_size(canvas, isvertical);
+        size = c.cached_min_size(canvas, isvertical);
       else
-        size = CACHEARR2(c.size[0], c.size[1]);
+        size = c.size
       
       tothgt += size[1]+this.pad[1];
       maxwidth = Math.max(maxwidth, size[0]+2);
@@ -468,15 +475,21 @@ class RowFrame extends UIPackFrame {
       var size;
       
       if (!(c.packflag & PackFlags.NO_REPACK))
-        size = c.get_min_size(canvas, is_vertical);
+        size = c.cached_min_size(canvas, is_vertical);
       else
-        size = [c.size[0], c.size[1]]
+        size = c.size;
       
+      size = [size[0], size[1]];
       size[0] = Math.min(size[0], this.size[0]);
+
       if (c.packflag & PackFlags.INHERIT_WIDTH)
         size[0] = this.size[0]-2
       
-      c.size = size;
+      if (c.size == undefined)
+        c.size = [0, 0];
+      c.size[0] = size[0];
+      c.size[1] = size[1];
+      
       var final_y = y;
       if (!(this.packflag & PackFlags.ALIGN_BOTTOM))
         final_y -= size[1];
@@ -525,7 +538,7 @@ class ColumnFrame extends UIPackFrame {
     for (var c in this.children) {
       var size;
       if (!(c.packflag & PackFlags.NO_REPACK))
-        size = c.get_min_size(canvas, isvertical);
+        size = c.cached_min_size(canvas, isvertical);
       else
         size = [c.size[0], c.size[1]];
         
@@ -571,7 +584,7 @@ class ColumnFrame extends UIPackFrame {
       var s;
       
       if (!(c.packflag & PackFlags.NO_REPACK))
-        s = c.get_min_size(canvas, is_vertical);
+        s = c.cached_min_size(canvas, is_vertical);
       else
         s = [c.size[0], c.size[1]];
       
@@ -593,23 +606,27 @@ class ColumnFrame extends UIPackFrame {
     }
     
     var pad = this.pad[0];
-      
+    
+    var do_center_post = false;
     if (this.packflag & PackFlags.ALIGN_RIGHT) {
       x = this.size[0]-pad;
     } else if (this.packflag & PackFlags.ALIGN_LEFT) {
       x = this.pad[0];
     } else {
+      this.packflag |= PackFlags.ALIGN_CENTER;
       x = 0;
     }
-      
+    
+    var finalwid = 0;
     for (var c in this.children) {
       var size;
       
       if (!(c.packflag & PackFlags.NO_REPACK))
-        size = c.get_min_size(canvas, is_vertical);
+        size = c.cached_min_size(canvas, is_vertical);
       else
-        size = [c.size[0], c.size[1]];
+        size = c.size;
         
+      size = [size[0], size[1]];
       if (!(this.packflag & PackFlags.IGNORE_LIMIT)) {
         if (c.packflag & PackFlags.INHERIT_WIDTH)
           size[0] = max_wid-pad;
@@ -619,13 +636,19 @@ class ColumnFrame extends UIPackFrame {
       
       if (c.packflag & PackFlags.INHERIT_HEIGHT)
         size[1] = this.size[1]-6
-        
-      c.size = size;
+      
+      if (c.size == undefined)
+        c.size = [0, 0];
+      c.size[0] = size[0];
+      c.size[1] = size[1];
+      
       if (this.packflag & PackFlags.ALIGN_RIGHT) {
         c.pos = [x-size[0], y];
+        finalwid = this.size[0]-x-size[0]-1;
         x -= Math.floor(size[0]+pad+spacing);
       } else {
         c.pos = [x, y];
+        finalwid = x+size[0];
         x += Math.floor(size[0]+pad+spacing);
       }
       
@@ -633,9 +656,12 @@ class ColumnFrame extends UIPackFrame {
         c.pack(canvas, is_vertical);
     }
     
-    if ((this.packflag & PackFlags.ALIGN_CENTER) && x < this.size[0]) {
+    if ((this.packflag & PackFlags.ALIGN_CENTER) && finalwid < this.size[0]) {
       for (var c in this.children) {
-        c.pos[0] += Math.floor((this.size[0]-x)*0.5);
+        if (this.packflag & PackFlags.ALIGN_RIGHT)
+          c.pos[0] -= Math.floor((this.size[0]-finalwid)*0.5);
+        else
+          c.pos[0] += Math.floor((this.size[0]-finalwid)*0.5);
       }
     }
     

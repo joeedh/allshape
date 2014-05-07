@@ -544,7 +544,7 @@ function MeshAPI(Mesh mesh) {
       //there are a number of different possibilities, here.  
       //Check all of them.
       var l2 = new Loop(nv, ne, l.f);
-      l2.eid = m.idgen.gen_eid();
+      l2.eid = m.idgen.gen_eid(MeshTypes.LOOP);
       
       l2.list = l.list;
       
