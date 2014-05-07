@@ -185,31 +185,39 @@ class MeshEditor extends View3DEditor {
     
     var spacing = IsMobile ? 9.0 : 0.0;
     
-    var col = row.col()
-    var row2 = col.row(undefined, undefined, PackFlags.USE_LARGE_ICON)
+    var tab = row.tabstrip();
+    
+    var col = tab.panel_col("Tools A", undefined, PackFlags.USE_LARGE_ICON); //undefined, PackFlags.USE_LARGE_ICON)
+    var row2 = col.row(undefined, undefined)
     row2.pad[1] = spacing;
     
     row2.toolop("mesh.extrude(geometry=mesh_selected(vef))");
     row2.toolop("mesh.flip_normals(faces=mesh_selected(f))");
-    row2.toolop("mesh.triangulate(faces=mesh_selected(f))");
-    row2.toolop("mesh.subdivide(faces=mesh_selected(f))");
     
     row2 = col.row(undefined, undefined, PackFlags.USE_LARGE_ICON);
     row2.pad[1] = spacing;
     
     row2.toolop("mesh.translate()");
     row2.toolop("mesh.scale()");
-    row2.toolop("mesh.rotate()");
-    row2.toolop("mesh.tri2quad(faces=mesh_selected(f))");
     
     row2 = col.row(undefined, undefined);
     row2.pad[1] = spacing;
     row2.toolop("mesh.duplicate_transform()");
     row2.toolop("mesh.bridge_edges(edges=mesh_selected(e))");
+    
+    var col = tab.panel_col("Tools B", undefined, PackFlags.USE_LARGE_ICON); //undefined, PackFlags.USE_LARGE_ICON)
+
+    var row2 = col.row(undefined, undefined); row2.pad[1] = spacing;
+    row2.toolop("mesh.triangulate(faces=mesh_selected(f))");
+    row2.toolop("mesh.subdivide(faces=mesh_selected(f))");
+    var row2 = col.row(undefined, undefined, PackFlags.USE_LARGE_ICON); row2.pad[1] = spacing;
+    row2.toolop("mesh.rotate()");
+    row2.toolop("mesh.tri2quad(faces=mesh_selected(f))");
+    var row2 = col.row(undefined, undefined); row2.pad[1] = spacing;
     row2.toolop("mesh.vertsmooth(verts=mesh_selected(v))");
     row2.toolop("mesh.loopcut()");
-    
-    var col = row.col();
+
+    var col = row.panel("Select").col();
     var row2 = col.row(undefined, undefined, PackFlags.USE_LARGE_ICON);
     row2.pad[1] = spacing;
     row2.toolop("mesh.toggle_select_all()");

@@ -114,22 +114,19 @@ class Unit {
     return val;
   }
 
-  static gen_string(val, suffix, max_decimal) { 
+  static gen_string(val, suffix, max_decimal=3) { 
     //max_decimal is optional
     //if suffix is undefined, no processing is done
     //if suffix is "default", g_app_state.session.settings.unit will be used
     
     if (!(typeof val == "number") || val == undefined)
-      return "0";
+      return "?";
     
-    if (max_decimal == undefined)
-      max_decimal = 3;
-    
+    if (suffix == undefined)
+      return val.toFixed(max_decimal);
+      
     if (suffix == "default")
       suffix = g_app_state.session.settings.unit;
-      
-    if (suffix == undefined)
-      return val.toFixed(max_decimal).toString();
     
     suffix = suffix.toLowerCase().trim();
     

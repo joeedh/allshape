@@ -51,6 +51,7 @@ class UIPanel extends RowFrame {
     
     this.stored_children = new GArray();
     
+    this.packflag |= PackFlags.ALIGN_LEFT;
     this.default_packflag |= PackFlags.INHERIT_WIDTH;
     
     //store whether the user manually changed
@@ -202,66 +203,331 @@ function gen_editor_switcher(Context ctx, Area parent) {
   return e;
 }
 
+var _hue_field = [
+  [1, 0, 0, 1], 
+  [1, 1, 0, 1], 
+  [0, 1, 0, 1], 
+  [0, 1, 1, 1], 
+  [0, 0, 1, 1], 
+  [1, 0, 1, 1]
+];
+
 class UIColorField extends UIElement {
-  constructor(ctx) {
+  constructor(ctx, callback=undefined) {
     UIElement.call(this, ctx);
-    this.h = 0;
-    this.s = 0;
-    this.v = 0;
+    this.h = 0.0;
+    this.s = 0.0;
+    this.v = 1.0;
+    this.huehgt = 25;
+    
+    this.mode = undefined; //"h" or "sv"
+    this.clicked = false;
+    
+    this.callback = callback;
   }
   
   get_min_size(UICanvas canvas, Boolean isVertical) {
-    return [150, 175];
+    return [150, 165];
+  }
+  
+  do_mouse(MouseEvent event) {
+    static pos = [0, 0], size=[0,0];
+    static mpos = [0, 0];
+    mpos[0] = event.x; mpos[1] = event.y;
+    
+    if (this.mode == "h") {
+      this.h = (mpos[0]-7) / (this.size[0]-12-2);
+      this.h = Math.min(Math.max(this.h, 0), 1.0); //clamp
+      
+      this.do_recalc();
+      
+      if (this.callback != undefined) {
+        this.callback(this, this.h, this.s, this.v);
+      }
+    } else if (this.mode == "sv") {
+      var v = mpos[0]/this.size[0];
+      var s = (mpos[1]-this.huehgt+2)/(this.size[1]-this.huehgt);
+      
+      this.v = Math.min(Math.max(v, 0), 1.0); //clamp
+      this.s = Math.min(Math.max(s, 0), 1.0); //clamp
+      this.do_recalc();
+
+      if (this.callback != undefined) {
+        this.callback(this, this.h, this.s, this.v);
+      }
+    }
+  }
+  
+  on_mousedown(MouseEvent event) {
+    this.clicked = true;
+    this.push_modal();
+    
+    var pos = [1, 1];
+    var size = [this.size[0]-2, this.huehgt];
+    var mpos = [event.x, event.y];
+    
+    if (inrect_2d(mpos, pos, size)) {
+      this.mode = "h"
+    } else {
+      this.mode = "sv";
+    }
+    
+    this.do_mouse(event);
+  }
+  
+  on_mousemove(MouseEvent event) {
+    if (this.clicked) {
+      this.do_mouse(event);
+    }
+  }
+  
+  on_mouseup(MouseEvent event) {
+    this.clicked = false;
+    this.pop_modal();
   }
   
   build_draw(UICanvas canvas, Boolean isVertical) {
+    global _hue_field;
     canvas.simple_box([0, 0], this.size);
     
-    var cs = [
-      [1, 0, 0, 1], 
-      [1, 1, 0, 1], 
-      [0, 1, 0, 1], 
-      [0, 1, 1, 1], 
-      [0, 0, 1, 1], 
-      [1, 0, 1, 1]
-    ];
-    
-    var cs2 = [];
-    for (var i=0; i<cs.length; i++) {
-      cs2.push(cs[i]);
-      if (i%2 == 0)
-        cs2.push(cs[i]);
-    }
-    //cs = cs2;
-    
+    var cs = _hue_field;
     var segs = cs.length;
-    var wid = Math.ceil((this.size[0]-2) / cs.length);
+    static sz = [12, 12];
+    var wid = Math.ceil((this.size[0]-2-sz[0]) / cs.length);
     static v1=new Vector2(), v2=new Vector2(), v3=new Vector2(), v4=new Vector2();
+    var h = this.h, s = this.s, v = this.v;
+    
+    var halfx = Math.floor(sz[0]*0.5);
     
     //hue box
     canvas.box([0, 0], [this.size[0], 26], [0, 0, 0, 1], 0, true);
-    var y = 25;
+    var y = this.huehgt;
+    var c1, c2, c3, c4;
+    
+    //canvas.box1([1, 1], [halfx, y], cs[0]);
+    //we "shrink in" the range a little, so the user doesn't wander
+    //outside the element bounds (it shouldn't matter in production
+    //situations, but it is annoying otherwise when testing with a console sidebar
+    
+    canvas.quad([1, 1], [1, y], [halfx+1, y], [halfx+1, 1], cs[0]);
     for (var i=0; i<segs; i++) {
       var i2 = (i+1) % cs.length;
       var c1 = cs[i], c2 = cs[i2], c3 = cs[i2], c4 = cs[i];
       
-      v1[0] = i*wid+1; v1[1] = 1;
-      v2[0] = i*wid+1; v2[1] = y;
-      v3[0] = i*wid+wid+1; v3[1] = y;
-      v4[0] = i*wid+wid+1, v4[1] = 1;
+      v1[0] = i*wid+1+halfx; v1[1] = 1;
+      v2[0] = i*wid+1+halfx; v2[1] = y;
+      v3[0] = i*wid+wid+1+halfx; v3[1] = y;
+      v4[0] = i*wid+wid+1+halfx, v4[1] = 1;
       
       canvas.quad(v2, v3, v4, v1, c1, c2, c3, c4);
     }
+    canvas.quad(v4, v3, [this.size[0]-1, y], [this.size[0]-1, 1], cs[0]);
     
     //saturation/lightness box
-    v1[0] = 0; v1[1] = 27;
-    v2[0] = 0; v2[1] = this.size[0];
-    v3[0] = this.size[0]; v3[1] = this.size[0];
+    v1[0] = 0; v1[1] = y+2;
+    v2[0] = 0; v2[1] = this.size[1];
+    v3[0] = this.size[0]; v3[1] = this.size[1];
     v4[0] = this.size[0]; v4[1] = 27;
     
+    static clr = [0, 0, 0, 1];
+    
+    var h1 = Math.floor(h*cs.length) % cs.length;
+    var h2 = (h1+1) % cs.length;
+    var t = h*cs.length - h1;
+    console.log("-", h, h1, h2, t);
+    
+    if (t < 0 || t > 1) t = 0;
+    for (var i=0; i<3; i++) {
+      clr[i] = cs[h1][i] + (cs[h2][i] - cs[h1][i])*t;
+    }
+    
     c1 = [0, 0, 0, 1]; c2 = [0, 0, 0, 1];
-    c3 = [0.7, 1, 0.5, 1]; c4 = [1, 1, 1, 1];
+    c3 = clr; c4 = [1, 1, 1, 1];
     
     canvas.quad(v1, v2, v3, v4, c1, c2, c3, c4);
+    
+    //hue cursor
+    static pos1 = [0, 0];
+    
+    pos1[0] = Math.floor(1+h*(this.size[0]-2-sz[0]));
+    pos1[1] = Math.floor(y*0.5-sz[1]*0.5);
+    
+    //console.log("h", Math.floor(h*this.size[0]));
+    canvas.box(pos1, sz);
+    
+    //s/v cursor
+    pos1[0] = Math.floor((this.size[0]-sz[0])*v);
+    pos1[1] = Math.floor((this.size[1]-y-4)*s + y+2 - sz[1]*0.5);
+    
+    canvas.box(pos1, sz);
+  }
+}
+
+class UIColorBox extends UIElement {
+  constructor(ctx, color=undefined) {
+    UIElement.call(this, ctx);
+    
+    if (color == undefined)
+      this.color = [0, 0, 0, 1];
+    else
+      this.color = [color[0], color[1], color[2], color[3]];
+  }
+  
+  get_min_size(UICanvas canvas, Boolean isVertical) {
+    return [40, 40];
+  }
+  
+  build_draw(UICanvas canvas, Boolean isVertical) {
+    //console.log("c", this.color);
+    static white = [1.0, 1.0, 1.0, 1.0];
+    static grey  = [0.3, 0.3, 0.3, 1.0];
+    
+    var tot = 3;
+    var wid = [this.size[0]/tot, this.size[1]/tot];
+    var pos = [0, 0];
+    
+    for (var i=0; i<tot; i++) {
+      pos[1] = 0;
+      for (var j=0; j<tot; j++) {
+        var k = (i+j)%2;
+        
+        canvas.box2(pos, wid, k ? white : grey);
+        pos[1] += wid[1];
+      }
+      pos[0] += wid[0];
+    }
+    
+    canvas.box2([0, 0], this.size, this.color);
+  }
+}
+
+class UIColorPicker extends RowFrame {
+  constructor(Context ctx, Array<float> color=undefined) {
+    RowFrame.call(this, ctx);
+    
+    if (color == undefined) {
+      this._color = [1, 0, 0, 1];
+    } else {
+      this._color = [color[0], color[1], color[2], color[3]];
+    }
+    
+    var this2 = this;
+    function hsv_callback(field, h, s, v) {
+      this2.hsv_callback(field, h, s, v);
+    }
+    
+    this.field = new UIColorField(ctx, hsv_callback);
+    this.preview = new UIColorBox(ctx, this._color)
+    
+    var col = this.col();
+    
+    this.preview.packflag |= PackFlags.INHERIT_HEIGHT;
+    col.add(this.field);
+    col.add(this.preview, PackFlags.INHERIT_HEIGHT);
+    
+    var r = new UINumBox(ctx, "R", [0, 1]);
+    var g = new UINumBox(ctx, "G", [0, 1]);
+    var b = new UINumBox(ctx, "B", [0, 1]);
+    var a = new UINumBox(ctx, "A", [0, 1]);
+    
+    r.slide_power = g.slide_power = b.slide_power = a.slide_power = 2.0;
+    r.slide_mul = g.slide_mul = b.slide_mul = a.slide_mul = 4.0;
+    
+    var row = this.row(undefined, PackFlags.INHERIT_WIDTH, PackFlags.INHERIT_WIDTH);
+    row.add(r);
+    row.add(g);
+    row.add(b);
+    
+    var this2 = this;
+    function slider_callback(axis) {
+      function callback(slider, val) {
+        this2._color[axis] = val;
+        this2.update_widgets();
+      }
+      
+      return callback;
+    }
+    r.callback = slider_callback(0);
+    g.callback = slider_callback(1);
+    b.callback = slider_callback(2);
+    a.callback = slider_callback(3);
+
+    this.r = r; this.g = g; this.b = b; this.a = a;
+    this.add(a, PackFlags.INHERIT_WIDTH);
+    
+    this.update_widgets();
+  }
+  
+  on_tick() {
+    if (this.state & UIFlags.USE_PATH) {
+      var color = this.get_prop_data();
+      
+      var same = true;
+      for (var i=0; i<4; i++) {
+        if (color[i] != this._color[i]) {
+          same = false;
+        }
+        
+        this._color[i] = color[i];
+      }
+      
+      //avoid conflicts with widgets being manipulated
+      if (!same && this.modalhandler == undefined) {
+        this.update_widgets();
+      }
+    }
+  }
+  
+  get color() : Array<float> {
+    return this._color;
+  }
+  
+  set color(Array<float> color) {
+    var do_update = false;
+    
+    for (var i=0; i<4; i++) {
+      if (color[i] != undefined && this._color[i] != color[i]) {
+        this._color[i] = color[i];
+        do_update = true;
+      }
+    }
+    
+    if (do_update)
+      this.update_widgets();
+    this.do_path();
+  }
+  
+  do_path() {
+    if (this.state & UIFlags.USE_PATH) {
+      this.set_prop_data(this._color);
+    }
+  }
+  
+  update_widgets() {
+    static hsva = [0, 0, 0, 0];
+    
+    rgba_to_hsva(this._color, hsva);
+    
+    this.field.h = hsva[0]*0.9999; this.field.s = hsva[1]; this.field.v = hsva[2];
+    this.field.do_recalc();
+    
+    this.preview.color = this._color;
+    this.preview.do_recalc();
+    
+    this.r.set_val(this._color[0]);
+    this.g.set_val(this._color[1]);
+    this.b.set_val(this._color[2]);
+    this.a.set_val(this._color[3]);
+    
+    this.do_path();
+  }
+  
+  hsv_callback(field, h, s, v) {
+    static hsva = [0, 0, 0, 0];
+    
+    hsva[0] = h*0.9999; hsva[1] = s; hsva[2] = v; hsva[3] = this._color[3];
+    hsva_to_rgba(hsva, this._color);
+    
+    this.update_widgets();
   }
 }

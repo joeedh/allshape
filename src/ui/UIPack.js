@@ -227,7 +227,14 @@ class UIPackFrame extends UIFrame {
         var c = new UINumBox(ctx, "Z", range, prop.data, [0,0], [0,0], path + "[2]");
         c.unit = prop.unit;
         c.packflag |= packflag;
-        row.add(c);
+        row.add(c); //
+    } else if (prop.type == PropTypes.VEC4 && prop.subtype == PropTypes.COLOR4) {
+      var field = new UIColorPicker(ctx);
+      
+      field.state |= UIFlags.USE_PATH;
+      field.data_path = path;
+      
+      this.add(field, packflag);
     } else if (prop.type == PropTypes.VEC4) {
         range = (prop.range != undefined && prop.range[0] != undefined) ? prop.range : [-2000, 2000];
         
@@ -306,15 +313,35 @@ class UIPackFrame extends UIFrame {
       return c;
     }
   }
-
+  
+  tabstrip(int align=0, int default_packflag=0) {
+    var ret = new UITabPanel(this.ctx);
+    ret.packflag |= align|PackFlags.INHERIT_WIDTH;
+    ret.default_packflag = this.default_packflag|default_packflag;
+    
+    this.add(ret);
+    return ret;
+  }
+  
+  panel(String label, int align=0, int default_packflag=0) {
+    align |= this.default_packflag;
+    
+    var ret = new UIPanel(this.ctx, label);
+    ret.packflag |= align|PackFlags.INHERIT_WIDTH;
+    ret.default_packflag = this.default_packflag|default_packflag;
+    
+    this.add(ret);
+    
+    return ret;
+  }
+  
   row(String path_prefix="", int align=0, int default_packflag=0) { //path_prefix is optional
     align |= this.default_packflag;
-    this.default_packflag |= default_packflag;
     
     var row = new RowFrame(this.ctx, this.path_prefix);
     this.add(row);
     
-    row.default_packflag |= this.default_packflag;
+    row.default_packflag |= default_packflag|this.default_packflag;
     row.packflag |= align;
       
     return row;
@@ -322,12 +349,11 @@ class UIPackFrame extends UIFrame {
 
   col(String  path_prefix="", int align=0, int default_packflag=0) { //path_prefix is optional
     align |= this.default_packflag;
-    this.default_packflag |= default_packflag;
     
     var col = new ColumnFrame(this.ctx, this.path_prefix);
     this.add(col);
     
-    col.default_packflag |= this.default_packflag;
+    col.default_packflag |= default_packflag|this.default_packflag;
     col.packflag |= align;
     
     return col;

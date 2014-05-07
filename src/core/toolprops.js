@@ -653,6 +653,7 @@ class Vec4Property extends ToolProperty {
   constructor(vec4, apiname, uiname, description, flag) {
     ToolProperty.call(this, PropTypes.VEC4, apiname, uiname, description, flag);
     
+    this.subtype == PropTypes.VEC4;
     this.unit = "default";
     this.range = [undefined, undefined]
     this.real_range = [undefined, undefined]

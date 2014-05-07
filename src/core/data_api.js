@@ -848,15 +848,12 @@ class DataAPI {
           value = '"' + value + '"';
         }
         
-        //console.log("proptype", prop.type);
-        
         var valpath = path;
         if (path.endsWith("]")) {
           var i = path.length-1;
           while (i >= 0 && path[i] != "[") i--;
           valpath = path.slice(0, i);
           
-          //console.log("valpath:", valpath);
         } else if (!ret[0].use_path) {
           //erg, stupid hackyness
           valpath += ".data.data";
@@ -865,10 +862,16 @@ class DataAPI {
         
         var oval = eval(path);
         
-        path += " = " + value;
-        eval(path);
-        
-        //console.log(prop, prop.set_data, prop.update);
+        //don't override array references
+        if (prop.type == PropTypes.VEC3 || prop.type == PropTypes.VEC4) {
+          var arr = eval(path);
+          for (var i=0; i<arr.length; i++) {
+            arr[i] = value[i];
+          }
+        } else {
+          path += " = " + value;
+          eval(path);
+        }
         
         prop.set_data(eval(valpath));
       }

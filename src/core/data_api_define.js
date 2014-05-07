@@ -156,6 +156,7 @@ function get_theme_color(color) {
     var c3 = new Vec4Property(new Vector4(), "c3", "c3", "Color 3");
     var c4 = new Vec4Property(new Vector4(), "c4", "c4", "Color 4");
     
+    c1.subtype = c2.subtype = c3.subtype = c4.subtype = PropTypes.COLOR4;
     function gen_func(i) {
       function update() {
         //color[1].colors[i] = this.data;
@@ -178,6 +179,7 @@ function get_theme_color(color) {
     var clr = new Vec4Property(new Vector4(), "color", "color", "color");
     var weights = new Vec4Property(new Vector4(), "weight", "weight", "weight");
     
+    clr.subtype = PropTypes.COLOR4;
     clr.update = function() {
       //color.color = this.data;
       g_theme.gen_globals();
@@ -196,7 +198,8 @@ function get_theme_color(color) {
     ]);
   } else {
     var clr = new Vec4Property(new Vector4(), "color", "color", "color");
-    clr.update = function() {
+    clr.subtype = PropTypes.COLOR4;
+    clr.update = function(color) {
       /*for (var i=0; i<4; i++) {
         color[1][i] = this.data[i];
       }*/

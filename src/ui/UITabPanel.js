@@ -42,7 +42,7 @@ class UITabBar extends UIElement {
     for (var c in this.tabs) {
       var sz = canvas.textsize(c.text);
       
-      twid += sz[0] + tpad;
+      twid += sz[0] + tpad*2.0;
       thickness = Math.max(sz[1], thickness);
     }
     
@@ -146,7 +146,7 @@ class UITabPanel extends UIFrame {
     this.subframe = mode == "v" ? new ColumnFrame(ctx) : new RowFrame(ctx)
     this.subframe.pos = [0,0];
     this.subframe.packflag |= PackFlags.NO_AUTO_SPACING|PackFlags.ALIGN_LEFT|PackFlags.ALIGN_BOTTOM; //|PackFlags.INHERIT_HEIGHT; 
-    //this.subframe.packflag |= PackFlags.INHERIT_WIDTH;
+    this.subframe.packflag |= PackFlags.INHERIT_WIDTH;
     
     var this2 = this;
     function callback(text, id) {
@@ -181,6 +181,37 @@ class UITabPanel extends UIFrame {
       content.add(id);
     
     //content.do_full_recalc();
+  }
+  
+  pack(UICanvas canvas, Boolean is_vertical) {
+    this.subframe.size[0] = this.size[0];
+    this.subframe.size[1] = this.size[1];
+    
+    prior(UITabPanel, this).pack.call(this, canvas, is_vertical);
+  }
+  
+  panel(String label, int align=0, int default_packflag=0) {
+    align |= this.default_packflag|PackFlags.ALIGN_LEFT;
+    
+    var ret = new RowFrame(this.ctx, label);
+    ret.packflag |= align;
+    ret.default_packflag = this.default_packflag|default_packflag;
+    
+    this.add_tab(label, ret);
+    
+    return ret;
+  }
+  
+  panel_col(String label, int align=0, int default_packflag=0) {
+    align |= this.default_packflag|PackFlags.ALIGN_LEFT;
+    
+    var ret = new ColumnFrame(this.ctx, label);
+    ret.packflag |= align;
+    ret.default_packflag = this.default_packflag|default_packflag;
+    
+    this.add_tab(label, ret);
+    
+    return ret;
   }
   
   add_tab(String text, UIFrame frame, String description) {

@@ -148,7 +148,8 @@ class UITextBox extends UIElement {
     if (event != undefined) {
       this.find_selcursor(event);
     } else {
-      this.find_selcursor(new MyMouseEvent(x, y, 0, MyMouseEvent.MOUSEMOVE));
+      this.selcursor = 0;
+      //this.find_selcursor(new MyMouseEvent(x, y, 0, MyMouseEvent.MOUSEMOVE));
     }
     
     this.cursor = this.selcursor;

@@ -24,7 +24,8 @@ class SettingsEditor extends Area {
     panel.label("Yay");
     panel.label("Label");
     panel.add(new UIButton(ctx, "a buttton"));
-    panel.add(new UIColorField(ctx));
+    //panel.add(new UIColorPicker(ctx));
+    panel.prop("theme.ui.colors[3].color");
     
     var panel2 = new ColumnFrame(ctx);
     panel2.packflag |= PackFlags.INHERIT_WIDTH;

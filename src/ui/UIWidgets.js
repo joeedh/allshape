@@ -515,7 +515,7 @@ class UICheckBox extends UIHoverHint {
 }
 
 class UINumBox extends UIHoverHint {
-  constructor(ctx, text, range, val, pos, size, path) { //path is optional
+  constructor(ctx, text, range=[0, 100], val=range[0], pos=[0,0], size=[1,1], path=undefined) {
     UIHoverHint.call(this, ctx, path);
     
     this.unit = undefined;
@@ -527,6 +527,9 @@ class UINumBox extends UIHoverHint {
     this.set = true;
     this.text = text
     this.is_int = false;
+    this.slide_power = 2.0;
+    this.slide_mul = 1.0;
+    
     if (pos != undefined) {
       this.pos[0] = pos[0];
       this.pos[1] = pos[1];
@@ -657,7 +660,9 @@ class UINumBox extends UIHoverHint {
       var sign = df < 0.0 ? -1.0 : 1.0;
       
       if (!this.is_int) {
-        df = df*df;
+        df = Math.pow(df, this.slide_power)*this.slide_mul;
+        if (df == NaN)
+          df = 0.0;
         df *= sign;
       }
       
@@ -672,6 +677,10 @@ class UINumBox extends UIHoverHint {
       
       if (this.state & UIFlags.USE_PATH) {
         this.set_prop_data(this.val);
+      }
+      
+      if (this.callback != undefined) {
+        this.callback(this, this.val);
       }
     } else {
       this.start_hover();
@@ -691,7 +700,7 @@ class UINumBox extends UIHoverHint {
       canvas.box([0, 0], this.size, this.do_flash_color(clr));
     
     var unit = this.unit;    
-    var valstr = this.val.toString(); //XXX Unit.gen_string(this.val, unit);
+    var valstr = Unit.gen_string(this.val, unit);
     
     var str = this.text + " " + valstr
     var pad = 15

@@ -125,7 +125,7 @@ class ColorTheme {
         c2[i] = c1[i];
       }
       ret[k] = c2;
-      this.flat_colors.push([k, c2]);
+      this.flat_colors.push([k, c1]);
     }
     
     for (var k in this.boxcolors) {
@@ -268,6 +268,11 @@ class Theme {
     
     return ret;
   }
+  
+  //gen_globals_from_flat() {
+    //uicolors = this.ui.gen_colors();
+    //colors3d = this.view3d.gen_colors();
+  //}
   
   gen_globals() {
     global uicolors, colors3d;

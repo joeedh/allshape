@@ -1257,10 +1257,8 @@ class UICanvas {
     
     cs = _box_process_clr(cs, clr);
       
-    var x = pos[0], y=pos[1];
+    var x = Math.floor(pos[0]), y=Math.floor(pos[1]);
     var w=size[0], h=size[1];
-    
-    //this.trilist.add_quad([x, y, 0], [x+w, y, 0], [x+w, y+h, 0], [x, y+h, 0], c1, c2, c3, c4);
     
     var start = 0;
     var ang = Math.PI/2;
@@ -1273,10 +1271,10 @@ class UICanvas {
     if (!(hash in cache)) {
       r /= rfac;
       
-      var p1 = this.arc_points(CACHEARR3(x+r+2, y+r+2, 0), Math.PI, ang, r);
-      var p2 = this.arc_points(CACHEARR3(x+w-r-2, y+r+2, 0), Math.PI/2, ang, r);
-      var p3 = this.arc_points(CACHEARR3(x+w-r-2, y+h-r-2, 0), 0, ang, r);
-      var p4 = this.arc_points(CACHEARR3(x+r+2, y+h-r-2, 0), -Math.PI/2, ang, r);
+      var p1 = this.arc_points(CACHEARR3(0+r+2, 0+r+2, 0), Math.PI, ang, r);
+      var p2 = this.arc_points(CACHEARR3(0+w-r-2, 0+r+2, 0), Math.PI/2, ang, r);
+      var p3 = this.arc_points(CACHEARR3(0+w-r-2, 0+h-r-2, 0), 0, ang, r);
+      var p4 = this.arc_points(CACHEARR3(0+r+2, 0+h-r-2, 0), -Math.PI/2, ang, r);
 
       var plen = p1.length;
       
@@ -1310,6 +1308,7 @@ class UICanvas {
     }
     
     var cp = cache[hash];
+    
     var p1 = cp[0];
     var p2 = cp[1];
     var points = cp[2];
@@ -1322,6 +1321,9 @@ class UICanvas {
       else if (i <= plen*4+1) return cs[3];
     }
     
+    static v1 = new Vector3(), v2 = new Vector3(), v3 = new Vector3(), v4 = new Vector3();
+    
+#define LOAD_CLR(a, b) a[0] = b[0]+x; a[1] = b[1]+y; a[2] = b[2];
     if (!outline_only) {
       for (var i=0; i<p1.length-1; i++) {
         var i1 = i;
@@ -1329,10 +1331,10 @@ class UICanvas {
         var i3 = i + 1+plen*2;
         var i4 = i+1;
         
-        var v1 = p1[i];
-        var v2 = p2[i];
-        var v3 = p2[i+1]
-        var v4 = p1[i+1]
+        LOAD_CLR(v1, p1[i]);
+        LOAD_CLR(v2, p2[i]);
+        LOAD_CLR(v3, p2[i+1]);
+        LOAD_CLR(v4, p1[i+1]);
         
         this.trilist.add_quad(v1, v2, v3, v4, color(i1), color(i2), color(i3), color(i4));
       }
@@ -1340,14 +1342,25 @@ class UICanvas {
     
     var lines = []
     var colors = []
-    for (var i=0; i<points.length; i++) {
-      var v1 = points[(i+1)%points.length];
-      var v2 = points[i];
-      
-      lines.push([v1, v2]);    
-      colors.push([color((i+1)%points.length), color(i)]);
-    }
+    static pairs = [];
     
+    for (var i=0; i<points.length; i++) {
+      LOAD_CLR(v1, points[(i+1)%points.length]);
+      LOAD_CLR(v2, points[i]);
+      
+      if (pairs.length <= i) {
+        pairs.push([[0, 0], [0, 0]]);
+      }
+      
+      pairs[i][0][0] = CACHEARR3(v1[0], v1[1], 0);
+      pairs[i][0][1] = CACHEARR3(v2[0], v2[1], 0);
+      lines.push(pairs[i][0]);
+      
+      pairs[i][1][0] = color((i+1)%points.length);
+      pairs[i][1][1] = color(i);
+      colors.push(pairs[i][1]);
+    }
+#undef LOAD_CLR
     this.trilist.line_strip(lines, colors, undefined, 4, true);
     //this.box2(pos, size, clr, rfac, outline_only);
     return this.trilist
