@@ -398,8 +398,8 @@ class AppState {
     data (of length data_length-4)
     
   */
-  create_user_file_new(args) {
-    var gen_dataview=false, compress=false;
+  create_user_file_new(args={}) {
+    var gen_dataview=true, compress=false;
     var save_screen=true, save_toolstack=true;
     var save_theme=false;
     
