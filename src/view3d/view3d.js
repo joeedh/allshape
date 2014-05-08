@@ -940,7 +940,7 @@ class View3DHandler extends Area {
     k.add(new KeyHandler("K", [], "Debug Test"), new FuncKeyHandler(function (ctx) {
       //test compression
       //console.log("file compression test");
-      //g_app_state.load_user_file_new(g_app_state.create_user_file_new(true, true));
+      //g_app_state.load_user_file_new(g_app_state.create_user_file_new({compress : true}));
       /*
       var d = [];
       istruct.write_object(d, g_app_state.toolstack);
@@ -958,7 +958,8 @@ class View3DHandler extends Area {
         window.unit_test_env.execute();
       } else {
         //console.log(g_app_state.api.get_prop(ctx, "operator_stack[0].test"));
-        test_dapi_parser();
+        //test_dapi_parser();
+        test_ui_structs();
         
         /*var tree = build_octree(new Context().mesh);
         

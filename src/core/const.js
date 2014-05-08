@@ -16,6 +16,28 @@ var SELECT = 1;
 //var RELEASE = false;
 //now defined in src/config/config.js
 
+//debug globals
+if (!RELEASE) {
+  Object.defineProperty(this, "M", {get : function() {
+    return new Context().mesh;
+  }});
+  Object.defineProperty(this, "O", {get : function() {
+    return new Context().object;
+  }});
+  Object.defineProperty(this, "S", {get : function() {
+    return new Context().scene;
+  }});
+  Object.defineProperty(this, "G", {get : function() {
+    return g_app_state;
+  }});
+  Object.defineProperty(this, "V3D", {get : function() {
+    return g_app_state.active_view3d;
+  }});
+  Object.defineProperty(this, "API", {get : function() {
+    return g_app_state.api;
+  }});
+}
+
 var UNIT_TESTER = false;
 var FEATURES = {
   save_toolstack : true //(RELEASE ? false : true)

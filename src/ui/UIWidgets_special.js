@@ -69,6 +69,8 @@ class UIPanel extends RowFrame {
       this2.user_closed = this2.collapsed;
     }
     
+    this.pad[1] = 1;
+    
     var tri = new UICollapseIcon(ctx, is_collapsed, callback1);
     tri.small_icon = true;
     tri.bgmode = "flat";
@@ -78,11 +80,12 @@ class UIPanel extends RowFrame {
     
     this.packflag |= PackFlags.NO_AUTO_SPACING;
     
-    col.packflag |= PackFlags.ALIGN_LEFT;
+    col.packflag |= PackFlags.ALIGN_LEFT|PackFlags.NO_AUTO_SPACING;
     col.default_packflag &= ~PackFlags.INHERIT_WIDTH;
     col.add(tri);
     
     this.title = col.label(name);
+    this.title.color = uicolors["PanelText"];
     
     this._collapsed = false;
     this.collapsed = is_collapsed;
@@ -152,6 +155,8 @@ class UIPanel extends RowFrame {
   }
   
   build_draw(UICanvas canvas, Boolean isVertical) {
+    this.title.color = uicolors["PanelText"];
+    
     canvas.simple_box([0, 0], this.size, this.color);
     
     prior(UIPanel, this).build_draw.call(this, canvas, isVertical);
@@ -334,7 +339,7 @@ class UIColorField extends UIElement {
     var h1 = Math.floor(h*cs.length) % cs.length;
     var h2 = (h1+1) % cs.length;
     var t = h*cs.length - h1;
-    console.log("-", h, h1, h2, t);
+    //console.log("-", h, h1, h2, t);
     
     if (t < 0 || t > 1) t = 0;
     for (var i=0; i<3; i++) {
@@ -530,4 +535,32 @@ class UIColorPicker extends RowFrame {
     
     this.update_widgets();
   }
+}
+
+class UIBoxWColor extends ColumnFrame {
+  constructor(ctx, path) {
+    ColumnFrame.call(this, ctx, path);
+    //this.data_path = path;
+    //this.state |= UIFlags.USE_PATH;
+    
+    this.prop("color");
+    var row = this.prop("weights");
+    
+    row.packflag |= PackFlags.NO_AUTO_SPACING|PackFlags.ALIGN_BOTTOM;
+    var i = 1;
+    for (var c in row.children) {
+      if (c instanceof UINumBox) {
+        c.slide_power = 2.0;
+        c.slide_mul = 4.0;
+        c.unit = undefined;
+        c.text = ""+i;
+        i++;
+      }
+    }
+    row.children.reverse();
+    row.pad[0] = 20;
+  }
+}
+
+class UIBoxColor extends RowFrame {
 }

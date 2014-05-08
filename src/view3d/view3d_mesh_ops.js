@@ -250,8 +250,8 @@ class MeshEditor extends View3DEditor {
     var ctx = new Context();
     var col = new ColumnFrame(ctx);
     
-    col.packflag |= PackFlags.ALIGN_LEFT;
-    col.default_packflag = PackFlags.ALIGN_LEFT;
+    col.packflag |= PackFlags.ALIGN_LEFT|PackFlags.NO_AUTO_SPACING|PackFlags.NO_LIMIT;
+    col.default_packflag = PackFlags.ALIGN_LEFT|PackFlags.NO_AUTO_SPACING;
     
     //IsMobile ? 12 : 12
     col.draw_background = true;

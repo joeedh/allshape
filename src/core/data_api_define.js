@@ -189,6 +189,7 @@ function get_theme_color(color) {
       //color.weights = this.data;
       g_theme.gen_globals();
     }
+    weights.range = weights.real_range = weights.ui_range = [0, 1];
     
     st = new DataStruct([
       new DataPath(type, "type", "type", true, false),

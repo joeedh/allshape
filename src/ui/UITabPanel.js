@@ -81,19 +81,26 @@ class UITabBar extends UIElement {
       t.size[0] = size[1]; t.size[1] = size[1];
       
       if (t == this.highlight && t != this.active)
-        canvas.simple_box(pos, size, 1.0);
+        canvas.simple_box(pos, size, uicolors["HighlightTab"]);
       else if (t != this.active)
         canvas.simple_box(pos, size, 0.85);
      
       pos2[1] = pos[1]+4;
-      canvas.text(pos2, t.text, [0.77, 0.77, 0.77, 1.0], undefined, undefined, Math.PI/2.0);
+      canvas.text(pos2, t.text, uicolors["TabText"], undefined, undefined, Math.PI/2.0);
     }
+      
+    var y1 = this.active.pos[1]-tri;
+    var y2 = this.active.pos[1]+this.active.size[1]+tri;
     
-    canvas.line([w, 0], [w, this.active.pos[1]-tri]);
-    canvas.line([0, this.active.pos[1]-tri], [w, this.active.pos[1]-tri]);
-    canvas.line([0, this.active.pos[1]-tri], [0, this.active.pos[1]+this.active.size[1]+tri]);
-    canvas.line([0, this.active.pos[1]+this.active.size[1]+tri], [w, this.active.pos[1]+this.active.size[1]+tri]);
-    canvas.line([w, this.active.pos[1]+this.active.size[1]+tri], [w, this.size[1]]);
+    if (y1 < 5) y1 = 0;
+    if (y2 >= this.size[1]-5) y2 = this.size[1]-1;
+    
+    var lineclr = uicolors["TabPanelOutline"];
+    canvas.line([w, 0], [w, y1], lineclr);
+    canvas.line([0, y1], [w, y1], lineclr);
+    canvas.line([0, y1], [0, y2], lineclr);
+    canvas.line([0, y2], [w, y2], lineclr);
+    canvas.line([w, y2], [w, this.size[1]], lineclr);
   }
   
   on_inactive() {
@@ -145,6 +152,8 @@ class UITabPanel extends UIFrame {
       
     this.subframe = mode == "v" ? new ColumnFrame(ctx) : new RowFrame(ctx)
     this.subframe.pos = [0,0];
+    this.subframe.pad[1] = 0;
+    this.subframe.pad[0] = 10;
     this.subframe.packflag |= PackFlags.NO_AUTO_SPACING|PackFlags.ALIGN_LEFT|PackFlags.ALIGN_BOTTOM; //|PackFlags.INHERIT_HEIGHT; 
     this.subframe.packflag |= PackFlags.INHERIT_WIDTH;
     
@@ -160,6 +169,7 @@ class UITabPanel extends UIFrame {
     this.subframe.pad[0] = 0;
     
     this.content = new RowFrame();
+    this.content.pad[1] = 4;
     this.content.rcorner = 0.0;
     this.content.draw_background = true;
     
@@ -167,6 +177,29 @@ class UITabPanel extends UIFrame {
     this.subframe.add(this.content);
     
     this.add(this.subframe);
+  }
+  
+  get_uhash() {
+    var s = prior(UITabPanel, this).get_uhash.call();
+    
+    for (var t in this.tabstrip.tabs) {
+      s += t.text;
+    }
+    
+    return s;
+  }
+  
+  build_draw(UICanvas canvas, Boolean isVertical) {
+    //strange, shouldn't have to manually call pack here. . .
+    this.pack(canvas, isVertical);
+    
+    prior(UITabPanel, this).build_draw.call(this, canvas, isVertical);
+    
+    var lineclr = uicolors["TabPanelOutline"];
+    var t = this.tabstrip.thickness; //header width
+    
+    canvas.line([t, 0], [this.size[0], 0], lineclr);
+    canvas.line([t, this.size[1]-1], [this.size[0], this.size[1]-1], lineclr);
   }
   
   tab_callback(String text, Object id) {
@@ -183,11 +216,11 @@ class UITabPanel extends UIFrame {
     //content.do_full_recalc();
   }
   
-  pack(UICanvas canvas, Boolean is_vertical) {
+  pack(UICanvas canvas, Boolean isVertical) {
     this.subframe.size[0] = this.size[0];
     this.subframe.size[1] = this.size[1];
     
-    prior(UITabPanel, this).pack.call(this, canvas, is_vertical);
+    prior(UITabPanel, this).pack.call(this, canvas, isVertical);
   }
   
   panel(String label, int align=0, int default_packflag=0) {

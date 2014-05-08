@@ -175,6 +175,8 @@ class AppState {
     this.screen = screen;
     this.eventhandler = screen : EventHandler;
     
+    this._nonblocks = new set (["SCRN", "TSTK", "THME"]);
+    
     this.select_multiple = false; //basically, this is shift key emulation for tablets
     this.select_inverse = false;  //same as select_mutiple
     
@@ -291,7 +293,11 @@ class AppState {
   }
 
   set_startup_file() {
-    var buf = this.create_user_file_new(true, true);
+    var buf = this.create_user_file_new({
+      gen_dataview : true, 
+      compress : true,
+      save_theme : true
+    });
     buf = new Uint8Array(buf.buffer);
     
     /*var ar = [];
@@ -307,13 +313,19 @@ class AppState {
 
   //file minus ui data, used by BasicFileDataOp
   create_scene_file() {
-    var buf = this.create_user_file_new(true, false, false, false);
+    var buf = this.create_user_file_new({
+      save_screen : false, 
+      save_toolstack : false
+    });
     
     return buf;
   }
   
   create_undo_file() {
-    var buf = this.create_user_file_new(true, false, false, false);
+    var buf = this.create_user_file_new({
+      save_screen : false,
+      save_toolstack : false
+   });
     
     return buf;
   }
@@ -386,7 +398,22 @@ class AppState {
     data (of length data_length-4)
     
   */
-  create_user_file_new(gen_dataview=true, compress=false, save_screen=true, save_toolstack=!RELEASE) : ArrayBuffer {
+  create_user_file_new(args) {
+    var gen_dataview=false, compress=false;
+    var save_screen=true, save_toolstack=true;
+    var save_theme=false;
+    
+    if (args.gen_dataview != undefined)
+      gen_dataview = args.gen_dataview;
+    if (args.compress != undefined)
+      compress = args.compress;
+    if (args.save_screen != undefined)
+      save_screen = args.save_screen;
+    if (args.save_toolstack != undefined)
+      save_toolstack = args.save_toolstack;
+    if (args.save_theme != undefined)
+      save_theme = args.save_theme;
+    
     var mesh = this.mesh;
     
     function bheader(data, type, subtype) {
@@ -454,6 +481,16 @@ class AppState {
       istruct.write_object(data2, this.toolstack);
       
       bheader(data, "TSTK", "STRT");
+      pack_int(data, data2.length);
+      data = data.concat(data2);
+    }
+    
+    if (save_theme) {
+      console.log("writing theme");
+      var data2 = [];
+      istruct.write_object(data2, g_theme);
+      
+      bheader(data, "THME", "STRT");
       pack_int(data, data2.length);
       data = data.concat(data2);
     }
@@ -659,9 +696,27 @@ class AppState {
         } else {
           if (b.type == "SCRN") {
             b.data = fstructs.read_object(b.data, Screen);
+          } else if (b.type == "THME") {
+            b.data = fstructs.read_object(b.data, Theme);
           }
         }
       }
+    }
+    
+    //load theme, if it exists
+    for (var i=0; i<blocks.length; i++) {
+        var block = blocks[i];
+        
+        if (block.type == "THME") {
+          global g_theme;
+          
+          var old = g_theme;
+          
+          g_theme = block.data;
+          g_theme.gen_globals();
+          
+          old.patch(g_theme);
+        }
     }
     
     var ascopy = this.copy();
@@ -689,7 +744,7 @@ class AppState {
       for (var i=0; i<blocks.length; i++) {
         var block = blocks[i];
         
-        if (block.subtype == "STRT" && block.type != "SCRN" && block.type != "TSTK") {
+        if (block.subtype == "STRT" && !this2._nonblocks.has(block.type)) {
           block.data.data_link(block.data, getblock, getblock_us);
         }
       }
@@ -767,7 +822,7 @@ class AppState {
         p2.push(tool.saved_context);
       }
     }
-    
+     
     load_state();
     if (toolstack != undefined) {
       this.toolstack = fstructs.read_object(toolstack, ToolStack);
@@ -956,7 +1011,9 @@ class AppState {
     for (var i=0; i<blocks.length; i++) {
       var block = blocks[i];
       
-      if (block.subtype == "STRT" && block.type != "SCRN") {
+      if (block.data != undefined && "data_link" in block.data && 
+          block.subtype == "STRT" && block.type != "SCRN" && block.type != "THME") 
+      {
         block.data.data_link(block.data, getblock, getblock_us);
       }
     }

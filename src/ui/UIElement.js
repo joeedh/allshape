@@ -355,6 +355,30 @@ class UIElement extends EventHandler {
     }
   }
   
+  //simple filedata
+  get_filedata() : Array<UIFileData> {
+    
+  }
+  
+  /*get non-numeric unique hash
+    used for saving basic settings, like
+    collapsed panels, active tabs, pan positions,
+    etc, in files.*/
+  get_uhash() : String {
+    var s = this.constructor.name;
+    
+    if (this.data_path != undefined) {
+      s += this.data_path;
+    }
+    
+    if (this.parent != undefined) {
+      s = this.parent.get_uhash() + s;
+    }
+    
+    return s;
+    //return CryptoJS.enc.Base64.stringify(CryptoJS.SHA1(s));
+  }
+  
   on_tick() { }
   on_keydown(KeyboardEvent event) { }
   on_keyup(KeyboardEvent event) { }

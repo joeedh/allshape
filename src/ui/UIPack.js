@@ -209,11 +209,15 @@ class UIPackFrame extends UIFrame {
           checkmap[prop.values[k]] = c;
         }
       }
+      
+      return subframe;
     } else if (prop.type == PropTypes.ENUM) {
       var c = new UIMenuButton(ctx, undefined, [0,0], [0,0], path);
       
       c.packflag |= packflag;
       this.add(c)
+      
+      return c;
     } else if (prop.type == PropTypes.VEC3) {
         range = (prop.range != undefined && prop.range[0] != undefined) ? prop.range : [-2000, 2000];
         
@@ -235,6 +239,8 @@ class UIPackFrame extends UIFrame {
         c.unit = prop.unit;
         c.packflag |= packflag;
         row.add(c); //
+        
+        return row;
     } else if (prop.type == PropTypes.VEC4 && prop.subtype == PropTypes.COLOR4) {
       var field = new UIColorPicker(ctx);
       
@@ -242,6 +248,7 @@ class UIPackFrame extends UIFrame {
       field.data_path = path;
       
       this.add(field, packflag);
+      return field;
     } else if (prop.type == PropTypes.VEC4) {
         range = (prop.range != undefined && prop.range[0] != undefined) ? prop.range : [-2000, 2000];
         
@@ -267,8 +274,10 @@ class UIPackFrame extends UIFrame {
         c.packflag |= packflag;
         c.unit = prop.unit;
         row.add(c);
+        
+        return row;
     } else if (prop.type == PropTypes.STRING && (prop.flag & TPropFlags.LABEL)) {
-      this.label(path, true, packflag);
+      return this.label(path, true, packflag);
     } else if (prop.type == PropTypes.BOOL) {
       var check;
       
@@ -292,8 +301,8 @@ class UIPackFrame extends UIFrame {
         
         row.add(check);
       }
-    }
-    else {
+      return check;
+    } else {
       if (DEBUG.ui_datapaths)
         console.log("warning: unimplemented property type for path " + path + " in user interface code");
     }
@@ -466,9 +475,9 @@ class RowFrame extends UIPackFrame {
     var y;
     
     if (this.packflag & PackFlags.ALIGN_BOTTOM)
-      y = 2;
+      y = this.pad[1];
     else
-      y = this.size[1];
+      y = this.size[1]-this.pad[1];
     
     for (var i=0; i<this.children.length; i++) {
       var c = this.children[i];
@@ -635,7 +644,7 @@ class ColumnFrame extends UIPackFrame {
       }
       
       if (c.packflag & PackFlags.INHERIT_HEIGHT)
-        size[1] = this.size[1]-6
+        size[1] = this.size[1]-this.pad[1]
       
       if (c.size == undefined)
         c.size = [0, 0];

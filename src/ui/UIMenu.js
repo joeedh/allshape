@@ -46,13 +46,17 @@ class UIMenuEntry extends UIElement{
   build_draw(UICanvas canvas) {
     canvas.begin(this);
     
-    if (this.state & UIFlags.HIGHLIGHT)
-      canvas.simple_box([0, -2], [this.size[0]-3, this.size[1]], uicolors["MenuHighlight"], 35.0)
-   
     var tsize = canvas.textsize(this.text, menu_text_size);
     var y = 0.5*(this.size[1]-tsize[1]);
     
-    canvas.text([2, y], this.text, uicolors["BoxText"], menu_text_size);
+    if (this.state & UIFlags.HIGHLIGHT) {
+      //console.log(uicolors["MenuTextHigh"], "--=-=-=")
+      canvas.simple_box([0, -2], [this.size[0]-3, this.size[1]], uicolors["MenuHighlight"], 35.0)
+      canvas.text([2, y], this.text, uicolors["MenuTextHigh"], menu_text_size);
+    } else {
+      canvas.text([2, y], this.text, uicolors["MenuText"], menu_text_size);
+    }
+    
     if (this.hotkey != undefined) {
       var tsize = canvas.textsize(this.hotkey, menu_text_size);
       
@@ -216,8 +220,10 @@ class UIMenu extends UIFrame {
       this.packed = true;
     }
     
+    canvas.shadow_box([8, -1], [this.size[0]-10, this.size[1]-10]);
     canvas.simple_box([0, 0], this.size, uicolors["MenuBox"][0], 35.0);
-    canvas.text([24, this.size[1]-22], this.name, uicolors["BoxText"], menu_text_size)
+    canvas.box([0, 0], this.size, uicolors["Box"], 35.0, true);
+    canvas.text([24, this.size[1]-22], this.name, uicolors["MenuText"], menu_text_size)
     
     var clr = uicolors["MenuSep"]
     var ehgt = this.ehgt

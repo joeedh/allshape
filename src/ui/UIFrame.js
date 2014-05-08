@@ -362,6 +362,22 @@ class UIFrame extends UIElement {
     
     return this.active != undefined;
   }
+  
+  get_uhash() : String {
+    var s = "";
+    
+    var p = this;
+    while (p != undefined) {
+      s += p.constructor.name;
+      if (p instanceof Area) {
+        s += p.parent.parent.areas.indexOf(p.parent);
+      }
+      
+      p = p.parent;
+    }
+    
+    return s;
+  }
 
   prepend(UIElement e, int packflag) {
     e.defunct = false;
@@ -503,14 +519,17 @@ class UIFrame extends UIElement {
     }
   }
 
-  build_draw(canvas, isVertical) {
+  build_draw(canvas, isVertical, cache_frame=true) {
     var mat = _static_mat;
     
-    if (this.framecount == 0) {
+    if (cache_frame && this.framecount == 0) {
       canvas.frame_begin(this);
     }
+    
     if (this.parent == undefined) {
-      this.abspos[0] = this.pos[0]; this.abspos[1] = this.pos[1];
+      this.abspos[0] = this.abspos[1] = 0.0;
+      this.abs_transform(this.abspos);
+      //this.abspos[0] = this.pos[0]; this.abspos[1] = this.pos[1];
     }
     
     if (this.state & UIFlags.HAS_PAN && this.velpan != undefined) {
@@ -540,7 +559,7 @@ class UIFrame extends UIElement {
     for (var c in this.children) {
       c.abspos[0] = 0; c.abspos[1] = 0;
       c.abs_transform(c.abspos);
-     
+      
       if (!aabb_isect_2d(c.abspos, c.size, viewport[0], viewport[1])) {
         continue; //XXX
       }
@@ -606,7 +625,7 @@ class UIFrame extends UIElement {
       }
     }
 
-    if (this.framecount == 0) {
+    if (cache_frame && this.framecount == 0) {
       canvas.frame_end(this);
     }
     

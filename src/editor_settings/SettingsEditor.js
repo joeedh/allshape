@@ -2,7 +2,59 @@
 
 /******************* main area struct ********************************/
 
-class SettingsEditor extends UIFrame { //Area {
+class SettingsEditor extends Area {
+  do_theme_color(int i) : UIFrame {
+    var ctx=this.ctx;
+    var path = "theme.ui.colors["+i+"]";
+    
+    var type = this.ctx.api.get_prop(ctx, path+".type");
+    
+    if (type == "Simple") {
+      var ret = new UIColorPicker(ctx);
+      ret.state |= UIFlags.USE_PATH;
+      ret.data_path = path + ".color";
+      
+      return ret;
+    } else if (type == "Weighted") {
+      var ret = new UIBoxWColor(ctx, path);
+      return ret;
+    } else {
+      var ret = new UIBoxWColor(ctx, path);
+      return ret;
+      return new UILabel(ctx, "invalid theme entry");
+    }
+  }
+  
+  theme_panel() {
+    var ctx = this.ctx;
+    
+    var panel = new RowFrame(ctx);
+    var listbox = new UIListBox(ctx, undefined, [200, 200]);
+    var theme = g_theme;
+    for (var j=0; j<g_theme.ui.flat_colors.length; j++) {
+      listbox.add_item(theme.ui.flat_colors[j][0], j);
+    }
+    
+    var this2 = this;
+    listbox.callback = function(listbox, text, id) {
+      var e = this2.do_theme_color(id);
+      
+      if (this2.themebox != undefined) {
+      panel.replace(this2.themebox, e);
+      } else {
+        panel.add(e);
+      }
+      
+      this2.themebox = e;
+    }
+    
+    panel.add(listbox);
+    this.themebox = this.do_theme_color(0);
+    panel.add(this.themebox);
+    
+    return panel;
+  }
+  
   constructor(Context ctx, Array<float> pos, Array<float> size) {
     Area.call(this, SettingsEditor.name, SettingsEditor.uiname, new Context(), pos, size);
 
@@ -14,37 +66,17 @@ class SettingsEditor extends UIFrame { //Area {
     this._filter_sel = false;
     this.gl = undefined;
     this.ctx = new Context();
+    this.themebox = undefined;
     
     this.subframe = new UITabPanel(new Context(), [size[0], size[1]]);
+    this.subframe.size[0] = this.size[0];
+    this.subframe.size[1] = this.size[1];
     this.subframe.pos = [0, 0]; //XXX this should work: [0, Area.get_barhgt()];
     this.subframe.canvas = new UICanvas([this.pos, this.size]);
     this.subframe.state |= UIFlags.HAS_PAN|UIFlags.IS_CANVAS_ROOT|UIFlags.PAN_CANVAS_MAT;
     this.subframe.velpan = new VelocityPan();
     
-    var panel = new RowFrame(ctx);
-    panel.label("Yay");
-    panel.label("Label");
-    panel.add(new UIButton(ctx, "a buttton"));
-    //panel.add(new UIColorPicker(ctx));
-    panel.prop("theme.ui.colors[3].color");
-    
-    var panel2 = new ColumnFrame(ctx);
-    panel2.packflag |= PackFlags.INHERIT_WIDTH;
-    panel2.label("Yay2");
-    panel2.add(new UIButton(ctx, "a buttton"));
-    panel2.label("Label");
-    panel2.add(new UIButton(ctx, "a buttton"));
-    
-    var panel3 = new ColumnFrame(ctx);
-    panel3.packflag |= PackFlags.INHERIT_WIDTH;
-    panel3.label("Yay3");
-    panel3.add(new UIButton(ctx, "a buttton2"));
-    panel3.label("Label2");
-    panel3.add(new UIButton(ctx, "a buttton"));
-    
-    this.subframe.add_tab("TRANSLATE", panel);
-    this.subframe.add_tab("Tab two", panel2);
-    this.subframe.add_tab("Tab three", panel3);
+    this.subframe.add_tab("Theme", this.theme_panel());
     
     this.add(this.subframe);
   }
@@ -138,8 +170,16 @@ class SettingsEditor extends UIFrame { //Area {
     var ctx = this.ctx = new Context();
     
     //paranoid check
-    this.subframe.size[0] = this.size[0];
-    this.subframe.size[1] = this.size[1]-this.subframe.pos[1]-Area.get_barhgt();
+    for (var i=0; i<2; i++) {
+      if (this.size[i] != this.subframe.size[i]) {
+        this.subframe.on_resize(this.size, this.subframe.size);
+        this.subframe.size[0] = this.size[0];
+        this.subframe.size[1] = this.size[1]; //-this.subframe.pos[1]-Area.get_barhgt();
+        break;
+      }
+    }
+    //this.subframe.size[0] = this.size[0];
+    //this.subframe.size[1] = this.size[1]-this.subframe.pos[1]-Area.get_barhgt();
     this.subframe.canvas.viewport = this.canvas.viewport; //set_viewport([this.parent.pos, this.parent.size]);
     
     //scissor subframe seperately

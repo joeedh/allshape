@@ -755,7 +755,10 @@ class UICanvas {
     pos.multVecMatrix(this.transmat);
     size.multVecMatrix(this.transmat);
     
-    var dx = pos[0] - oldpos[0], dy = pos[1] - oldpos[1];
+    var vx=this.viewport[0][0], vy=this.viewport[0][1]
+    pos[0] += vx; pos[1] += vy;
+    
+    var dx = pos[0]-oldpos[0]-vx, dy = pos[1]-oldpos[1]-vy;
     size[0] -= dx; size[1] -= dy;
     
     for (var i=0; i<3; i++) {
@@ -1428,7 +1431,7 @@ class UICanvas {
     var textdraw = new TextDraw(loc, text, color, scissor_pos, 
                                 scissor_size, this.viewport, size, scale, 
                                 this.global_matrix, rot);
-    var hash = text.toString() + ">>" + size + "|" + JSON.stringify(this.viewport);
+    var hash = text.toString() + ">>" + size + "|" + color + "|" + JSON.stringify(this.viewport);
     
     //XXX
     // /*

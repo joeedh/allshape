@@ -29,5 +29,7 @@ var Icons = {
   RIGHT_ARROW    : 25,
   UI_EXPAND      : 26, //triangle
   UI_COLLAPSE    : 27, //triangle
-  FILTER_SEL_OPS : 28
+  FILTER_SEL_OPS : 28,
+  SCROLL_DOWN    : 29,
+  SCROLL_UP      : 30
 };

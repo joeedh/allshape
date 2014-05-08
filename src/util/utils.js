@@ -1026,22 +1026,12 @@ class EIDGen {
     return this.cur_eid;
   }
   
-  //we pack eid types into their ids
-  //to prevent id mangling from changing 
-  //the element type of a given eid.
-  //  (this can happen when manipulating the operator stack)
-  gen_eid(typemask=0) {
-    //maps 1 2 4 8 to 0 1 2 3
-    static tmap = [0, 0, 1<<29, 0, 2<<29, 0, 0, 0, 3<<29];
-    typemask = tmap[typemask];
-    
-    return (this.cur_eid++|typemask);
+  eid_max_cur(t) {
+    return this.max_cur(t);
   }
   
-  eid_max_cur(eid) {
-    static mask = 3<<29;
-    
-    this.max_cur(eid&~mask);
+  gen_eid(typemask=0) {
+    return this.cur_eid++;
   }
   
   gen_id() {

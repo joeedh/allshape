@@ -393,8 +393,8 @@ class LoginDialog extends PackedDialog {
     
     var col = this.subframe.col(undefined, PackFlags.INHERIT_WIDTH);
     var row = col.row();
-    row.label("User:")
-    row.label("Password:")
+    row.label("User:").color = uicolors["DialogText"];
+    row.label("Password:").color = uicolors["DialogText"];
     
     row = col.row();
     row.add(this.userbox, PackFlags.INHERIT_WIDTH);
@@ -433,6 +433,7 @@ class LoginDialog extends PackedDialog {
     function error(job, owner, msg) {
       if (dialog.errlabel == undefined) {
         dialog.errlabel = dialog.subframe.label("", undefined, PackFlags.INHERIT_WIDTH);
+        dialog.errlabel.color = uicolors["DialogText"];
       }
       
       dialog.errlabel.set_text("Error");
@@ -558,7 +559,9 @@ class FileSaveB64Op extends ToolOp {
     console.log("Export AL3-B64");
     
     //compression is off, for now
-    var buf = g_app_state.create_user_file_new(true, true, true)
+    var buf = g_app_state.create_user_file_new({
+      compress : true
+    });
     buf = b64encode(new Uint8Array(buf.buffer));
     
     //line wrap

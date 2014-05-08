@@ -282,30 +282,20 @@ function inrect_2d(p, pos, size) {
   return p[0] >= pos[0] && p[0] <= pos[0]+size[0] && p[1] >= pos[1] && p[1] <= pos[1]+size[1];
 }
 
-var _ab_is2d_static_cs1 = [0, 0, 0, 0];
-var _ab_is2d_static_cs2 = [0, 0, 0, 0];
 function aabb_isect_2d(pos1, size1, pos2, size2) {
-  var cs1 = _ab_is2d_static_cs1;
-  var cs2 = _ab_is2d_static_cs2;
+  var ret = 0;
   
-  cs1[0] = pos1;
-  cs1[1] = [pos1[0]+size1[0], pos1[1]]
-  cs1[2] = [pos1[0]+size1[0], pos1[1]+size1[1]]
-  cs1[3] = [pos1[0], pos1[1]+size1[1]]
-
-  cs2[0] = pos2;
-  cs2[1] = [pos2[0]+size2[0], pos2[1]]
-  cs2[2] = [pos2[0]+size2[0], pos2[1]+size2[1]]
-  cs2[3] = [pos2[0], pos2[1]+size2[1]]
-  
-  for (var i=0; i<4; i++) {
-    if (inrect_2d(cs1[i], pos2, size2))
-      return true;
-    if (inrect_2d(cs2[i], pos1, size1))
-      return true;
+  for (var i=0; i<2; i++) {
+    var a = pos1[i];
+    var b = pos1[i]+size1[i];
+    var c = pos2[i];
+    var d = pos2[i]+size2[i];
+    
+    if (b >= c && a <= d) ret += 1;
   }
   
-  return false;
+  //console.log(ret, ret==2);
+  return ret == 2;
 }
 
 function expand_rect2d(Array<float> pos, Array<float> size, Array<float> margin) {

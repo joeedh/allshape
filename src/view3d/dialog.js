@@ -13,7 +13,7 @@ class _TitleBar extends UIElement {
     canvas.simple_box([0, 0], this.size, uicolors["DialogTitle"]);
     
     var tsize = canvas.textsize(this.text);
-    canvas.text([12, (this.size[1]-tsize[1])*0.25], this.text);
+    canvas.text([12, (this.size[1]-tsize[1])*0.25], this.text, uicolors["DialogText"]);
   }
 
   on_mousedown(event) {
@@ -227,7 +227,8 @@ class OkayDialog extends PackedDialog {
     var col = this.subframe.col();
     col.add(Dialog.okay_button(ctx));
     col.add(Dialog.cancel_button(ctx));
-    this.subframe.label(text);
+    var l = this.subframe.label(text);
+    l.color = uicolors["DialogText"];
   }
   
   end(Boolean do_cancel) {
@@ -249,6 +250,8 @@ class ErrorDialog extends PackedDialog {
     col.add(Dialog.okay_button(ctx), PackFlags.ALIGN_RIGHT);
     
     var c = col.label("  " + text + "    ");
+    c.color = uicolors["DialogText"];
+    
     c.set_color(uicolors["ErrorText"]);
     c.set_background(uicolors["ErrorTextBG"]);
   }
