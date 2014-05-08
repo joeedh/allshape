@@ -481,6 +481,9 @@ class UIFrame extends UIElement {
   }
 
   on_draw(gl) {
+    //handle delayed touch events
+    touch_manager.process();
+    
     function descend(n, canvas) {
       for (var c in n.children) {
         if (c.canvas != undefined) continue;

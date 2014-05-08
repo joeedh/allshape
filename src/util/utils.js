@@ -76,6 +76,21 @@ class GArray extends Array {
     this.insert(0, item);
   }
 
+  pop_i(int idx=-1) {
+    if (idx < 0)
+      idx += this.length;
+   
+    var ret = this[i];
+    
+    for (var int i=idx; i<this.length-1; i++) {
+      this[i] = this[i+1];
+    }
+    
+    this.length -= 1;
+    
+    return ret;
+  }
+  
   remove(T item, Boolean ignore_existence) { //ignore_existence defaults to false
     var int idx = this.indexOf(item);
     

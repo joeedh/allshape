@@ -444,10 +444,7 @@ class VelocityPan extends EventHandler {
       this.end();
     }
     
-    //console.log("mpos", mpos);
-    
     this.panning = true;
-    
     this.owner = owner;
     
     this.start_pan.load(this.pan);
@@ -492,3 +489,114 @@ class VelocityPan extends EventHandler {
     this.do_mousemove([event.x, event.y]);
   }
 }
+
+class TouchEventManager {
+  constructor() {
+    this.queue = new GArray();
+    this.queue_ms = new GArray();
+    this.delay = 200;
+  }
+  
+  queue_event(MouseEvent event) {
+    var last = this.queue.length > 0 ? this.queue[this.queue.length-1] : undefined;
+    
+    //merge repeated events, which may
+    //contain different touch states
+    if (last != undefined && last.type == event.type) {
+      var dis, same=true;
+      
+      for (var k in event.touches) {
+        if (!(k in last.touches)) { 
+          same = false;
+        }
+      }
+      
+      //only compare same ids
+      dis = new Vector2([event.x, event.y]).vectorDistance(new Vector2([last.x, last.y]));
+        
+      if (same && dis < 50) {
+        console.log("destroying duplicate event", event.x, event.y, event.touches);
+        for (var k in event) {
+          last.touches[k] = event.touches[k];
+        }
+        
+        return;
+      }
+    }
+    
+    this.queue.push(event);
+    this.queue_ms.push(time_ms());
+  }
+  
+  cancel(MouseEvent event) {
+    var ts = event.touches;
+    var dl = new GArray;
+    
+    for (var e in this.queue) {
+      for (var k in ts) {
+        if (k in e.touches) {
+          delete e.touches;
+        }
+      }
+      
+      if (list(e.touches).length == 0) {
+        dl.push(e);
+      }
+    }
+    
+    for (var e in dl) {
+      var i = this.queue.indexOf(e);
+      this.queue.remove(e);
+      this.queue_ms.pop_i(i);
+    }
+  }
+  
+  process() {
+    var screen = g_app_state.screen;
+    if (screen == undefined) {
+      console.log("warning, no screen in TouchEventManager.process()");
+      return;
+    }
+    
+    dl = new GArray();
+    var q = this.queue;
+    var qm = this.queue_ms;
+    var delay = this.delay;
+    
+    for (var i=0; i<q.length; i++) {
+      if (time_ms() - qm[i] > delay) {
+        dl.push(q[i]);
+      }
+    }
+    
+    //pop events from queue before firing them
+    for (var e in dl) {
+      var i = q.indexOf(e);
+      
+      q.remove(e);
+      qm.pop_i(i);
+    }
+    
+    //now, fire events
+    for (var e in dl) {
+      try {
+        if (e.type == MyMouseEvent.MOUSEDOWN)
+          screen._on_mousedown(e);
+        else if (e.type == MyMouseEvent.MOUSEMOVE)
+          screen._on_mousemove(e);
+        else if (e.type == MyMouseEvent.MOUSEUP)
+          screen._on_mouseup(e);
+      } catch (_err) {
+        print_stack(_err)
+        console.log("Error executing delayed touch event");
+      }
+    }
+  }
+  
+  reset() {
+    this.queue = new GArray();
+    this.queue_ms = new GArray();
+  }
+}
+
+var touch_manager = new TouchEventManager();

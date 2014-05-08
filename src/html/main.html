@@ -1522,15 +1522,7 @@ function toJSON_intern (ob, tlevel) {
         
         function handleTouchCancel(e) {
           if (gl_ctx_lost) return;
-          
-          g_app_state.was_touch = true;
-          stop_event_propegation(e);
-          
-          var x, y;
-          
-          if (DEBUG.touch)
-            console.log(e);
-          var t = e.changedTouches[0];
+
           if (t == undefined) {
             x = e.pageX;
             y = e.pageY;
@@ -1539,17 +1531,22 @@ function toJSON_intern (ob, tlevel) {
             y = t.pageY;
           }
           
-          if (DEBUG.touch)
-            console.log("touch cancel", x, y);
+          var lst = e.changedTouches;
+          var touches = {};
+          for (var i=0; i<t.length; i++) {
+            touches[lst[i].identifier] = [x, y];
+          }
+           
+          console.log("touch cancel");
+          
           if (g_app_state.screen != undefined) {
             var e2 = new MyMouseEvent(x, g_app_state.screen.size[1] - y, 0, MyMouseEvent.MOUSEUP);
             
             e2.shiftKey = e.shiftKey;
             e2.altKey = e.altKey;
             e2.ctrlKey = e.ctrlKey;
-            e2.touches = do_touches(e);
             
-            g_app_state.eventhandler._on_mouseup(e2);
+            touch_manager.cancel(e2);
           }
          }
          
@@ -1602,7 +1599,7 @@ function toJSON_intern (ob, tlevel) {
               e2.ctrlKey = e.ctrlKey;
               e2.touches = do_touches(e);
               
-              g_app_state.eventhandler._on_mousedown(e2);
+              touch_manager.queue_event(e2);
            }
          }
           
@@ -1637,7 +1634,7 @@ function toJSON_intern (ob, tlevel) {
               e2.ctrlKey = e.ctrlKey;
               e2.touches = do_touches(e);
               
-              g_app_state.eventhandler._on_mouseup(e2);
+              touch_manager.queue_event(e2);
            }
          }
         

@@ -1406,6 +1406,9 @@ class Screen extends UIFrame {
 
   on_draw(WebGLRenderingContext gl)
   {
+    //handle delayed touch events
+    touch_manager.process();
+    
     g_app_state.gl = gl;
     g_app_state.raster.begin_draw(gl, this.pos, this.size);
     
