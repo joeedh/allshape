@@ -18,12 +18,13 @@ class UITabBar extends UIElement {
     this.highlight = undefined;
     this.active = undefined;
     this.tabs = new GArray();
+    this.mm = new MinMax(2);
     
     this.callback = callback;
     
     this.triwid = 4;
     this.mode = mode;
-    this.thickness = 25;
+    this.thickness = this.min_thickness = IsMobile ? 40 : 25;
   }
   
   add_tab(String text, String tooltip="", Object id=undefined) {
@@ -35,7 +36,7 @@ class UITabBar extends UIElement {
   }
   
   get_min_size(UICanvas canvas, Boolean isVertical) : Array<float> { 
-    var thickness = 25;
+    var thickness = this.min_thickness;
     var tpad = this.triwid*2.0;
     var twid = tpad;
     
@@ -55,7 +56,7 @@ class UITabBar extends UIElement {
   }
   
   build_draw(UICanvas canvas, Boolean isVertical) {
-    canvas.simple_box([0, 0], this.size, undefined, 0.0);
+    //canvas.simple_box([0, 0], this.size, undefined, 0.0);
     
     var ax = 0, ay = 1;
     var w = this.thickness;
@@ -63,9 +64,17 @@ class UITabBar extends UIElement {
     var pos = [0, this.size[1]];
     var size = [w, 0];
     var pos2 = [Math.floor(w/1.5), 0];
+    var pos3 = [0, 0];
+    var size2 = [0, 0];
     
     var rot = new Matrix4();
     rot.rotate(0, 0, Math.pi/2);
+    
+    //y bounds of active tab
+    var y1 = this.active.pos[1]-tri;
+    var y2 = this.active.pos[1]+this.active.size[1]+tri;
+    if (y1 < 5) y1 = 0;
+    if (y2 >= this.size[1]-5) y2 = this.size[1]-1;
     
     for (var t in this.tabs) {
       if (t.tbound == undefined) {
@@ -79,28 +88,41 @@ class UITabBar extends UIElement {
       
       t.pos[0] = pos[0]; t.pos[1] = pos[1];
       t.size[0] = size[1]; t.size[1] = size[1];
+
+      //do minmax
+      pos3[0] = pos[0]+size[0]; pos3[1] = pos[1]+size[1];
+      this.mm.minmax(pos);
+      this.mm.minmax(pos3);
+      
+      //text position
+      pos2[1] = pos[1]+4;
       
       if (t == this.highlight && t != this.active)
         canvas.simple_box(pos, size, uicolors["HighlightTab"]);
       else if (t != this.active)
         canvas.simple_box(pos, size, 0.85);
-     
-      pos2[1] = pos[1]+4;
+      else {
+        pos3[0] = 0; pos3[1] = y1;
+        size2[0] = w+1; size2[1] = y2-y1;
+        canvas.box2(pos3, size2, uicolors["SimpleBox"]);
+      }
       canvas.text(pos2, t.text, uicolors["TabText"], undefined, undefined, Math.PI/2.0);
     }
       
-    var y1 = this.active.pos[1]-tri;
-    var y2 = this.active.pos[1]+this.active.size[1]+tri;
-    
-    if (y1 < 5) y1 = 0;
-    if (y2 >= this.size[1]-5) y2 = this.size[1]-1;
-    
     var lineclr = uicolors["TabPanelOutline"];
-    canvas.line([w, 0], [w, y1], lineclr);
-    canvas.line([0, y1], [w, y1], lineclr);
-    canvas.line([0, y1], [0, y2], lineclr);
-    canvas.line([0, y2], [w, y2], lineclr);
-    canvas.line([w, y2], [w, this.size[1]], lineclr);
+    if (!(this.packflag & PackFlags.FLIP_TABSTRIP)) {
+      canvas.line([w, 0], [w, y1], lineclr);
+      canvas.line([0, y1], [w, y1], lineclr);
+      canvas.line([0, y1], [0, y2], lineclr);
+      canvas.line([0, y2], [w, y2], lineclr);
+      canvas.line([w, y2], [w, this.size[1]], lineclr);
+    } else {
+      canvas.line([0, 0], [0, y1], lineclr);
+      canvas.line([w, y1], [0, y1], lineclr);
+      canvas.line([w, y1], [w, y2], lineclr);
+      canvas.line([w, y2], [0, y2], lineclr);
+      canvas.line([0, y2], [0, this.size[1]], lineclr);
+    }
   }
   
   on_inactive() {
@@ -141,8 +163,12 @@ class UITabBar extends UIElement {
 //want to see if I can use the same code for vertical/horizontal tab
 //strips
 class UITabPanel extends UIFrame {
-  constructor(Context ctx, Array<float> size=undefined, char mode="v") {
+  constructor(Context ctx, Array<float> size=undefined, char mode="v", Boolean flip=false) {
     UIFrame.call(this, ctx);
+    
+    this.flip = flip;
+    if (flip)
+      this.packflag |= PackFlags.FLIP_TABSTRIP;
     
     if (size != undefined) {
       this.size = size;
@@ -153,9 +179,10 @@ class UITabPanel extends UIFrame {
     this.subframe = mode == "v" ? new ColumnFrame(ctx) : new RowFrame(ctx)
     this.subframe.pos = [0,0];
     this.subframe.pad[1] = 0;
-    this.subframe.pad[0] = 10;
+    this.subframe.pad[0] = 4;
     this.subframe.packflag |= PackFlags.NO_AUTO_SPACING|PackFlags.ALIGN_LEFT|PackFlags.ALIGN_BOTTOM; //|PackFlags.INHERIT_HEIGHT; 
-    this.subframe.packflag |= PackFlags.INHERIT_WIDTH;
+    this.subframe.packflag |= PackFlags.INHERIT_WIDTH|PackFlags.NO_LIMIT;
+    this.subframe.packflag |= PackFlags.NO_LEAD_SPACING|PackFlags.NO_TRAIL_SPACING;
     
     var this2 = this;
     function callback(text, id) {
@@ -166,15 +193,19 @@ class UITabPanel extends UIFrame {
     this.tabstrip = new UITabBar(ctx, undefined, callback);
     this.tabstrip.packflag |= PackFlags.INHERIT_HEIGHT;
     
-    this.subframe.pad[0] = 0;
-    
     this.content = new RowFrame();
     this.content.pad[1] = 4;
     this.content.rcorner = 0.0;
     this.content.draw_background = true;
     
     this.subframe.add(this.tabstrip);
-    this.subframe.add(this.content);
+    
+    if (flip) {
+      this.tabstrip.packflag |= PackFlags.FLIP_TABSTRIP;
+      this.subframe.prepend(this.content);
+    } else {
+      this.subframe.add(this.content);
+    }
     
     this.add(this.subframe);
   }
@@ -220,8 +251,14 @@ class UITabPanel extends UIFrame {
     var lineclr = uicolors["TabPanelOutline"];
     var t = this.tabstrip.thickness; //header width
     
-    canvas.line([t, 0], [this.size[0], 0], lineclr);
-    canvas.line([t, this.size[1]-1], [this.size[0], this.size[1]-1], lineclr);
+    var sx = this.tabstrip.pos[0];
+    if (!(this.packflag & PackFlags.FLIP_TABSTRIP)) {
+      canvas.line([t, 0], [sx, 0], lineclr);
+      canvas.line([t, this.size[1]-1], [sx, this.size[1]-1], lineclr);
+    } else {
+      canvas.line([0, 0], [sx, 0], lineclr);
+      canvas.line([0, this.size[1]-1], [sx, this.size[1]-1], lineclr);
+    }
   }
   
   tab_callback(String text, Object id) {

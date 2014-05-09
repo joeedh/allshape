@@ -167,11 +167,12 @@ class MeshEditor extends View3DEditor {
     var row = new RowFrame(ctx);
     
     row.no_auto_padding = true;
-    row.packflag |= PackFlags.NO_AUTO_SPACING;
+    row.packflag |= PackFlags.NO_AUTO_SPACING
+    row.default_packflag |= PackFlags.FLIP_TABSTRIP;
     
     //row.default_packflag = PackFlags.INHERIT_WIDTH;
     
-    row.size = [148, view3d.size[1]-Area.get_barhgt()*2.0]
+    row.size = [Area.get_barwid(), view3d.size[1]-Area.get_barhgt()*2.0]
     row.draw_background = true
     row.rcorner = 100.0
     row.pos = [0, Area.get_barhgt()]

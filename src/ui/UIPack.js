@@ -13,7 +13,9 @@ var PackFlags = {
   USE_SMALL_ICON :    1024, USE_LARGE_ICON : 2048,
   ENUM_STRIP :        4096, NO_AUTO_SPACING : 8192,
   //for colframe, center  y, for rowframe, center x
-  ALIGN_CENTER_Y :    16384, ALIGN_CENTER_X : 32768
+  ALIGN_CENTER_Y :    16384, ALIGN_CENTER_X : 32768,
+  FLIP_TABSTRIP : 65536, NO_LEAD_SPACING : (1<<17),
+  NO_TRAIL_SPACING : (1<<18)
 }
 
 class UIPackFrame extends UIFrame {
@@ -335,7 +337,10 @@ class UIPackFrame extends UIFrame {
   }
   
   tabstrip(int align=0, int default_packflag=0) {
-    var ret = new UITabPanel(this.ctx);
+    var flip = this.default_packflag & PackFlags.FLIP_TABSTRIP;
+    flip = flip || (align & PackFlags.FLIP_TABSTRIP);
+      
+    var ret = new UITabPanel(this.ctx, undefined, undefined, flip);
     ret.packflag |= align|PackFlags.INHERIT_WIDTH;
     ret.default_packflag = this.default_packflag|default_packflag;
     
@@ -621,18 +626,23 @@ class ColumnFrame extends UIPackFrame {
       y = (this.size[1]-max_hgt)*0.5;
     }
     
-    var pad = this.pad[0];
-    
+    var startx;
+    if (this.packflag & PackFlags.NO_LEAD_SPACING)
+      startx = 0;
+    else
+      startx = this.pad[0];
+      
     var do_center_post = false;
     if (this.packflag & PackFlags.ALIGN_RIGHT) {
-      x = this.size[0]-pad;
+      x = this.size[0]-startx;
     } else if (this.packflag & PackFlags.ALIGN_LEFT) {
-      x = this.pad[0];
+      x = startx;
     } else {
       this.packflag |= PackFlags.ALIGN_CENTER;
-      x = 0;
+      x = 0; //elements will be offset later
     }
     
+    var pad = this.pad[0];
     var finalwid = 0;
     for (var c in this.children) {
       var size;

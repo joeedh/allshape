@@ -249,6 +249,14 @@ class Area extends UIFrame {
     }
   }
 
+  static get_barwid() {
+    if (IsMobile) {
+      return 152;
+    } else {
+      return 148;
+    }
+  }
+  
   static get_barhgt() {
     if (IsMobile) {
       return 45;
