@@ -179,7 +179,7 @@ class UITabPanel extends UIFrame {
     this.subframe = mode == "v" ? new ColumnFrame(ctx) : new RowFrame(ctx)
     this.subframe.pos = [0,0];
     this.subframe.pad[1] = 0;
-    this.subframe.pad[0] = 4;
+    this.subframe.pad[0] = flip ? 4 : 0;
     this.subframe.packflag |= PackFlags.NO_AUTO_SPACING|PackFlags.ALIGN_LEFT|PackFlags.ALIGN_BOTTOM; //|PackFlags.INHERIT_HEIGHT; 
     this.subframe.packflag |= PackFlags.INHERIT_WIDTH|PackFlags.NO_LIMIT;
     this.subframe.packflag |= PackFlags.NO_LEAD_SPACING|PackFlags.NO_TRAIL_SPACING;
@@ -251,7 +251,7 @@ class UITabPanel extends UIFrame {
     var lineclr = uicolors["TabPanelOutline"];
     var t = this.tabstrip.thickness; //header width
     
-    var sx = this.tabstrip.pos[0];
+    var sx = this.flip ? this.tabstrip.pos[0] : this.size[0];
     if (!(this.packflag & PackFlags.FLIP_TABSTRIP)) {
       canvas.line([t, 0], [sx, 0], lineclr);
       canvas.line([t, this.size[1]-1], [sx, this.size[1]-1], lineclr);

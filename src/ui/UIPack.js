@@ -563,8 +563,8 @@ class ColumnFrame extends UIPackFrame {
       else
         size = [c.size[0], c.size[1]];
         
-      totwid += size[0]+2;
-      maxheight = Math.max(maxheight, size[1]+2);
+      totwid += size[0]+this.pad[0];
+      maxheight = Math.max(maxheight, size[1]+this.pad[1]);
     }
     
     if (this.min_size != undefined) {

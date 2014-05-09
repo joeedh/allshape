@@ -168,7 +168,9 @@ class MeshEditor extends View3DEditor {
     
     row.no_auto_padding = true;
     row.packflag |= PackFlags.NO_AUTO_SPACING
-    row.default_packflag |= PackFlags.FLIP_TABSTRIP;
+    
+    if (IsMobile)
+      row.default_packflag |= PackFlags.FLIP_TABSTRIP;
     
     //row.default_packflag = PackFlags.INHERIT_WIDTH;
     
