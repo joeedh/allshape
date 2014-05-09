@@ -180,7 +180,7 @@ class UITabPanel extends UIFrame {
   }
   
   get_uhash() {
-    var s = prior(UITabPanel, this).get_uhash.call();
+    var s = prior(UITabPanel, this).get_uhash.call(this);
     
     for (var t in this.tabstrip.tabs) {
       s += t.text;

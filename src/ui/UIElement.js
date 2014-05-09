@@ -13,7 +13,7 @@ var UIFlags = {
   //          execute pan
   //- pan_canvas_mat : change canvas global matrix, not frame position
   HAS_PAN : 512, USE_PAN : 1024, PAN_CANVAS_MAT : 2048,
-  IS_CANVAS_ROOT : 4096
+  IS_CANVAS_ROOT : 4096, NO_FRAME_CACHE : 8192
 };
 
 var CanvasFlags = {NOT_ROOT : 1, NO_PROPEGATE : 2}
@@ -41,7 +41,7 @@ function close_mobile_keyboard(e) {
 function inrect_2d_button(Array<float> p, Array<float> pos, Array<float> size) : Boolean {
   static pos2=new Vector2(), size2=new Vector2();
   
-  if (IsMobile) {
+  if (g_app_state.was_touch) {
     pos2.load(pos);
     size2.load(size);
     
@@ -303,7 +303,8 @@ class UIElement extends EventHandler {
     
     var p = this.parent
     while (p != undefined) {
-      p.pop_modal();
+      if (p != this)
+        p.pop_modal();
       
       p = p.parent;
     }
@@ -356,8 +357,11 @@ class UIElement extends EventHandler {
   }
   
   //simple filedata
-  get_filedata() : Array<UIFileData> {
-    
+  get_filedata() : Object {
+      return undefined; //default behavior, won't save anything
+  }
+  
+  load_filedata() {
   }
   
   /*get non-numeric unique hash
@@ -379,7 +383,9 @@ class UIElement extends EventHandler {
     //return CryptoJS.enc.Base64.stringify(CryptoJS.SHA1(s));
   }
   
-  on_tick() { }
+  on_tick() { 
+    EventHandler.prototype.on_tick.call(this);
+  }
   on_keydown(KeyboardEvent event) { }
   on_keyup(KeyboardEvent event) { }
   on_mousemove(MouseEvent event) { }

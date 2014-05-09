@@ -78,6 +78,68 @@ class EventHandler {
     this.modalstack = new Array<EventHandler>();
     this.modalhandler = null;
     this.keymap = null;
+    this.touch_manager = undefined;
+    this.touch_delay_stack = [];
+  }
+  
+  push_touch_delay(int delay_ms) {
+    this.touch_delay_stack.push(this.touch_delay);
+    this.touch_delay = delay_ms;
+  }
+  
+  pop_touch_delay() {
+    if (this.touch_delay_stack.length == 0) {
+      console.log("Invalid call to EventHandler.pop_touch_delay!");
+      return;
+    }
+    
+    this.touch_delay = this.touch_delay_stack.pop();
+  }
+  
+  set touch_delay(int delay_ms) {
+    if (delay_ms == 0) {
+      this.touch_manager = undefined;
+    } else {
+      if (this.touch_manager == undefined)
+        this.touch_manager = new TouchEventManager(this, delay_ms);
+      else
+        this.touch_manager.delay = delay_ms;
+    }
+  }
+  
+  get touch_delay() : int {
+    if (this.touch_manager == undefined)
+      return 0;
+    
+    return this.touch_manager.delay;
+  }
+  
+  on_tick() {
+    if (this.touch_manager != undefined)
+      this.touch_manager.process();
+  }
+  
+  bad_event(Event event) { 
+    var tm = this.touch_manager;
+    
+    if (tm == undefined)
+      return false;
+    
+    if (this.touch_manager != undefined)
+      this.touch_manager.process();
+    //if (this instanceof View3DHandler)
+    //  console.log(event._good, "in bad_event", this.touch_manager, event);
+    
+    if (tm != undefined && event instanceof MyMouseEvent) {
+      if ("_good" in event) return false;
+      
+      //console.log("bad event!");
+      this.touch_manager.queue_event(event);
+      
+      return true;
+    }
+    
+    return false;
   }
   
   on_textinput(Object event) { }
@@ -156,6 +218,8 @@ class EventHandler {
   
   _on_keydown(KeyboardEvent event) 
   { 
+    if (this.bad_event(event)) return;
+    
     if (this.modalhandler != null)
       this.modalhandler.on_keydown(event);
     else
@@ -164,6 +228,8 @@ class EventHandler {
 
   _on_charcode(KeyboardEvent event) 
   { 
+    if (this.bad_event(event)) return;
+    
     if (this.modalhandler != null)
       this.modalhandler.on_charcode(event);
     else
@@ -172,6 +238,8 @@ class EventHandler {
 
   _on_keyinput(InputEvent event) 
   { 
+    if (this.bad_event(event)) return;
+    
     if (this.modalhandler != null)
       this.modalhandler.on_keyinput(event);
     else
@@ -180,6 +248,8 @@ class EventHandler {
 
   _on_keyup(KeyboardEvent event) 
   { 
+    if (this.bad_event(event)) return;
+    
     if (this.modalhandler != null)
       this.modalhandler.on_keyup(event);
     else
@@ -188,6 +258,8 @@ class EventHandler {
 
   _on_mousemove(MouseEvent event)
   { 
+    if (this.bad_event(event)) return;
+    
     if (this.modalhandler != null)
       this.modalhandler.on_mousemove(event);
     else
@@ -196,6 +268,8 @@ class EventHandler {
 
   _on_mousedown(MouseEvent event)
   { 
+    if (this.bad_event(event)) return;
+    
     if (this.modalhandler != null)
       this.modalhandler.on_mousedown(event);
     else
@@ -204,6 +278,8 @@ class EventHandler {
     
   _on_mouseup(MouseEvent event)
   { 
+    if (this.bad_event(event)) return;
+    
     if (_swap_next_mouseup && event.button == _swap_next_mouseup_button) {
       event.button = _swap_next_mouseup_button==2 ? 0 : 2;
       _swap_next_mouseup = false;
@@ -223,6 +299,8 @@ class EventHandler {
   //# $(DomMouseEvent, Number).void
   _on_mousewheel(MouseEvent event, float delta)
   { 
+    if (this.bad_event(event)) return;
+    
     if (this.modalhandler != null)
       this.modalhandler.on_mousewheel(event, delta);
     else
@@ -423,11 +501,14 @@ class FuncKeyHandler extends KeyHandlerCls {
 class VelocityPan extends EventHandler {
   constructor() {
     this.start_mpos = new Vector2();
+    this.last_mpos = new Vector2();
+    
     this.mpos = new Vector2();
 
     this.start_time = 0;
     this.owner = undefined : EventHandler;
     
+    this.coasting = false;
     this.panning = false;
     this.was_touch = false;
     
@@ -436,9 +517,39 @@ class VelocityPan extends EventHandler {
     this.damp = 0.9;
     
     this.start_pan = new Vector2();
+    
+    this.last_ms = 0;
+    this.vel = new Vector2();
+  }
+  
+  on_tick() {
+    if (this.coasting) {
+      static vel = new Vector2();
+      var damp = 0.99;
+      
+      vel.load(this.vel);
+      vel.mulScalar(time_ms() - this.last_ms);
+      this.vel.mulScalar(damp);
+      
+      this.last_ms = time_ms();
+      
+      this.pan.sub(vel);
+      this.clamp_pan();
+      this.owner.on_pan(this.pan, this.start_pan);
+    }
+  }
+  
+  calc_vel() {
+    var t = time_ms() - this.start_time;
+    this.vel.load(this.last_mpos).sub(this.mpos).divideScalar(t);
+    this.coasting = (this.vel.vectorLength() > 0.0);
+    this.last_ms = time_ms();
   }
   
   start(Array<float> mpos, UIElement owner) {
+    this.coasting = false;
+    this.last_mpos.load(mpos);
+    
     if (this.panning) {
       console.log("warning, duplicate call to VelocityPan.start()");
       this.end();
@@ -462,26 +573,34 @@ class VelocityPan extends EventHandler {
       this.owner.pop_modal();
     }
     this.panning = false;
+    this.calc_vel();
   }
   
   do_mousemove(Array<float> mpos) {
     //console.log("mpos", mpos);
     
+    this.last_mpos.load(this.mpos);
     this.mpos.load(mpos);
     
     this.pan[0] = this.start_pan[0] + mpos[0] - this.start_mpos[0];
     this.pan[1] = this.start_pan[1] + mpos[1] - this.start_mpos[1];
     
-    var bs = this.owner.pan_bounds;
-    var p = this.pan;
-    for (var i=0; i<2; i++) {
-      p[i] = Math.min(Math.max(bs[0][i], p[i]), bs[1][i]);
-    }
-    
+    this.clamp_pan();
     this.owner.on_pan(this.pan, this.start_pan);
   }
   
+  clamp_pan() {
+    var bs = this.owner.pan_bounds;
+    var p = this.pan;
+
+    for (var i=0; i<2; i++) {
+      p[i] = Math.min(Math.max(bs[0][i], p[i]), bs[1][i]);
+    }
+  }
+  
   on_mouseup(MouseEvent event) {
+    this.mpos.load([event.y, event.y]);
+    this.calc_vel();
     this.end();
   }
   
@@ -491,32 +610,53 @@ class VelocityPan extends EventHandler {
 }
 
 class TouchEventManager {
-  constructor() {
+  constructor(EventHandler owner, int delay=100) {
     this.queue = new GArray();
     this.queue_ms = new GArray();
-    this.delay = 200;
+    this.delay = delay;
+    this.owner = owner;
+  }
+  
+  get_last(int type) {
+    var i = this.queue.length;
+    if (i == 0) return undefined;
+    i--;
+    
+    var q = this.queue;
+    
+    while (i >= 0) {
+      var e = q[i];
+      if (e.type == type || e.type != MyMouseEvent.MOUSEMOVE)
+        break;
+      i--;
+    }
+    
+    if (i < 0) i = 0;
+    
+    return q[i].type == type ? q[i] : undefined;
   }
   
   queue_event(MouseEvent event) {
-    var last = this.queue.length > 0 ? this.queue[this.queue.length-1] : undefined;
+    var last = this.get_last(event.type);
     
     //merge repeated events, which may
     //contain different touch states
-    if (last != undefined && last.type == event.type) {
+    if (last != undefined && last.type != MyMouseEvent.MOUSEMOVE) {
       var dis, same=true;
       
       for (var k in event.touches) {
         if (!(k in last.touches)) { 
-          same = false;
+          //same = false;
         }
       }
       
       //only compare same ids
       dis = new Vector2([event.x, event.y]).vectorDistance(new Vector2([last.x, last.y]));
-        
+      
+      console.log(dis);
       if (same && dis < 50) {
-        console.log("destroying duplicate event", event.x, event.y, event.touches);
-        for (var k in event) {
+        console.log("destroying duplicate event", last.type, event.x, event.y, event.touches);
+        for (var k in event.touches) {
           last.touches[k] = event.touches[k];
         }
         
@@ -552,11 +692,7 @@ class TouchEventManager {
   }
   
   process() {
-    var screen = g_app_state.screen;
-    if (screen == undefined) {
-      console.log("warning, no screen in TouchEventManager.process()");
-      return;
-    }
+    var owner = this.owner;
     
     dl = new GArray();
     var q = this.queue;
@@ -579,13 +715,15 @@ class TouchEventManager {
     
     //now, fire events
     for (var e in dl) {
+      e._good = true;
+      
       try {
         if (e.type == MyMouseEvent.MOUSEDOWN)
-          screen._on_mousedown(e);
+          owner._on_mousedown(e);
         else if (e.type == MyMouseEvent.MOUSEMOVE)
-          screen._on_mousemove(e);
+          owner._on_mousemove(e);
         else if (e.type == MyMouseEvent.MOUSEUP)
-          screen._on_mouseup(e);
+          owner._on_mouseup(e);
       } catch (_err) {
         print_stack(_err)
         console.log("Error executing delayed touch event");
@@ -599,4 +737,4 @@ class TouchEventManager {
   }
 }
 
-var touch_manager = new TouchEventManager();
+var touch_manager = new TouchEventManager(undefined, 20);

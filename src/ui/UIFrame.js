@@ -10,7 +10,9 @@ class UIFrame extends UIElement {
   constructor(ctx, canvas, path, pos, size) { //path, pos, size are optional
     UIElement.call(this, ctx, path, pos, size);
     
+    this._pan_cache = {};
     this.pan_bounds = [[0, 0], [0, 0]];
+    
     this.ctx = ctx;
     this.children = new GArray([])
     this.active = undefined;
@@ -20,6 +22,7 @@ class UIFrame extends UIElement {
     this.mpos = [0, 0];
     
     this.draw_background = false;
+    this.has_hidden_elements = false;
     
     if (canvas != undefined) {
       this.canvas = canvas;
@@ -182,9 +185,13 @@ class UIFrame extends UIElement {
     } else {
       this.do_full_recalc();
     }
+    
+    this.pan_do_build();
   }
   
   _on_mousemove(MouseEvent event) {
+    if (this.bad_event(event)) return;
+  
     if (this.modalhandler != null) {
       this._offset_mpos(event);
       this.modalhandler._on_mousemove(event);
@@ -196,6 +203,8 @@ class UIFrame extends UIElement {
   }
 
   on_mousemove(MouseEvent e) {
+    if (this.bad_event(e)) return;
+    
     this._offset_mpos(e);
 
     //current mouse position relative to this.pos
@@ -238,7 +247,7 @@ class UIFrame extends UIElement {
       e.x -= this.active.pos[0];
       e.y -= this.active.pos[1];
       
-      this.active.on_mousemove(e)
+      this.active._on_mousemove(e)
       
       e.x += this.active.pos[0];
       e.y += this.active.pos[1];
@@ -249,6 +258,8 @@ class UIFrame extends UIElement {
   }
 
   _on_mousedown(MouseEvent event) {
+    if (this.bad_event(event)) return;
+    
     if (this.modalhandler != null) {
       this._offset_mpos(event);
       
@@ -259,6 +270,8 @@ class UIFrame extends UIElement {
   }
 
   on_mousedown(MouseEvent e) {
+    if (this.bad_event(e)) return;
+    
     this.on_mousemove(e);
     
     this._offset_mpos(e);
@@ -268,7 +281,7 @@ class UIFrame extends UIElement {
       e.x -= this.active.pos[0];
       e.y -= this.active.pos[1];
       
-      this.active.on_mousedown(e);
+      this.active._on_mousedown(e);
     }
     
     if ((this.state & UIFlags.USE_PAN) && this.active == undefined) {
@@ -282,6 +295,8 @@ class UIFrame extends UIElement {
 
 
   _on_mouseup(MouseEvent event) {
+    if (this.bad_event(event)) return;
+    
     if (this.modalhandler != null) {
       this._offset_mpos(event);
       this.modalhandler._on_mouseup(event);
@@ -291,13 +306,15 @@ class UIFrame extends UIElement {
   }
 
   on_mouseup(MouseEvent e) {
+    if (this.bad_event(e)) return;
+    
     this._offset_mpos(e);
     
     if (this.active != undefined) {
       e.x -= this.active.pos[0];
       e.y -= this.active.pos[1];
       
-      this.active.on_mouseup(e);
+      this.active._on_mouseup(e);
     }
     
     this._unoffset_mpos(e);
@@ -306,6 +323,8 @@ class UIFrame extends UIElement {
 
 
   _on_mousewheel(MouseEvent event, float delta) {
+    if (this.bad_event(event)) return;
+
     if (this.modalhandler != null) {
       if (this.modalhandler["pos"] != undefined) {
         event.x -= this.modalhandler.pos[0]
@@ -324,7 +343,7 @@ class UIFrame extends UIElement {
         event.y -= this.modalhandler.pos[1]
       }
       
-      this.active.on_mousewheel(e, delta);
+      this.active._on_mousewheel(e, delta);
     }
     
     return this.active != undefined;
@@ -369,9 +388,14 @@ class UIFrame extends UIElement {
     var p = this;
     while (p != undefined) {
       s += p.constructor.name;
-      if (p instanceof Area) {
-        s += p.parent.parent.areas.indexOf(p.parent);
-      }
+      
+      //don't go above Area, which isn't
+      //when fromSTRUCT is called
+      if (p instanceof Area) 
+        break;
+      //if (p instanceof Area) {
+      //  s += p.parent.parent.areas.indexOf(p.parent);
+      //}
       
       p = p.parent;
     }
@@ -481,9 +505,6 @@ class UIFrame extends UIElement {
   }
 
   on_draw(gl) {
-    //handle delayed touch events
-    touch_manager.process();
-    
     function descend(n, canvas) {
       for (var c in n.children) {
         if (c.canvas != undefined) continue;
@@ -521,9 +542,53 @@ class UIFrame extends UIElement {
       c.set_context(ctx);
     }
   }
-
-  build_draw(canvas, isVertical, cache_frame=true) {
+  
+  load_filedata(ObjectMap obj) {
+    if (obj.pan) {
+      this.velpan = new VelocityPan();
+      this.velpan.pan.load(obj.pan);
+    }
+  }
+  
+  get_filedata() : String {
+    if (this.state & UIFlags.HAS_PAN && this.velpan != undefined) {
+      return {pan : this.velpan.pan};
+    }
+    
+    return undefined;
+  }
+  
+  pan_do_build() {
+    var cache = this._pan_cache;
+    var cache2 = {};
+    var i = 0;
+    var viewport = g_app_state.raster.viewport;
+    
+    for (var c in this.children) {
+      c.abspos[0] = 0; c.abspos[1] = 0;
+      c.abs_transform(c.abspos);
+      
+      var hidden = !aabb_isect_2d(c.abspos, c.size, viewport[0], viewport[1]);
+      
+      if (!this.recalc && !hidden && (!(i in cache) || cache[i] != hidden)) {
+        console.log("pan recalc");
+        this.do_recalc();
+      }
+      
+      cache2[i] = hidden;
+      i++;
+     }
+     
+     this._pan_cache = cache2;
+  }
+  
+  build_draw(canvas, isVertical, cache_frame=undefined) {
     var mat = _static_mat;
+    this.has_hidden_elements = false;
+    
+    if (cache_frame == undefined) {
+      cache_frame = !(this.state & UIFlags.NO_FRAME_CACHE);
+    }
     
     if (cache_frame && this.framecount == 0) {
       canvas.frame_begin(this);
@@ -564,7 +629,8 @@ class UIFrame extends UIElement {
       c.abs_transform(c.abspos);
       
       if (!aabb_isect_2d(c.abspos, c.size, viewport[0], viewport[1])) {
-        continue; //XXX
+        this.has_hidden_elements = true;
+        continue;
       }
       
       if (c.pos == undefined) {
@@ -644,6 +710,8 @@ class UIFrame extends UIElement {
 
   //pre_func is optional, and is called before each child's on_tick is executed
   on_tick(pre_func) {
+    prior(UIFrame, this).on_tick.call(this);
+    
     if (this.state & UIFlags.HAS_PAN && this.valpan == undefined) {
       this.valpan = new VelocityPan();
      
@@ -657,6 +725,10 @@ class UIFrame extends UIElement {
       }
       
       recurse(this);
+    }
+    
+    if (this.velpan != undefined) {
+      this.velpan.on_tick();
     }
     
     for (var c in this.children) {

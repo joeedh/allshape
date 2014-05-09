@@ -2,13 +2,87 @@
 
 #include "src/core/utildefine.js"
 
+class UIButtonAbstract extends UIHoverHint {
+  constructor(ctx, path=undefined, pos=undefined, size=undefined) {
+    UIHoverHint.call(this, ctx, path, pos, size);
+    
+    this.clicked = false;
+    this.click_on_down = false; //is ignored for multitouch
+    this.modal_click = undefined; //defaults to !click_on_down
+    this.was_touch = false;
+    this.start_mpos = new Vector2();
+  }
+  
+  on_click(MouseEvent event) {
+  }
+  
+  on_mousedown(MouseEvent event) {
+    if (!this.clicked) {
+      this.was_touch = g_app_state.was_touch;
+      this.modal_click = !this.click_on_down || this.was_touch;
+      
+      this.start_mpos.load([event.x, event.y]);
+      
+      if (event.button == 0 && !this.clicked) {
+        if (this.modal_click)
+          this.parent.push_modal(this);
+        this.stop_hover();
+        
+        this.clicked = true;
+        this.do_recalc();
+        
+        if (!this.was_touch && this.click_on_down) {
+          this.on_click(event);
+        }
+      }  
+    }
+  }
+
+  on_mouseup(MouseEvent event) {
+    if (event.button == 0) {
+      if (this.modal_click)
+        this.pop_modal();
+      this.clicked = false;
+      this.do_recalc();
+      
+      
+      var click = this.was_touch || !this.click_on_down;
+      console.log("click: ", click, "button mouseup: ", event.x, event.y, this.size[0], this.size[1]);
+      if (click) { // && inrect_2d_button([event.x, event.y], [0, 0], this.size)) {
+        this.on_click(event);
+      }
+    }  
+  }
+  
+  on_mousemove(MouseEvent event) {
+    if (!this.clicked) {
+      this.start_hover();
+    }
+    
+    if (this.was_touch) {
+      var mpos = [event.x, event.y];
+      var dis = this.start_mpos.vectorDistance(mpos);
+      console.log("dis", dis);
+      if (dis > 8) { // && !inrect_2d_button(mpos, [0, 0], this.size)) {
+        if (this.modal_click)
+          this.parent.pop_modal();
+        
+        this.stop_hover();
+        this.clicked = false;
+        this.do_recalc();
+        this.start_pan(event);
+      }
+    }
+  }
+}
+
 //buttons only take executable (function) paths as arguments
-class UIButton extends UIHoverHint {
+class UIButton extends UIButtonAbstract {
   constructor(Context ctx, String text, Array<float> pos, 
               Array<float> size, String path=undefined, 
               Function callback=undefined, String hint=undefined) 
   {
-    UIHoverHint.call(this, ctx, path, pos, size);
+    UIButtonAbstract.call(this, ctx, path, pos, size);
     
     this.clicked = false;
     this.text = text;
@@ -39,46 +113,16 @@ class UIButton extends UIHoverHint {
     }
   }
   
-  on_mousemove(MouseEvent event) {
-    if (!this.clicked) {
-      this.start_hover();
+  on_click(MouseEvent event) {
+    if (this.callback != undefined) {
+      this.callback(this);
+    }
+    
+    if (this.state & UIFlags.USE_PATH) {
+      this.ctx.api.call_op(this.ctx, this.data_path);
     }
   }
   
-  on_mousedown(MouseEvent event) {
-    if (DEBUG.ui_except_handling) {
-      this._do_err_on_draw = true;
-    }
-    
-    if (event.button == 0 && !this.clicked) {
-      this.push_modal();
-      this.stop_hover();
-      
-      this.clicked = true;
-      this.do_recalc();
-    }  
-  }
-
-  on_mouseup(MouseEvent event) {
-    if (event.button == 0) {
-      this.pop_modal();
-      this.clicked = false;
-      this.do_recalc();
-      
-      console.log("button mouseup: ", event.x, event.y, this.size[0], this.size[1]);
-      
-      if (inrect_2d_button([event.x, event.y], [0, 0], this.size)) {
-        if (this.callback != undefined) {
-          this.callback(this);
-        }
-        
-        if (this.state & UIFlags.USE_PATH) {
-          this.ctx.api.call_op(this.ctx, this.data_path);
-        }
-      }
-    }  
-  }
-
   build_draw(UICanvas canvas) {
     canvas.begin(this);
 
@@ -210,15 +254,16 @@ class UIButtonIcon extends UIButton {
   }
 }
 
-class UIMenuButton extends UIHoverHint {
+class UIMenuButton extends UIButtonAbstract {
   constructor(ctx, menu, pos, size, path, description="") {//menu can be undefined, if path is defined
-    UIHoverHint.call(this, ctx, path);
+    UIButtonAbstract.call(this, ctx, path);
     
     this.menu = menu : UIMenu;
     
+    this.click_on_down = true;
+    
     this.description = "";
     this.ctx = ctx;
-    this.clicked = false;
     this.text = ""
     this.val = 0;
     
@@ -308,31 +353,8 @@ class UIMenuButton extends UIHoverHint {
     this.menu = menu;
   }
 
-  on_mousedown(MouseEvent event) {
-    if (event.button == 0 && this.clicked == false) {
-      this.stop_hover();
-      this.call_menu(this.menu, [0, Math.floor(this.size[1]-3)], this.size[0]);
-      this.clicked = true;
-      this.do_recalc();
-    }  
-  }
-
-  on_mouseup(MouseEvent event) {
-    if (event.button == 0 && this.clicked == true) {
-      if (inrect_2d_button([event.x, event.y], [0,0], this.size)) {
-        console.log("clicked")
-        
-        if (this.callback != undefined) {
-          this.callback(this);
-        }
-      }
-    }  
-  }
-  
-  on_mousemove(MouseEvent event) {
-    if (!this.clicked) {
-      this.start_hover();
-    }
+  on_click(MouseEvent event) {
+    this.call_menu(this.menu, [0, Math.floor(this.size[1]-3)], this.size[0]);
   }
   
   build_draw(UICanvas canvas) {

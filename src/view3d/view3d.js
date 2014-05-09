@@ -178,6 +178,25 @@ class View3DHandler extends Area {
     
     this.editor = new MeshEditor(this);
     this.editors = new GArray([this.editor]);
+    
+    this.touch_delay = 100;
+  }
+  
+  push_modal(EventHandler e) {
+    this.push_touch_delay(20);
+    
+    prior(View3DHandler, this).push_modal.call(this, e);
+  }
+  
+  pop_modal(EventHandler e) {
+    this.pop_touch_delay();
+    
+    //paranoid check
+    if (this.modalhandler == undefined) {
+      this.touch_delay_stack = [];
+    }
+    
+    prior(View3DHandler, this).pop_modal.call(this, e);
   }
   
   get_keymaps() {
@@ -613,6 +632,9 @@ class View3DHandler extends Area {
   }
   
   on_mousedown(MouseEvent event) {
+    if (this.bad_event(event))
+      return;
+    
     if (prior(View3DHandler, this).on_mousedown.call(this, event))
       return;
     
@@ -651,6 +673,9 @@ class View3DHandler extends Area {
   }
 
   on_mouseup(MouseEvent event) {
+    if (this.bad_event(event))
+      return;
+      
     this._mstart = null;
     
     console.log("t", event.touches);
@@ -1040,7 +1065,7 @@ class View3DHandler extends Area {
       ctx.mesh.regen_render();
     }));
   }
-
+  
   _on_keyup(KeyboardEvent event) {
     this.shift = this.editor.shift = event.shiftKey;
     this.alt = this.editor.alt = event.altKey;

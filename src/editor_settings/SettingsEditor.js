@@ -198,10 +198,10 @@ class SettingsEditor extends Area {
     var obj = new SettingsEditor(new Context(), [0,0], [1,1]);
     reader(obj);
     
-    if (obj.pan != undefined) {
+    /*if (obj.pan != undefined) {
       obj.subframe.velpan = new VelocityPan();
       obj.subframe.velpan.pan = new Vector2(obj.pan);
-    }
+    }*/
     
     return obj;
   }
@@ -212,7 +212,6 @@ class SettingsEditor extends Area {
 }
 
 SettingsEditor.STRUCT = STRUCT.inherit(SettingsEditor, Area) + """
-    pan : array(float) | obj.subframe.velpan != undefined ? obj.subframe.velpan.pan : [0, 0];
   }
 """
 SettingsEditor.uiname = "Settings";

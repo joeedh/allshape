@@ -1453,6 +1453,7 @@ function toJSON_intern (ob, tlevel) {
           stop_event_propegation(e);
             
           if (g_app_state.eventhandler != undefined) {
+            touch_manager.owner = g_app_state.screen;
             var x, y;
             
             var t = e.targetTouches[0];
@@ -1469,7 +1470,8 @@ function toJSON_intern (ob, tlevel) {
             
             var e2 = new MyMouseEvent(x, y, 0, MyMouseEvent.MOUSEMOVE);
             e2.touches = do_touches(e);
-            g_app_state.eventhandler._on_mousemove(e2);
+            
+            touch_manager.queue_event(e2);
           }
         }
         
@@ -1540,6 +1542,7 @@ function toJSON_intern (ob, tlevel) {
           console.log("touch cancel");
           
           if (g_app_state.screen != undefined) {
+            touch_manager.owner = g_app_state.screen;
             var e2 = new MyMouseEvent(x, g_app_state.screen.size[1] - y, 0, MyMouseEvent.MOUSEUP);
             
             e2.shiftKey = e.shiftKey;
@@ -1592,6 +1595,7 @@ function toJSON_intern (ob, tlevel) {
             }
             
             if (g_app_state.screen != undefined) {
+              touch_manager.owner = g_app_state.screen;
               var e2 = new MyMouseEvent(x, y, 0, MyMouseEvent.MOUSEDOWN);
               
               e2.shiftKey = e.shiftKey;
@@ -1627,6 +1631,7 @@ function toJSON_intern (ob, tlevel) {
             }
             
             if (g_app_state.screen != undefined) {
+              touch_manager.owner = g_app_state.screen;
               var e2 = new MyMouseEvent(x, y, 0, MyMouseEvent.MOUSEUP);
               
               e2.shiftKey = e.shiftKey;

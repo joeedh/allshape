@@ -217,7 +217,7 @@ class MeshEditor extends View3DEditor {
     row2.toolop("mesh.vertsmooth(verts=mesh_selected(v))");
     row2.toolop("mesh.loopcut()");
 
-    var col = row.panel("Select").col();
+    var col = row.panel("Select", "select").col();
     var row2 = col.row(undefined, undefined, PackFlags.USE_LARGE_ICON);
     row2.pad[1] = spacing;
     row2.toolop("mesh.toggle_select_all()");

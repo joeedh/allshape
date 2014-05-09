@@ -5,7 +5,7 @@ class OpStackFrame extends RowFrame {
     RowFrame.call(this, ctx);
     
     this.pan_bounds = [[0, 0], [0, 0]];
-
+    
     this.pos = [0, 0];
     this.size = size;
     this.build_ms = time_ms();
@@ -40,7 +40,7 @@ class OpStackFrame extends RowFrame {
   }
   
   gen_panel(ToolOp tool, String path) {
-    var panel = new UIPanel(this.ctx, tool.uiname);
+    var panel = new UIPanel(this.ctx, tool.uiname, ""+tool.stack_index);
      
     if (!(tool instanceof ToolMacro)) {
       var toolframe = new ToolOpFrame(this.ctx, path);
@@ -171,6 +171,8 @@ class OpStackFrame extends RowFrame {
         this.add(panel);
       }
     }
+    
+    this.parent.first_build = false;
   }
   
   build_draw(UICanvas canvas, Boolean isVertical) {
@@ -183,7 +185,10 @@ class OpStackFrame extends RowFrame {
 class OpStackEditor extends Area {
   constructor(x, y, width, height) {
     Area.call(this, OpStackEditor.name, OpStackEditor.uiname, new Context(), [x, y], [width, height]);
-
+    
+    this.first_build = true;
+    this.auto_load_uidata = false;
+    
     this.keymap = new KeyMap();
     this.define_keymap();
     
@@ -236,6 +241,7 @@ class OpStackEditor extends Area {
   }
   
   on_area_inactive() {
+    this.first_build = true;
     this.destroy();
     prior(OpStackEditor, this).on_area_inactive.call(this);
   }
@@ -330,12 +336,15 @@ class OpStackEditor extends Area {
     var obj = new OpStackEditor(0, 0, 1, 1);
     reader(obj);
     
-    if (obj.pan != undefined) {
-      obj.velpan = new VelocityPan();
-      obj.velpan.pan = new Vector2(obj.pan);
-    }
-    
     return obj;
+  }
+  
+  on_tick() {
+    prior(OpStackEditor, this).on_tick.call(this);
+    
+    if (this._saved_uidata != undefined && !this.first_build) {
+      this.load_saved_uidata();
+    }
   }
   
   data_link(DataBlock block, Function getblock, Function getblock_us) {
@@ -344,7 +353,6 @@ class OpStackEditor extends Area {
 }
 
 OpStackEditor.STRUCT = STRUCT.inherit(OpStackEditor, Area) + """
-    pan : array(float) | obj.velpan != undefined ? obj.velpan.pan : [0, 0];
     filter_sel : int | obj._filter_sel;
   }
 """

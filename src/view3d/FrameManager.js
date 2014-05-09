@@ -20,6 +20,7 @@ class Area extends UIFrame {
     
     this.keymap = new KeyMap();
     
+    this.auto_load_uidata = true;
     this.uiname = uiname;
     this.type = type;
     
@@ -27,6 +28,100 @@ class Area extends UIFrame {
     this.cols = new GArray();
     
     this.note_area = undefined;
+    this._saved_uidata = undefined;
+  }
+  
+  on_tick() {
+    if (this.auto_load_uidata && this._saved_uidata != undefined) {
+      this.load_saved_uidata();
+      delete this._saved_uidata;
+    }
+    
+    prior(Area, this).on_tick.call(this);
+  }
+  
+  get saved_uidata() : String {
+    var paths = new GArray();
+    
+    function descend(e) {
+      var data = e.get_filedata();
+      if (data != undefined) {
+        if (typeof(data) != "string" && !(data instanceof String)) {
+          data = JSON.stringify(data);
+        }
+        
+        paths.push([e.get_uhash(), data]);
+      }
+      
+      if (e instanceof UIFrame) {
+        for (var c in e.children) {
+          descend(c);
+        }
+      }
+    }
+    
+    descend(this);
+    
+    return JSON.stringify(paths);
+  }
+  
+  //not going to use STRUCT.chain_fromSTRUCT for something
+  //as important as Area structs, since that function is a 
+  //possible source of bugs and type corruption
+  load_saved_uidata() {
+    var str = this._saved_uidata;
+    
+    if (str == undefined || str == "") return;
+    delete this._saved_uidata; //prevent recurring exceptions
+    
+    var paths;
+    try {
+      var paths = JSON.parse(str);
+    } catch (_err) {
+      print_stack(_err);
+      console.log("Error parsing saved uidata");
+      console.log("Data: ", str);
+    }
+    
+    var ids = {};
+    
+    for (var i=0; i<paths.length; i++) {
+      console.log("id", paths[i][0], "data", paths[i][1]);
+      try {
+        ids[paths[i][0]] = JSON.parse(paths[i][1]);
+      } catch (_err) {
+        print_stack(_err);
+        console.log("Could not parse ui filedata '"+paths[i][1]+"'");
+        if (paths[i][0] in ids)
+          delete ids[paths[i][0]];
+      }
+    }
+    
+    function recurse(e) {
+      var id = e.get_uhash();
+      if (id in ids) {
+        try {
+          console.log("found element", id, ids[id]);
+          e.load_filedata(ids[id])
+        } catch (_err) {
+          print_stack(_err);
+          console.log("Warning, could not load filedata for element", e);
+          console.log("  data: ", ids[id]);
+        }
+      }
+      
+      if (e instanceof UIFrame) {
+        for (var c in e.children) {
+          recurse(c);
+        }
+      }
+    }
+    
+    recurse(this);
+  }
+  
+  set saved_uidata(String str) : String {
+    this._saved_uidata = str;
   }
   
   /*stupidly, we store the "active" area (of each type)
@@ -211,6 +306,7 @@ Area.STRUCT = """
     pos  : vec2;
     size : vec2;
     type : string;
+    saved_uidata : string;
   }
 """
 
@@ -424,8 +520,9 @@ class ScreenArea extends UIFrame {
   }
 }
 
+
 ScreenArea.STRUCT = """
-  ScreenArea { 
+  ScreenArea {
     pos     : vec2;
     size    : vec2;
     type    : string;
@@ -1649,7 +1746,7 @@ class Screen extends UIFrame {
       e.altKey = this.altKey;
       e.ctrlKey = this.ctrlKey;
       
-      this._on_mousemove(e);
+      //this._on_mousemove(e);
     }
   }
 

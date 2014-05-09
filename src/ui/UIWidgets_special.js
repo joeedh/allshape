@@ -15,7 +15,7 @@ class UICollapseIcon extends UIButtonIcon {
     this._wrapped_callback = function() {
       console.log("triangle");
       this2.collapsed ^= true;
-      
+    
       if (this2._callback != undefined)
         this2._callback(this2, this2.collapsed);
     };
@@ -46,13 +46,15 @@ class UICollapseIcon extends UIButtonIcon {
 }
 
 class UIPanel extends RowFrame {
-  constructor(Context ctx, String name="", is_collapsed=false) {
+  constructor(Context ctx, String name="", String id=name, is_collapsed=false) {
     RowFrame.call(this, ctx);
     
+    this.permid = id;
     this.stored_children = new GArray();
     
     this.packflag |= PackFlags.ALIGN_LEFT;
     this.default_packflag |= PackFlags.INHERIT_WIDTH;
+    this.state |= UIFlags.NO_FRAME_CACHE;
     
     //store whether the user manually changed
     //the collapsed state
@@ -84,6 +86,7 @@ class UIPanel extends RowFrame {
     col.default_packflag &= ~PackFlags.INHERIT_WIDTH;
     col.add(tri);
     
+    this.text = name;
     this.title = col.label(name);
     this.title.color = uicolors["PanelText"];
     
@@ -92,6 +95,21 @@ class UIPanel extends RowFrame {
     this._color = uicolors["CollapsingPanel"];
     
     this.start_child = this.children.length;
+  }
+  
+  get_uhash() : String {
+    return prior(UIPanel, this).get_uhash.call(this) + this.permid;
+  }
+  
+  get_filedata() : ObjectMap {
+    return {collapsed : this._collapsed, user_opened : this.user_opened};
+  }
+  
+  load_filedata(ObjectMap obj) {
+    console.log(obj, typeof(obj), obj.constructor.name, obj.collapsed, "<--------------");
+    
+    this.collapsed = obj.collapsed;
+    this.user_opened = obj.user_opened;
   }
   
   get collapsed() : Boolean {

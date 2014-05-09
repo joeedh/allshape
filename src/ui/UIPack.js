@@ -339,10 +339,10 @@ class UIPackFrame extends UIFrame {
     return ret;
   }
   
-  panel(String label, int align=0, int default_packflag=0) {
+  panel(String label, String permid, int align=0, int default_packflag=0) {
     align |= this.default_packflag;
     
-    var ret = new UIPanel(this.ctx, label);
+    var ret = new UIPanel(this.ctx, label, permid);
     ret.packflag |= align|PackFlags.INHERIT_WIDTH;
     ret.default_packflag = this.default_packflag|default_packflag;
     
