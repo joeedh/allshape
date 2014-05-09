@@ -116,6 +116,7 @@ class UIRadialMenu extends UIFrame {
     this.idmap[en.i] = id;
     
     this.add(en);
+    return;
   }
 
   on_keydown(KeyboardEvent event) {

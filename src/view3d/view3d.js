@@ -1143,9 +1143,11 @@ class View3DHandler extends Area {
       [
       "appstate.export_al3_b64()",
       "appstate.export_stl()",
+      "sep",
       "appstate.save_as()", 
       "appstate.save()", 
       "appstate.open()",
+      "sep",
       "appstate.new()"
       ]);
   }

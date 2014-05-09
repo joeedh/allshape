@@ -49,18 +49,21 @@ class UIMenuEntry extends UIElement{
     var tsize = canvas.textsize(this.text, menu_text_size);
     var y = 0.5*(this.size[1]-tsize[1]);
     
+    var textclr, hotclr;
     if (this.state & UIFlags.HIGHLIGHT) {
       //console.log(uicolors["MenuTextHigh"], "--=-=-=")
       canvas.simple_box([0, -2], [this.size[0]-3, this.size[1]], uicolors["MenuHighlight"], 35.0)
-      canvas.text([2, y], this.text, uicolors["MenuTextHigh"], menu_text_size);
+      textclr = hotclr = uicolors["MenuTextHigh"];
     } else {
-      canvas.text([2, y], this.text, uicolors["MenuText"], menu_text_size);
+      textclr = uicolors["MenuText"];
+      hotclr = uicolors["HotkeyText"];
     }
     
+    canvas.text([2, y], this.text, textclr, menu_text_size);
     if (this.hotkey != undefined) {
       var tsize = canvas.textsize(this.hotkey, menu_text_size);
       
-      canvas.text([this.size[0]-tsize[0]-8, y], this.hotkey, uicolors["HotkeyText"], menu_text_size);
+      canvas.text([this.size[0]-tsize[0]-8, y], this.hotkey, hotclr, menu_text_size);
     }
     
     canvas.end(this);
@@ -100,6 +103,8 @@ class UIMenu extends UIFrame {
     this.idmap[en.i] = id;
     
     this.add(en);
+    
+    return en;
   }
 
   on_keydown(KeyboardEvent event) {
@@ -222,6 +227,7 @@ class UIMenu extends UIFrame {
     
     canvas.shadow_box([8, -1], [this.size[0]-10, this.size[1]-10]);
     canvas.simple_box([0, 0], this.size, uicolors["MenuBox"][0], 35.0);
+    canvas.box_outline([0, 0], this.size, uicolors["MenuBorder"], 35.0);
     canvas.box([0, 0], this.size, uicolors["Box"], 35.0, true);
     canvas.text([24, this.size[1]-22], this.name, uicolors["MenuText"], menu_text_size)
     
@@ -239,7 +245,7 @@ class UIMenu extends UIFrame {
         continue;
       }
       
-      canvas.line([0, y, 0], [this.size[0], y, 0], clr, clr, 1);
+      canvas.line([0, y+3, 0], [this.size[0], y+3, 0], clr, clr, 1);
       y += ehgt;
     }
     
@@ -313,7 +319,12 @@ function toolop_menu(ctx, name, oplist) {
   for (var i=0; i<oplist.length; i++) {
     var opstr = oplist[i];
     var op = opstr;
+    var add_sep = (i > 1 && oplist[i-1] == "sep");
     
+    if (oplist[i] == "sep") {
+      continue;
+    }
+
     if (typeof opstr == "string") {
       op = ctx.api.get_op(ctx, opstr);
     }
@@ -333,7 +344,9 @@ function toolop_menu(ctx, name, oplist) {
       hotkey = ""
       
     oplist_instance.push(op);
-    menu.add_item(op.uiname, hotkey, oplist_instance.length-1);
+    
+    var en = menu.add_item(op.uiname, hotkey, oplist_instance.length-1);
+    en.add_sep = add_sep;
   }
   
   return menu;

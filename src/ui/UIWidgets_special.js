@@ -282,20 +282,22 @@ class UIColorField extends UIElement {
   }
   
   on_mousedown(MouseEvent event) {
-    this.clicked = true;
-    this.push_modal();
-    
-    var pos = [1, 1];
-    var size = [this.size[0]-2, this.huehgt];
-    var mpos = [event.x, event.y];
-    
-    if (inrect_2d(mpos, pos, size)) {
-      this.mode = "h"
-    } else {
-      this.mode = "sv";
+    if (this.clicked == false) {
+      this.clicked = true;
+      this.push_modal();
+      
+      var pos = [1, 1];
+      var size = [this.size[0]-2, this.huehgt];
+      var mpos = [event.x, event.y];
+      
+      if (inrect_2d(mpos, pos, size)) {
+        this.mode = "h"
+      } else {
+        this.mode = "sv";
+      }
+      
+      this.do_mouse(event);
     }
-    
-    this.do_mouse(event);
   }
   
   on_mousemove(MouseEvent event) {
@@ -305,8 +307,10 @@ class UIColorField extends UIElement {
   }
   
   on_mouseup(MouseEvent event) {
-    this.clicked = false;
-    this.pop_modal();
+    if (this.clicked) {
+      this.clicked = false;
+      this.pop_modal();
+    }
   }
   
   build_draw(UICanvas canvas, Boolean isVertical) {
