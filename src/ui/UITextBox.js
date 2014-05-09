@@ -39,7 +39,7 @@ class UITextBox extends UIElement {
     this.text_offx = 13;
     this.text_min_offx = 13;
     this.replace_mode = false;
-    
+    this.editing = false;
     this.gmap = undefined : Array<int>; //x positions of each character in .text
     
     this.cancel_on_escape = false;
@@ -138,7 +138,15 @@ class UITextBox extends UIElement {
   }
 
   begin_edit(event) {
+    if (this.editing) {
+      console.trace("Invalid UITextBox.begin_edit() call");
+      this.end_edit();
+      return;
+    }
+    
+    console.log("begin textbox edit");
     this.do_recalc();
+    this.editing = true;
     
     this.push_modal();
     this.start_text = new String(this.text);
@@ -165,6 +173,8 @@ class UITextBox extends UIElement {
   }
 
   end_edit(Boolean cancel=false, Boolean close_keyboard=true) {
+    this.editing = false;
+    
     if (cancel) {
       this.text = this.start_text;
     }

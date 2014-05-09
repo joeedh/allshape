@@ -267,6 +267,7 @@ class EdgeLoopOpModal extends EdgeLoopOp {
   constructor(mode="add") {
     EdgeLoopOp.call(this, mode);
     
+    this.inputs.single = new BoolProperty(false, "select_single", "Select Single", "Clear selection first");
     this.is_modal = true;
   }
   
@@ -308,16 +309,16 @@ class EdgeLoopOpModal extends EdgeLoopOp {
     
     this.inputs.eid_es.data = new GArray([e.eid]);
     this.inputs.selmode.set_value(ctx.view3d.selectmode);
+    this.inputs.single.set_data(!g_app_state.select_multiple);
     
+    if (this._undo_presel)
+      this.undo(ctx);
     this.exec(this.modal_tctx);
   }
   
   exec(ToolContext ctx) {
-    if (!(g_app_state.select_multiple || event.altKey))
+    if (this.inputs.single.data)
       ctx.mesh.api.select_none();
-    else if (this._undo_presel)
-      this.undo(ctx);
-      
     EdgeLoopOp.prototype.exec.call(this, ctx);
   }
   
@@ -405,6 +406,7 @@ class FaceLoopOpModal extends FaceLoopOp {
   constructor(String mode="add") {
     FaceLoopOp.call(this, mode);
     
+    this.inputs.single = new BoolProperty(false, "select_single", "Select Single", "Clear selection first");
     this.is_modal = true;
   }
   
@@ -446,16 +448,16 @@ class FaceLoopOpModal extends FaceLoopOp {
     
     this.inputs.eid_es.data = new GArray([e.eid]);
     this.inputs.selmode.set_value(MeshTypes.FACE);
+    this.inputs.single.set_data(!g_app_state.select_multiple);
     
+    if (this._undo_presel)
+      this.undo(ctx);
     this.exec(this.modal_tctx);
   }
   
   exec(ToolContext ctx) {
-    if (!(g_app_state.select_multiple || event.altKey))
+    if (this.inputs.single.data)
       ctx.mesh.api.select_none();
-    else if (this._undo_presel)
-      this.undo(ctx);
-      
     FaceLoopOp.prototype.exec.call(this, ctx);
   }
   

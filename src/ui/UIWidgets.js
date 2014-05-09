@@ -39,9 +39,10 @@ class UIButtonAbstract extends UIHoverHint {
   }
 
   on_mouseup(MouseEvent event) {
-    if (event.button == 0) {
+    if (event.button == 0 && this.clicked) {
       if (this.modal_click)
-        this.pop_modal();
+        this.parent.pop_modal();
+      this.modal_click = false;
       this.clicked = false;
       this.do_recalc();
       
@@ -66,6 +67,7 @@ class UIButtonAbstract extends UIHoverHint {
       if (dis > 8) { // && !inrect_2d_button(mpos, [0, 0], this.size)) {
         if (this.modal_click)
           this.parent.pop_modal();
+        this.modal_click = false;
         
         this.stop_hover();
         this.clicked = false;

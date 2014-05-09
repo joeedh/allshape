@@ -179,6 +179,28 @@ class UITabPanel extends UIFrame {
     this.add(this.subframe);
   }
   
+  load_filedata(ObjectMap map) {
+    console.log("yay, map", map);
+    
+    if (map.active) {
+      var ts = this.tabstrip.tabs;
+      for (var i=0; i<ts.length; i++) {
+        if (ts[i].text == map.active) {
+          console.log("loading", map.active);
+          this.tabstrip.active = ts[i];
+          this.tab_callback(ts[i].text, ts[i].id);
+          this.do_recalc();
+          break;
+        }
+      }
+    }
+  }
+  
+  get_filedata() : ObjectMap {
+    if (this.tabstrip.active != undefined)
+      return {active : this.tabstrip.active.text};
+  }
+  
   get_uhash() {
     var s = prior(UITabPanel, this).get_uhash.call(this);
     

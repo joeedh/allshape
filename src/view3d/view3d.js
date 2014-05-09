@@ -189,7 +189,8 @@ class View3DHandler extends Area {
   }
   
   pop_modal(EventHandler e) {
-    this.pop_touch_delay();
+    if (this.modalhandler != undefined)
+      this.pop_touch_delay();
     
     //paranoid check
     if (this.modalhandler == undefined) {
@@ -1279,11 +1280,10 @@ class View3DHandler extends Area {
     this.cols = new GArray();
     this.rows = new GArray();
     
-    // /*
     this.build_topbar();
     this.editor.build_bottombar(this);
     this.editor.build_sidebar1(this);
-    // */
+    
     this.do_recalc();
   }
   

@@ -56,8 +56,9 @@ class ScreenKeyboard extends RowFrame {
   }
 
   firecode(int c) {
+    console.log("firing key code, not char");
+    
     var screen = g_app_state.screen;
-
     var event = new MyKeyboardEvent(c);
     
     event.keyCode = event.key = c;
@@ -79,7 +80,7 @@ class ScreenKeyboard extends RowFrame {
     event.altKey = screen.altKey;
     event.ctrlKey = screen.ctrlKey;
     
-    this.client._on_charcode(event);
+    this.client.on_charcode(event);
   }
   
   callback(UIButton but) {
@@ -205,7 +206,9 @@ class ScreenKeyboard extends RowFrame {
   }
   
   end() {
+    console.log("screen keyboard end");
     this.pop_modal();
+    
     if (this.parent.children.has(this)) {
       this.parent.remove(this);
       this.parent.do_recalc();

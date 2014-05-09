@@ -116,16 +116,12 @@ class GArray extends Array {
     this.length -= 1;
   }
 
-  replace(T olditem, T newitem) { //ignore_existence defaults to false
+  replace(T olditem, T newitem) { 
     var int idx = this.indexOf(olditem);
     
     if (idx < 0 || idx == undefined) {
-      console.log("Yeek! Item " + olditem + " not in array");
-      console.trace();
+      console.trace("Yeek! Item " + olditem + " not in array");
       
-      if (!ignore_existence)
-        throw "Yeek! Item " + olditem + " not in array"
-
       return;
     }
     

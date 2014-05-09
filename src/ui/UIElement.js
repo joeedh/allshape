@@ -22,7 +22,7 @@ var _ui_element_id_gen = 1;
 function open_mobile_keyboard(e, on_close=function(){}) {
   //stupid android on screen keyboard doesn't interface
   //with javascript very well, ger.
-  if (IsMobile)
+  if (IsMobile || DEBUG.screen_keyboard)
     call_keyboard(e, on_close);
  //var canvas = document.getElementById("example")
  //canvas.contentEditable = true
@@ -30,7 +30,7 @@ function open_mobile_keyboard(e, on_close=function(){}) {
 }
 
 function close_mobile_keyboard(e) {
-  if (IsMobile)
+  if (IsMobile || DEBUG.screen_keyboard)
     end_keyboard(e);
   //var  canvas = document.getElementById("example")
   //canvas.contentEditable = false

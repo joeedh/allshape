@@ -237,6 +237,8 @@ class MeshEditor extends View3DEditor {
     
     //undo buttons
     view3d.undo_redo(row);
+    if (DEBUG.screen_keyboard)
+      row.add(new UITextBox(ctx, ""));
     
     //last tool panel
     var toolframe = new ToolOpFrame(ctx, "last_tool");
@@ -541,7 +543,7 @@ class MeshEditor extends View3DEditor {
     op.inputs.eid_es.data.push(e.eid);
     op.inputs.selmode.set_data(view3d.selectmode);
     
-    if (event.shiftKey) {
+    if (g_app_state.select_multiple || event.shiftKey) {
       op.inputs.mode.data = (e.flag & Flags.SELECT) ? "subtract" : "add";
     } else {
       op.inputs.mode.data = "add";
