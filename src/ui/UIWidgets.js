@@ -6,6 +6,8 @@ class UIButtonAbstract extends UIHoverHint {
   constructor(ctx, path=undefined, pos=undefined, size=undefined) {
     UIHoverHint.call(this, ctx, path, pos, size);
     
+    this.text_size = undefined; //use default
+    this.can_pan = true;
     this.clicked = false;
     this.click_on_down = false; //is ignored for multitouch
     this.modal_click = undefined; //defaults to !click_on_down
@@ -60,12 +62,13 @@ class UIButtonAbstract extends UIHoverHint {
       this.start_hover();
     }
     
-    if (this.was_touch) {
+    if (this.can_pan && this.was_touch) {
       var mpos = [event.x, event.y];
       var dis = this.start_mpos.vectorDistance(mpos);
       console.log("dis", dis);
-      if (dis > 8) { // && !inrect_2d_button(mpos, [0, 0], this.size)) {
-        if (this.modal_click)
+      
+      if (dis > 60) { // && !inrect_2d_button(mpos, [0, 0], this.size)) {
+        if (this.clicked && this.modal_click)
           this.parent.pop_modal();
         this.modal_click = false;
         
@@ -139,19 +142,19 @@ class UIButton extends UIButtonAbstract {
     else 
       canvas.box([0, 0], this.size);
     
-    var tsize = canvas.textsize(this.text);
+    var tsize = canvas.textsize(this.text, this.text_size);
     
     if (tsize[0] < this.size[0])
-      canvas.text([(this.size[0]-tsize[0])*0.5, (this.size[1]-tsize[1])*0.5], this.text, uicolors["BoxText"]);
+      canvas.text([(this.size[0]-tsize[0])*0.5, (this.size[1]-tsize[1])*0.5], this.text, uicolors["BoxText"], this.text_size);
     else
-      canvas.text([5, (this.size[1]-tsize[1])*0.5], this.text, uicolors["BoxText"]);
+      canvas.text([5, (this.size[1]-tsize[1])*0.5], this.text, uicolors["BoxText"], this.text_size);
     
     canvas.end(this);
   }
 
   get_min_size(UICanvas canvas, Boolean isvertical)
   {
-    return CACHEARR2(canvas.textsize(this.text)[0]+12, 26)
+    return CACHEARR2(canvas.textsize(this.text, this.text_size)[0]+12, 26)
   }
 }
 
@@ -372,12 +375,12 @@ class UIMenuButton extends UIButtonAbstract {
     var siz = this.size[1]/2.5
     var p = 3;
 
-    var tsize = canvas.textsize(this.text);
+    var tsize = canvas.textsize(this.text, this.text_size);
     var x = Math.floor((this.size[0]-tsize[0]-siz-p*3)/2)
     var y = Math.floor((this.size[1]-tsize[1])/4);
     
     if (!this.clicked)
-      canvas.text([x, y], this.text, uicolors["BoxText"]);
+      canvas.text([x, y], this.text, uicolors["BoxText"], this.text_size);
     
     var clr = uicolors["Arrow"]
     

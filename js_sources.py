@@ -33,6 +33,7 @@ sources = [
 	"src/font/fontgen10.js",
 	"src/font/fontgen12.js",
 	"src/font/fontgen14.js",
+	"src/font/fontgen16.js",
 	"src/core/ajax.js",
   "src/core/raster.js",
 	"src/core/AppState.js",
@@ -121,6 +122,7 @@ sources = [
   "src/font/fontgen10.png",
   "src/font/fontgen12.png",
   "src/font/fontgen14.png",
+  "src/font/fontgen16.png",
   "src/datafiles/iconsheet.svg",
   "src/datafiles/iconsheet.png",
   "src/datafiles/iconsheet16.png"

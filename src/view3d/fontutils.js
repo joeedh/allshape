@@ -6,12 +6,13 @@
 var _fdata = {
   "10" : [fontinfo10, "content/fontgen10.png"],
   "12" : [fontinfo12, "content/fontgen12.png"],
-  "14" : [fontinfo14, "content/fontgen14.png"]
+  "14" : [fontinfo14, "content/fontgen14.png"],
+  "16" : [fontinfo16, "content/fontgen16.png"]
 };
 
 class FontManager {
   constructor() {
-    this.sizes = new set([10, 12, 14]);
+    this.sizes = new set([10, 12, 14, 16]);
     this.fonts = {};
   }
   

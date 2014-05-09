@@ -51,7 +51,7 @@ var DEBUG = {
   dag : false,
   icons : false,
   complex_ui_recalc : false,
-  screen_keyboard : false //true
+  screen_keyboard : false // !RELEASE
 };
 
 //private macro helper global for utildefine.js

@@ -12,7 +12,7 @@ class ScreenKeyboard extends RowFrame {
     this.client = client;
     
     this.was_shift = false;
-    this.caps = true;
+    this.caps = false;
     
     var this2;
     
@@ -21,15 +21,18 @@ class ScreenKeyboard extends RowFrame {
     }
     
     function key(c) {
-      var ret = new UIButton(ctx, c);
-      
+      var ret = undefined;
       if (c == "Backspace") {
         ret = new UIButtonIcon(ctx, "Backspace", Icons.BACKSPACE);  
       } else if (c == "Left") {
         ret = new UIButtonIcon(ctx, "Left", Icons.LEFT_ARROW);  
       } else if (c == "Right") {
         ret = new UIButtonIcon(ctx, "Right", Icons.RIGHT_ARROW);  
+      } else {
+        ret = new UIButton(ctx, c);
       }
+      ret.can_pan = false;
+      ret.text_size = 16;
       
       if (c.length == 1) {
         ret.get_min_size = function(canvas, isvertical) {
@@ -45,7 +48,7 @@ class ScreenKeyboard extends RowFrame {
     function addstr(frame, s) {
       var col = frame.col();
       for (var i=0; i<s.length; i++) {
-        col.add(key(s[i]));
+        col.add(key(s[i]), PackFlags.INHERIT_WIDTH);
       }
     }
     
@@ -86,8 +89,11 @@ class ScreenKeyboard extends RowFrame {
   callback(UIButton but) {
     if (but.text.length == 1) {
       this.firechar(but.text);
+      if (this.was_shift && !this.caps) {
+        this.do_Shift(but);
+      }
     } else {
-      var s = "do_" + but.text;
+      var s = "do_" + but.text.trim();
       if (s in this)
         this[s](but);
     }
@@ -143,6 +149,18 @@ class ScreenKeyboard extends RowFrame {
     this.firecode(charmap["Right"]);
   }
   
+  do_Caps(UIButton but) {
+    if (this.was_shift) {
+      this.was_shift = false;
+      this.caps = false;
+      this.do_page(this.addstr, this.key, this.page_lower);
+    } else {
+      this.was_shift = true;
+      this.caps = true;
+      this.do_page(this.addstr, this.key, this.page_upper);
+    }
+  }
+  
   do_Shift(UIButton but) {
     if (this.was_shift) {
       this.was_shift = false;
@@ -153,7 +171,12 @@ class ScreenKeyboard extends RowFrame {
     }
   }
   
+  do_Enter(UIButton but) {
+    this.firecode(charmap["Enter"]);
+  }
+  
   do_Space(UIButton but) {
+    console.log("space!");
     this.firechar(" ");
   }
   
@@ -162,6 +185,8 @@ class ScreenKeyboard extends RowFrame {
   }
   
   do_page(addstr, key, pagefunc) {
+    this.default_packflag |= PackFlags.INHERIT_WIDTH|PackFlags.INHERIT_HEIGHT;
+    
     this.children = new GArray();
     
     pagefunc.call(this, addstr, key);
@@ -182,18 +207,20 @@ class ScreenKeyboard extends RowFrame {
     col.add(key("Close"));
     col.add(key("Left"));
     col.add(key("Right"));
+    
+    this.do_full_recalc();
   }
   
   page_lower(Function addstr, Function key) {
-    addstr(this, "1234567890-=")
-    addstr(this, "qwertyuiop[]");
+    addstr(this, "`1234567890-=")
+    addstr(this, "qwertyuiop[]\\");
     addstr(this, "asdfghjkl;'");
     addstr(this, "zxcvbnm,./");
   }
   
   page_upper(Function addstr, Function key) {
-    addstr(this, "!@#$%^&*()_+");
-    addstr(this, "QWERTYUIOP{}");
+    addstr(this, "~!@#$%^&*()_+");
+    addstr(this, "QWERTYUIOP{}|");
     addstr(this, 'ASDFGHJKL:"');
     addstr(this, "ZXCVBNM<>?");
   }

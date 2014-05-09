@@ -51,8 +51,12 @@ class UIPackFrame extends UIFrame {
   
   add(UIElement child) {
     child.packflag |= this.default_packflag;
-    
     UIFrame.prototype.add.call(this, child);
+  }
+  
+  prepend(UIElement child) {
+    child.packflag |= this.default_packflag;
+    UIFrame.prototype.prepend.call(this, child);
   }
   
   toolop(path, inherit_flag=0, label=undefined) {
@@ -493,6 +497,8 @@ class RowFrame extends UIPackFrame {
 
       if (c.packflag & PackFlags.INHERIT_WIDTH)
         size[0] = this.size[0]-2
+      if (c.packflag & PackFlags.INHERIT_HEIGHT)
+        size[1] += spacing;
       
       if (c.size == undefined)
         c.size = [0, 0];
@@ -511,10 +517,11 @@ class RowFrame extends UIPackFrame {
         c.pos = [x + Math.floor(0.5*(this.size[0]-size[0])), final_y];
       }
       
-      if (this.packflag & PackFlags.ALIGN_BOTTOM)
-        y += c.size[1]+spacing;
+     var space = (c.packflag & PackFlags.INHERIT_HEIGHT) ? 0 : spacing;
+     if (this.packflag & PackFlags.ALIGN_BOTTOM)
+        y += c.size[1]+space;
       else
-        y -= c.size[1]+spacing;
+        y -= c.size[1]+space;
       
       if (!(c.packflag & PackFlags.NO_REPACK))
         c.pack(canvas, is_vertical);
@@ -638,7 +645,7 @@ class ColumnFrame extends UIPackFrame {
       size = [size[0], size[1]];
       if (!(this.packflag & PackFlags.IGNORE_LIMIT)) {
         if (c.packflag & PackFlags.INHERIT_WIDTH)
-          size[0] = max_wid-pad;
+          size[0] = Math.min(size[0], max_wid-pad)+spacing;
         else
           size[0] = Math.min(size[0], max_wid-pad);
       }
@@ -651,14 +658,15 @@ class ColumnFrame extends UIPackFrame {
       c.size[0] = size[0];
       c.size[1] = size[1];
       
+      var space = (c.packflag & PackFlags.INHERIT_WIDTH) ? 0 : spacing;
       if (this.packflag & PackFlags.ALIGN_RIGHT) {
         c.pos = [x-size[0], y];
         finalwid = this.size[0]-x-size[0]-1;
-        x -= Math.floor(size[0]+pad+spacing);
+        x -= Math.floor(size[0]+pad+space);
       } else {
         c.pos = [x, y];
         finalwid = x+size[0];
-        x += Math.floor(size[0]+pad+spacing);
+        x += Math.floor(size[0]+pad+space);
       }
       
       if (!(c.packflag & PackFlags.NO_REPACK))
