@@ -148,11 +148,11 @@ class ColorTheme {
         s += JSON.stringify(item[1].color);
         s += ","
         s += JSON.stringify(item[1].weights);
-        s += "),"
+        s += ")"
       } else if (item[1] instanceof BoxColor4) {
         s += '  "'+item[0]+'" : new BoxColor4('
         s += JSON.stringify(item[1].colors);
-        s += "),"
+        s += ")"
       } else {
         s += '  "'+item[0]+'" : ' + JSON.stringify(item[1]);
       }

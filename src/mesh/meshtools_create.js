@@ -297,7 +297,8 @@ class ContextCreateOp extends MeshOp {
     if (do_hull_points(vset, mesh))
       return;
     
-    if (do_frame_fill(vset, mesh))
-      return;
+    //XXX
+    //if (do_frame_fill(vset, mesh))
+    //  return;
   }
 }

@@ -484,7 +484,7 @@ class UITextBox extends UIElement {
     }
     
     //canvas.push_scissor([this.text_min_offx-4, 0], [this.size[0]-4, this.size[1]]);
-    canvas.text([this.text_offx, (this.size[1]-tsize[1])*0.25], this.text, uicolors["BoxText"]);
+    canvas.text([this.text_offx, (this.size[1]-tsize[1])*0.25], this.text, uicolors["DefaultText"]);
     //canvas.pop_scissor();
     
     if (this.clicked) {

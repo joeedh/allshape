@@ -808,6 +808,8 @@ class UILabel extends UIElement {
   }
 
   on_tick() {
+    prior(UILabel, this).on_tick.call(this);
+    
     if (this.state & UIFlags.USE_PATH) {
       var val = this.get_prop_data();
       if (val != this.val) {
@@ -921,6 +923,8 @@ class UIMenuLabel extends UIElement {
   }
 
   on_tick() {
+    prior(UIMenuLabel, this).on_tick.call(this);
+    
     if (this.clicked && this.menu != undefined && this.menu.closed) {
       this.clicked = false;
       this.do_recalc();
@@ -1616,6 +1620,8 @@ class UIProgressBar extends UIElement {
   
   //we recalc draw buffers in on_tick, to avoid excessive updates per second
   on_tick() {
+    prior(UIProgressBar, this).on_tick.call(this);
+    
     if (this.last_value != this.value) {
       this.do_recalc();
       this.last_value = this.value;

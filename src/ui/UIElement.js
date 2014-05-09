@@ -77,8 +77,10 @@ class UIElement extends EventHandler {
     this.parent = undefined
     
     //timer for error/warning flashes
-    this.flash_timer_len = 0.2; //seconds
-    this.flash_timer = undefined;
+    this.flash_timer_len = 650;
+    this.status_timer = undefined;
+    this.flash_ival = 20;
+    this.last_flash = 0;
     
     this.pos = [0, 0];
     this.size = [0, 0];
@@ -121,8 +123,11 @@ class UIElement extends EventHandler {
   }
 
   inc_flash_timer(color) {
-    if (this.status_timer == undefined) return false;
-      
+    if (this.status_timer == undefined) {
+      this.state &= ~UIFlags.FLASH;
+      return false;
+    }
+    
     if (this.status_timer.ready()) {
       this.status_timer = undefined;
       this.state &= ~UIFlags.FLASH;
@@ -132,8 +137,9 @@ class UIElement extends EventHandler {
     return true;
   }
 
-  do_flash_color(color) {
-    if (!this.inc_flash_timer()) return undefined;
+  do_flash_color(color) : Array<Array<float>> {
+    this.inc_flash_timer();
+    if (!(this.state & UIFlags.FLASH)) return undefined;
     
     var color2;
     
@@ -142,6 +148,7 @@ class UIElement extends EventHandler {
     else if (this.state & UIFlags.WARNING)
       color2 = uicolors["WarningBox"];
     
+    //way too clever
     if (color == undefined)
       color = color2;
     if (color2 == undefined)
@@ -191,17 +198,21 @@ class UIElement extends EventHandler {
       l3.push(clr);
     }
     
-    console.log(">-->", l1, l2, l3, "<----");
+    //console.log(">-->", l1, l2, l3, "<----");
     if (l3.length == 1) 
       return l3[0];
     else
       return l3;
   }
 
-  flash(status) {
-    this.status_timer = new Timer(this.flash_timer_len*1000.0);
+  flash(int status=UIFlags.REDERROR) {
+    console.log("flash!", status);
+    this.status_timer = new Timer(this.flash_timer_len);
     this.state |= status;
+    
+    this.do_recalc();
   }
+  
 
   get_abs_pos() {
     static pos = [0, 0];
@@ -384,8 +395,16 @@ class UIElement extends EventHandler {
   }
   
   on_tick() { 
+    if (time_ms() - this.last_flash > this.flash_ival && (this.state & UIFlags.FLASH)) {
+      console.log("flash");
+      this.do_recalc();
+      this.last_flash = time_ms();
+      this.inc_flash_timer();
+    }
+    
     EventHandler.prototype.on_tick.call(this);
   }
+  
   on_keydown(KeyboardEvent event) { }
   on_keyup(KeyboardEvent event) { }
   on_mousemove(MouseEvent event) { }
@@ -562,5 +581,7 @@ class UIHoverHint extends UIElement {
       this.hovering = false;
       this.on_hint();
     }
+    
+    UIElement.prototype.on_tick.call(this);
   }
 }
