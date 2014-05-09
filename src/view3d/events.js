@@ -131,6 +131,13 @@ class EventHandler {
     //  console.log(event._good, "in bad_event", this.touch_manager, event);
     
     if (tm != undefined && event instanceof MyMouseEvent) {
+      //count touch events
+      var i=0;
+      for (var k in event.touches) {
+        i++;
+      }
+      //only consider touch events
+      if (i==0) return false;
       if ("_good" in event) return false;
       
       //console.log("bad event!");
