@@ -188,37 +188,43 @@ class MeshEditor extends View3DEditor {
     
     var spacing = IsMobile ? 9.0 : 0.0;
     
-    var tab = row.tabstrip();
+    var panel = row.panel("Tools");
+    panel.packflag |= PackFlags.NO_AUTO_SPACING|PackFlags.NO_LEAD_SPACING|PackFlags.NO_TRAIL_SPACING;
+    var tab = panel.tabstrip();
     
     var col = tab.panel_col("Tools A", undefined, PackFlags.USE_LARGE_ICON); //undefined, PackFlags.USE_LARGE_ICON)
     var row2 = col.row(undefined, undefined)
     row2.pad[1] = spacing;
     
-    row2.toolop("mesh.extrude(geometry=mesh_selected(vef))");
+    row2.toolop("mesh.rotate()");
     row2.toolop("mesh.flip_normals(faces=mesh_selected(f))");
     
     row2 = col.row(undefined, undefined, PackFlags.USE_LARGE_ICON);
     row2.pad[1] = spacing;
     
-    row2.toolop("mesh.translate()");
     row2.toolop("mesh.scale()");
+    row2.toolop("mesh.duplicate_transform()");
     
     row2 = col.row(undefined, undefined);
     row2.pad[1] = spacing;
-    row2.toolop("mesh.duplicate_transform()");
+    row2.toolop("mesh.translate()");
     row2.toolop("mesh.bridge_edges(edges=mesh_selected(e))");
     
     var col = tab.panel_col("Tools B", undefined, PackFlags.USE_LARGE_ICON); //undefined, PackFlags.USE_LARGE_ICON)
-
+    col.default_packflag |= PackFlags.NO_AUTO_SPACING;
+    
     var row2 = col.row(undefined, undefined); row2.pad[1] = spacing;
     row2.toolop("mesh.triangulate(faces=mesh_selected(f))");
     row2.toolop("mesh.subdivide(faces=mesh_selected(f))");
+    row2.toolop("mesh.inset_transform(faces=mesh_selected(f))");
     var row2 = col.row(undefined, undefined, PackFlags.USE_LARGE_ICON); row2.pad[1] = spacing;
-    row2.toolop("mesh.rotate()");
+    row2.toolop("mesh.extrude(geometry=mesh_selected(vef))");
     row2.toolop("mesh.tri2quad(faces=mesh_selected(f))");
+    row2.toolop("mesh.dissolve_faces(faces=mesh_selected(f))");
     var row2 = col.row(undefined, undefined); row2.pad[1] = spacing;
     row2.toolop("mesh.vertsmooth(verts=mesh_selected(v))");
     row2.toolop("mesh.loopcut()");
+    row2.toolop("mesh.split_edges(edges=mesh_selected(e))");
 
     var col = row.panel("Select", "select").col();
     var row2 = col.row(undefined, undefined, PackFlags.USE_LARGE_ICON);

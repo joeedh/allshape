@@ -566,73 +566,6 @@ class DataAPI {
     }
   }
   
-  resolve_path_intern(ctx, str) {
-    var p = this.parser
-    p.reset(str)
-    
-    var can_cache = true;
-    var path = []
-    var arritem = undefined;
-    while (p.peek() != undefined) {
-      word = p.expect(_WORD);
-      
-      if (p.peek() != undefined && p.peek()[0] == _LS) {
-        p.expect(_TOKEN, _LS);
-        arritem = Number(p.expect(_WORD));
-        p.expect(_TOKEN, _RS);
-        if (p.peek() != undefined) {
-          console.log("Error: expected EOF after array/obj lookup");
-          throw TinyParserError;  
-        }
-      } else if (p.peek() != undefined) {
-        p.expect(_TOKEN, _DT);
-      }
-      
-      path.push(word);
-    }
-  
-    var s = this.root_struct;
-    var path2 = ""
-    
-    can_cache = can_cache && !(s.flag & DataFlags.NO_CACHE);
-    var path3;
-    for (var i=0; i<path.length; i++) {
-      
-      if (i > 0) {
-        if (s.type != DataPathTypes.STRUCT) {
-          console.log(path)
-          console.log("Invalid . lookup operator");
-          throw TinyParserError;
-        }
-        
-        s = s.data;
-      }
-      
-      can_cache = can_cache && !(s.flag & DataFlags.NO_CACHE);
-      
-      if (!(path[i] in s.pathmap)) {
-        console.log("Invalid property/struct " + str);
-        throw TinyParserError;
-      }
-      
-      s = s.pathmap[path[i]];
-      can_cache = can_cache && !(s.flag & DataFlags.NO_CACHE);
-      
-      path3 = path2;
-      if (i > 0) path2 += "."
-      path2 += s.path
-    }
-    
-    if (arritem != undefined) {
-      path3 = path2;
-      path2 = arritem;
-      
-      return [s, path2, path3, true, can_cache];
-    }
-    
-    return [s, path2, path3, false, can_cache];
-  }
-  
   copy_path(path) {
     var ret = [];
     
@@ -657,16 +590,36 @@ class DataAPI {
     return s;
   }
   
-  resolve_path_new_intern(ctx, str) {  
-    try {
-      return this.resolve_path_new_intern2(ctx, str);
+  resolve_path_intern(ctx, str) {  
+    static cache = {};
+    
+    if (str == undefined) {
+      console.trace("warning, undefined path in resolve_path_intern (forgot to pass ctx?)");
+      return undefined;
+    }
+    
+    try { //XXX
+      if (1) { //!(str in cache)) {
+        var ret = this.resolve_path_intern2(ctx, str);
+        //copy
+        var ret2 = []
+        for (var i=0; i<ret.length; i++) {
+          ret2.push(ret[i]);
+        }
+        
+        cache[str] = ret2;
+      }
+      
+      return cache[str];
     } catch (_err) {
       print_stack(_err);
       console.log("error: ", str);
     }
+    
+    return undefined;
   }
   
-  resolve_path_new_intern2(ctx, str) {  
+  resolve_path_intern2(ctx, str) {  
     var parser = apiparser();
     
     var arr_index = undefined;
@@ -761,10 +714,27 @@ class DataAPI {
     return sret;
   }
   
-  get_prop_new(ctx, str) {
+  eval(ctx, str) {
+    if (0) { //XXX str in this.evalcache) {
+      return this.evalcache[str](ctx);
+    }
+    
+    var script = """
+      var func = function(ctx) {
+        return $s
+      }
+    """.replace("$s", str);
+    
+    eval(script);
+    
+    this.evalcache[str] = func;
+    return func(ctx);
+  }
+  
+  get_prop(ctx, str) {
     var parser = apiparser();
     
-    var ret = this.resolve_path_new_intern(ctx, str);
+    var ret = this.resolve_path_intern(ctx, str);
     if (ret == undefined) return ret;
     
     var val = ret[0];
@@ -773,10 +743,10 @@ class DataAPI {
       if (ret[0].use_path) {
         var path = ret[1];
         //console.log("===>", path, ret[1]);
-        val = eval(path);
+        val = this.eval(ctx, path);
         //console.log("val", val);
       } else {
-        val = eval(ret[2]);
+        val = this.eval(ctx, ret[2]);
         
         if (val instanceof DataPath)
           val = val.data;
@@ -794,15 +764,15 @@ class DataAPI {
     return val;
   }
   
-  set_prop_new(ctx, str, value) {
+  set_prop(ctx, str, value) {
     var parser = apiparser();
     
-    var ret = this.resolve_path_new_intern(ctx, str);
+    var ret = this.resolve_path_intern(ctx, str);
     if (ret == undefined) return ret;
     
     if (ret[0].type != DataPathTypes.PROP) {
       console.trace();
-      console.log("Error: non-property in set_prop_new()", ret[0], ret[1], ret[2]);
+      console.log("Error: non-property in set_prop()", ret[0], ret[1], ret[2]);
       return;
     }
     
@@ -890,237 +860,18 @@ class DataAPI {
     }
   }
   
-  get_struct_new(ctx, str) {
-    var ret = this.get_prop_new(ctx, str);
+  get_struct(ctx, str) {
+    var ret = this.get_prop(ctx, str);
     if (ret instanceof DataPath)
       ret = ret.data;
     return ret;
   }
   
-  get_prop_meta_new(ctx, str) {
-    var ret = this.resolve_path_new_intern(ctx, str);
+  get_prop_meta(ctx, str) {
+    var ret = this.resolve_path_intern(ctx, str);
     if (ret == undefined || ret[0] == undefined) return undefined;
     
     return ret[0].data;
-  }
-  
-  resolve_path(ctx, str) {
-    // /*
-    if (str in this.cache) {
-      if (this._c == undefined)
-        this._c = 0;
-      if (this._c < 10) {
-        /*
-        var r1 = this.resolve_path_intern(ctx, str);
-        var r2 = this.copy_path(this.cache[str]);
-        
-        console.log("c", r2[0], r2[1], r2[2], r2[3], r2[4]);
-        console.log("o", r1[0], r1[1], r1[2], r1[3], r1[4]);
-        console.log(r1[0]==r2[0]);
-        console.log("--");
-        */
-      }
-      
-      this._c++;
-      var ret = this.cache[str];
-      
-      if (ret[0].cache_good())
-        return this.copy_path(ret);
-    }
-    // */
-    
-    try {
-      var ret = this.resolve_path_intern(ctx, str);
-      
-      if (ret == undefined || ret[0] == undefined) {
-        throw new TinyParserError();
-      }
-      
-      if (ret[4]) {
-        this.cache[str] = ret;
-        ret[0].flag &= ~DataFlags.RECALC_CACHE;
-      }
-      
-      return this.copy_path(ret);
-    } catch (error) {
-      if (error != TinyParserError) {
-        throw error;
-      } else {
-        console.log("Could not resolve path " + str);
-        return undefined;
-      }
-    }
-  }
-  
-  get_struct(ctx, str) {
-    if (new_api_parser) return this.get_struct_new(ctx, str);
-    
-    var ret = this.resolve_path(ctx, str)
-    if (ret == undefined) return ret;
-    
-    return ret[0].data;
-  }
-  
-  get_prop_meta(ctx, str) {
-    if (new_api_parser) return this.get_prop_meta_new(ctx, str);
-    
-    var ret = this.resolve_path(ctx, str)
-    if (ret == undefined) return ret;
-    
-    return ret[0].data;
-  }
-  
-  set_prop(ctx, str, value) {
-    if (new_api_parser) return this.set_prop_new(ctx, str, value);
-    
-    var ret = this.resolve_path(ctx, str);
-
-    if (ret == undefined) 
-      return;
-    
-    var p = ret[0];
-    p.ctx = p.data.ctx = ctx;
-    p.data.path = ret[1];
-    
-    if (p.data.type == PropTypes.INT)
-      value = Math.floor(value);
-    
-    if (p.use_path) {
-      var func;
-      var code = "func = function(ctx, value) {\n"
-      
-      var value2 = value;
-      if (p.data.type == PropTypes.ENUM) {
-        value2 = p.data.values[value2];
-      } 
-      
-      code += "  obj = " + ret[2] + ";\n";
-      
-      if ((p.data.type == PropTypes.VEC3 || p.data.type == PropTypes.VEC4) && ret[3]) {
-        code += "obj[" + ret[1] + "] = value";
-      } else if (p.data.type == PropTypes.FLAG && ret[3]) {
-        if (value2) {
-          code += "  value = value | " + ret[1] + ";\n";
-        } else {
-          code += "  value = value & ~(" + ret[1] + ");\n";
-        }
-        code += "  " + ret[2] + " = value;\n";
-      } else {
-        code += "  obj." + p.path + " = value;\n";
-      }
-      
-      code += "}"
-      
-      if (!(code in this.evalcache)) {
-        eval(code);
-        this.evalcache[code] = func;
-      } else {
-        func = this.evalcache[code];
-      }
-      
-      func(ctx, value);
-    }
-    
-    if ((p.data.type == PropTypes.VEC3 || p.data.type == PropTypes.VEC4) && ret[3]) {
-      var vec = p.data.data
-      vec[ret[1]] = value;
-      
-      p.data.set_data(vec);
-    } else if (p.data.type == PropTypes.FLAG && ret[3]) {
-      if (value) {
-        value = p.data.data | Number(ret[1]);
-      } else {
-        value = p.data.data & ~Number(ret[1]);
-      }
-      
-      p.data.set_data(value);
-    }
-    else {
-      p.data.set_data(value);
-    }
-    
-    if (p.update != undefined) {
-      p.update.call(p);
-    }
-  }
-  
-  get_prop(Context ctx, String str) : Object {
-    if (new_api_parser) return this.get_prop_new(ctx, str);
-    
-    var ret = this.resolve_path(ctx, str);
-    
-    if (ret == undefined) {
-      console.log("error getting property")
-      return undefined;
-    }
-    
-    var p = ret[0];
-    
-    if (p.use_path) {
-      var func;
-      var code = "func = function(ctx) {\n  var obj=" + ret[2] + ";\n";
-      
-      if (p.data.type == PropTypes.FLAG && ret[3]) {
-        code += "  return (obj & " + ret[1] + ")";
-        code += " == " + ret[1] + ";\n"
-      } else {
-        code += "  return obj." + p.path + ";\n";
-      }
-      
-      code += "}\n"
-      
-      if (!(code in this.evalcache)) {
-        try {
-          eval(code);
-        } catch (error) {
-          console.log("===syntax error compiling internal datapath getter===");
-          var s = "1  ";
-          var l = 2;
-          for (var i=0; i<code.length; i++) {
-            var c = code[i];
-            
-            s += c;
-            
-            if (c == "\n") {
-              var lstr = l.toString();
-              s += lstr;
-              
-              for (var j=0; j<2-lstr.length; j++) {
-                s += " ";
-              }
-              
-              s += " ";
-              l++;
-            }
-          }
-          
-          console.log(s);
-          throw error;
-        }
-        this.evalcache[code] = func;
-      } else {
-        func = this.evalcache[code];
-      }
-      
-      ret = func(ctx)
-      
-      if (p.data.type == PropTypes.ENUM) {
-        ret = p.data.keys[ret];
-      }
-      
-      return ret;
-    } else {
-      if ((p.data.type == PropTypes.VEC3 || p.data.type == PropTypes.VEC4) && ret[3]) {
-        return p.data.data[ret[1]];
-      } else if (p.data.type == PropTypes.FLAG && ret[3]) {
-        return (p.data.data & Number(ret[1])) == Number(ret[1]);
-      } else {
-        if (p.data.type == PropTypes.ENUM)
-          return p.data.keys[p.data.data];
-        else 
-          return p.data.data;
-      }
-    }
   }
   
   /*

@@ -31,5 +31,8 @@ var Icons = {
   UI_COLLAPSE    : 27, //triangle
   FILTER_SEL_OPS : 28,
   SCROLL_DOWN    : 29,
-  SCROLL_UP      : 30
+  SCROLL_UP      : 30,
+  INSET_REGIONS  : 31,
+  SPLIT_EDGES    : 32,
+  DISSOLVE_FACES : 33
 };

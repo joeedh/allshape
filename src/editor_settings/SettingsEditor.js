@@ -57,12 +57,14 @@ class SettingsEditor extends Area {
   
   constructor(Context ctx, Array<float> pos, Array<float> size) {
     Area.call(this, SettingsEditor.name, SettingsEditor.uiname, new Context(), pos, size);
-
+    
+    this.mm = new MinMax(2);
     this.keymap = new KeyMap();
     this.define_keymap();
     
     this.drawlines = new GArray<drawlines>();
-    
+    this.pan_bounds = [[0, 0], [0, 0]];
+
     this._filter_sel = false;
     this.gl = undefined;
     this.ctx = new Context();
@@ -71,7 +73,7 @@ class SettingsEditor extends Area {
     this.subframe = new UITabPanel(new Context(), [size[0], size[1]]);
     this.subframe.size[0] = this.size[0];
     this.subframe.size[1] = this.size[1];
-    this.subframe.pos = [0, 0]; //XXX this should work: [0, Area.get_barhgt()];
+    this.subframe.pos = [0, Area.get_barhgt()];
     this.subframe.canvas = new UICanvas([this.pos, this.size]);
     this.subframe.state |= UIFlags.HAS_PAN|UIFlags.IS_CANVAS_ROOT|UIFlags.PAN_CANVAS_MAT;
     this.subframe.velpan = new VelocityPan();
@@ -155,6 +157,19 @@ class SettingsEditor extends Area {
   
   build_draw(UICanvas canvas, Boolean isVertical) {
     prior(SettingsEditor, this).build_draw.call(this, canvas, isVertical);
+    
+    this.mm.reset();
+    var arr = [0, 0];
+    for (var c in this.children) {
+      this.mm.minmax(c.pos);
+      arr[0] = c.pos[0]+c.size[0];
+      arr[1] = c.pos[1]+c.size[1];
+      
+      this.mm.minmax(c.pos);
+      this.mm.minmax(arr);
+    }
+    
+    this.pan_bounds[1][1] = this.mm.max[1]-this.mm.min[1]-this.size[1];
   }
   
   set_canvasbox() {
@@ -170,18 +185,18 @@ class SettingsEditor extends Area {
     var ctx = this.ctx = new Context();
     
     //paranoid check
-    for (var i=0; i<2; i++) {
-      if (this.size[i] != this.subframe.size[i]) {
-        this.subframe.on_resize(this.size, this.subframe.size);
-        this.subframe.size[0] = this.size[0];
-        this.subframe.size[1] = this.size[1]; //-this.subframe.pos[1]-Area.get_barhgt();
-        break;
-      }
-    }
-    //this.subframe.size[0] = this.size[0];
-    //this.subframe.size[1] = this.size[1]-this.subframe.pos[1]-Area.get_barhgt();
-    this.subframe.canvas.viewport = this.canvas.viewport; //set_viewport([this.parent.pos, this.parent.size]);
+    var sx = this.size[0];
+    var sy = this.size[1]-this.subframe.pos[1]-Area.get_barhgt();
+    var s1 = this.size, s2=this.subframe.size;
     
+    if (s2[0] != sx || s2[1] != sy) {
+      console.log("resizing subframe");
+      this.subframe.size[0] = this.size[0];
+      this.subframe.size[1] = sy;
+      this.subframe.on_resize(this.size, this.subframe.size);
+    }
+    
+    this.subframe.canvas.viewport = this.canvas.viewport;
     //scissor subframe seperately
     var p = [this.parent.pos[0] + this.subframe.pos[0], this.parent.pos[1] + this.subframe.pos[1]];
     var s = [this.parent.size[0] - this.subframe.pos[0], this.parent.size[1] - this.subframe.pos[1]];

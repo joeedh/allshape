@@ -424,7 +424,7 @@ class RemoveDoublesOp extends MeshOp {
 
 class SplitEdgeOp extends MeshOp {
   constructor(edgeiter) {
-    MeshOp.call(this, "split_edge", "Split Edge", "Split edges in two");
+    MeshOp.call(this, "split_edge", "Split Edge", "Split edges in two", Icons.SPLIT_EDGES);
   
     this.inputs = {
       radius: new FloatProperty(0.0005, "radius", "Radius", ""), 
@@ -491,7 +491,7 @@ class VertexConnectOp extends MeshOp {
 
 class DissolveFacesOp extends MeshOp {
   constructor(faceiter) {
-    MeshOp.call(this, "dissolve_faces", "Dissolve", "Dissolve selected faces");
+    MeshOp.call(this, "dissolve_faces", "Dissolve", "Dissolve selected faces", Icons.DISSOLVE_FACES);
     
     this.inputs = {
       faces: new CollectionProperty(undefined, [Face], "faces", "Faces", "")

@@ -241,7 +241,7 @@ function inset_make_holes(op, mesh) {
 
 class InsetRegionsOp extends MeshOp {
   constructor(Iterator faceiter=undefined) {
-    MeshOp.call(this, "inset_regions", "Inset", "Make a hole in faces", Icons.BRIDGE);
+    MeshOp.call(this, "inset_regions", "Inset", "Make a hole in faces", Icons.INSET_REGIONS);
     
     this.uiname = "Inset Regions"
     this.name = "inset_regions";

@@ -10,13 +10,14 @@ class UIFrame extends UIElement {
   constructor(ctx, canvas, path, pos, size) { //path, pos, size are optional
     UIElement.call(this, ctx, path, pos, size);
     
+    this.bgcolor = undefined;
     this._pan_cache = {};
     this.pan_bounds = [[0, 0], [0, 0]];
     
     this.ctx = ctx;
     this.children = new GArray([])
     this.active = undefined;
-    this.velpan = undefined;
+    this.velpan = new VelocityPan();
     
     //current mouse position relative to this.pos
     this.mpos = [0, 0];
@@ -435,6 +436,12 @@ class UIFrame extends UIElement {
   }
   
   add(UIElement e, int packflag) { //packflag is optional
+    if (e instanceof UIFrame && (e.state & UIFlags.HAS_PAN) && 
+        e.velpan == undefined) 
+    {
+      e.velpan = new VelocityPan();
+    }
+    
     if (this.state & (UIFlags.HAS_PAN|UIFlags.USE_PAN)) {
       this.state |= UIFlags.USE_PAN;
       this._set_pan(e);
@@ -586,6 +593,11 @@ class UIFrame extends UIElement {
     var mat = _static_mat;
     this.has_hidden_elements = false;
     
+    if (this.is_canvas_root()) {
+      this.canvas.push_transform();
+      this.canvas.translate(this.pos);
+    }
+    
     if (cache_frame == undefined) {
       cache_frame = !(this.state & UIFlags.NO_FRAME_CACHE);
     }
@@ -616,7 +628,7 @@ class UIFrame extends UIElement {
     }
     
     if (this.draw_background) {
-      canvas.simple_box([0, 0], this.size, undefined, this.rcorner);
+      canvas.simple_box([0, 0], this.size, this.bgcolor, this.rcorner);
     }
     
     var retag_recalc = false;
@@ -628,9 +640,18 @@ class UIFrame extends UIElement {
       c.abspos[0] = 0; c.abspos[1] = 0;
       c.abs_transform(c.abspos);
       
-      if (!aabb_isect_2d(c.abspos, c.size, viewport[0], viewport[1])) {
-        this.has_hidden_elements = true;
-        continue;
+      var isect = aabb_isect_2d(c.abspos, c.size, viewport[0], viewport[1]);
+      var pos;
+      
+      if (this.state & UIFlags.HAS_PAN)
+        pos = [this.pos[0]+this.velpan.pan[0], this.pos[1]+this.velpan.pan[1]];
+      else
+        pos = this.pos;
+      
+      //isect = isect || aabb_isect_2d(c.pos, c.size, pos, this.size);
+      if (!isect) {
+        //this.has_hidden_elements = true;
+        //continue;
       }
       
       if (c.pos == undefined) {
@@ -705,6 +726,10 @@ class UIFrame extends UIElement {
       if (!(this.state & UIFlags.PAN_CANVAS_MAT)) {
         canvas.pop_transform();
       }
+    }
+    
+    if (this.is_canvas_root()) {
+      this.canvas.pop_transform();
     }
   }
 

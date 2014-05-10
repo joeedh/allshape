@@ -1065,16 +1065,20 @@ class UIListBox extends ColumnFrame {
       this.pos[1] = pos[1];
     }
     
+    var pflag = PackFlags.IGNORE_LIMIT | PackFlags.NO_AUTO_SPACING;
+    pflag |= PackFlags.INHERIT_WIDTH|PackFlags.ALIGN_LEFT;
+
+    this.listbox = new RowFrame(ctx);
+    this.listbox.state |= UIFlags.HAS_PAN;
+    this.add(this.listbox, pflag);
+    
     this.active_entry = undefined : UIListEntry;
     this.callback = callback;
     this.mdown = false;
-    this.listbox = new RowFrame(ctx);
-    this.add(this.listbox, PackFlags.INHERIT_WIDTH|PackFlags.ALIGN_LEFT);
     
     this.vscroll = new UIVScroll(ctx, [0, 0])
     this.vscroll.packflag |= PackFlags.INHERIT_HEIGHT;
     
-    this.listbox.static_size = [this.size[0]-26, this.size[1]]
     this.scrollx = 0;
     this.scrolly = 0;
     
@@ -1088,10 +1092,32 @@ class UIListBox extends ColumnFrame {
     this.packflag |= PackFlags.ALIGN_LEFT;
     this.packflag &= ~PackFlags.ALIGN_CENTER;
   }
-
+  
+  on_tick() {
+    prior(UIListBox, this).on_tick.call(this);
+    
+    this.vscroll.set_value(this.listbox.velpan.pan[1]);
+  }
+  
+  load_filedata(ObjectMap map) {
+    if (map.scroll != undefined) {
+      this.scrollx = map.scroll[0];
+      this.scrolly = map.scroll[1];
+      this.vscroll.set_value(this.scrolly);
+      this.do_recalc();
+    }
+  }
+  
+  get_filedata() : ObjectMap {
+      return {scroll : [this.scrollx, this.scrolly]};
+  }
+  
    _vscroll_callback(vscroll, value)
   {
-    this.scrolly = value;
+    static pan = [0, 0];
+    pan[1] = value;
+    
+    this.listbox.velpan.set_pan(pan);
     this.listbox.do_full_recalc();
     this.do_full_recalc();
   }
@@ -1163,27 +1189,21 @@ class UIListBox extends ColumnFrame {
 
   pack(UICanvas canvas, Boolean is_vertical)
   {
-    this.listbox.min_size = CACHEARR2(this.size[0]-26, this.size[1])
+    this.listbox.size[0] = this.size[0]-26;
+    this.listbox.size[1] = this.size[1];
+    this.listbox.packflag |= PackFlags.KEEP_SIZE;
     
     prior(UIListBox, this).pack.call(this, canvas, is_vertical);
     
+    //paranoid check. . .this should not be necassary, but it is.
+    //ger!
+    this.listbox.pan_bounds[0][0] = 0;
+    this.listbox.pan_bounds[0][1] = 0;
+    
     this.vscroll.pos[1] = 0;
-    this.vscroll.size[1] = this.listbox.static_size[1];
+    this.vscroll.size[1] = this.size[1];
     
-    /*enforce correct size on this.listbox (a RowFrame)*/
-    var area = this.listbox.get_min_size(canvas, is_vertical);
-    this.listbox.size[0] = area[0];
-    this.listbox.size[1] = area[1];
-    
-    if (area[1] > this.size[1])
-      this.vscroll.set_range([0, area[1]-this.size[1]]);
-    else
-      this.vscroll.set_range([0, 50]);
-    
-    this.listbox.pos[1] = this.size[1]-this.listbox.size[1];
-    
-    this.listbox.pos[0] += this.scrollx;
-    this.listbox.pos[1] += this.scrolly;
+    this.vscroll.set_range([0, this.listbox.pan_bounds[1][1]]);
   }
 
   get_min_size(UICanvas canvas, Boolean isVertical) {
@@ -1392,6 +1412,9 @@ class UIVScroll extends UIFrame {
 
   set_value(val) {
     val = Math.min(Math.max(val, this.range[0]), this.range[1]);
+    
+    if (this.val != val)
+      this.do_recalc();
     this.val = val;
   }
 

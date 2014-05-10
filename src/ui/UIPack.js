@@ -15,13 +15,16 @@ var PackFlags = {
   //for colframe, center  y, for rowframe, center x
   ALIGN_CENTER_Y :    16384, ALIGN_CENTER_X : 32768,
   FLIP_TABSTRIP : 65536, NO_LEAD_SPACING : (1<<17),
-  NO_TRAIL_SPACING : (1<<18)
+  NO_TRAIL_SPACING : (1<<18), KEEP_SIZE : (1<<19),
+  _KEEPSIZE : ((1<<19)|128)
 }
 
 class UIPackFrame extends UIFrame {
   constructor(ctx, path_prefix)
   {
     UIFrame.call(this, ctx);
+    
+    this.mm = new MinMax(2);
     
     if (path_prefix == undefined)
       path_prefix = ""
@@ -110,6 +113,25 @@ class UIPackFrame extends UIFrame {
   }
 
   pack(canvas, isVertical) {
+    var arr = [0, 0];
+    var mm = this.mm;
+    
+    if (this.state & UIFlags.HAS_PAN) {
+      mm.reset();
+      for (var c in this.children) { 
+        arr[0] = c.pos[0]+c.size[0];
+        arr[1] = c.pos[1]+c.size[1];
+        mm.minmax(c.pos);
+        mm.minmax(arr);
+      }
+      
+      //this.pan_bounds[0] = new Vector2(mm.min);
+      this.pan_bounds[1] = new Vector2(mm.max).sub(mm.min);
+      this.pan_bounds[1][0] -= this.size[0];
+      this.pan_bounds[1][1] -= this.size[1];
+      //console.trace();
+    }
+    
     //this.last_pos.load(this.pos);
     //this.last_size.load(this.size);
   }
@@ -441,7 +463,7 @@ class RowFrame extends UIPackFrame {
     for (var c in this.children) {
       var size;
       
-      if (!(c.packflag & PackFlags.NO_REPACK))
+      if (!(c.packflag & PackFlags.KEEP_SIZE))
         size = c.cached_min_size(canvas, isvertical);
       else
         size = c.size
@@ -492,7 +514,7 @@ class RowFrame extends UIPackFrame {
       var c = this.children[i];
       var size;
       
-      if (!(c.packflag & PackFlags.NO_REPACK))
+      if (!(c.packflag & PackFlags.KEEP_SIZE))
         size = c.cached_min_size(canvas, is_vertical);
       else
         size = c.size;
@@ -558,7 +580,7 @@ class ColumnFrame extends UIPackFrame {
     
     for (var c in this.children) {
       var size;
-      if (!(c.packflag & PackFlags.NO_REPACK))
+      if (!(c.packflag & PackFlags.KEEP_SIZE))
         size = c.cached_min_size(canvas, isvertical);
       else
         size = [c.size[0], c.size[1]];
@@ -604,7 +626,7 @@ class ColumnFrame extends UIPackFrame {
     for (var c in this.children) {
       var s;
       
-      if (!(c.packflag & PackFlags.NO_REPACK))
+      if (!(c.packflag & PackFlags.KEEP_SIZE))
         s = c.cached_min_size(canvas, is_vertical);
       else
         s = [c.size[0], c.size[1]];
@@ -647,7 +669,7 @@ class ColumnFrame extends UIPackFrame {
     for (var c in this.children) {
       var size;
       
-      if (!(c.packflag & PackFlags.NO_REPACK))
+      if (!(c.packflag & PackFlags.KEEP_SIZE))
         size = c.cached_min_size(canvas, is_vertical);
       else
         size = c.size;

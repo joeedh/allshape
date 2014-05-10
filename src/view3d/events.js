@@ -525,12 +525,13 @@ class VelocityPan extends EventHandler {
     
     this.start_pan = new Vector2();
     
+    this.first = false;
     this.last_ms = 0;
     this.vel = new Vector2();
   }
   
   on_tick() {
-    if (this.coasting) {
+    if (!this.panning && this.coasting) {
       static vel = new Vector2();
       var damp = 0.99;
       
@@ -541,8 +542,14 @@ class VelocityPan extends EventHandler {
       this.last_ms = time_ms();
       
       this.pan.sub(vel);
-      this.clamp_pan();
+      var was_clamped = this.clamp_pan();
       this.owner.on_pan(this.pan, this.start_pan);
+      
+      var stop = was_clamped[0] && was_clamped[1]
+      stop = stop || this.vel.vectorLength < 1;
+      
+      if (stop)
+        this.coasting = false;
     }
   }
   
@@ -555,7 +562,7 @@ class VelocityPan extends EventHandler {
   
   start(Array<float> mpos, UIElement owner) {
     this.coasting = false;
-    this.last_mpos.load(mpos);
+    this.first = true;
     
     if (this.panning) {
       console.log("warning, duplicate call to VelocityPan.start()");
@@ -566,13 +573,12 @@ class VelocityPan extends EventHandler {
     this.owner = owner;
     
     this.start_pan.load(this.pan);
-    this.start_mpos.load(mpos);
     
+    this.last_ms = time_ms();
     this.start_time = time_ms();
     this.was_touch = g_app_state.was_touch;
     
-    //feed a mousemove event
-    this.do_mousemove(mpos);
+    //this.do_mousemove(mpos);
   }
   
   end() {
@@ -580,11 +586,22 @@ class VelocityPan extends EventHandler {
       this.owner.pop_modal();
     }
     this.panning = false;
-    this.calc_vel();
   }
   
   do_mousemove(Array<float> mpos) {
     //console.log("mpos", mpos);
+    
+    //its hard to get on_mousedown to always
+    //give coordinates in same space as on_mousemove,
+    //which is why init of these vars is down here,
+    //not in .start().
+    if (this.first) {
+      this.mpos.load(mpos);
+      this.last_mpos.load(mpos);
+      this.start_mpos.load(mpos);
+      this.first = false;
+      return;
+    }
     
     this.last_mpos.load(this.mpos);
     this.mpos.load(mpos);
@@ -599,20 +616,41 @@ class VelocityPan extends EventHandler {
   clamp_pan() {
     var bs = this.owner.pan_bounds;
     var p = this.pan;
-
+    static was_clamped = [0, 0];
+    
+    was_clamped[0] = false;
+    was_clamped[1] = false;
+    
     for (var i=0; i<2; i++) {
-      p[i] = Math.min(Math.max(bs[0][i], p[i]), bs[1][i]);
+      var l = p[i];
+      p[i] = Math.min(Math.max(bs[0][i], p[i]), bs[0][i]+bs[1][i]);
+      
+      if (p[i] != l)
+        was_clamped[i] = true;
     }
+    
+    return was_clamped;
   }
   
   on_mouseup(MouseEvent event) {
-    this.mpos.load([event.y, event.y]);
-    this.calc_vel();
-    this.end();
+    if (this.panning) {
+      this.mpos.load([event.y, event.y]);
+      this.calc_vel();
+      this.end();
+    }
   }
   
   on_mousemove(MouseEvent event) {
     this.do_mousemove([event.x, event.y]);
+  }
+  
+  set_pan(Array<float> pan) {
+    if (this.panning)
+      this.end();
+      
+    this.pan.load(pan);
+    this.coasting = false;
+    this.vel.zero();
   }
 }
 

@@ -471,7 +471,7 @@ class UITextBox extends UIElement {
     else if (this.state & UIFlags.HIGHLIGHT)
       canvas.box([0, 0], this.size, uicolors["TextBoxHighlight"], 16)
     else {
-      canvas.box([0, 0], this.size, uicolors["TextBox"], 16);
+      canvas.box([0, 0], this.size, uicolors["TextBoxInv"], 16);
     }
     
     canvas.push_scissor([0, 0], this.size);

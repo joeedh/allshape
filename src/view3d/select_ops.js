@@ -302,7 +302,7 @@ class EdgeLoopOpModal extends EdgeLoopOp {
     var e = medit.findnearestedge([evt.x-pos[0], evt.y-pos[1]]);
     if (e == null) return;
     
-    if (g_app_state.select_inverse || event.shiftKey)
+    if (g_app_state.select_inverse || evt.shiftKey)
       this.inputs.mode.set_value("subtract");
     else
       this.inputs.mode.set_value("add");
@@ -441,7 +441,7 @@ class FaceLoopOpModal extends FaceLoopOp {
     var e = medit.findnearestedge([evt.x-pos[0], evt.y-pos[1]]);
     if (e == null) return;
     
-    if (g_app_state.select_inverse || event.shiftKey)
+    if (g_app_state.select_inverse || evt.shiftKey)
       this.inputs.mode.set_value("subtract");
     else
       this.inputs.mode.set_value("add");

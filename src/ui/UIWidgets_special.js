@@ -84,6 +84,8 @@ class UIPanel extends RowFrame {
     
     col.packflag |= PackFlags.ALIGN_LEFT|PackFlags.NO_AUTO_SPACING;
     col.default_packflag &= ~PackFlags.INHERIT_WIDTH;
+    if (IsMobile)
+      col.label(" ");
     col.add(tri);
     
     this.text = name;

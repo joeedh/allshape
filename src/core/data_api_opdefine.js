@@ -123,6 +123,7 @@ function api_define_ops() {
       
       var op = new MeshToolOp(meshop);
       var macro = new ToolMacro("inset", "Inset Regions");
+      macro.icon = Icons.INSET_REGIONS;
       
       macro.add_tool(op);
       

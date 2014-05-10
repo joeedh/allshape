@@ -1160,7 +1160,6 @@ function render_mesh_selbuf(WebGLRenderingContext gl,
   set_program(gl, gl.selbuf, drawmats);
   
   if (typemask & MeshTypes.FACE) {
-    gl.polygonOffset(1, 1);
     gl.bindBuffer(gl.ARRAY_BUFFER, mesh.render.tri_vbuff);
     gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
     gl.bindBuffer(gl.ARRAY_BUFFER, mesh.render.tri_selbuff);
@@ -1218,7 +1217,6 @@ function render_mesh_intern(WebGLRenderingContext gl, View3DHandler view3d,
   //triangles
   if (mesh.render.tri_totvert > 0) {
     gl.polygonOffset(1, 1);
-    
     _set_buffer_solid(gl, mesh);
     
     if (view3d.selectmode & MeshTypes.FACE) {
@@ -1231,8 +1229,36 @@ function render_mesh_intern(WebGLRenderingContext gl, View3DHandler view3d,
       gl.disableVertexAttribArray(4);
     }
     
-    gl.uniform1f(gl.getUniformLocation(mesh.render.drawprogram.program, "alpha_mul"), 1.0);
+    /*draw solid faces*/
+    var shader = mesh.render.drawprogram;
+    
+    gl.polygonOffset(1, 1);
+    gl.uniform1f(shader.uniformloc(gl, "alpha_mul"), 1.0);
+    gl.uniform1f(shader.uniformloc(gl, "lightfac_inv"), 0.0);
     gl.drawArrays(gl.TRIANGLES, 0, mesh.render.tri_totvert);
+    
+    /*draw transparent overlay, in this case even in culled select mode*/
+    
+    /*ignore z if not in culled select mode*/
+    if (draw_overlay) {
+      gl.disable(gl.DEPTH_TEST);
+    }
+    
+    /*disable zbuffer write*/
+    gl.depthMask(0);
+    
+    /*change polygon offset to not conflict with existing z*/
+    gl.polygonOffset(0, 0);
+    gl.uniform1f(shader.uniformloc(gl, "alpha_mul"), 0.3);
+    gl.uniform1f(shader.uniformloc(gl, "lightfac_inv"), 1.0);
+    gl.drawArrays(gl.TRIANGLES, 0, mesh.render.tri_totvert);
+    
+    /*enable zbuffer write*/
+    gl.depthMask(1);
+    
+    if (draw_overlay) {
+      gl.enable(gl.DEPTH_TEST);
+    }
     
     if (0) { //mesh.render.outlinebuf != null) {
       gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, mesh.render.outlinebuf);
@@ -1257,7 +1283,7 @@ function render_mesh_intern(WebGLRenderingContext gl, View3DHandler view3d,
     
     /*
     if (mesh.render.tri_totvert > 0) {
-      gl.polygonOffset(1, 1);
+      gl.polygonOffset(2, 2);
       
       _set_buffer_solid(gl, mesh);
       

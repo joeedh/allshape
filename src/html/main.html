@@ -567,6 +567,7 @@ body, html {
     uniform mat4 u_normalMatrix;
     uniform vec3 lightDir1;
     uniform float alpha_mul;
+    uniform float lightfac_inv;
 
     uniform sampler2D sampler2d;
 
@@ -602,8 +603,11 @@ body, html {
         if (alpha_mul != 0.0)
           c1[3] *= alpha_mul;
         
+        float alpha = alpha_mul == 0.0 ? 1.0 : alpha_mul;
         float f = dot(v_Normal, lightDir1);
-        gl_FragColor = vec4(color[0]*f, color[1]*f, color[2]*f, 1.0);
+        
+        f += (1.0 - f)*(lightfac_inv);
+        gl_FragColor = vec4(color[0]*f, color[1]*f, color[2]*f, alpha);
     }
 </script>
 
