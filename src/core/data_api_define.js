@@ -67,9 +67,14 @@ var SettingsUpdate = function() {
   g_app_state.session.settings.server_update();
 }
 
+var SettingsUpdateRecalc = function() {
+  g_app_state.session.settings.server_update();
+  g_app_state.screen.do_full_recalc();
+}
+
 var SettingsStruct = undefined;
 function api_define_settings() {
-  unitsys_enum = new EnumProperty("imperial", ["imperial", "matric"],
+  unitsys_enum = new EnumProperty("imperial", ["imperial", "metric"],
                                   "system", "System", 
                                   "Metric or Imperial");
   
@@ -77,7 +82,7 @@ function api_define_settings() {
   units_enum.apiname = "default_unit";
   units_enum.uiname = "Default Unit";
   
-  units_enum.update = unitsys_enum.update = SettingsUpdate;
+  units_enum.update = unitsys_enum.update = SettingsUpdateRecalc;
   
   SettingsStruct = new DataStruct([
     new DataPath(unitsys_enum, "unit_system", "unit_scheme", true),

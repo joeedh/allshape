@@ -371,14 +371,16 @@ class UIMenuButton extends UIButtonAbstract {
     var vx = viewport[0][0] + viewport[1][0];
     var vy = viewport[0][1] + viewport[1][1];
     
+    menu.minwidth = this.size[0];
     menu.packmenu(canvas);
+    
     var off = [0, Math.floor(this.size[1]-3)];
     
     if (this.abspos[1]+off[1]+menu.size[1] > vy) {
         off = [0, -menu.size[1]];
     }
     
-    this.call_menu(menu, off);
+    this.call_menu(menu, off, this.size[0]);
   }
   
   build_draw(UICanvas canvas) {

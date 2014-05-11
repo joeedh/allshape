@@ -580,9 +580,9 @@ class EnumProperty extends ToolProperty {
       val = this.keys[val];
     
     if (!(val in this.values)) {
-      console.log(val, this.values);
-      console.trace();
-      throw new Error("Bad enumeration value " + val);
+      console.trace("Invalid value for enum!");
+      console.log("Invalid value for enum!", val, this.values);
+      return;
     }
     
     this.data = new String(val);
