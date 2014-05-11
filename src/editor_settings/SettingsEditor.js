@@ -52,6 +52,8 @@ class SettingsEditor extends Area {
     this.themebox = this.do_theme_color(0);
     panel.add(this.themebox);
     
+    panel.packflag |= PackFlags.INHERIT_WIDTH;
+    
     return panel;
   }
   
@@ -60,11 +62,12 @@ class SettingsEditor extends Area {
     
     var panel = new RowFrame(ctx);
     panel.packflag |= PackFlags.INHERIT_WIDTH;
-    panel.default_packflag |= PackFlags.INHERIT_WIDTH;
     panel.packflag |= PackFlags.NO_AUTO_SPACING;
     panel.packflag |= PackFlags.IGNORE_LIMIT;
     
+    panel.label("Unit System");
     panel.prop("settings.unit_system");
+    panel.label("Default Unit");
     panel.prop("settings.default_unit");
     
     return panel
@@ -86,7 +89,7 @@ class SettingsEditor extends Area {
     this.themebox = undefined;
     
     this.subframe = new UITabPanel(new Context(), [size[0], size[1]]);
-    this.subframe.packflag |= PackFlags.INHERIT_WIDTH;
+    this.subframe.packflag |= PackFlags.NO_AUTO_SPACE|PackFlags.INHERIT_WIDTH;
     this.subframe.size[0] = this.size[0];
     this.subframe.size[1] = this.size[1];
     this.subframe.pos = [0, Area.get_barhgt()];

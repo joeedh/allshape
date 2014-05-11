@@ -180,9 +180,10 @@ class UITabPanel extends UIFrame {
     this.subframe.pos = [0,0];
     this.subframe.pad[1] = 0;
     this.subframe.pad[0] = flip ? 4 : 0;
-    this.subframe.packflag |= PackFlags.NO_AUTO_SPACING|PackFlags.ALIGN_LEFT|PackFlags.ALIGN_BOTTOM; //|PackFlags.INHERIT_HEIGHT; 
-    this.subframe.packflag |= PackFlags.INHERIT_WIDTH|PackFlags.NO_LIMIT;
+    this.subframe.packflag |= PackFlags.NO_AUTO_SPACING|PackFlags.ALIGN_LEFT|PackFlags.ALIGN_BOTTOM;
+    this.subframe.packflag |= PackFlags.IGNORE_LIMIT;
     this.subframe.packflag |= PackFlags.NO_LEAD_SPACING|PackFlags.NO_TRAIL_SPACING;
+    this.subframe.default_packflag |= PackFlags.INHERIT_WIDTH;
     
     var this2 = this;
     function callback(text, id) {
@@ -265,6 +266,8 @@ class UITabPanel extends UIFrame {
   build_draw(UICanvas canvas, Boolean isVertical) {
     //strange, shouldn't have to manually call pack here. . .
     this.pack(canvas, isVertical);
+    
+    canvas.simple_box(this.pos, this.size);
     
     prior(UITabPanel, this).build_draw.call(this, canvas, isVertical);
     
