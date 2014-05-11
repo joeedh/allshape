@@ -19,8 +19,9 @@ class UIButtonAbstract extends UIHoverHint {
   }
   
   on_mousedown(MouseEvent event) {
+    console.log("button down");
     if (!this.clicked) {
-      this.was_touch = g_app_state.was_touch;
+      this.was_touch = 0; //g_app_state.was_touch;
       this.modal_click = !this.click_on_down || this.was_touch;
       
       this.start_mpos.load([event.x, event.y]);
@@ -37,10 +38,15 @@ class UIButtonAbstract extends UIHoverHint {
           this.on_click(event);
         }
       }  
+    } else {
+      if (this.parent.modalhandler == this) {
+        this.parent.pop_modal();
+      }
     }
   }
 
   on_mouseup(MouseEvent event) {
+    console.log("button up");
     if (event.button == 0 && this.clicked) {
       if (this.modal_click)
         this.parent.pop_modal();

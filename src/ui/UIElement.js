@@ -562,6 +562,8 @@ class UIHoverHint extends UIElement {
     hintbox.pos[0] += abspos[0] - abspos2[0];
     hintbox.pos[1] += abspos[1] - abspos2[1];
     
+    //don't interfere with other modal stuff
+    is_modal = is_modal && (g_app_state.screen.modalhandler == undefined);
     this.parent.add_floating(hintbox, is_modal);
     
     return hintbox;

@@ -36,7 +36,7 @@ class AppSettings {
   }
   
   server_update() {
-    console.trace("server settings push");
+    //console.trace("server settings push");
     
     if (time_ms() - this.last_server_update > 3000) {
       //console.log("pushing settings to server. . .");

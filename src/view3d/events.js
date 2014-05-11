@@ -761,6 +761,7 @@ class TouchEventManager {
     //now, fire events
     for (var e in dl) {
       e._good = true;
+      g_app_state.was_touch = true;
       
       try {
         if (e.type == MyMouseEvent.MOUSEDOWN)
