@@ -374,8 +374,8 @@ class UIMenuButton extends UIButtonAbstract {
     var canvas = this.get_canvas();
     var viewport = canvas.viewport;
     var menu = this.menu;
-    var vx = viewport[0][0] + viewport[1][0];
-    var vy = viewport[0][1] + viewport[1][1];
+    var vx = g_app_state.screen.size[0]; // viewport[0][0] + viewport[1][0];
+    var vy = g_app_state.screen.size[1]; //viewport[0][1] + viewport[1][1];
     
     menu.minwidth = this.size[0];
     menu.packmenu(canvas);
