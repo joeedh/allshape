@@ -1,26 +1,27 @@
 "use strict";
 
 var UIFlags = {
-  ENABLED : 1, HIGHLIGHT: 2, 
-  FOCUS: 4, GREYED: 8, 
-  REDERROR: 16, WARNING: 32, 
-  USE_PATH : 64, NO_RECALC: 128,
-  FLASH : (16|32), SKIP_DRAW : 256,
+  ENABLED        :  1,   HIGHLIGHT :   2, 
+  FOCUS          :  4,   GREYED    :   8, 
+  REDERROR       : 16,  WARNING    :  32, 
+  USE_PATH       : 64,  NO_RECALC  : 128,
+  FLASH     : (16|32),  SKIP_DRAW  : 256,
   
   //- has_pan flags uiframes with pan callbacks, 
   //- use_pan tells elements to use those callbacks,
   //          e.g. if a tablet user touches a button, then drags,
   //          execute pan
   //- pan_canvas_mat : change canvas global matrix, not frame position
-  HAS_PAN : 512, USE_PAN : 1024, PAN_CANVAS_MAT : 2048,
-  IS_CANVAS_ROOT : 4096, NO_FRAME_CACHE : 8192
+  HAS_PAN        :  512, USE_PAN        : 1024, 
+  PAN_CANVAS_MAT : 2048, IS_CANVAS_ROOT : 4096, 
+  NO_FRAME_CACHE : 8192
 };
 
 var CanvasFlags = {NOT_ROOT : 1, NO_PROPEGATE : 2}
 
 var _ui_element_id_gen = 1;
 function open_mobile_keyboard(e, on_close=function(){}) {
-  //stupid android on screen keyboard doesn't interface
+  //stupid android screen keyboard doesn't interface
   //with javascript very well, ger.
   if (IsMobile || DEBUG.screen_keyboard)
     call_keyboard(e, on_close);

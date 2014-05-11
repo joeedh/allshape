@@ -50,7 +50,7 @@ class UIButtonAbstract extends UIHoverHint {
       
       
       var click = this.was_touch || !this.click_on_down;
-      console.log("click: ", click, "button mouseup: ", event.x, event.y, this.size[0], this.size[1]);
+      //console.log("click: ", click, "button mouseup: ", event.x, event.y, this.size[0], this.size[1]);
       if (click) { // && inrect_2d_button([event.x, event.y], [0, 0], this.size)) {
         this.on_click(event);
       }
@@ -1111,7 +1111,7 @@ class UIListBox extends ColumnFrame {
     this.add(this.vscroll);
     
     this.packflag |= PackFlags.ALIGN_LEFT;
-    this.packflag &= ~PackFlags.ALIGN_CENTER;
+    this.state |= UIFlags.NO_FRAME_CACHE;
   }
   
   on_tick() {
@@ -1206,14 +1206,12 @@ class UIListBox extends ColumnFrame {
   }
 
   build_draw(UICanvas canvas, Boolean isVertical) {
-    canvas.begin(this);
+    this.canvas = this.get_canvas();
+    
     canvas.push_scissor([0,0], this.size);
-
     canvas.simple_box([0,0], this.size, uicolors["ListBoxBG"]);
     prior(UIListBox, this).build_draw.call(this, canvas, isVertical);
-    
     canvas.pop_scissor();
-    canvas.end(this);
   }
 
   reset()
@@ -1351,6 +1349,7 @@ class UIVScroll extends UIFrame {
   constructor(ctx, range, pos=[0,0], size=[0,0], callback=undefined) {
     UIFrame.call(this, ctx);
     
+    this.state |= UIFlags.NO_FRAME_CACHE;
     this.packflag |= PackFlags.INHERIT_HEIGHT;
     this.packflag |= PackFlags.ALIGN_RIGHT;
     
@@ -1395,8 +1394,6 @@ class UIVScroll extends UIFrame {
     var this2=this;
     function bar_callback(button, mpos) {
       mpos = [0, mpos[1]+button.pos[1]]; //+button.pos[1]+button.parent.pos[1]];
-      console.log(button.pos);
-      console.log("mpos", mpos);
       this2.do_drag(mpos);
     }
     this.bar.callback = bar_callback;
@@ -1490,7 +1487,6 @@ class UIVScroll extends UIFrame {
   on_mousemove(MouseEvent event) {
     if (this.dragging) {
       var mpos = [event.x-this.parent.pos[0], event.y-this.parent.pos[1]];
-      console.log("mpos", mpos);
       
       var y = mpos[1]-this.last_mpos[1];
       
@@ -1527,6 +1523,8 @@ class UIVScroll extends UIFrame {
   build_draw(UICanvas canvas, Boolean isVertical) 
   {
     canvas.frame_begin(this);
+    //console.log(this.is_canvas_root(), this.canvas, this);
+    //console.log(this.parent.get_canvas());
     
     this.pack(canvas, isVertical);
     if (this.range[1]-this.range[0] == 0.0) {

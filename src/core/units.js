@@ -169,11 +169,11 @@ class Unit {
   
 Unit.units = [
   new Unit(["cm"], 1.0),
-  new Unit(["in", "''", "``"], 2.54),
+  new Unit(["in", "''", "``", '"'], 2.54),
   new Unit(["ft", "'", "`"], 30.48),
   new Unit(["m"], 100),
   new Unit(["mm"], 0.1),
-  new Unit(["km"], 0.00001),
+  new Unit(["km"], 100000),
   new Unit(["mile"], 160934.4)
 ];
 

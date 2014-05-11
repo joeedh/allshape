@@ -39,7 +39,7 @@ class AppSettings {
     console.trace("server settings push");
     
     if (time_ms() - this.last_server_update > 3000) {
-      console.log("pushing settings to server. . .");
+      //console.log("pushing settings to server. . .");
       _settings_manager.server_push(this);
       
       this.last_server_update = time_ms();
@@ -71,7 +71,7 @@ class AppSettings {
         var blocks = ret.blocks;
         var version = ret.version;
         
-        console.log(blocks);
+        //console.log(blocks);
         
         var settings = undefined;
         for (var i=0; i<blocks.length; i++) {
@@ -100,7 +100,7 @@ class AppSettings {
           g_app_state.screen.do_full_recalc();
         
         console.log("done");
-        console.log(settings);
+        //console.log(settings);
         
         if (on_finish != undefined) {
           on_finish(settings);
@@ -186,12 +186,12 @@ function upload_settings(AppSettings settings, SettUploadManager uman) {
   
   function status(job, owner, status) {
     pnote.set_value(status.progress);
-    console.log("status: ", status.progress, 1.0);
+    //console.log("status: ", status.progress, 1.0);
   }
   
   var this2 = this;
   function finish(job, owner) {
-    console.log("settings upload finished! yay!");
+    //console.log("settings upload finished! yay!");
     uman.finish(ujob);
   }
 
