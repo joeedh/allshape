@@ -36,6 +36,7 @@ sources = [
 	"src/font/fontgen16.js",
 	"src/core/ajax.js",
   "src/core/raster.js",
+  "src/core/UserSettings.js",
 	"src/core/AppState.js",
 	"src/core/units.js",
 	"src/core/data_api.js",

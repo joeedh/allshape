@@ -1305,7 +1305,8 @@ function toJSON_intern (ob, tlevel) {
         canvas.width = canvas.clientWidth;
         canvas.height = canvas.clientHeight;
         
-        //init() is called on context restore, too
+        //don't mangle current app state on
+        //context loss, which also calls init()
         if (g_app_state == undefined) {
           //initialize struct pack system
           init_struct_packer();

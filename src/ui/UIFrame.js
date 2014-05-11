@@ -15,7 +15,7 @@ class UIFrame extends UIElement {
     this.pan_bounds = [[0, 0], [0, 0]];
     
     this.ctx = ctx;
-    this.children = new GArray([])
+    this._children = new GArray([])
     this.active = undefined;
     this.velpan = new VelocityPan();
     
@@ -33,6 +33,51 @@ class UIFrame extends UIElement {
     this.framecount = 0;
     this.rcorner = 16.0;
     this.keymap = undefined;
+  }
+  
+  get children() : GArray<UIElement> {
+    return this._children;
+  }
+  
+  //setter for .children, will hopefully
+  //avoid GC leaks in edge cases
+  set children(GArray<UIElement> cs) {
+    var cset = new set();
+    for (var c in cs) {
+      cset.add(c);
+    }
+    
+    for (var c in list(this._children)) {
+      if (!cset.has(c)) {
+        c.on_remove(this);
+        c.parent = undefined;
+        c.canvas = undefined;
+      }
+    }
+    
+    this._children.reset();
+    for (var c in cs) {
+      if (!cset.has(c)) {
+        this.add(c);
+      } else {
+        this._children.push(c);
+      }
+    }
+  }
+  
+  /*these next two are used to save/load ui data
+    in hidden elements, e.g. collapsed panels,
+    inactive tabs*/
+  on_saved_uidata(Function visit_func) {
+    for (var c in this.children) {
+      visit_func(c);
+    }
+  }
+  
+  on_load_uidata(Function visit) {
+    for (var c in this.children) {
+      visit(c);
+    }
   }
   
   on_gl_lost(WebGLRenderingContext new_gl) {
@@ -635,6 +680,7 @@ class UIFrame extends UIElement {
     this.recalc = 0;
     
     var viewport = g_app_state.raster.viewport;
+    static zero = [0, 0];
     
     for (var c in this.children) {
       c.abspos[0] = 0; c.abspos[1] = 0;
@@ -644,14 +690,14 @@ class UIFrame extends UIElement {
       var pos;
       
       if (this.state & UIFlags.HAS_PAN)
-        pos = [this.pos[0]+this.velpan.pan[0], this.pos[1]+this.velpan.pan[1]];
+        pos = this.velpan.pan;
       else
-        pos = this.pos;
+        pos = zero;
       
-      //isect = isect || aabb_isect_2d(c.pos, c.size, pos, this.size);
+      isect = isect || aabb_isect_2d(c.pos, c.size, pos, this.size);
       if (!isect) {
-        //this.has_hidden_elements = true;
-        //continue;
+        this.has_hidden_elements = true;
+        continue;
       }
       
       if (c.pos == undefined) {
@@ -671,8 +717,13 @@ class UIFrame extends UIElement {
            c.is_canvas_root())
       {
         if (c.recalc && !(c.packflag & PackFlags.NO_REPACK)) {
-          c.pack(canvas, false);
-          c.build_draw(c.get_canvas(), isVertical);
+          var canvas2 = c.get_canvas();
+          
+          canvas2.push_transform();
+          canvas2.translate(c.pos);
+          c.pack(canvas2, false);
+          c.build_draw(canvas2, isVertical);
+          canvas2.pop_transform();
         }
         
         continue;

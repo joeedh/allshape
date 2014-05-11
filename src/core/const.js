@@ -4,6 +4,7 @@
 
 //file extension
 var allshape_file_ext = ".al3";
+var allshape_settings_filename = ".settings.bin";
 
 //application version
 var g_app_version = 0.045;

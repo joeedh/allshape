@@ -34,5 +34,7 @@ var Icons = {
   SCROLL_UP      : 30,
   INSET_REGIONS  : 31,
   SPLIT_EDGES    : 32,
-  DISSOLVE_FACES : 33
+  DISSOLVE_FACES : 33,
+  NOTE_EXCL      : 34,
+  TINY_X         : 35
 };

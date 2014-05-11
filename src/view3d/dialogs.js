@@ -117,6 +117,44 @@ function file_dialog(mode, ctx, callback)
   fd.call(ctx.screen.mpos);  
 }
 
+function download_file(path, on_finish, path_label=path, suppress_errors=false, on_error=undefined) {
+  var ctx = new Context();
+    
+  var pd = new ProgressDialog(ctx, "Downloading " + path_label);
+  if (on_error == undefined)
+    on_error = function() { };
+    
+  var did_error = false;
+  function error(job, owner, msg) {
+    if (!did_error) {
+      did_error = true;
+      pd.end()
+      
+      on_error(job, owner, msg);
+      
+      if (!suppress_errors)
+        g_app_state.notes.label("Network Error");
+    }
+  }
+  
+  function status(job, owner, status) {
+    pd.value = status.progress;
+    pd.bar.do_recalc();
+    console.log("status: ", status.progress, pd.bar.max);
+  }
+      
+  function finish(job, owner) {
+    pd.end();
+    on_finish(new DataView(job.value));
+    
+    console.log("finished downloading");
+  }
+  
+  var s = g_app_state.screen.size;
+  pd.call([s[0]*0.5, s[1]*0.5]);
+  call_api(get_file_data, {path:path}, finish, error, status);
+}
+
 class FileOpenOp extends ToolOp {  
   constructor() {
     ToolOp.call(this, "open_file", "Open");

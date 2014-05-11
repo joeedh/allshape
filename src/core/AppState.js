@@ -15,56 +15,61 @@ class FileData {
   }
 }
 
-class AppSettings {
-  constructor() {
-    this.unit_scheme = "imperial";
-    this.unit = "in";
-  }
-
-  toJSON() {
-    return this;
-  }
-
-  static fromJSON(obj) {
-    var as = new AppSettings();
-    as.unit_scheme = obj.unit_scheme;
-    as.unit = obj.unit;
-    
-    return as;
-  }
-}
-
 class UserSession {
   constructor() {
     this.tokens = {} : ObjectMap;
     this.username = "guest";
     this.password = "guest123";
     this.is_logged_in = false;
+    this.loaded_settings = false;
     
     this.settings = new AppSettings();
   }
   
-  store() {
-    localStorage.session = JSON.stringify(this);
+  copy() : UserSession {
+    var c = new UserSession();
+
+    for (var k in this.tokens) {
+      c.tokens[k] = this.tokens[k];
+    }
+    c.username = this.username;
+    c.password = this.password;
+    c.is_logged_in = this.is_logged_in;
+    c.loaded_settings = false;
+    c.settings = this.settings;
+    
+    return c;
+  }
+  
+  store(override_settings=false) {
+    var saveobj = this.copy();
+    
+    if (!override_settings && "session" in localStorage) {
+      var old = JSON.parse(localStorage.session);
+      saveobj.settings = old;
+    }
+    
+    localStorage.session = JSON.stringify(saveobj);
   }
   
   logout_simple() {
     this.is_logged_in = false;
     this.tokens = {};
+    this.loaded_settings = false;
   }
   
   validate_session() {
     var session = this;
     
-    var finish = function(job, owner) {
-      console.log("session valid");
-      return;
-    }
-    
     function finish2(job, owner) {
       session.tokens = job.value;
       session.is_logged_in = true;
-      session.store();
+      session.store(false);
+      
+      console.log("downloading current user settings. . .");
+      session.settings.download(function() {
+        session.store(true);
+      });
     }
     
     function error2(obj, owner, msg) {
@@ -74,6 +79,20 @@ class UserSession {
     
     function error(job, owner, msg) {
       auth_session(session.username, session.password, finish2, error2);
+    }
+    
+    function finish(job, owner) {
+      console.log("downloading current user settings. . .");
+      
+      if (!session.loaded_settings) {
+        session.settings.download(function() {
+          session.loaded_settings = true;
+          session.store(true);
+        });
+      }
+      
+      console.log("session valid");
+      return;
     }
     
     call_api(get_user_info, undefined, finish, error);
@@ -86,11 +105,7 @@ class UserSession {
     us.password = obj.password;
     us.is_logged_in = obj.is_logged_in;
     
-    if (obj.settings != undefined) {
-      us.settings = AppSettings.fromJSON(obj.settings);
-    } else {
-      us.settings = new AppSettings();
-    }
+    us.settings = new AppSettings();
     
     return us;
   }
@@ -296,7 +311,7 @@ class AppState {
     var buf = this.create_user_file_new({
       gen_dataview : true, 
       compress : true,
-      save_theme : true
+      save_theme : false
     });
     buf = new Uint8Array(buf.buffer);
     
@@ -526,6 +541,94 @@ class AppState {
     }
   }
 
+  //blocks is a map from 4-byte ID strings to
+  //STRUCT-compatible objects.
+  write_blocks(args={}) {
+    var gen_dataview=true, compress=false;
+    var save_screen=true, save_toolstack=true;
+    var save_theme=false;
+    var blocks = args["blocks"];
+    
+    if (args.gen_dataview != undefined)
+      gen_dataview = args.gen_dataview;
+    if (args.compress != undefined)
+      compress = args.compress;
+    
+    var mesh = this.mesh;
+    
+    function bheader(data, type, subtype) {
+      pack_static_string(data, type, 4);
+      pack_static_string(data, subtype, 4);
+    }
+    
+    var data = [];
+    
+    //header "magic"
+    pack_static_string(data, "ALSH", 4);
+    
+    //general file flags, e.g. compression
+    var flag = compress ? FileFlags.COMPRESSED_LZSTRING : 0;
+    pack_int(data, flag);
+    
+    //version
+    var major = Math.floor(g_app_version);
+    var minor = Math.floor((g_app_version - Math.floor(g_app_version))*1000);
+    
+    pack_int(data, major);
+    pack_int(data, minor);
+    
+    var headerdata = data;
+    if (compress) {
+      data = [];
+    }
+    
+    //the schema struct definitions used to save
+    //the non-JSON parts of this file.
+    var buf = gen_struct_str();
+    
+    bheader(data, "SDEF", "SDEF") ;
+    pack_string(data, buf);
+    
+    for (var k in blocks) {
+      var data2 = []
+      istruct.write_object(data2, blocks[k]);
+
+      bheader(data, k, "STRT");
+      pack_int(data, data2.length);
+      data = data.concat(data2);
+    }
+    
+    if (compress) {
+      data = LZString.compress(new Uint8Array(data));
+      
+      var d = new Uint16Array(data.length);
+      for (var i=0; i<data.length; i++) {
+        d[i] = data.charCodeAt(i);
+      }
+      
+      d = new Uint8Array(d.buffer);
+      console.log("-----1------>", d.length);
+      
+      data = new Uint8Array(d.length + headerdata.length)
+      for (var i=0; i<headerdata.length; i++) {
+        data[i] = headerdata[i];
+      }
+      for (var i=0; i<d.length; i++) {
+        data[i+headerdata.length] = d[i];
+      }
+      
+      if (gen_dataview)
+        return new DataView(data.buffer);
+      else
+        return data;
+    } else {
+      if (gen_dataview)
+        return new DataView(new Uint8Array(data).buffer);
+      else
+        return data;
+    }
+  }
+  
   //version patching happens *before* block linking
   do_versions(datalib, blocks, version)
   {

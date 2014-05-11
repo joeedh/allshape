@@ -210,6 +210,26 @@ class UITabPanel extends UIFrame {
     this.add(this.subframe);
   }
   
+  on_saved_uidata(Function visit) {
+    prior(UITabPanel, this).on_saved_uidata.call(this, visit);
+    
+    console.log("===============> saving tab hidden elements");
+    
+    for (var t in this.tabstrip.tabs) {
+      console.log("  uhash:", t.id.get_uhash());
+      visit(t.id);
+    }
+  }
+  
+  on_load_uidata(Function visit) {
+    prior(UITabPanel, this).on_load_uidata.call(this, visit);
+    
+    for (var t in this.tabstrip.tabs) {
+      console.log("  uhash:", t.id.get_uhash());
+      visit(t.id);
+    }
+  }
+  
   load_filedata(ObjectMap map) {
     console.log("yay, map", map);
     
@@ -252,12 +272,13 @@ class UITabPanel extends UIFrame {
     var t = this.tabstrip.thickness; //header width
     
     var sx = this.flip ? this.tabstrip.pos[0] : this.size[0];
+    var y = this.is_canvas_root() ? this.pos[1] : 0;
     if (!(this.packflag & PackFlags.FLIP_TABSTRIP)) {
-      canvas.line([t, 0], [sx, 0], lineclr);
-      canvas.line([t, this.size[1]-1], [sx, this.size[1]-1], lineclr);
+      canvas.line([t, y], [sx, y], lineclr);
+      canvas.line([t, y+this.size[1]-1], [sx, y+this.size[1]-1], lineclr);
     } else {
-      canvas.line([0, 0], [sx, 0], lineclr);
-      canvas.line([0, this.size[1]-1], [sx, this.size[1]-1], lineclr);
+      canvas.line([0, y], [sx, y], lineclr);
+      canvas.line([0, y+this.size[1]-1], [sx, y+this.size[1]-1], lineclr);
     }
   }
   
@@ -267,6 +288,12 @@ class UITabPanel extends UIFrame {
     
     for (var c in list(content.children)) {
       content.remove(c);
+      
+      /*prevent UIFrame.remove from setting 
+        c.parent to undefined.  this is necassary
+        for c.get_uhash() to return correct results
+        when it's part of an inactive tab.*/
+      c.parent = content; 
     }
     
     if (id != undefined)
@@ -310,7 +337,15 @@ class UITabPanel extends UIFrame {
     if (this.tabstrip.tabs.length == 0)
       this.content.add(frame);
     
+    var uhash = frame.get_uhash;
+    frame.get_uhash = function() {
+      return uhash.call(frame) + text;
+    }
+    
     this.tabstrip.add_tab(text, description, frame);
+    
+    //make sure uhash() returns consistent results
+    frame.parent = this.content;
   }
   
   get_min_size(UICanvas canvas, Boolean isVertical) {

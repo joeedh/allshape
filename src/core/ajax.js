@@ -668,6 +668,7 @@ function NetJobStatus(job, owner, status) : NetStatus;
 function NetStatus() {
   this.progress = 0 : float;
   this.status_msg = "";
+  this.cancel = false;
   this._client_control = false; //client api code is controlling this NetStatus, not XMLHttpRequest callbacks
 }
 
@@ -680,6 +681,7 @@ class NetJob {
     
     this.status_data = new NetStatus();
     this.value = undefined;
+    this.req = undefined;
   }
 }
 
@@ -750,6 +752,8 @@ function api_exec(path, netjob, mode,
   }
   
   var req = new XMLHttpRequest();
+  netjob.req = req;
+  
   req.open(mode, path, true);
   if (mode != "GET")
     req.setRequestHeader("Content-type", mime);
@@ -880,6 +884,12 @@ function call_api(iternew, args, finish, error, status) {
 }
 
 function get_user_info(job, args) {
+  if (g_app_state.session.tokens == undefined) {
+    job.finish = undefined;
+    job.error(job, job.owner);
+    return;
+  }
+  
   var token = g_app_state.session.tokens.access;
   api_exec("/api/auth/userinfo?accessToken="+token, job);
   yield;
@@ -950,6 +960,11 @@ function upload_file(job, args) {
     job.status_data.progress = prog;
     if (job.status) {
       job.status(job, job.owner, job.status_data);
+      if (job.status.cancel) {
+        job.finish = undefined;
+        job.req.abort();
+        break;
+      }
     }
   }
 }

@@ -598,9 +598,10 @@ class DataAPI {
       return undefined;
     }
     
-    try { //XXX
-      if (1) { //!(str in cache)) {
+    try {
+      if (!(str in cache)) {
         var ret = this.resolve_path_intern2(ctx, str);
+        
         //copy
         var ret2 = []
         for (var i=0; i<ret.length; i++) {
@@ -608,9 +609,16 @@ class DataAPI {
         }
         
         cache[str] = ret2;
+      } else {
+        var ret = cache[str];
+        
+        if (!ret[0].cache_good()) {
+          delete cache[str];
+          return this.resolve_path_intern(ctx, str);
+        }
       }
       
-      return cache[str];
+      return ret;
     } catch (_err) {
       print_stack(_err);
       console.log("error: ", str);
@@ -715,7 +723,7 @@ class DataAPI {
   }
   
   eval(ctx, str) {
-    if (0) { //XXX str in this.evalcache) {
+    if (str in this.evalcache) {
       return this.evalcache[str](ctx);
     }
     
@@ -726,7 +734,7 @@ class DataAPI {
     """.replace("$s", str);
     
     eval(script);
-    
+        
     this.evalcache[str] = func;
     return func(ctx);
   }
@@ -742,9 +750,7 @@ class DataAPI {
     if (ret[0].type == DataPathTypes.PROP) {
       if (ret[0].use_path) {
         var path = ret[1];
-        //console.log("===>", path, ret[1]);
         val = this.eval(ctx, path);
-        //console.log("val", val);
       } else {
         val = this.eval(ctx, ret[2]);
         
@@ -752,8 +758,6 @@ class DataAPI {
           val = val.data;
         if (val instanceof ToolProperty)
           val = val.data;
-        //console.log("=1=>", ret[0], ret[1]);
-        //val = ret[0].data;
       }
       
       var prop = ret[0].data;

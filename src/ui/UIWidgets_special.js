@@ -99,6 +99,22 @@ class UIPanel extends RowFrame {
     this.start_child = this.children.length;
   }
   
+  on_saved_uidata(Function descend) {
+    prior(UIPanel, this).on_saved_uidata.call(this, descend);
+    
+    for (var c in this.stored_children) {
+      descend(c);
+    }
+  }
+  
+  on_load_uidata(Function visit) {
+    prior(UIPanel, this).on_load_uidata.call(this, visit);
+    
+    for (var c in this.stored_children) {
+      visit(c);
+    }
+  }
+  
   get_uhash() : String {
     return prior(UIPanel, this).get_uhash.call(this) + this.permid;
   }
@@ -528,7 +544,14 @@ class UIColorPicker extends RowFrame {
   
   do_path() {
     if (this.state & UIFlags.USE_PATH) {
-      this.set_prop_data(this._color);
+      var clr = this.get_prop_data();
+      
+      for (var i=0; i<4; i++) {
+        if (clr[i] != this._color[i]) {
+          this.set_prop_data(this._color);
+          break;
+        }
+      }
     }
   }
   
@@ -587,4 +610,59 @@ class UIBoxWColor extends ColumnFrame {
 }
 
 class UIBoxColor extends RowFrame {
+}
+
+class UIProgressBar extends UIElement {
+  constructor(Context ctx, float value=0.0, float min=0.0, float max=1.0, int min_wid=200, int min_hgt=25) {
+    UIElement.call(this, ctx);
+    
+    this.value = value;
+    this.min = min;
+    this.max = max;
+    this.min_wid = min_wid;
+    this.min_hgt = min_hgt;
+    this.size[1] = min_hgt;
+    this.size[0] = min_wid;
+    this.last_value = this.value;
+  }
+  
+  get_min_size(UICanvas canvas, Boolean isVertical) : Array<float> {
+    return [this.min_wid, this.min_hgt];
+  }
+  
+  //we recalc draw buffers in on_tick, to avoid excessive updates per second
+  on_tick() {
+    prior(UIProgressBar, this).on_tick.call(this);
+    
+    if (this.last_value != this.value) {
+      this.do_recalc();
+      this.last_value = this.value;
+    }
+  }
+  
+  set_value(float value) {
+    this.last_value = this.value;
+    this.value = value;
+  }
+  
+  build_draw(UICanvas canvas, Boolean isVertical) {
+    static zero = [0, 0];
+    static one = [1, 1];
+    static size2 = [0, 0];
+    
+    canvas.begin(this);
+    var perc = (this.value / (this.max-this.min));
+    
+    canvas.box(zero, this.size, uicolors["ProgressBarBG"]);
+    
+    if (perc > 0.0) {
+      perc = Math.min(Math.max(0.0, perc), 1.0);
+      
+      size2[1] = this.size[1]-2;
+      size2[0] = Math.floor(this.size[0]*perc)-2;
+      canvas.box(one, size2, uicolors["ProgressBar"]);
+    }
+    
+    canvas.end(this);
+  }
 }

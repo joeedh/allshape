@@ -3,7 +3,7 @@
 #include "src/core/utildefine.js"
 
 class UITextBox extends UIElement {
-  constructor(ctx, text, pos, size, path) {
+  constructor(ctx, text="", pos=undefined, size=undefined, path=undefined) {
     UIElement.call(this, ctx, path);
     
     this.on_end_edit = undefined;
@@ -58,7 +58,7 @@ class UITextBox extends UIElement {
     if (!this.clicked && (this.state & UIFlags.USE_PATH)) {
       var val = this.get_prop_data();
       if (val != this.text) {
-        this.text = val;
+        this.text = val == undefined ? val : "";
         this.do_recalc();
       }
     }

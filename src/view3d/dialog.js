@@ -152,12 +152,18 @@ class Dialog extends UIFrame {
     }
   }
   
-  call(Array<int> pos=undefined) {
+  call(Array<int> pos=undefined, Boolean center=false) {
     this.pack(this.screen.canvas, false);
     
     if (pos == undefined) {
-      pos = [g_app_state.screen.mpos[0], g_app_state.screen.mpos[1]];
-      pos[1] -= this.size[1] + 20;
+      var screen = g_app_state.screen;
+      
+      if (center) {
+        pos = [screen.size[0]*0.5, screen.size[1]*0.5];
+      } else {
+        pos = [screen.mpos[0], screen.mpos[1]];
+        pos[1] -= this.size[1] + 20;
+      }
     }
     
     /*clamp to screen bounds*/

@@ -222,7 +222,10 @@ class UIButtonIcon extends UIButton {
     var pad = this.pad;
     
     var isize = this.small_icon ? canvas.iconsheet16.cellsize : canvas.iconsheet.cellsize;
-    pos[0] = Math.abs(isize[0] - this.size[0] + pad*2.0)*0.5;
+    if (isize[0] > this.size[0])
+      pos[0] = 1; //(isize[0] - this.size[0] + pad*2.0)*0.5;
+    else
+      pos[0] = 1; //(t+ pad*2.0)*0.5;
     pos[1] = 0;
     
     var size = this.size;
@@ -247,8 +250,11 @@ class UIButtonIcon extends UIButton {
         canvas.box(pos, size, high_clr);
     }
     
-    pos[0] += (size[0]-isize[0])*0.5;
-    pos[1] += (size[1]-isize[1])*0.5;
+    //center within button
+    if (size[0] > isize[0])
+      pos[0] += (size[0]-isize[0])*0.5;
+    if (size[1] > isize[1])
+      pos[1] += (size[1]-isize[1])*0.5;
     
     if (this.small_icon)    
       canvas.icon(this.icon, pos, 0.75, true);
@@ -359,7 +365,20 @@ class UIMenuButton extends UIButtonAbstract {
   }
 
   on_click(MouseEvent event) {
-    this.call_menu(this.menu, [0, Math.floor(this.size[1]-3)], this.size[0]);
+    var canvas = this.get_canvas();
+    var viewport = canvas.viewport;
+    var menu = this.menu;
+    var vx = viewport[0][0] + viewport[1][0];
+    var vy = viewport[0][1] + viewport[1][1];
+    
+    menu.packmenu(canvas);
+    var off = [0, Math.floor(this.size[1]-3)];
+    
+    if (this.abspos[1]+off[1]+menu.size[1] > vy) {
+        off = [0, -menu.size[1]];
+    }
+    
+    this.call_menu(menu, off);
   }
   
   build_draw(UICanvas canvas) {
@@ -1100,16 +1119,28 @@ class UIListBox extends ColumnFrame {
   }
   
   load_filedata(ObjectMap map) {
-    if (map.scroll != undefined) {
-      this.scrollx = map.scroll[0];
-      this.scrolly = map.scroll[1];
-      this.vscroll.set_value(this.scrolly);
-      this.do_recalc();
+    prior(UIListBox, this).load_filedata.call(this, map);
+    if ("active_entry" in map) {
+      var act = map["active_entry"];
+      var i = 0;
+      
+      for (var c in this.listbox.children) {
+        if (c.text == act) {
+          this._set_active(c);
+          break;
+        }
+      }
     }
   }
   
   get_filedata() : ObjectMap {
-      return {scroll : [this.scrollx, this.scrolly]};
+    var ret = prior(UIListBox, this).get_filedata.call(this);
+    if (ret == undefined) ret = {};
+    
+    if (this.active_entry != undefined)
+      ret["active_entry"] = this.active_entry.text;
+    
+    return ret;
   }
   
    _vscroll_callback(vscroll, value)
@@ -1125,16 +1156,10 @@ class UIListBox extends ColumnFrame {
   on_mouseup(event) {
     prior(UIListBox, this).on_mouseup.call(this, event);
     
-    if (this.listbox.active != undefined && (this.listbox.active instanceof UIListEntry)) {
-      if (this.active_entry != undefined && this.active_entry != this.listbox.active) {
-        this.active_entry.do_recalc();
-      }
-      
-      this.active_entry = this.listbox.active;
-      this.active_entry.do_recalc();
-      if (this.callback != undefined) {
-        this.callback(this, this.active_entry.text, this.active_entry.id);
-      }
+    if (this.listbox.active != undefined && 
+        this.listbox.active instanceof UIListEntry)
+    {
+      this._set_active(this.listbox.active);
     }
   }
   
@@ -1144,12 +1169,20 @@ class UIListBox extends ColumnFrame {
     var i = this.listbox.children.indexOf(this.active_entry) + off;
     i = Math.min(Math.max(0, i), this.listbox.children.length-1);
     
-    this.active_entry.do_recalc();
-    this.active_entry = this.listbox.children[i];
-    this.active_entry.do_recalc();
+    this._set_active(this.listbox.children[i]);
+  }
+  
+  _set_active(entry) {
+    if (this.active_entry != entry && this.active_entry != undefined) {
+      this.active_entry.do_recalc();
+    }
     
-    if (this.callback != undefined) {
-      this.callback(this, this.active_entry.text, this.active_entry.id);
+    this.active_entry = entry;
+    if (entry != undefined) {
+      entry.do_recalc();
+      if (this.callback != undefined) {
+        this.callback(this, this.active_entry.text, this.active_entry.id);
+      }
     }
   }
   
@@ -1217,7 +1250,9 @@ class UIListBox extends ColumnFrame {
 }
 
 class UIListEntry extends UILabel {
-  constructor(ctx, text, id) {
+  //id can be any arbitrary object,
+  //including non-stringable types.
+  constructor(ctx, text, Object id) {
     UILabel.call(this, ctx, text);
     
     this.id = id;
@@ -1620,60 +1655,5 @@ class UIIconCheck extends UIHoverHint {
   get_min_size(UICanvas canvas, Boolean isvertical)
   {
     return CACHEARR2(canvas.textsize(this.text)[0]+24, 24)
-  }
-}
-
-class UIProgressBar extends UIElement {
-  constructor(Context ctx, float value=0.0, float min=0.0, float max=1.0, int min_wid=200, int min_hgt=25) {
-    UIElement.call(this, ctx);
-    
-    this.value = value;
-    this.min = min;
-    this.max = max;
-    this.min_wid = min_wid;
-    this.min_hgt = min_hgt;
-    this.size[1] = min_hgt;
-    this.size[0] = min_wid;
-    this.last_value = this.value;
-  }
-  
-  get_min_size(UICanvas canvas, Boolean isVertical) : Array<float> {
-    return [this.min_wid, this.min_hgt];
-  }
-  
-  //we recalc draw buffers in on_tick, to avoid excessive updates per second
-  on_tick() {
-    prior(UIProgressBar, this).on_tick.call(this);
-    
-    if (this.last_value != this.value) {
-      this.do_recalc();
-      this.last_value = this.value;
-    }
-  }
-  
-  set_value(float value) {
-    this.last_value = this.value;
-    this.value = value;
-  }
-  
-  build_draw(UICanvas canvas, Boolean isVertical) {
-    static zero = [0, 0];
-    static one = [1, 1];
-    static size2 = [0, 0];
-    
-    canvas.begin(this);
-    var perc = (this.value / (this.max-this.min));
-    
-    canvas.box(zero, this.size, uicolors["ProgressBarBG"]);
-    
-    if (perc > 0.0) {
-      perc = Math.min(Math.max(0.0, perc), 1.0);
-      
-      size2[1] = this.size[1]-2;
-      size2[0] = Math.floor(this.size[0]*perc)-2;
-      canvas.box(one, size2, uicolors["ProgressBar"]);
-    }
-    
-    canvas.end(this);
   }
 }

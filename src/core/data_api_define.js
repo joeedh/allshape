@@ -50,6 +50,43 @@ function api_define_opseditor() {
   return OpsEditorStruct;
 }
 
+/*create unit enum static property*/
+var units = Unit.units;
+var unit_enum = {}
+var unit_ui_vals = {};
+
+for (var i=0; i<units.length; i++) {
+  var s = units[i].suffix_list[0];
+  unit_enum[s] = s
+  unit_ui_vals[s] = s.toUpperCase();
+}
+Unit.units_enum = new EnumProperty("in", unit_enum, "unit_enum", "Units");
+Unit.units_enum.ui_value_names = unit_ui_vals;
+
+var SettingsUpdate = function() {
+  g_app_state.session.settings.server_update();
+}
+
+var SettingsStruct = undefined;
+function api_define_settings() {
+  unitsys_enum = new EnumProperty("imperial", ["imperial", "matric"],
+                                  "system", "System", 
+                                  "Metric or Imperial");
+  
+  var units_enum = Unit.units_enum.copy();
+  units_enum.apiname = "default_unit";
+  units_enum.uiname = "Default Unit";
+  
+  units_enum.update = unitsys_enum.update = SettingsUpdate;
+  
+  SettingsStruct = new DataStruct([
+    new DataPath(unitsys_enum, "unit_system", "unit_scheme", true),
+    new DataPath(units_enum, "default_unit", "unit", true)
+  ]);
+  
+  return SettingsStruct;
+}
+
 var SettingsEditorStruct = undefined;
 function api_define_seditor() {
   SettingsEditorStruct = new DataStruct([
@@ -161,6 +198,7 @@ function get_theme_color(color) {
       function update() {
         //color[1].colors[i] = this.data;
         g_theme.gen_globals();
+        SettingsUpdate();
       }
     }
     c1.update = gen_func(0); c2.update = gen_func(1); 
@@ -183,11 +221,13 @@ function get_theme_color(color) {
     clr.update = function() {
       //color.color = this.data;
       g_theme.gen_globals();
+      SettingsUpdate();
     }
     
     weights.update = function() {
       //color.weights = this.data;
       g_theme.gen_globals();
+      SettingsUpdate();
     }
     weights.range = weights.real_range = weights.ui_range = [0, 1];
     
@@ -205,6 +245,7 @@ function get_theme_color(color) {
         color[1][i] = this.data[i];
       }*/
       g_theme.gen_globals();
+      SettingsUpdate();
     }
     
     var type = new StringProperty("Simple", "type", "type");
@@ -288,6 +329,7 @@ function api_define_context() {
     new DataPath(api_define_view3d(), "view3d", "ctx.view3d", false),
     new DataPath(api_define_opseditor(), "opseditor", "ctx.opseditor", false),
     new DataPath(api_define_seditor(), "settings_editor", "ctx.settings_editor", false),
+    new DataPath(api_define_settings(), "settings", "ctx.appstate.session.settings", false),
     new DataPath(api_define_mesh(), "mesh", "ctx.mesh", false),
     new DataPath(api_define_object(), "object", "ctx.object", false),
     new DataPath(api_define_scene(), "scene", "ctx.scene", false),

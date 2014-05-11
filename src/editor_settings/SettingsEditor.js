@@ -55,6 +55,21 @@ class SettingsEditor extends Area {
     return panel;
   }
   
+  units_panel() {
+    var ctx = this.ctx;
+    
+    var panel = new RowFrame(ctx);
+    panel.packflag |= PackFlags.INHERIT_WIDTH;
+    panel.default_packflag |= PackFlags.INHERIT_WIDTH;
+    panel.packflag |= PackFlags.NO_AUTO_SPACING;
+    panel.packflag |= PackFlags.IGNORE_LIMIT;
+    
+    panel.prop("settings.unit_system");
+    panel.prop("settings.default_unit");
+    
+    return panel
+  }
+  
   constructor(Context ctx, Array<float> pos, Array<float> size) {
     Area.call(this, SettingsEditor.name, SettingsEditor.uiname, new Context(), pos, size);
     
@@ -71,6 +86,7 @@ class SettingsEditor extends Area {
     this.themebox = undefined;
     
     this.subframe = new UITabPanel(new Context(), [size[0], size[1]]);
+    this.subframe.packflag |= PackFlags.INHERIT_WIDTH;
     this.subframe.size[0] = this.size[0];
     this.subframe.size[1] = this.size[1];
     this.subframe.pos = [0, Area.get_barhgt()];
@@ -78,6 +94,7 @@ class SettingsEditor extends Area {
     this.subframe.state |= UIFlags.HAS_PAN|UIFlags.IS_CANVAS_ROOT|UIFlags.PAN_CANVAS_MAT;
     this.subframe.velpan = new VelocityPan();
     
+    this.subframe.add_tab("Units", this.units_panel());
     this.subframe.add_tab("Theme", this.theme_panel());
     
     this.add(this.subframe);

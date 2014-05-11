@@ -54,9 +54,7 @@ class Area extends UIFrame {
       }
       
       if (e instanceof UIFrame) {
-        for (var c in e.children) {
-          descend(c);
-        }
+        e.on_saved_uidata(descend);
       }
     }
     
@@ -111,9 +109,7 @@ class Area extends UIFrame {
       }
       
       if (e instanceof UIFrame) {
-        for (var c in e.children) {
-          recurse(c);
-        }
+        e.on_load_uidata(recurse);
       }
     }
     
@@ -1616,7 +1612,19 @@ class Screen extends UIFrame {
   {
     this.handle_active_view3d();
     
-    g_app_state.notes.on_tick();
+    try {
+      g_app_state.session.settings.on_tick();
+    } catch (_err) {
+      print_stack(_err);
+      console.log("settings on_tick error");
+    }
+    
+    try {
+      g_app_state.notes.on_tick();
+    } catch (_err) {
+      print_stack(_err);
+      console.log("notes on_tick error");
+    }
     
     if (time_ms() - this.last_sync > 700) {
       this.last_sync = time_ms();

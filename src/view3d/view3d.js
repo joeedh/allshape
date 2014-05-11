@@ -985,7 +985,9 @@ class View3DHandler extends Area {
       } else {
         //console.log(g_app_state.api.get_prop(ctx, "operator_stack[0].test"));
         //test_dapi_parser();
-        test_ui_structs();
+        //test_ui_structs();
+        //test_notes();
+        _settings_manager.server_push(g_app_state.session.settings);
         
         /*var tree = build_octree(new Context().mesh);
         
@@ -1201,10 +1203,6 @@ class View3DHandler extends Area {
     this.editor.build_sidebar1(this);
   }
   
-  get note_area() : UIPackFrame {
-    return this.topbar;
-  }
-  
   build_topbar()
   {
     this.ctx = new Context();
@@ -1233,12 +1231,12 @@ class View3DHandler extends Area {
     col.add(new UIMenuLabel(this.ctx, "Add", undefined, this.gen_add_menu));
     col.add(new UIMenuLabel(this.ctx, "Delete", undefined, gen_del_menu));
     
+    this.note_area = new NoteFrame(this.ctx, g_app_state.notes);
+    col.add(this.note_area);
+    
     //col.add(new UIMenuLabel(this.ctx, "Tools", undefined, this.gen_tools_menu));
     
     col.label("|");
-    if (!IsMobile) {
-      col.label("view3d.framerate", true);
-    }
     col.label("mesh.tottri", true);
     col.label("mesh.totvert", true);
     col.label("mesh.totedge", true);
