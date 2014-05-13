@@ -287,6 +287,8 @@ class MeshEditor extends View3DEditor {
   define_keymap() {
     var k = this.keymap;
     
+    k.add_tool(new KeyHandler("B", [], "Bridge"), 
+                "mesh.bridge_edges(edges=mesh_selected(e))");
     k.add_tool(new KeyHandler("C", ["CTRL"], "Loop Cut"),
                "mesh.loopcut()");
     k.add_tool(new KeyHandler("G", [], "Translate"), 

@@ -335,7 +335,7 @@ class LoopCutOp extends ToolOp {
       ops.push(op);
     }
     
-    this._partial = mesh.gen_partial(undoset, 1);
+    this._partial = mesh.gen_partial(undoset, 4);
 
     for (var op in ops) {
       mesh.ops.call_op(op);

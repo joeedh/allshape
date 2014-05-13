@@ -386,6 +386,7 @@ class Face extends Element{
     var f = new Face();
     unpacker(f);
     
+    f.totvert = 0;
     var looplists = f.looplists;  
     for (var i=0; i<looplists.length; i++) {
       var list = new LoopList()
@@ -395,6 +396,8 @@ class Face extends Element{
       var lastl = undefined;
       
       for (var j=0; j<arr.length; j++) {
+        f.totvert++;
+        
         var l = arr[j];
         if (lastl != undefined) {
           lastl.next = l;

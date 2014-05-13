@@ -320,14 +320,21 @@ function api_define_appstate() {
   return AppStateStruct;
 }
 
-function get_tool_struct(tool) { 
-  if (tool.apistruct != undefined)
+function get_tool_struct(tool) {
+  OpStackArray.flag |= DataFlags.RECALC_CACHE;
+  
+  if (tool.apistruct != undefined) {
+    tool.apistruct.flag |= DataFlags.RECALC_CACHE;
     return tool.apistruct;
+  }
   
   tool.apistruct = g_app_state.toolstack.gen_tool_datastruct(tool);
+  tool.apistruct.flag |= DataFlags.RECALC_CACHE;
+  
   return tool.apistruct;
 }
 
+var OpStackArray = new DataStructArray(get_tool_struct);
 var ContextStruct = undefined;
 function api_define_context() {
   ContextStruct = new DataStruct([
@@ -340,8 +347,8 @@ function api_define_context() {
     new DataPath(api_define_scene(), "scene", "ctx.scene", false),
     new DataPath(new DataStruct([]), "last_tool", "", false, false, DataFlags.RECALC_CACHE),
     new DataPath(api_define_appstate(), "appstate", "ctx.appstate", false),
-    new DataPath(new DataStructArray(get_tool_struct), "operator_stack", 
-                 "ctx.appstate.toolstack.undostack", false),
+    new DataPath(OpStackArray, "operator_stack", 
+                 "ctx.appstate.toolstack.undostack", false, true, DataFlags.RECALC_CACHE),
     new DataPath(api_define_theme(), "theme", "g_theme", false)
   ]);
 }

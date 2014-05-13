@@ -289,7 +289,6 @@ class ViewRotateOp extends ToolOp {
 
   exec(ctx) {
     ctx = this.modal_ctx;
-    console.log("id:", g_app_state.active_view3d._id);
     
     var v1 = new Vector3(this.inputs.MV1.data);
     var v2 = new Vector3(this.inputs.MV2.data);

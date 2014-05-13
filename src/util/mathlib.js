@@ -922,16 +922,20 @@ function get_boundary_winding(points) {
 /*2 dimensional operation class; note that this is too slow
   for use on large, real-time operations like tesselation of
   complex polygons*/
-function PlaneOps(normal) {
-  var no = normal;
-  var nx=Math.abs(no[0]), ny=Math.abs(no[1]), nz=Math.abs(no[2]);
-  var ax=0, ay=1, az=2;
+class PlaneOps {
+  constructor(normal) {
+    var no = normal;
+    this.axis = [0, 0, 0];
+    
+    this.reset_axis(normal);
+  }
   
-  this.reset_axis = function(normal) {
+  reset_axis(no) {
     var ax, ay, az;
+    var nx=Math.abs(no[0]), ny=Math.abs(no[1]), nz=Math.abs(no[2]);
     
     if (nz > nx && nz > ny) {
-        ax = 0; ay = 1; az = 2;
+      ax = 0; ay = 1; az = 2;
     } else if (nx > ny && nx > nz) {
       ax = 2; ay = 1; az = 0;
     } else {
@@ -941,9 +945,9 @@ function PlaneOps(normal) {
     this.axis = [ax, ay, az];
   }
   
-  this.reset_axis(normal);
-  
-  this.convex_quad = function(v1, v2, v3, v4) {
+  convex_quad(v1, v2, v3, v4) {
+    var ax = this.axis;
+    
     v1 = new Vector3([v1[ax[0]], v1[ax[1]], v1[ax[2]]]);
     v2 = new Vector3([v2[ax[0]], v2[ax[1]], v2[ax[2]]]);
     v3 = new Vector3([v3[ax[0]], v3[ax[1]], v3[ax[2]]]);
@@ -952,8 +956,8 @@ function PlaneOps(normal) {
     return convex_quad(v1, v2, v3, v4);
   }
   
-  this.line_isect = function(Array<float> v1, Array<float> v2, 
-                             Array<float> v3, Array<float> v4) : Array<float> 
+  line_isect(Array<float> v1, Array<float> v2, 
+             Array<float> v3, Array<float> v4) : Array<float> 
   {
     var ax = this.axis;
     var orig1=v1, orig2=v2;
@@ -973,8 +977,8 @@ function PlaneOps(normal) {
     return ret;
   }
   
-  this.line_line_cross = function(l1, l2) {
-    var ax = this.axis
+  line_line_cross(l1, l2) {
+    var ax = this.axis;
     
     var v1=l1[0], v2=l1[1], v3=l2[0], v4=l2[1];
     v1 = new Vector3([v1[ax[0]], v1[ax[1]], 0.0]);
@@ -985,7 +989,7 @@ function PlaneOps(normal) {
     return line_line_cross([v1, v2], [v3, v4]);
   }
   
-  this.winding = function(v1, v2, v3) {
+  winding(v1, v2, v3) {
     var ax = this.axis
     
     if (v1 == undefined)
@@ -998,7 +1002,7 @@ function PlaneOps(normal) {
     return winding(v1, v2, v3);
   }
 
-  this.colinear = function(v1, v2, v3) {
+  colinear(v1, v2, v3) {
     var ax = this.axis
     
     v1 = new Vector3([v1[ax[0]], v1[ax[1]], 0.0]);
@@ -1008,7 +1012,7 @@ function PlaneOps(normal) {
     return colinear(v1, v2, v3);
   }
   
-  this.get_boundary_winding = function(points) {
+  get_boundary_winding(points) {
     var ax = this.axis
     var cent = new Vector3();
     

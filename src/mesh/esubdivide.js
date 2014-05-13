@@ -12,7 +12,7 @@ var ES_FillFlags = {
 // algorithm; calling it "edge subdivide" may be a bit misleading.
 class ESubdivideOp extends MeshOp {
   constructor(Iterator edgeiter, int count) {
-    MeshOp.call(this, "esubd", "Edge Subdivide", "Smart Edge Subdivider");
+    MeshOp.call(this, "esubd", "Edge Subdivide", "Smart Edge Subdivider", Icons.SPLIT_EDGES);
     
     this.name = "EdgeSubdivide";
     this.uiname = "Split Edges"
@@ -471,6 +471,7 @@ function _quad_subd(Mesh mesh, Iterator faceiter,
     }
   }
   
+  var ii = 0;
   for (var ed in ctx.edata) {
     _split_edge(ctx, ed);
   }

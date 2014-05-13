@@ -330,7 +330,8 @@ class UIMenuButton extends UIButtonAbstract {
         else
           this.text = val.toString();
         
-        this.do_recalc();
+        if (!DEBUG.data_api_timing)
+          this.do_recalc();
       }
     }
     
@@ -374,8 +375,8 @@ class UIMenuButton extends UIButtonAbstract {
     var canvas = this.get_canvas();
     var viewport = canvas.viewport;
     var menu = this.menu;
-    var vx = g_app_state.screen.size[0]; // viewport[0][0] + viewport[1][0];
-    var vy = g_app_state.screen.size[1]; //viewport[0][1] + viewport[1][1];
+    var vx = g_app_state.screen.size[0];
+    var vy = g_app_state.screen.size[1];
     
     menu.minwidth = this.size[0];
     menu.packmenu(canvas);
@@ -475,7 +476,8 @@ class UICheckBox extends UIHoverHint {
       
       if (val != this.set) {
         this.set = val;
-        this.do_recalc();
+        if (!DEBUG.data_api_timing)
+          this.do_recalc();
       }
     }
   }
@@ -657,7 +659,7 @@ class UINumBox extends UIHoverHint {
   }
 
   on_mouseup(MouseEvent event) {
-    if (event.button == 0) {
+    if (this.clicked && event.button == 0) {
       this.pop_modal();
       
       this.clicked = false;
@@ -671,17 +673,11 @@ class UINumBox extends UIHoverHint {
         
         this.val += df;
         this.val = Math.min(Math.max(this.val, this.range[0]), this.range[1])
-        this.do_recalc()
-        
-        if (this.state & UIFlags.USE_PATH) {
-          this.set_prop_data(this.val);
-        }
       }
       
       if (this.callback != undefined) {
         this.callback(this, this.val);
       }
-      
       if (this.state & UIFlags.USE_PATH) {
         this.set_prop_data(this.val);
       }
@@ -703,7 +699,8 @@ class UINumBox extends UIHoverHint {
           this.callback(this, this.val);
         }
         
-        this.do_recalc();
+        if (!DEBUG.data_api_timing)
+          this.do_recalc();
       }
     }
   }
@@ -842,7 +839,9 @@ class UILabel extends UIElement {
       if (val != this.val) {
         this.val = val;
         this.text = this.prop.uiname + ": " + val.toString();
-        this.do_recalc();
+
+        if (!DEBUG.data_api_timing)
+          this.do_recalc();
       }
     }
   }
@@ -954,7 +953,9 @@ class UIMenuLabel extends UIElement {
     
     if (this.clicked && this.menu != undefined && this.menu.closed) {
       this.clicked = false;
-      this.do_recalc();
+  
+      if (!DEBUG.data_api_timing)
+        this.do_recalc();
     }
   }
 
@@ -1592,7 +1593,8 @@ class UIIconCheck extends UIHoverHint {
       
       if (val != this.set) {
         this.set = val;
-        this.do_recalc();
+        if (!DEBUG.data_api_timing)
+          this.do_recalc();
       }
     }
   }

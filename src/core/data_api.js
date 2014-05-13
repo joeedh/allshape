@@ -433,13 +433,17 @@ class DataAPI {
       }
     }
     
-    if (ctx.mesh == undefined) {
-      print_stack();
+    var mesh = ctx.mesh;
+    if (mesh == undefined) {
+      console.trace();
+      console.log("Mesh operation called with bad context");
+      console.log("Creating dummy mesh. . .");
       console.log(ctx);
-      throw new Error("Mesh operation called with bad context");
+      
+      mesh = new Mesh();
     }
     
-    return new MSelectIter(typemask, ctx.mesh);
+    return new MSelectIter(typemask, mesh);
   }
   
   prepare_args(ctx, call) { //args is private/optional

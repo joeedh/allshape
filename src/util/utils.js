@@ -213,6 +213,24 @@ function list<T>(Iterator<T> iter) : GArray<T> {
 }
 EXPORT_FUNC(list)
 
+//turns any iterator into a (cached) array
+function cached_list<T>(Iterator<T> iter) : GArray<T> {
+  static lst = new GArray<T>();
+  
+  lst.reset();
+  
+  var i = 0;
+  for (var item in iter) {
+    lst.push(item);
+    i++;
+  }
+  
+  lst.length = i;
+  
+  return lst;
+}
+EXPORT_FUNC(list)
+
 var Function g_list = list;
 
 class eid_list extends GArray {
@@ -570,6 +588,14 @@ function validate_mesh_intern(m) {
     
     for (var loops in f.looplists) {
       for (var l in loops) {
+        var e = l.e;
+        var v1 = l.v, v2 = l.next.v;
+        if (!(v1 == e.v1 && v2 == e.v2) && !(v1 == e.v2 && v2 == e.v1)) {
+          console.log("lerror with edge " + e.eid + ", and loop " + l.eid);
+          console.log("loop doesn't match edge");
+          return false;
+        }
+        
         if (lset.has(l)) {
           console.trace();
           return false;
@@ -643,6 +669,13 @@ function validate_mesh_intern(m) {
         return false;
       }
       
+      var v1 = l.v, v2 = l.next.v;
+      if (!(v1 == e.v1 && v2 == e.v2) && !(v1 == e.v2 && v2 == e.v1)) {
+        console.log("error with edge " + e.eid + ", and loop " + l.eid);
+        console.log("loop doesn't match edge");
+        return false;
+      }
+      
       l = l.radial_next;
     } while (l != e.loop);
   }
@@ -672,6 +705,67 @@ function validate_mesh_intern(m) {
   }
   
   return true;
+}
+
+function fix_object_mesh(Object ob) {
+  var mesh = ob.data;
+  var mesh2 = new Mesh();
+  
+  mesh.verts.index_update();
+  mesh.edges.index_update();
+  mesh.faces.index_update();
+  
+  var eidmap = {};
+  var verts = [];
+  var vset = new set();
+  for (var v in mesh.verts) {
+    var v2 = mesh2.make_vert(v.co, v.no);
+    mesh2.copy_vert_data(v2, v, true);
+    verts.push(v2);
+    vset.add(v2);
+  }
+  
+  var edges = [];
+  for (var e in mesh.edges) {
+    var v1 = verts[e.v1.index], v2 = verts[e.v2.index];
+    var e2 = mesh2.make_edge(v1, v2, false);
+    
+    mesh2.copy_edge_data(e2, e, true);
+    edges.push(e2);
+  }
+  
+  for (var f in mesh.faces) {
+    var vlists = new GArray();
+    var vset2 = new set();
+    
+    for (var list in f.looplists) {
+      var vs = new GArray();
+      
+      for (var l in list) {
+        
+        if (vset.has(l.v) && !vset2.has(l.v)) {
+          vs.push(verts[l.v.index]);
+          vset2.add(l.v);
+        } else {
+          console.log("Duplicate verts in face " + f.eid, f);
+        }
+      }
+      
+      if (vs.length > 1) {
+        vlists.push(vs);
+      }
+    }
+    
+    if (vlists.length > 0) {
+      var f2 = mesh2.make_face_complex(vlists);
+      mesh2.copy_face_data(f2, f, true);
+    }
+  }
+  
+  mesh.load(mesh2);
+  mesh.api.recalc_normals();
+  mesh.gen_render_struct();
+  mesh.regen_render();
 }
 
 function validate_mesh(m) {

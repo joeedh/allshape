@@ -1409,7 +1409,7 @@ class ToolStack {
     this.do_truncate = false;
   }
   
-  reexec_stack() {
+  reexec_stack(validate=false) {
     var stack = this.undostack;
     
     g_app_state.datalib = new DataLib();
@@ -1431,25 +1431,35 @@ class ToolStack {
     return;
     // */
     
+    var first=true;
     console.log("reexecuting tool stack from scratch. . .");
     for (var i=0; i<this.undocur; i++) {
       var tool = stack[i];
       var ctx = tool.saved_context;
       
-      console.log("executing " + tool.constructor.name + ". . .");
+      console.log("- executing " + tool.uiname + ". . .");
       
       tool.is_modal = false;
       
       tool.exec_pre(ctx);
       
       if (!(tool.undoflag & UndoFlags.IGNORE_UNDO)) {
-        console.log("undo pre");
+        //console.log(" - undo pre");
 
         tool.undo_pre(ctx);
         tool.undoflag |= UndoFlags.HAS_UNDO_DATA;
       }
       
       tool.exec(ctx);
+      
+      
+      if (first && ctx.mesh != undefined && !validate_mesh_intern(ctx.mesh)) {
+        console.log("  " + tool.uiname + " failed mesh validation test");
+        if (first) {
+          console.log(tool);
+          first = false;
+        }
+      }
     }
   }
   
@@ -1798,6 +1808,6 @@ class ToolStack {
 ToolStack.STRUCT = """
   ToolStack {
     undocur   : int;
-    undostack : array(abstract(ToolOp)) | obj.undostack.slice(0, obj.undocur+1);
+    undostack : array(abstract(ToolOp)) | obj.undostack.slice(0, obj.undocur);
   }
 """

@@ -25,6 +25,7 @@ class UIPackFrame extends UIFrame {
     UIFrame.call(this, ctx);
     
     this.mm = new MinMax(2);
+    this._last_pack_recalc = 0;
     
     if (path_prefix == undefined)
       path_prefix = ""
@@ -408,7 +409,11 @@ class UIPackFrame extends UIFrame {
   
   on_tick() {
     UIFrame.prototype.on_tick.call(this);
-    this._pack_recalc();
+    
+    if (time_ms() - this._last_pack_recalc > 300) {
+      this._pack_recalc();
+      this._last_pack_recalc = time_ms();
+    }
   }
   
   _pack_recalc() 
@@ -426,7 +431,7 @@ class UIPackFrame extends UIFrame {
     
     if (this.last_pos.vectorDistance(this.pos) > 0.0001 || this.last_size.vectorDistance(this.size) > 0.00001) {
       if (DEBUG.complex_ui_recalc) {
-        console.log("complex ui recalc", this.pos, this.last_pos.toString(), this.last_pos.vectorDistance(this.pos), this.last_size.vectorDistance(this.size));
+        console.log("complex ui recalc", this.pos.toString(), this.last_pos.toString(), this.last_pos.vectorDistance(this.pos), this.last_size.vectorDistance(this.size));
       }
       this.parent.do_full_recalc();
       

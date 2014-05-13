@@ -14,6 +14,7 @@ class UIFrame extends UIElement {
     this._pan_cache = {};
     this.pan_bounds = [[0, 0], [0, 0]];
     
+    this.depth = 0;
     this.ctx = ctx;
     this._children = new GArray([])
     this.active = undefined;
@@ -469,6 +470,7 @@ class UIFrame extends UIElement {
     e.on_add(this);
     
     this.do_recalc();
+    this.update_depth();
   }
   
   _set_pan(UIElement e) {
@@ -478,6 +480,26 @@ class UIFrame extends UIElement {
         this._set_pan(c);
       }
     }
+  }
+  
+  update_depth(UIElement e) {
+    var p = this;
+    this.depth = 0;
+    
+    while (p.parent != undefined) {
+      p = p.parent;
+    }
+    
+    function rec(f, depth=0) {
+      f.depth = depth;
+      for (var c in f.children) {
+        if (c instanceof UIFrame) {
+          rec(c, depth+1);
+        }
+      }
+    }
+    
+    rec(p);
   }
   
   add(UIElement e, int packflag) { //packflag is optional
@@ -510,6 +532,8 @@ class UIFrame extends UIElement {
     
     e.on_add(this);
     e.do_recalc();
+    
+    this.update_depth();
   }
 
   replace(UIElement a, UIElement b) {
@@ -531,6 +555,8 @@ class UIFrame extends UIElement {
     
     b.on_add(this);
     b.do_recalc();
+    
+    this.update_depth();
   }
 
   remove(UIElement e) {
@@ -554,6 +580,8 @@ class UIFrame extends UIElement {
     
     if (e == this.active)
       this.active = undefined;
+
+    this.update_depth();
   }
 
   on_draw(gl) {
@@ -647,7 +675,7 @@ class UIFrame extends UIElement {
       cache_frame = !(this.state & UIFlags.NO_FRAME_CACHE);
     }
     
-    if (cache_frame && this.framecount == 0) {
+    if (cache_frame && this.depth == 4) {
       canvas.frame_begin(this);
     }
     
@@ -766,7 +794,7 @@ class UIFrame extends UIElement {
       }
     }
 
-    if (cache_frame && this.framecount == 0) {
+    if (cache_frame && this.depth == 4) {
       canvas.frame_end(this);
     }
     

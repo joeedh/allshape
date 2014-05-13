@@ -1,3 +1,6 @@
+"use strict";
+
+#include "src/core/utildefine.js"
 
 //#$(Face).class
 function FaceVertIter(Face data) {
@@ -507,8 +510,10 @@ function MeshAPI(Mesh mesh) {
   this.split_edge = function(Edge e, float t) : Array<Element> {
     var m = this.mesh;
     
+    static co = new Vector3();
+    
     /*ne goes from nv to e.v2*/
-    var co = new Vector3(e.v2.co).sub(e.v1.co);
+    co.load(e.v2.co).sub(e.v1.co);
     co.mulScalar(t);
     co.add(e.v1.co);
     
@@ -518,46 +523,75 @@ function MeshAPI(Mesh mesh) {
     
     m.copy_vert_data(nv, e.v1);
     
-    /*unlike all loops in this edge's 
-      radial list from this ed
-      ge.*/
-    var loops = list(e.loops);
-    for (var l in loops) {
+    /*unlink all loops in this edge's 
+      radial list from this edge.*/
+    var l = e.loop, first=e.loop;
+    var loops = cached_list(e.loops);
+    var llen = loops.length;
+    
+    for (var i=0; i<llen; i++) {
+      var l = loops[i];
       m._radial_loop_remove(e, l);
     }
     
+    //put original vertices into local vars
     var v1 = e.v1, v2 = e.v2;
     
     /*take edge out of v2's edge list*/
     e.v2.edges.remove(e);
     
-    /*the loop radial list manipulation functions
-      will confused if you don't set this now*/
+    /*set v2 to nv; the loop radial list manipulation 
+      functions will be confused if we don't set this now*/
     e.v2 = nv;
     
-    /*insert edge into the correct radial list*/
+    /*insert edge into disk list*/
     nv.edges.push(e);
+    
+    /*since faces can have multiple loops
+      along the same edge, we have to be careful
+      not to increment f.totvert multiple times
+      thus this strange loop.*/
+    
+    for (var i=0; i<llen; i++) {
+      var l1 = loops[i];
+      var k = 0;
+      
+      for (var j=0; j<llen; j++) {
+        var l2 = loops[j];
+        if (l2 == l1) break;
+        
+        if (l1.f == l2.f)
+          k++;
+      }
+      
+      if (k == 0) {
+        l1.f.totvert++;
+      }
+    }
+    
     
     /*create new loops for the new edge, and
       rebuild radial lists*/
-    for (var l in loops) {
-      //there are a number of different possibilities, here.  
-      //Check all of them.
-      var l2 = new Loop(nv, ne, l.f);
-      l2.eid = m.idgen.gen_eid(MeshTypes.LOOP);
+    for (var i=0; i<llen; i++) {
+      var l = loops[i];
       
+      /*create new loop, with origin vert nv (l2.v == nv)*/
+      var l2 = new Loop(nv, ne, l.f);
+      
+      l2.eid = m.idgen.gen_eid(MeshTypes.LOOP);
       l2.list = l.list;
       
       l.list.length++;
-      l.f.totvert++;
+      //l.f.totvert++;
       
+      /*there are two possibilities here*/
       if (l.v == v1 && l.next.v == v2) {
         l.next.prev = l2;
         l2.next = l.next;
         l.next = l2;
         l2.prev = l;
         
-        m._radial_loop_insert(e, l);
+        m._radial_loop_insert(e,  l);
         m._radial_loop_insert(ne, l2);
       } else if (l.v == v2 && l.next.v == v1) {
         l.next.prev = l2;
@@ -565,15 +599,18 @@ function MeshAPI(Mesh mesh) {
         l.next = l2;
         l2.prev = l;
         
-        m._radial_loop_insert(e, l2);
+        m._radial_loop_insert(e,  l2);
         m._radial_loop_insert(ne, l);
       } else {
+        console.log(v1.eid, v2.eid, l);
         console.log("yeek!!");
+        console.trace();
       }
     }
     
     if (e.loop)
       v1.loop = e.loop;
+    
     if (ne.loop)
       v2.loop = ne.loop;
     
@@ -939,13 +976,8 @@ function MeshAPI(Mesh mesh) {
         m._radial_loop_remove(l.e, l);
         lnext = l.next;
         
-        var e2 = l.e;
-        l.e = last_e;
-        last_e = e2;
-        
-        var t = l.next;
-        l.next = l.prev;
-        l.prev = t;
+        SWAP(l.e, last_e);
+        SWAP(l.next, l.prev);
         
         l = lnext;
       } while (l != list.loop);

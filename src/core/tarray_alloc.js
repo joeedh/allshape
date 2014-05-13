@@ -244,5 +244,5 @@ function test_pool_alloc() {
   console.log("total memsize: ", ta.memsize);
 }
 
-test_pool_alloc();
+//test_pool_alloc();
 

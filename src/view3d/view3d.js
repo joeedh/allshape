@@ -857,6 +857,14 @@ class View3DHandler extends Area {
     var ctx = this.ctx = new Context();
     this.mesh = this.ctx.mesh;
     
+    if (this.mesh == undefined) {
+      //set up canvas box
+      this.set_canvasbox();
+      
+      prior(View3DHandler, this).on_draw.call(this, gl);
+      return;
+    }
+    
     if (this.mesh.render == 0 || this.mesh.render == undefined) {
       this.mesh.gen_render_struct(gl);
     }
@@ -983,11 +991,36 @@ class View3DHandler extends Area {
         console.log("executing unit tests...");
         window.unit_test_env.execute();
       } else {
+        //fix_object_mesh(new Context().object);
+        
+        var mesh = new Context().mesh;
+        var repeat = 32;
+        var times = new GArray();
+
+        var meshes = [];
+        for (var i=0; i<repeat; i++) {
+          var mesh2 = mesh.copy();
+          meshes.push(mesh2);
+        }
+        
+        for (var i=0; i<repeat; i++) {
+          var mesh2 = meshes[i];
+          
+          var e = list(mesh2.edges)[0];
+          var start_ms = time_ms();
+          mesh2.api.split_edge(e);
+          times.push(time_ms()-start_ms);
+        }
+        
+        for (var t in times) {
+          console.log(t);
+        }
         //console.log(g_app_state.api.get_prop(ctx, "operator_stack[0].test"));
         //test_dapi_parser();
         //test_ui_structs();
         //test_notes();
-        _settings_manager.server_push(g_app_state.session.settings);
+        
+        //_settings_manager.server_push(g_app_state.session.settings);
         
         /*var tree = build_octree(new Context().mesh);
         

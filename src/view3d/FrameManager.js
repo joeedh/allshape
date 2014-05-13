@@ -1589,7 +1589,7 @@ class Screen extends UIFrame {
     gl.viewport(0, 0, this.size[0], this.size[1]);
     prior(Screen, this).on_draw.call(this, gl);
     
-    if (time_ms() - this.last_tick > 42) { //(IsMobile ? 500 : 150)) {
+    if (time_ms() - this.last_tick > 100) { //(IsMobile ? 500 : 150)) {
       this.on_tick();
       this.last_tick = time_ms();
     }

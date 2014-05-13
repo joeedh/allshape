@@ -802,6 +802,8 @@ class Mesh extends DataBlock {
   }
 
   _radial_loop_insert(Edge e, Loop l) {
+    l.e = e;
+    
     if (e.loop == null) {
         l.radial_next = l.radial_prev = l;
         e.loop = l;
@@ -813,9 +815,11 @@ class Mesh extends DataBlock {
       e.loop.radial_next = l;
     }
       
+    //possible XXX, should e.v1.loop only be assigned if l.v == e.v1?
     if (e.v1.loop == null)
       e.v1.loop = l;
     
+    //possible XXX, should e.v2.loop only be assigned if l.v == e.v2?
     if (e.v2.loop == null)
       e.v2.loop = l;
   }
@@ -828,11 +832,18 @@ class Mesh extends DataBlock {
     if (l.v.loop != null && l.f == l.v.loop.f) {
       var l2 = l;
       
+      var i = 0;
       do {
         l2 = l2.radial_next;
         
         if (l2.v == l.v && l2.f != l.f)
           break;
+        
+        if (i++ > 10000) {
+          console.log("inifinite loop 1 in _radial_loop_remove");
+          throw new Error("inifinite loop 1 in _radial_loop_remove");
+          return;
+        }
       } while (l2 != l);
       
       if (l2.f == l.f) { //find loop in another edge
@@ -858,6 +869,7 @@ class Mesh extends DataBlock {
       /*multiple loops from the same face may share an edge, so make sure we
         find a loop with a different face*/
       var i = 0;
+      var first = e.loop;
       do {
         e.loop = e.loop.radial_next;
         if (e.loop.f != l.f) 
@@ -866,12 +878,13 @@ class Mesh extends DataBlock {
         i++;
         if (i > 2000) {
           throw new Error("Mesh integrity error in Mesh._radial_loop_remove()");
+          return;
         }
-      } while (e.loop.f != l.f);
+      } while (e.loop != first);
+      
+      if (e.loop.f == l.f)
+        e.loop = null;
     }
-    
-    if (e.loop != null && e.loop.f == l.f)
-      e.loop = null;
    
     /*
     if (e.loop.radial_next == e.loop) {
@@ -915,20 +928,21 @@ class Mesh extends DataBlock {
     return null;
   }
 
-  make_face(Array<Vert> verts, Boolean check_exist) : Face { //check_exist is optional
-    if (check_exist == undefined)
-      check_exist = false;
-      
+  make_face(Array<Vert> verts, Boolean check_exist=false, 
+                               Boolean check_dupli=true) : Face 
+  {
     var loops = new LoopList(null);
     var list = new GArray();
     
-    var vset = new set();
-    for (var i=0; i<verts.length; i++) {
-      if (vset.has(verts[i])) {
-        console.trace();
-        throw "Tried to pass in duplicate verts to non-complex make_face"
+    if (check_dupli) {
+      var vset = new set();
+      for (var i=0; i<verts.length; i++) {
+        if (vset.has(verts[i])) {
+          console.trace();
+          throw "Tried to pass in duplicate verts to non-complex make_face"
+        }
+        vset.add(verts[i]);
       }
-      vset.add(verts[i]);
     }
     
     if (check_exist) {
@@ -942,7 +956,8 @@ class Mesh extends DataBlock {
       var v1 = verts[i];
       var v2 = verts[(i+1)%verts.length];
       
-      var e = this.make_edge(v1, v2, true); /*will find existing edge if one exists*/
+      /*will find existing edge if one exists*/
+      var e = this.make_edge(v1, v2, true);
 
       var l = new Loop(v1, e);
       l.list = loops;
@@ -1190,9 +1205,14 @@ class Mesh extends DataBlock {
 
   _set_eid(Element e, GeoArray<T> elements, eid) {
     delete elements.eidmap[e.eid]
+    if (e.type != MeshTypes.LOOP) {
+      delete this.eidmap[e.eid];
+      this.eidmap[eid] = e;
+    }
     
     e.eid = eid;
     elements.eidmap[eid] = e;
+    this.eidmap[eid] = e;
     
     if (elements.idgen.cur_eid <= eid)
       elements.idgen.cur_eid = eid+1;

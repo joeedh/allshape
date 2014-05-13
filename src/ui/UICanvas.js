@@ -19,8 +19,8 @@ var _canvas_draw_id = 1;
 #define F32FREE(verts) verts = undefined;
 
 /*#else
-#define F32ALLOC(verts123) f32_alloc.from_array(verts123);
-#define F32FREE(verts123) if (verts123 != undefined) { f32_alloc.free(verts123); verts123 = undefined;}
+  -#define F32ALLOC(verts123) f32_alloc.from_array(verts123);
+  -#define F32FREE(verts123) if (verts123 != undefined) { f32_alloc.free(verts123); verts123 = undefined;}
 #endif
 */
 
@@ -48,9 +48,12 @@ class TriListAlloc {
     this.freelist = [];
     this.freecount = 0;
     this.usedcount = 0;
+    this.peakcount = 0;
   }
   
   alloc(UICanvas canvas, Boolean use_small_icons=false) : TriList {
+    this.peakcount = Math.max(this.peakcount, this.usedcount+1);
+    
     #ifdef NOCACHE
     return new TriList(canvas, use_small_icons);
     #endif
@@ -646,19 +649,23 @@ var _ls_static_colors = {reallength: 0, length: 0};
 
 function _box_process_clr(default_cs, clr) {
   var cs = default_cs;
+  static arr4 = [0, 0, 0, 0];
   
   if (clr != undefined) {
     if (typeof clr == "number") {
-      var cs2 = [0, 0, 0, 0]
+      var cs2 = arr4;
       
       for (var i=0; i<4; i++) {
-        cs2[i] = [cs[i][0], cs[i][1], cs[i][2], cs[i][3]];
-        cs2[i] = darken(cs2[i], clr);
+        cs2[i] = CACHEARR4(cs[i][0], cs[i][1], cs[i][2], cs[i][3]);
+        for (var j=0; j<4; j++) {
+          cs2[i] *= clr;
+        }
       }
       
       cs = cs2;
     } else if (typeof clr[0] == "number") {
-      cs = [clr, clr, clr, clr];
+      var cs = arr4;
+      cs[0] = clr; cs[1] = clr; cs[2] = clr; cs[3] = clr;
     } else {
       cs = clr;
     }
@@ -691,6 +698,8 @@ class UICanvas {
     this.transmat = new Matrix4()
     
     this.drawlists = [this.trilist]
+    this.textlist = [];
+    
     this.stack = []
     
     this.cache = new hashtable();
@@ -808,6 +817,8 @@ class UICanvas {
   }
 
   frame_begin(Object item) {
+    return; //XXX
+    
     if (DEBUG.ui_canvas) {
       console.log("canvas start, stack length: ", this.stack.length);
     }
@@ -817,8 +828,11 @@ class UICanvas {
   }
 
   frame_end(Object item) {
+    return; //XXX
+    
     var arr = new GArray([])
-    var start = this.stack.pop(this.stack.length-1);
+    var start = this.stack[this.stack.length-1];
+    this.stack.pop();
     
     if (DEBUG.ui_canvas)
       console.log(start);
@@ -827,9 +841,7 @@ class UICanvas {
       arr.push(this.drawlists[i]);
     }
     
-    this.stack.pop();  
     this.cache.set(item, arr);
-    
     this.new_trilist();
     
     if (DEBUG.ui_canvas) {
@@ -886,6 +898,8 @@ class UICanvas {
       
       for (var i=0; i<arr.length; i++) {
         this.drawlists.push(arr[i]);
+        if (arr[i] instanceof TextDraw)
+          this.textlist.push(arr[i]);
       }
       
       this.oldcache.remove(item);
@@ -1016,7 +1030,16 @@ class UICanvas {
     
     var len = this.drawlists.length;
     for (var i=0; i<len; i++) {
+      if (DEBUG.canvas_sep_text && this.drawlists[i] instanceof TextDraw)
+        continue;
       this.drawlists[i].on_draw(gl);
+    }
+    
+    if (DEBUG.canvas_sep_text) {
+      var len = this.textlist.length;
+      for (var i=0; i<len; i++) {
+        this.textlist[i].on_draw(gl);
+      }
     }
   }
 
@@ -1114,6 +1137,14 @@ class UICanvas {
       }
     }
     
+    if (DEBUG.canvas_sep_text) {
+      var tl = this.textlist;
+      for (var i=0; i<tl.length; i++) {
+        tl[i].destroy();
+      }
+      this.textlist.length = 0;
+    }
+    
     this.uncached.length = 0;
     this.scissor_stack.length = 0;
     
@@ -1209,7 +1240,7 @@ class UICanvas {
   box(pos, size, clr, rfac, outline_only) {
     if (IsMobile || rfac == 0.0)
       return this.box2(pos, size, clr, rfac, outline_only);
-    else
+    else //XXX
       return this.box1(pos, size, clr, rfac, outline_only);
   }
   
@@ -1468,23 +1499,33 @@ class UICanvas {
     this.textcache[hash].users.push(textdraw);
     
     //-XXX
-    if (this.drawlists[this.drawlists.length-1] == this.trilist) {
+    if (DEBUG.canvas_sep_text) {
+      this.textlist.push(textdraw);
       this.drawlists.push(textdraw);
-      
-      this.new_trilist();
-      
       if (this.stack.length == 0) {
         this.uncached.push(textdraw);
-        this.uncached.push(this.trilist);
       }
+      
+      return loc;
     } else {
-      this.drawlists.push(textdraw);
-      
-      if (this.stack.length == 0) {
-        this.uncached.push(textdraw);
+      if (this.drawlists[this.drawlists.length-1] == this.trilist) {
+        this.drawlists.push(textdraw);
+        
+        this.new_trilist();
+        
+        if (this.stack.length == 0) {
+          this.uncached.push(textdraw);
+          this.uncached.push(this.trilist);
+        }
+      } else {
+        this.drawlists.push(textdraw);
+        
+        if (this.stack.length == 0) {
+          this.uncached.push(textdraw);
+        }
       }
+      // */
+      return loc;
     }
-    // */
-    return loc;
   }
 }

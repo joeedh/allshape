@@ -59,6 +59,7 @@ sources = [
 	"src/mesh/esubdivide.js",
 	"src/mesh/triangulate_job.js",
   "src/mesh/triangulate_worker.js",
+  "src/mesh/meshtools_topo.js",
 	"src/mesh/geodata.js",
   
 	"src/mesh/triangulate.js",

@@ -1,3 +1,5 @@
+"use strict";
+
 function inset_extrude(op, mesh, make_skirt) { //make_skirt=true
   if (make_skirt == undefined)
     make_skirt = true;
@@ -148,7 +150,7 @@ function inset_make_holes(op, mesh) {
       /*find correct winding direction to start with*/
       for (var l in v1.loops) {
         if (faces.has(l.f)) {
-          cure = l.e;
+          var cure = l.e;
           vdone.add(v);
           v = l.next.v;
           vloop.push(v);
@@ -266,54 +268,224 @@ class InsetRegionsOp extends MeshOp {
   }
 }
 
-function bridge_two_loops(mesh, vloop1, vloop2) {
+function vloop_normal(loop) {
+  if (loop.length == 0)
+    return new Vector3(0, 0, 1);
+
+  var c = new Vector3();
+  for (var v in loop) {
+    c.add(v.co);
+  }
+  c.mulScalar(1.0/loop.length);
+  var n1 = new Vector3();
+  var n2 = new Vector3();
+  var n = new Vector3();
   
+  for (var i=0; i<loop.length; i++) {
+    var v1 = loop[i].co, v2 = loop[(i+1)%loop.length].co;
+    
+    n1.load(v1).sub(c); 
+    n2.load(v2).sub(c);
+    n1.cross(n2);
+    n1.normalize();
+    n.add(n1);
+  }
+  
+  n.mulScalar(1.0 / loop.length);
+  n.normalize();
+  
+  return n;
+}
+
+
+#define SWAP(a, b, t) var t = a; a = b; b = t; 
+
+function bridge_two_loops(mesh, vloop1, vloop2, cuts) {
+  var len1 = vloop1.length;
+  var len2 = vloop2.length;
+  
+  if (len1 < len2) {
+    SWAP(vloop1, vloop2, t);
+    SWAP(len1, len2, t);
+  }
+  
+  if (len1 == 0 || len2 == 0) return;
+  var ratio = (len2-1) / (len1-1);
+  
+  function get_i2(_i) {
+    return Math.floor(_i*ratio);
+  }
+  
+  console.trace("bridge!");
+  
+  var n = vloop_normal(vloop1);
+  var n2 = vloop_normal(vloop2);
+    
+  function eids(l) {
+    var ret = [];
+    for (var v in l) {
+      ret.push(v.eid);
+    }
+    
+    return JSON.stringify(ret);
+  }
+  
+  if (n.dot(n2) < 0.0) {
+    n2.negate();
+    vloop2.reverse();
+  }
+  
+  n.add(n2);
+  n.mulScalar(0.5);
+  n.normalize();
+
+  var mindis = undefined;
+  var start = 0;
+  
+  for (var i=0; i<len1; i++) {
+    var dis = 0;
+    
+    for (var j=0; j<len1; j++) {
+      var k = (j+i)%len1;
+      
+      var j1 = i, j2 = get_i2(k);
+      //var j3 = (j2+1)%len2; var j4 = (j1+1)%len1;
+      dis += vloop1[j].co.vectorDistance(vloop2[j2].co);
+    }
+    
+    if (mindis == undefined || dis < mindis) {
+      mindis = dis;
+      start = i;
+    }
+  }
+  
+  var vloop3 = new GArray();
+  for (i=0; i<len1; i++) {
+    console.log("i", get_i2((i+start)%len1));
+    vloop3.push(vloop2[get_i2((i+start)%len1)]);
+  }
+  
+  var quadlst = [0, 0, 0, 0];
+  var trilist = [0, 0, 0];
+  vloop2 = vloop3;
+  
+  var vloop1_2 = list(vloop1);
+  var vloop2_2 = list(vloop2);
+  var co = new Vector3();
+  
+  for (var c=0; c<cuts+1; c++) {
+    if (c == cuts) {
+      vloop2_2 = vloop2;
+    } else {
+      var f = (c+1)/(cuts+1);
+      
+      for (i=0; i<len1; i++) {
+        co.load(vloop1[i].co);
+        co.interp(vloop2[i].co, f);
+        
+        var v = mesh.make_vert(co);
+        vloop2_2[i] = v;
+      }
+    }
+    
+    for (var i=0; i<len1; i++) {
+      var si = (i+start) % len1;
+      var i1 = i, i2=i;
+      var i3 = (i2+1)%len1; var i4 = (i1+1)%len1;
+      
+      var v1 = vloop1_2[i1], v2 = vloop2_2[i2], v3 = vloop2_2[i3], v4=vloop1_2[i4];
+      
+      if (v1 == v4 || v2 == v3) {
+        if (v1 == v4) { 
+          trilist[0] = v1; trilist[1] = v2; trilist[2] = v3;
+        } else if (v1 != v4 && v2 == v3) {
+          trilist[0] = v1; trilist[1] = v2; trilist[2] = v4;
+        } else {
+          console.log("degenerate case!", i1, i2, i3, i4);
+          continue;
+        }
+        
+        var f = mesh.make_face(trilist, false);
+        continue;
+      }
+      
+      quadlst[0] = v1; quadlst[1] = v2; quadlst[2] = v3; quadlst[3] = v4;
+      var f = mesh.make_face(quadlst, false, false);
+    }
+    
+    SWAP(vloop1_2, vloop2_2, t);
+  }
 }
 
 class BridgeOp extends MeshOp {
   constructor(Iterator<Edge> edgeiter=undefined) {
     MeshOp.call(this, "bridge_edges", "Bridge Edges", "Bridge edge loops with faces", Icons.BRIDGE);
     
+    this.flag |= ToolFlags.USE_PARTIAL_UNDO;
+    
     this.inputs = {
-      edges: new CollectionProperty(undefined, [Edge], "faces", "Faces", ""),
+      edges : new CollectionProperty(undefined, undefined, "edges", "Edges", ""),
+      cuts : new IntProperty(0, "cuts", "Cuts", "Number of subdivisions")
     }
+    
+    this.inputs.cuts.range = [0, 50];
+    this.inputs.cuts.uirange = [0, 50];
     
     this.outputs = {
     }
     
-    if (edgeiter != undefined)
+    if (edgeiter != undefined) {
       this.inputs.edges.set_data(edgeiter);
+    }
   }
   
-  exec (op, mesh) {
-    var eset = new set(this.edgeiter);
-    
+  exec(op, mesh) {
+    var eset = new set(this.inputs.edges);
     var visit = new set();
     var loops = new GArray();
+    var cuts = this.inputs.cuts.data;
     
     for (var e in eset) {
       if (visit.has(e))
         continue;
       
-      var v1 = e.v1;
+      var loop = new GArray();
+      var v1 = e.v1, lastv = e.v2;
+      var bad = false;
       
       visit.add(e);
-      var stack = [e];
-      var loop = new GArray([v1]);
-      
-      while (stack.length > 0) {
-        var e2 = stack.pop(stack.length-1);
-        v1 = e2.other_vert(v1);
-        
+      do {
         loop.push(v1);
-        for (var e3 in v1.edges) {
-          if (eset.has(e3) && !visit.has(e3)) {
-            stack.push(e3);
+        
+        var c = 0;
+        var ov1 = v1;
+        var olastv = lastv;
+        
+        for (var e2 in v1.edges) {
+          if (eset.has(e2) && e2.other_vert(ov1) != olastv) {
+            visit.add(e2);
+            
+            lastv = v1;
+            v1 = e2.other_vert(v1);
+            
+            if (c > 0) {
+              bad = true;
+              break;
+            }
+            c++;
           }
         }
-      }
+        
+      } while (v1 != e.v1);
       
-      console.log("llen :", loop.length);
+      if (!bad)
+        loops.push(loop);
     }
+    
+    if (loops.length == 2) {
+      bridge_two_loops(mesh, loops[0], loops[1], cuts);
+    }
+    
+    mesh.api.recalc_normals();
   }
 }
