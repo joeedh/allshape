@@ -99,9 +99,6 @@ class AppSettings {
         if (g_app_state.screen != undefined)
           g_app_state.screen.do_full_recalc();
         
-        console.log("done");
-        //console.log(settings);
-        
         if (on_finish != undefined) {
           on_finish(settings);
         }

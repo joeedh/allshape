@@ -210,7 +210,7 @@ class SettingsEditor extends Area {
     var s1 = this.size, s2=this.subframe.size;
     
     if (s2[0] != sx || s2[1] != sy) {
-      console.log("resizing subframe");
+      //console.log("resizing subframe");
       this.subframe.size[0] = this.size[0];
       this.subframe.size[1] = sy;
       this.subframe.on_resize(this.size, this.subframe.size);

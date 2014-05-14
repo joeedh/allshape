@@ -66,7 +66,8 @@ class UserSession {
       session.is_logged_in = true;
       session.store(false);
       
-      console.log("downloading current user settings. . .");
+      if (DEBUG.netio)
+        console.log("downloading current user settings. . .");
       session.settings.download(function() {
         session.store(true);
       });
@@ -82,7 +83,8 @@ class UserSession {
     }
     
     function finish(job, owner) {
-      console.log("downloading current user settings. . .");
+      if (DEBUG.netio)
+        console.log("downloading current user settings. . .");
       
       if (!session.loaded_settings) {
         session.settings.download(function() {
@@ -727,7 +729,8 @@ class AppState {
     var version = version_major + version_minor;
     
     if (file_flag & FileFlags.COMPRESSED_LZSTRING) {
-      console.log("decompressing. . .");
+      if (DEBUG.compression)
+        console.log("decompressing. . .");
       
       data = new Uint16Array(data.buffer.slice(uctx.i, data.byteLength));
       var s = ""
@@ -737,7 +740,8 @@ class AppState {
       data = LZString.decompress(s)
       
       var data2 = new Uint8Array(data.length);
-      console.log("uncompressed length: ", data.length);
+      if (DEBUG.compression)
+        console.log("uncompressed length: ", data.length);
       
       for (var i=0; i<data.length; i++) {
         data2[i] = data.charCodeAt(i);
@@ -1011,7 +1015,8 @@ class AppState {
     var version = version_major + version_minor;
     
     if (file_flag & FileFlags.COMPRESSED_LZSTRING) {
-      console.log("decompressing. . .");
+      if (DEBUG.compression)
+        console.log("decompressing. . .");
       
       data = new Uint16Array(data.buffer.slice(uctx.i, data.byteLength));
       var s = ""
@@ -1021,7 +1026,8 @@ class AppState {
       data = LZString.decompress(s)
       
       var data2 = new Uint8Array(data.length);
-      console.log("uncompressed length: ", data.length);
+      if (DEBUG.compression)
+        console.log("uncompressed length: ", data.length);
       
       for (var i=0; i<data.length; i++) {
         data2[i] = data.charCodeAt(i);

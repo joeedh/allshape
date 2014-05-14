@@ -56,7 +56,6 @@ class UIButtonAbstract extends UIHoverHint {
       
       
       var click = this.was_touch || !this.click_on_down;
-      //console.log("click: ", click, "button mouseup: ", event.x, event.y, this.size[0], this.size[1]);
       if (click) { // && inrect_2d_button([event.x, event.y], [0, 0], this.size)) {
         this.on_click(event);
       }
@@ -71,7 +70,6 @@ class UIButtonAbstract extends UIHoverHint {
     if (this.can_pan && this.was_touch) {
       var mpos = [event.x, event.y];
       var dis = this.start_mpos.vectorDistance(mpos);
-      console.log("dis", dis);
       
       if (dis > 60) { // && !inrect_2d_button(mpos, [0, 0], this.size)) {
         if (this.clicked && this.modal_click)
@@ -1564,11 +1562,7 @@ class UIVScroll extends UIFrame {
       prior(UIVScroll, this).on_mousedown.call(this, event, false);
     }
     
-    console.log("vscroll mousedown");
-    
     if (this.modalhandler == undefined && this.active == undefined) {
-      console.log("large jump");
-      
       this.clicked = true;
       this.last_ms = time_ms()+200;
       
@@ -1584,8 +1578,6 @@ class UIVScroll extends UIFrame {
 
   on_mouseup(MouseEvent event) {
     this.clicked = false;
-    
-    console.log("vscroll mouseup");
     
     if (this.dragging) {
       this.dragging = false;

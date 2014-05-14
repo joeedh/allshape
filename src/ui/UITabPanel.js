@@ -214,10 +214,7 @@ class UITabPanel extends UIFrame {
   on_saved_uidata(Function visit) {
     prior(UITabPanel, this).on_saved_uidata.call(this, visit);
     
-    console.log("===============> saving tab hidden elements");
-    
     for (var t in this.tabstrip.tabs) {
-      console.log("  uhash:", t.id.get_uhash());
       visit(t.id);
     }
   }
@@ -226,7 +223,6 @@ class UITabPanel extends UIFrame {
     prior(UITabPanel, this).on_load_uidata.call(this, visit);
     
     for (var t in this.tabstrip.tabs) {
-      console.log("  uhash:", t.id.get_uhash());
       visit(t.id);
     }
   }
@@ -283,7 +279,6 @@ class UITabPanel extends UIFrame {
   }
   
   tab_callback(String text, Object id) {
-    console.log("tab callback", id);
     var content = this.content;
     
     for (var c in list(content.children)) {

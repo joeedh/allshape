@@ -50,7 +50,8 @@ class FileDialog extends PackedDialog {
       this2.listbox.reset();
       var files = job.value.items;
       
-      console.log(files);
+      if (DEBUG.netio)
+        console.log(files);
       for (var i=0; i<files.length; i++) {
         var fname = files[i].name;
         var ftype;
@@ -112,7 +113,6 @@ class FileDialog extends PackedDialog {
 
 function file_dialog(mode, ctx, callback)
 {
-  console.log(ctx, ctx.screen);
   var fd = new FileDialog(mode, ctx, callback);
   fd.call(ctx.screen.mpos);  
 }
@@ -147,14 +147,16 @@ function download_file(path, on_finish, path_label=path, use_note=false,
   
   function status(job, owner, status) {
     pd.value = status.progress;
-    console.log("status: ", status.progress);
+    if (DEBUG.netio)
+      console.log("status: ", status.progress);
   }
       
   function finish(job, owner) {
     pd.end();
     on_finish(new DataView(job.value));
     
-    console.log("finished downloading");
+    if (DEBUG.netio)
+      console.log("finished downloading");
   }
   
   var s = g_app_state.screen.size;
@@ -193,18 +195,21 @@ class FileOpenOp extends ToolOp {
     function status(job, owner, status) {
       pd.value = status.progress;
       pd.bar.do_recalc();
-      console.log("status: ", status.progress);
+      if (DEBUG.netio)
+        console.log("status: ", status.progress);
     }
         
     function open_callback(dialog, path) {
-      console.log("loading...", path);
+      if (DEBUG.netio)
+        console.log("loading...", path);
       pd.call(ctx.screen.mpos);
       
       function finish(job, owner) {
         pd.end();
         g_app_state.load_user_file_new(new DataView(job.value));
         g_app_state.filepath = path;
-        console.log("finished downloading");
+        if (DEBUG.netio)
+          console.log("finished downloading");
       }
       
       call_api(get_file_data, {path:path}, finish, error, status);
@@ -242,18 +247,21 @@ class FileSaveAsOp extends ToolOp {
     }
     
     function finish(job, owner) {
-      console.log("finished uploading");
+      if (DEBUG.netio)
+        console.log("finished uploading");
       pd.end()
     }
     
     function status(job, owner, status) {
       pd.value = status.progress;
-      console.log("status: ", status.progress, status);
+      if (DEBUG.netio)
+        console.log("status: ", status.progress, status);
     }
     
     function save_callback(dialog, path) {
       pd.call(ctx.screen.mpos);
-      console.log("saving...", path);
+      if (DEBUG.netio)
+        console.log("saving...", path);
       global allshape_file_ext;
       
       if (!path.endsWith(allshape_file_ext)) {
@@ -328,17 +336,20 @@ class FileSaveOp extends ToolOp {
     function status(job, owner, status) {
       pd.value = status.progress;
       pd.bar.do_recalc();
-      console.log("status: ", status.progress);
+      if (DEBUG.netio)
+        console.log("status: ", status.progress);
     }
     
     function finish(job, owner) {
       pd.end();
-      console.log("finished uploading");
+      if (DEBUG.netio)
+        console.log("finished uploading");
     }
     
     function save_callback(dialog, path) {
       pd.call(ctx.screen.mpos);
-      console.log("saving...", path);
+      if (DEBUG.netio)
+        console.log("saving...", path);
       global allshape_file_ext;
       
       if (!path.endsWith(allshape_file_ext)) {
@@ -454,7 +465,8 @@ class LoginDialog extends PackedDialog {
     var dialog = this;
     
     var session = g_app_state.session
-    console.log(session.tokens);
+    if (DEBUG.netio)
+      console.log(session.tokens);
     
     if (do_cancel) {
       prior(LoginDialog, this).end.call(this, do_cancel);
@@ -467,12 +479,15 @@ class LoginDialog extends PackedDialog {
       
       var session = g_app_state.session;
       
-      console.log(job.value, "----------");
+      if (DEBUG.netio)
+        console.log(job.value, "1");
+      
       session.tokens = job.value;
       session.is_logged_in = true;
       session.store();
       
-      console.log(job.value);
+      if (DEBUG.netio)
+        console.log(job.value, "2");
       dialog.closed = true;
       prior(LoginDialog, dialog).end.call(dialog, false);
       
@@ -492,7 +507,8 @@ class LoginDialog extends PackedDialog {
     var user = this.userbox.text;
     var password = this.passbox.text;
     
-    console.log(user, password);
+    if (DEBUG.netio)
+      console.log(user, password);
     
     var session = g_app_state.session;
     
@@ -555,16 +571,20 @@ class FileSaveSTLOp extends ToolOp {
     function status(job, owner, status) {
       pd.value = status.progress;
       pd.bar.do_recalc();
-      console.log("status: ", status.progress);
+      
+      if (DEBUG.netio)
+        console.log("status: ", status.progress);
     }
     
     var this2 = this;
     function finish(job, owner) {
-      console.log("finished uploading");
+      if (DEBUG.netio)
+        console.log("finished uploading");
       var url = "/api/files/get?path=/"+this2._path + "&";
       url += "accessToken="+g_app_state.session.tokens.access;
       
-      console.log(url)
+      if (DEBUG.netio)
+        console.log(url)
       window.open(url);
       
       pd.end();
@@ -573,7 +593,8 @@ class FileSaveSTLOp extends ToolOp {
     function save_callback(dialog, path) {
       pd.call(ctx.screen.mpos);
       
-      console.log("saving...", path);
+      if (DEBUG.netio)
+        console.log("saving...", path);
       global allshape_file_ext;
       
       if (!path.endsWith(".stl")) {
@@ -641,16 +662,19 @@ class FileSaveB64Op extends ToolOp {
     function status(job, owner, status) {
       pd.value = status.progress;
       pd.bar.do_recalc();
-      console.log("status: ", status.progress);
+      if (DEBUG.netio)
+        console.log("status: ", status.progress);
     }
     
     var this2 = this;
     function finish(job, owner) {
-      console.log("finished uploading");
+      if (DEBUG.netio)
+        console.log("finished uploading");
       var url = "/api/files/get?path=/"+this2._path + "&";
       url += "accessToken="+g_app_state.session.tokens.access;
       
-      console.log(url)
+      if (DEBUG.netio)
+        console.log(url)
       window.open(url);
       
       pd.end();
@@ -659,7 +683,8 @@ class FileSaveB64Op extends ToolOp {
     function save_callback(dialog, path) {
       pd.call(ctx.screen.mpos);
       
-      console.log("saving...", path);
+      if (DEBUG.netio)
+        console.log("saving...", path);
       
       if (!path.endsWith(".al3.b64")) {
         path = path + ".al3.b64";

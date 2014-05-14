@@ -114,12 +114,12 @@ class ASObject extends DagNode {
       }
     }
     
-    console.log("---------==========>", octree_callback);
     this._data.update_callback(this, octree_callback);
   }
   
   regen_octree() {
-    console.log("redoing octree");
+    if (DEBUG.octree)
+      console.log("redoing octree");
     if (this.ss_mesh != undefined) {
       this.octree = build_octree_ss(this.ss_mesh);
     } else {

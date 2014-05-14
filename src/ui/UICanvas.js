@@ -59,8 +59,6 @@ class TriListAlloc {
     #endif
     
     if (this.freecount == 0) {
-      console.log("making new trilist object", this.usedcount, this.freecount, this.freelist.length);
-      
       //ensure a saturated cache
       if (this.usedcount == 0) {
         for (var i=0; i<TRILIST_CACHE_SIZE; i++) {
@@ -69,8 +67,6 @@ class TriListAlloc {
           this.freelist.push(tl);
           this.freecount++;
         }
-        
-        console.log("------------>|", this.freelist.length, this.freecount, this.usedcount);
       }
       
       this.usedcount++;

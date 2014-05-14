@@ -776,22 +776,26 @@ function api_exec(path, netjob, mode,
   req.onprogress = function(evt) {
     if (netjob.status_data._client_control || evt.total == 0) return;
     
-    console.log("progress: ", evt, evt.status, evt.loaded, evt.total);
+    if (DEBUG.netio)
+      console.log("progress: ", evt, evt.status, evt.loaded, evt.total);
+    
     var perc = evt.loaded / evt.total;
     netjob.status_data.progress = perc;
-    console.log("perc", perc, netjob.status);
+    
+    if (DEBUG.netio)
+      console.log("perc", perc, netjob.status);
     
     if (netjob.status)
       netjob.status(netjob, netjob.owner, netjob.status_data);
   }
   
   req.onreadystatechange=function() {
-   //console.log(req.readyState, req.status);
     if (req.readyState==4 && (req.status>=200 && req.status <=300)) {
       var obj;
       
       netjob.headers = parse_headers(req.getAllResponseHeaders());
-      console.log(netjob.headers)
+      if (DEBUG.netio)
+        console.log("headers:", netjob.headers)
       
       if (netjob.headers["Content-Type"] == "application/x-javascript") {
         try {
@@ -840,7 +844,7 @@ function AuthSessionGen(job, user, password, refresh_token) {
     api_exec("/api/auth?user="+user+"&password="+sha1pwd, job);
     yield 1;
     
-    console.log("job.value: ", job.value);
+    console.log("auth value: ", job.value);
   
     refresh_token = job.value["refresh_token"];
   }
@@ -919,7 +923,8 @@ function upload_file(job, args) {
   api_exec(url, job);  
   yield 1;
   
-  console.log(job.value);
+  if (DEBUG.netio)
+    console.log(job.value);
   
   var upload_token = job.value.uploadToken;
   
@@ -933,14 +938,17 @@ function upload_file(job, args) {
   var prog = 0.0;
   var dp = 1.0/ilen;
   
-  console.log("beginning upload", ilen);
+  if (DEBUG.netio)
+    console.log("beginning upload", ilen);
   for (var i=0; i<ilen; i++) {
-    console.log("Uploading chunk "+(i+1)+" of "+ilen);
+    if (DEBUG.netio)
+      console.log("Uploading chunk "+(i+1)+" of "+ilen);
     
     var url = url2 + "&uploadToken="+upload_token;
     var size = i == ilen-1 ? len%(csize) : csize;
-      
-    console.log(i*csize, size, data);
+    
+    if (DEBUG.netio)    
+      console.log(i*csize, size, data);
     
     var chunk = new DataView(data, i*csize, size);
     var last = i*csize+size-1;
@@ -949,7 +957,8 @@ function upload_file(job, args) {
       "Content-Range" : "bytes "+c+"-"+(c+size-1)+"/"+len
     }
     
-    console.log(headers["Content-Range"], size, c, chunk)
+    if (DEBUG.netio)
+      console.log(headers["Content-Range"], size, c, chunk)
     
     api_exec(url, job, "PUT", chunk, undefined, headers);
     yield;
@@ -982,8 +991,6 @@ function get_file_data(job, args) {
   
   api_exec(url, job, undefined, undefined, undefined, undefined, "arraybuffer");
   yield;
-  
-  console.log(job.value);
 }
 
 function BJSON() {

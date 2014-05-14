@@ -711,7 +711,9 @@ class TouchEventManager {
       
       console.log(dis);
       if (same && dis < 50) {
-        console.log("destroying duplicate event", last.type, event.x, event.y, event.touches);
+        if (DEBUG.touch)
+          console.log("destroying duplicate event", last.type, event.x, event.y, event.touches);
+        
         for (var k in event.touches) {
           last.touches[k] = event.touches[k];
         }

@@ -164,14 +164,11 @@ class UIPackFrame extends UIFrame {
       
       this.add(c);
     } else if (prop.type == PropTypes.ENUM && (packflag & PackFlags.ENUM_STRIP)) {
-      console.log("enum strip");
       var checkmap = {};
       var this2 = this;
       prop.ctx = ctx;
       
       function update_enum(chk, val) {
-        console.log("enum strip update");
-
         //only allow check sets
         if (!val) {
           chk.set = true;

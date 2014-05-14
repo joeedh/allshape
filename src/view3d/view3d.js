@@ -643,7 +643,6 @@ class View3DHandler extends Area {
     var is_middle = event.button == 1 || (event.button == 2 && g_app_state.screen.ctrl);
     
     var tottouch = g_app_state.screen.tottouch;
-    console.log("tottouch", tottouch);
     
     if (tottouch >= 2) {
       console.log("Touch screen rotate/pan/zoom combo");
@@ -679,17 +678,11 @@ class View3DHandler extends Area {
       
     this._mstart = null;
     
-    console.log("t", event.touches);
-    
     if (prior(View3DHandler, this).on_mouseup.call(this, event))
       return;
   }
 
   on_mousemove(MyMouseEvent event) {
-    //console.log("->", event, event.touches);
-    
-    //console.log("t", JSON.stringify(event.touches));
-    
     var mpos = new Vector3([event.x, event.y, 0])
     this.mpos = mpos;
     
