@@ -54,7 +54,8 @@ var DEBUG = {
   complex_ui_recalc : false,
   screen_keyboard : false, // !RELEASE
   data_api_timing : false,
-  canvas_sep_text : true
+  canvas_sep_text : true,
+  disable_on_tick : false
 };
 
 //private macro helper global for utildefine.js

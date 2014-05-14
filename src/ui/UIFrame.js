@@ -112,6 +112,7 @@ class UIFrame extends UIElement {
       this.start_pan_main(event, button);
     }
   }
+  
   /*callback functions to start or 
     end panning, enable with UIFlags.HAS_PAN*/
   start_pan_main(MouseEvent event=undefined, int button=0) {
@@ -316,10 +317,11 @@ class UIFrame extends UIElement {
     }
   }
 
-  on_mousedown(MouseEvent e) {
+  on_mousedown(MouseEvent e, Boolean feed_mousemove=true) {
     if (this.bad_event(e)) return;
     
-    this.on_mousemove(e);
+    if (feed_mousemove)
+      this.on_mousemove(e);
     
     this._offset_mpos(e);
     var mpos = this.mpos = [e.x, e.y];

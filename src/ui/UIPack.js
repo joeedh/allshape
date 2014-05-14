@@ -220,7 +220,7 @@ class UIPackFrame extends UIFrame {
         }
         
         val = ctx.api.get_prop(ctx, path) == prop.keys[val];
-        if (val != chk.set) {
+        if (!!val != !!chk.set) {
           chk.set = val;
           chk.do_recalc();
         }

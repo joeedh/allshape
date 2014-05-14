@@ -397,7 +397,7 @@ class UIElement extends EventHandler {
   
   on_tick() { 
     if (time_ms() - this.last_flash > this.flash_ival && (this.state & UIFlags.FLASH)) {
-      console.log("flash");
+      //console.log("flash");
       this.do_recalc();
       this.last_flash = time_ms();
       this.inc_flash_timer();
@@ -478,7 +478,7 @@ class UIHoverBox extends UIElement {
       this.parent.remove(this);
       this.parent.do_recalc();
       
-      console.log(mpos, this.pos, this.parent.parent);
+      //console.log(mpos, this.pos, this.parent.parent);
       event.x = mpos[0]; event.y = mpos[1];
       lastp._on_mousedown(event);
     }
@@ -532,7 +532,7 @@ class UIHoverHint extends UIElement {
   on_hint(Boolean is_modal=true) : UIElement {
     var hint = this.get_hint();
     
-    console.log("hint: ", hint);
+    //console.log("hint: ", hint);
     if (!hint) return;
     
     var size = new Vector2(this.ctx.font.calcsize(hint));
@@ -550,7 +550,7 @@ class UIHoverHint extends UIElement {
     var abspos2 = [abspos[0], abspos[1]];
     
     //move above element, if necassary
-    console.log("hint y", abspos[1], "x", abspos[0]);
+    //console.log("hint y", abspos[1], "x", abspos[0]);
     if (abspos[1] < 0) {
       abspos[1] += size[1] + this.size[1];
     }

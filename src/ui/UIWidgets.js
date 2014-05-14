@@ -19,7 +19,7 @@ class UIButtonAbstract extends UIHoverHint {
   }
   
   on_mousedown(MouseEvent event) {
-    console.log("button down");
+    //console.log("button down");
     if (!this.clicked) {
       this.was_touch = 0; //g_app_state.was_touch;
       this.modal_click = !this.click_on_down || this.was_touch;
@@ -46,7 +46,7 @@ class UIButtonAbstract extends UIHoverHint {
   }
 
   on_mouseup(MouseEvent event) {
-    console.log("button up");
+    //console.log("button up");
     if (event.button == 0 && this.clicked) {
       if (this.modal_click)
         this.parent.pop_modal();
@@ -114,7 +114,7 @@ class UIButton extends UIButtonAbstract {
       var hotkey = ctx.api.get_op_keyhandler(ctx, this.data_path);
       var ret = op.description == undefined ? "" : op.description;
       
-      console.log("hotkey: ", hotkey);
+      //console.log("hotkey: ", hotkey);
       if (hotkey != undefined) {
         if (ret != "") ret += "\n"
         ret += "      Hotkey: " + hotkey.build_str(true) + "  ";
@@ -794,20 +794,22 @@ class UINumBox extends UIHoverHint {
 class UILabel extends UIElement {
   constructor(ctx, text, pos, size, path) {
     UIElement.call(this, ctx, path);
-
+    
+    this.start_mpos = new Vector2();
     this.prop = undefined;
     this.val = text;
     this.text = text;
     this.bgcolor = undefined;
     this.color = undefined;
-
+    this.did_modal = false;
+    this.clicked = false;
+    
     if (this.state & UIFlags.USE_PATH) {
       this.prop = ctx.api.get_prop_meta(ctx, this.data_path);
       this.val = this.prop.data;
       this.text = this.prop.uiname + ": "
     }
 
-    this.clicked = false;
     if (pos != undefined) {
       this.pos[0] = pos[0];
       this.pos[1] = pos[1];
@@ -851,21 +853,54 @@ class UILabel extends UIElement {
     }
   }
   
-  on_mousedown(MouseEvent event) {
-    if (g_app_state.was_touch)
-      this.start_pan(event, 0);
+  on_mousemove(MouseEvent event) {
+    if (this.clicked) {
+      var dis = this.start_mpos.vectorDistance([event.x, event.y]);
+      
+      if (dis > 4) {
+        //cancel, then pan
+        
+        if (this.did_modal) {
+          this.pop_modal();
+          this.did_modal = false;
+        }
+        
+        this.clicked = false;
+        this.start_pan(event, 0);
+      }
+    }
     
-    if (event.button == 0) {
+    prior(UILabel, this).on_mousemove.call(this, event);
+  }
+  
+  on_mousedown(MouseEvent event) {
+    this.start_mpos.load([event.x, event.y]);
+    
+    if (!this.clicked && event.button == 0) {
       this.clicked = true;
-    }  
+      
+      if (this.callback != undefined) {
+        this.callback(this);
+      }
+        
+      if (!this.did_modal) {
+        this.push_modal();
+        this.did_modal = true;
+      }
+    }
   }
   
   on_mouseup(MouseEvent event) {
-    if (event.button == 0) {
+    if (this.did_modal) {
+      this.pop_modal();
+      this.did_modal = false;
+    }
+    
+    if (this.clicked && event.button == 0) {
       this.clicked = false;
       
       if (inrect_2d_button([event.x, event.y], [0,0], this.size)) {
-        console.log("clicked")
+        //console.log("clicked")
         if (this.callback != undefined) {
           this.callback(this);
         }
@@ -1049,7 +1084,7 @@ class UIMenuLabel extends UIElement {
       this.clicked = false;
       
       if (inrect_2d_button([event.x, event.y], [0,0], this.size)) {
-        console.log("clicked")
+        //console.log("clicked")
         if (this.callback != undefined) {
           this.callback(this);
         }
@@ -1212,7 +1247,12 @@ class UIListBox extends ColumnFrame {
     var entry = new UIListEntry(this.ctx, str, id);
     
     entry.packflag |= PackFlags.ALIGN_LEFT|PackFlags.INHERIT_WIDTH;
-
+    
+    var this2 = this;
+    entry.callback = function(entry) {
+      this2._set_active(entry);
+    }
+    
     this.listbox.add(entry, PackFlags.ALIGN_LEFT);
     this.do_recalc();
   }
@@ -1288,8 +1328,10 @@ class UIListEntry extends UILabel {
 }
 
 class ScrollButton extends UIElement {
-  constructor(ctx, pos, size, icon, callback) {
+  constructor(ctx, pos, size, icon, callback, do_repeat=true) {
     UIElement.call(this, ctx);
+    
+    this.repeat = do_repeat;
     
     this.boxclr = undefined;
     this.highclr = undefined;
@@ -1306,9 +1348,19 @@ class ScrollButton extends UIElement {
       this.size[0] = size[0];
       this.size[1] = size[1];
     }
+    
     this.callback = callback;
+    this.repeat_ival = 100;
+    this.last_ms = 0;
   }
-
+  
+  on_tick() {
+    if (this.clicked && this.repeat && time_ms() - this.last_ms > this.repeat_ival) {
+      this.last_ms = time_ms();
+      this.callback(this, [-1, -1]);
+    }
+  }
+  
   on_mousedown(MouseEvent event) {
     if (event.button == 0 && !this.clicked) {
       if (this.do_modal)
@@ -1343,7 +1395,7 @@ class ScrollButton extends UIElement {
       canvas.box2([1, 1], this.size, this.boxclr);
       
     if (this.icon != undefined) {
-      canvas.icon(this.icon, IsMobile ? [3, 3] : [2, 0], undefined, true);
+      canvas.icon(this.icon, IsMobile ? [3, 3] : [0, 0], undefined, true);
     }    
   }
 
@@ -1367,6 +1419,8 @@ class UIVScroll extends UIFrame {
     
     this.step = undefined : float;
     this.clicked = false;
+    this.click_sign = 1;
+    
     this.range = range
     if (pos != undefined) {
       this.pos[0] = pos[0];
@@ -1380,12 +1434,15 @@ class UIVScroll extends UIFrame {
     this.callback = callback;
     
     this.but1 = new ScrollButton(ctx, [0,0], [0,0], Icons.SCROLL_DOWN)
+    this.but1.repeat = true;
     this.add(this.but1);
     
     this.but2 = new ScrollButton(ctx, [0,0], [0,0], Icons.SCROLL_UP);
+    this.but2.repeat = true;
     this.add(this.but2);
     
     this.bar = new ScrollButton(ctx, [0,0], [0,0], undefined);
+    this.bar.repeat = false;
     this.bar.do_modal = false;
     this.barsize = 32;
     this.add(this.bar);
@@ -1400,8 +1457,10 @@ class UIVScroll extends UIFrame {
     this.but2.highclr = uicolors["ScrollButtonHigh"];
     this.but2.invclr = uicolors["ScrollInv"];
     
+    this.last_ms = 0;
     this.dragging = false;
     this.last_mpos = [0,0];
+    this.did_modal = false;
     
     var this2=this;
     function bar_callback(button, mpos) {
@@ -1440,7 +1499,7 @@ class UIVScroll extends UIFrame {
     
     this.parent.push_modal(this);
     
-    console.log("dragging");
+    //console.log("dragging");
   }
 
   increment(sign) {
@@ -1478,14 +1537,55 @@ class UIVScroll extends UIFrame {
     var fac = size1/(this.range[1]-this.range[0]);
     bar.pos[1] = this.but1.size[1]+(this.range[1]-this.val-this.range[0]*2)*fac;
   }
-
-  on_mousedown(MouseEvent event) {
+  
+  on_inactive() {
+    this.clicked = false;
+    prior(UIVScroll, this).on_inactive.call(this);
+  }
+  
+  on_tick() {
+    prior(UIVScroll, this).on_tick.call(this);
+    
+    //ensure pan doesn't steal mouseup event
+    this.state &= ~UIFlags.USE_PAN;
+    
+    if (this.clicked && this.modalhandler != undefined) {
+      this.clicked = false;
+    }
+    
+    if (this.clicked && time_ms() - this.last_ms > 200) {
+      this.increment(this.click_sign*4);
+    }
+  }
+  
+  on_mousedown(MouseEvent event) {    
     if (!this.dragging) {
-      prior(UIVScroll, this).on_mousedown.call(this, event);
+      prior(UIVScroll, this).on_mousedown.call(this, event, false);
+    }
+    
+    console.log("vscroll mousedown");
+    
+    if (this.modalhandler == undefined && this.active == undefined) {
+      console.log("large jump");
+      
+      this.clicked = true;
+      this.last_ms = time_ms()+200;
+      
+      if (event.y > this.bar.pos[1]+this.bar.size[1]) {
+        this.click_sign = -1;
+        this.increment(-4);
+      } else {
+        this.click_sign = 1;
+        this.increment(4);
+      }
     }
   }
 
   on_mouseup(MouseEvent event) {
+    this.clicked = false;
+    
+    console.log("vscroll mouseup");
+    
     if (this.dragging) {
       this.dragging = false;
       this.parent.pop_modal();
@@ -1525,9 +1625,11 @@ class UIVScroll extends UIFrame {
 
   pack(UICanvas canvas, Boolean isVertical)
   {
-    this.but1.size = [this.size[0], this.size[0]];
-    this.but2.pos = [0, this.size[1]-this.size[0]+1];
-    this.but2.size = [this.size[0], this.size[0]];
+    var sizey = Math.floor(this.size[0]*1.25);
+    
+    this.but1.size = [this.size[0], sizey];
+    this.but2.pos = [0, this.size[1]-sizey-1];
+    this.but2.size = [this.size[0], sizey];
 
     this.pack_bar();
   }
@@ -1535,18 +1637,18 @@ class UIVScroll extends UIFrame {
   build_draw(UICanvas canvas, Boolean isVertical) 
   {
     canvas.frame_begin(this);
-    //console.log(this.is_canvas_root(), this.canvas, this);
+    //(this.is_canvas_root(), this.canvas, this);
     //console.log(this.parent.get_canvas());
     
     this.pack(canvas, isVertical);
     if (this.range[1]-this.range[0] == 0.0) {
-      canvas.box1([0,0], this.size, uicolors["ScrollBG"]);
+      canvas.box2([1,0], this.size, uicolors["ScrollBG"]);
       return;
     }
     
     this.canvas = canvas;
     
-    canvas.box1([0,0], this.size, uicolors["ScrollBG"]);
+    canvas.box2([1,0], this.size, uicolors["ScrollBG"]);
     
     this.draw_background = false;
     prior(UIVScroll, this).build_draw.call(this, canvas, isVertical, false);
@@ -1559,7 +1661,7 @@ class UIVScroll extends UIFrame {
     if (IsMobile)
       return CACHEARR2(28, 28*3);
     else
-      return CACHEARR2(18, 18*3);
+      return CACHEARR2(15, 18*3);
   }
 }
 

@@ -115,7 +115,7 @@ class AppSettings {
       }
     }
     
-    download_file("/.settings.bin", finish, "Settings", false);
+    download_file("/.settings.bin", finish, "Settings", true);
   }
 }
 

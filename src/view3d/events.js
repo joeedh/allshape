@@ -554,9 +554,20 @@ class VelocityPan extends EventHandler {
   }
   
   calc_vel() {
+    static vel = new Vector2();
+    
     var t = time_ms() - this.start_time;
-    this.vel.load(this.last_mpos).sub(this.mpos).divideScalar(t);
-    this.coasting = (this.vel.vectorLength() > 0.0);
+    if (t < 10) {
+      console.log("small t!!!", t);
+      return;
+    }
+    
+    vel.load(this.last_mpos).sub(this.mpos).divideScalar(t);
+    this.vel.load(vel);
+    //this.vel.add(vel);
+    //this.vel.mulScalar(0.5);
+    
+    this.coasting = (this.vel.vectorLength() > 0.25);
     this.last_ms = time_ms();
   }
   

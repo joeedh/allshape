@@ -117,10 +117,18 @@ function file_dialog(mode, ctx, callback)
   fd.call(ctx.screen.mpos);  
 }
 
-function download_file(path, on_finish, path_label=path, suppress_errors=false, on_error=undefined) {
+function download_file(path, on_finish, path_label=path, use_note=false, 
+                       suppress_errors=false, on_error=undefined) 
+{
   var ctx = new Context();
     
-  var pd = new ProgressDialog(ctx, "Downloading " + path_label);
+  var pd;
+
+  if (use_note)
+    pd = g_app_state.notes.progbar("Get " + path_label, 0);
+  else
+    pd = new ProgressDialog(ctx, "Downloading " + path_label);
+    
   if (on_error == undefined)
     on_error = function() { };
     
@@ -139,8 +147,7 @@ function download_file(path, on_finish, path_label=path, suppress_errors=false, 
   
   function status(job, owner, status) {
     pd.value = status.progress;
-    pd.bar.do_recalc();
-    console.log("status: ", status.progress, pd.bar.max);
+    console.log("status: ", status.progress);
   }
       
   function finish(job, owner) {
@@ -151,7 +158,9 @@ function download_file(path, on_finish, path_label=path, suppress_errors=false, 
   }
   
   var s = g_app_state.screen.size;
-  pd.call([s[0]*0.5, s[1]*0.5]);
+  if (!use_note)
+    pd.call([s[0]*0.5, s[1]*0.5]);
+  
   call_api(get_file_data, {path:path}, finish, error, status);
 }
 
@@ -184,7 +193,7 @@ class FileOpenOp extends ToolOp {
     function status(job, owner, status) {
       pd.value = status.progress;
       pd.bar.do_recalc();
-      console.log("status: ", status.progress, pd.bar.max);
+      console.log("status: ", status.progress);
     }
         
     function open_callback(dialog, path) {
@@ -319,7 +328,7 @@ class FileSaveOp extends ToolOp {
     function status(job, owner, status) {
       pd.value = status.progress;
       pd.bar.do_recalc();
-      console.log("status: ", status.progress, pd.bar.max);
+      console.log("status: ", status.progress);
     }
     
     function finish(job, owner) {
@@ -402,6 +411,8 @@ class ProgressDialog extends PackedDialog {
   }
   
   set value(float val) {
+    if (val != this.bar.value)
+      this.do_recalc();
     this.bar.set_value(val);
   }
   
@@ -544,7 +555,7 @@ class FileSaveSTLOp extends ToolOp {
     function status(job, owner, status) {
       pd.value = status.progress;
       pd.bar.do_recalc();
-      console.log("status: ", status.progress, pd.bar.max);
+      console.log("status: ", status.progress);
     }
     
     var this2 = this;
@@ -630,7 +641,7 @@ class FileSaveB64Op extends ToolOp {
     function status(job, owner, status) {
       pd.value = status.progress;
       pd.bar.do_recalc();
-      console.log("status: ", status.progress, pd.bar.max);
+      console.log("status: ", status.progress);
     }
     
     var this2 = this;

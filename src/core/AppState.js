@@ -1114,6 +1114,9 @@ class AppState {
     for (var i=0; i<blocks.length; i++) {
       var block = blocks[i];
       
+      if (block != undefined && (typeof(block.data) == "string" || block.data instanceof String))
+        continue;
+      
       if (block.data != undefined && "data_link" in block.data && 
           block.subtype == "STRT" && block.type != "SCRN" && block.type != "THME") 
       {

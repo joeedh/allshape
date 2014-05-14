@@ -87,6 +87,15 @@ class ProgressNote extends Notification {
     return r;
   }
   
+  set value(float value) {
+    if (value != this.progress)
+      this.set_value(value);
+  }
+  
+  get value() : float {
+    return this.progress;
+  }
+  
   set_value(float value) {
     this.progress = value;
     this.callback(this);
