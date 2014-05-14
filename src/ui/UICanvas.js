@@ -313,11 +313,12 @@ class TriList {
     this.add_tri(v1, v3, v4, c1, c3, c4, t1, t3, t4);
   }
   
-  icon_quad(int icon, Vector3 pos, float alpha=1.0)
+  icon_quad(int icon, Vector3 pos, Array<Array<float>> cs)
   {
     static tcos = new Array(0);
-    static clr = [1.0, 1.0, 1.0, 1.0];
-    clr[3] = alpha;
+    
+    //var clr = [1, 1, 1, 1];
+    //var cs = [clr, clr, clr, clr];
     
     var cw = this.iconsheet.cellsize[0], ch = this.iconsheet.cellsize[1];
     
@@ -336,8 +337,8 @@ class TriList {
     var t5 = new Vector3([tcos[8], tcos[9], 0]);
     var t6 = new Vector3([tcos[10], tcos[11], 0]);
     
-    this.add_tri(v1, v2, v3, clr, clr, clr, t1, t2, t3);
-    this.add_tri(v1, v3, v4, clr, clr, clr, t4, t5, t6);
+    this.add_tri(v1, v2, v3, cs[0], cs[1], cs[2], t1, t2, t3);
+    this.add_tri(v1, v3, v4, cs[0], cs[2], cs[3], t4, t5, t6);
   }
   
   transform(v) {
@@ -1362,14 +1363,23 @@ class UICanvas {
     this.box2([pos[0]+p[0], p[1]], [size[0], pos[1]], clr)
   }
   
-  icon(int icon, Array<float> pos, float alpha=1.0, Boolean small=false) {
+  icon(int icon, Array<float> pos, float alpha=1.0, Boolean small=false, 
+       Array<float> clr=undefined) 
+  {
+    static white = [[1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1]];
+    var cs = _box_process_clr(white, clr);
+    
+    for (var i=0; i<4; i++) {
+      cs[i][3] = alpha;
+    }
+    
     this.ensure_trilist();
 
     if (this.trilist.small_icons != small) {
       this.new_trilist(small);
     }
     
-    this.trilist.icon_quad(icon, pos, alpha);
+    this.trilist.icon_quad(icon, pos, cs);
   }
   
   box2(Array<float> pos, Array<float> size, Array<float> clr=undefined, float rfac=undefined, Boolean outline_only=false) {
