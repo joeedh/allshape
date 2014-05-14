@@ -208,7 +208,7 @@ class MeshEditor extends View3DEditor {
     row2 = col.row(undefined, undefined);
     row2.pad[1] = spacing;
     row2.toolop("mesh.translate()");
-    row2.toolop("mesh.bridge_edges(edges=mesh_selected(e))");
+    row2.toolop("mesh.bridge_edges(edges=mesh_selected(e), faces=mesh_selected(f))");
     
     var col = tab.panel_col("Tools B", undefined, PackFlags.USE_LARGE_ICON); //undefined, PackFlags.USE_LARGE_ICON)
     col.default_packflag |= PackFlags.NO_AUTO_SPACING;
@@ -261,7 +261,7 @@ class MeshEditor extends View3DEditor {
     var ctx = new Context();
     var col = new ColumnFrame(ctx);
     
-    col.packflag |= PackFlags.ALIGN_LEFT|PackFlags.NO_AUTO_SPACING|PackFlags.NO_LIMIT;
+    col.packflag |= PackFlags.ALIGN_LEFT|PackFlags.NO_AUTO_SPACING|PackFlags.IGNORE_LIMIT;
     col.default_packflag = PackFlags.ALIGN_LEFT|PackFlags.NO_AUTO_SPACING;
     
     //IsMobile ? 12 : 12
@@ -288,7 +288,7 @@ class MeshEditor extends View3DEditor {
     var k = this.keymap;
     
     k.add_tool(new KeyHandler("B", [], "Bridge"), 
-                "mesh.bridge_edges(edges=mesh_selected(e))");
+                "mesh.bridge_edges(edges=mesh_selected(e), faces=mesh_selected(f))");
     k.add_tool(new KeyHandler("C", ["CTRL"], "Loop Cut"),
                "mesh.loopcut()");
     k.add_tool(new KeyHandler("G", [], "Translate"), 

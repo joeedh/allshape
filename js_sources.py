@@ -83,6 +83,7 @@ sources = [
 	"src/ui/UIElement.js",
   "src/ui/UIFileData.js",
   "src/ui/UICanvas.js",
+  "src/ui/UICanvasNew.js",
   "src/ui/UIFrame.js",
   "src/ui/UIPack.js",
   "src/ui/icon.js",

@@ -232,13 +232,10 @@ class UITabPanel extends UIFrame {
   }
   
   load_filedata(ObjectMap map) {
-    console.log("yay, map", map);
-    
     if (map.active) {
       var ts = this.tabstrip.tabs;
       for (var i=0; i<ts.length; i++) {
         if (ts[i].text == map.active) {
-          console.log("loading", map.active);
           this.tabstrip.active = ts[i];
           this.tab_callback(ts[i].text, ts[i].id);
           this.do_recalc();

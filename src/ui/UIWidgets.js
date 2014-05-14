@@ -449,17 +449,20 @@ class UICheckBox extends UIHoverHint {
     this.set = false;
     this.mdown = false;
     this.text = text
-
+    this.update_callback = undefined;
+    
     if (pos != undefined) {
       this.pos[0] = pos[0];
       this.pos[1] = pos[1];
     }
+    
     if (size != undefined) {
       this.size[0] = size[0];
       this.size[1] = size[1];
     }
 
     this.callback = undefined;
+    this.update_callback = undefined;
     
     this.prop = undefined : ToolProperty;
     
@@ -470,8 +473,10 @@ class UICheckBox extends UIHoverHint {
 
   on_tick() {
     UIHoverHint.prototype.on_tick.call(this);
-
-    if (!this.mdown && (this.state & UIFlags.USE_PATH)) {
+    
+    if (!this.mdown && this.update_callback != undefined) {
+      this.update_callback(this);
+    } else if (!this.mdown && (this.state & UIFlags.USE_PATH)) {
       var val = this.get_prop_data();
       
       if (val != this.set) {
@@ -1576,6 +1581,7 @@ class UIIconCheck extends UIHoverHint {
       this.size[1] = size[1];
     }
     this.callback = undefined;
+    this.update_callback = undefined;
     this.icon = icon;
     
     this.prop = undefined : ToolProperty;
@@ -1588,7 +1594,9 @@ class UIIconCheck extends UIHoverHint {
   on_tick() {
     UIHoverHint.prototype.on_tick.call(this);
 
-    if (!this.mdown && (this.state & UIFlags.USE_PATH)) {
+    if (!this.mdown && this.update_callback != undefined) {
+      this.update_callback(this);
+    } else if (!this.mdown && (this.state & UIFlags.USE_PATH)) {
       var val = this.get_prop_data();
       
       if (val != this.set) {

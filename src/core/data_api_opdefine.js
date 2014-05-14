@@ -229,7 +229,7 @@ function api_define_ops() {
       if (!("edges" in args))
         throw TinyParserError;
       
-      return new MeshToolOp(new BridgeOp(args["edges"]));
+      return new MeshToolOp(new BridgeOp(args["edges"], args["faces"]));
     },
     "mesh.normals_outside" : function(ctx, args) {
       if (!("faces" in args))

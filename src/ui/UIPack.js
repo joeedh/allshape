@@ -203,6 +203,29 @@ class UIPackFrame extends UIFrame {
       
       subframe.packflag |= packflag;
       
+      function update_callback(chk) {
+        var val = undefined;
+        
+        for (var k in checkmap) {
+          var check = checkmap[k];
+          if (check == chk) {
+            val = k;
+            break;
+          }
+        }
+        
+        if (val == undefined) {
+          console.log("error with ui enum strip; path:", path);          
+          return; //XXX
+        }
+        
+        val = ctx.api.get_prop(ctx, path) == prop.keys[val];
+        if (val != chk.set) {
+          chk.set = val;
+          chk.do_recalc();
+        }
+      }
+      
       if (packflag & PackFlags.USE_ICON) {
         for (var k in prop.values) {
           var label = prop.ui_value_names != undefined ? prop.ui_value_names[k] : k;
@@ -213,6 +236,7 @@ class UIPackFrame extends UIFrame {
           c.callback = update_enum
           c.icon = prop.iconmap[k];
           c.draw_check = false;
+          c.update_callback = update_callback;
           
           c.description = label + "\n" + prop.description;
           
@@ -230,6 +254,7 @@ class UIPackFrame extends UIFrame {
           var c = new UICheckBox(ctx, label);
           c.callback = update_enum
           c.draw_check = false;
+          c.update_callback = update_callback;
           
           if (prop.get_value() == prop.values[k])
             c.set = true;

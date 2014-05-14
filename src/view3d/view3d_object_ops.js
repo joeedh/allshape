@@ -153,20 +153,21 @@ class ObjectEditor extends View3DEditor {
     var ctx = new Context();
     var col = new ColumnFrame(ctx);
     
-    col.packflag |= PackFlags.ALIGN_LEFT;
-    col.default_packflag = PackFlags.ALIGN_LEFT;
+    col.packflag |= PackFlags.ALIGN_LEFT|PackFlags.NO_AUTO_SPACING|PackFlags.IGNORE_LIMIT;
+    col.default_packflag = PackFlags.ALIGN_LEFT|PackFlags.NO_AUTO_SPACING;
     
     col.draw_background = true;
-    col.rcorner = 100.0
-    col.pos = [0, 0]
+    col.rcorner = 100.0;
+    col.pos = [0, 2];
     col.size = [view3d.size[0], Area.get_barhgt()];
     
-    col.label("        Selection Mode:");
+    col.add(gen_editor_switcher(this.ctx, view3d));
+    
+    col.label("Selection Mode:");
     col.prop("view3d.selectmode", PackFlags.ENUM_STRIP|PackFlags.USE_SMALL_ICON);
     col.prop("view3d.use_backbuf_sel");
     col.label("  |  ");
     col.prop("view3d.zoomfac");
-    
     col.label("  |  ");
     col.prop("object.use_subsurf");
     col.prop("object.use_csg");

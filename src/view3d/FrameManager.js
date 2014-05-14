@@ -84,7 +84,6 @@ class Area extends UIFrame {
     var ids = {};
     
     for (var i=0; i<paths.length; i++) {
-      console.log("id", paths[i][0], "data", paths[i][1]);
       try {
         ids[paths[i][0]] = JSON.parse(paths[i][1]);
       } catch (_err) {
@@ -99,7 +98,7 @@ class Area extends UIFrame {
       var id = e.get_uhash();
       if (id in ids) {
         try {
-          console.log("found element", id, ids[id]);
+          //console.log("found element", id, ids[id]);
           e.load_filedata(ids[id])
         } catch (_err) {
           print_stack(_err);
@@ -1589,7 +1588,7 @@ class Screen extends UIFrame {
     gl.viewport(0, 0, this.size[0], this.size[1]);
     prior(Screen, this).on_draw.call(this, gl);
     
-    if (time_ms() - this.last_tick > 100) { //(IsMobile ? 500 : 150)) {
+    if (time_ms() - this.last_tick > 60) { //(IsMobile ? 500 : 150)) {
       this.on_tick();
       this.last_tick = time_ms();
     }

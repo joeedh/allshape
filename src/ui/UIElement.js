@@ -373,7 +373,7 @@ class UIElement extends EventHandler {
       return undefined; //default behavior, won't save anything
   }
   
-  load_filedata() {
+  load_filedata(ObjectMap map) {
   }
   
   /*get non-numeric unique hash

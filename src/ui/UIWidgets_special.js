@@ -124,8 +124,6 @@ class UIPanel extends RowFrame {
   }
   
   load_filedata(ObjectMap obj) {
-    console.log(obj, typeof(obj), obj.constructor.name, obj.collapsed, "<--------------");
-    
     this.collapsed = obj.collapsed;
     this.user_opened = obj.user_opened;
   }

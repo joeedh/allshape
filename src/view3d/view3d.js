@@ -1194,10 +1194,15 @@ class View3DHandler extends Area {
       if (entry.i == 0) {
         console.log("logging out");
         g_app_state.session.logout_simple();
+      } else if (entry.i == 1) {
+        g_app_state.set_startup_file();
       }
     }
+    
     var menu = new UIMenu("", callback);
+    
     menu.add_item("Log out", "");
+    menu.add_item("Save Default File", "CTRL-ALT-U");
     
     return menu;
   }

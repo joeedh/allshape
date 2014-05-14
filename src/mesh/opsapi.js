@@ -22,7 +22,7 @@ class MeshOp extends ToolOpAbstract {
     ToolOpAbstract.call(this, apiname, uiname, description, icon);
 
     this.flag = 0;
-    this.undo_expand_lvl = 0; //for partial undo, how much to expand the partial mesh area
+    this.undo_expand_lvl = 2; //for partial undo, how much to expand the partial mesh area
   }
   
   exec(MeshOp get_rid_of_this_variable, Mesh mesh) { }

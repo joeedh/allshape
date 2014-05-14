@@ -300,9 +300,11 @@ function vloop_normal(loop) {
 
 #define SWAP(a, b, t) var t = a; a = b; b = t; 
 
-function bridge_two_loops(mesh, vloop1, vloop2, cuts) {
+function bridge_two_loops(mesh, vloop1, vloop2, killfset, cuts) {
   var len1 = vloop1.length;
   var len2 = vloop2.length;
+  var eset = new set();
+  var fset = new set();
   
   if (len1 < len2) {
     SWAP(vloop1, vloop2, t);
@@ -342,6 +344,32 @@ function bridge_two_loops(mesh, vloop1, vloop2, cuts) {
   var mindis = undefined;
   var start = 0;
   
+  //deal with interior faces first
+  var loops = [vloop1, vloop2];
+  var kill_faces = false;
+  for (var i = 0; i<loops.length; i++) {
+    var loop = loops[i];
+    
+    //figure out if we should delete interior faces or not.
+    for (var j=0; j<loop.length; j++) {
+      var j2 = (j+1)%loop.length;
+      var e = mesh.find_edge(loop[j], loop[j2]);
+      
+      //kill interior faces if edge is surrounded by 2 or more faces
+      if (e.loop != null && e.loop.radial_next != e.loop) {
+        kill_faces = true;
+        break;
+      }
+    }
+  }
+  
+  if (kill_faces) {
+    for (var f in killfset) {
+      mesh.kill_face(f);
+    }
+  }
+  
+  //find start offset
   for (var i=0; i<len1; i++) {
     var dis = 0;
     
@@ -406,11 +434,13 @@ function bridge_two_loops(mesh, vloop1, vloop2, cuts) {
         }
         
         var f = mesh.make_face(trilist, false);
+        fset.add(f);
         continue;
       }
       
       quadlst[0] = v1; quadlst[1] = v2; quadlst[2] = v3; quadlst[3] = v4;
       var f = mesh.make_face(quadlst, false, false);
+      fset.add(f);
     }
     
     SWAP(vloop1_2, vloop2_2, t);
@@ -418,13 +448,15 @@ function bridge_two_loops(mesh, vloop1, vloop2, cuts) {
 }
 
 class BridgeOp extends MeshOp {
-  constructor(Iterator<Edge> edgeiter=undefined) {
+  constructor(Iterator<Edge> edgeiter=undefined, Iterator<Face> faceiter=undefined) {
     MeshOp.call(this, "bridge_edges", "Bridge Edges", "Bridge edge loops with faces", Icons.BRIDGE);
     
     this.flag |= ToolFlags.USE_PARTIAL_UNDO;
+    this.undo_expand_lvl = 3;
     
     this.inputs = {
       edges : new CollectionProperty(undefined, undefined, "edges", "Edges", ""),
+      faces : new CollectionProperty(undefined, undefined, "faces", "Faces", ""),
       cuts : new IntProperty(0, "cuts", "Cuts", "Number of subdivisions")
     }
     
@@ -436,6 +468,10 @@ class BridgeOp extends MeshOp {
     
     if (edgeiter != undefined) {
       this.inputs.edges.set_data(edgeiter);
+    }
+    
+    if (faceiter != undefined) {
+      this.inputs.faces.set_data(faceiter);
     }
   }
   
@@ -482,8 +518,9 @@ class BridgeOp extends MeshOp {
         loops.push(loop);
     }
     
+    var fset = new set(this.inputs.faces);
     if (loops.length == 2) {
-      bridge_two_loops(mesh, loops[0], loops[1], cuts);
+      bridge_two_loops(mesh, loops[0], loops[1], fset, cuts);
     }
     
     mesh.api.recalc_normals();

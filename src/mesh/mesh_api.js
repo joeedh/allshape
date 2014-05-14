@@ -1008,7 +1008,7 @@ function MeshAPI(Mesh mesh) {
       if (f.index == 1) continue;
       
       f.index = 1;
-      
+
       var shell = new GArray<Face>();
       shells.push(shell);
       var stack = new GArray<Face>([f]);
@@ -1045,7 +1045,7 @@ function MeshAPI(Mesh mesh) {
       
       if (vec.dot(startf.no) < 0.0) {
         this.reverse_winding(startf);
-      }
+      };
       
       var stack = new GArray([startf]);
       var f;
@@ -1056,14 +1056,14 @@ function MeshAPI(Mesh mesh) {
         if (f.index == 2) continue;
         f.index = 2;
         
-        var flip_list = new GArray<Face>();
+        var flip_list = new set();
         
         for (var list in f.looplists) {
           for (var l in list) {
             var l2 = l.radial_next;
             
             while (l2 != l) {
-              if (l2.f != 2) {
+              if (l2.f.index != 2) {
                 stack.push(l2.f);
               }
               
@@ -1073,7 +1073,7 @@ function MeshAPI(Mesh mesh) {
               }
               
               if (l2.v == l.v) 
-                flip_list.push(l2.f);
+                flip_list.add(l2.f);
                 
               l2 = l2.radial_next;
             }
@@ -1081,11 +1081,6 @@ function MeshAPI(Mesh mesh) {
         }
         
         for (var f2 in flip_list) {
-          //an edge can theoretically have the same face multiple times in its radial list,
-          //so make sure we don't flip it multiple times
-          if (f2.index == 2) continue;
-          f2.index = 2;
-          
           this.reverse_winding(f2);
         }
       }
