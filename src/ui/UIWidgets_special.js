@@ -218,7 +218,8 @@ function gen_editor_switcher(Context ctx, Area parent) {
   
   var i = 0;
   for (var e in editors) {
-    menu.add_item(e.uiname, "", e);
+    if (!e.debug_only || !RELEASE)
+      menu.add_item(e.uiname, "", e);
     i++;
   }
   

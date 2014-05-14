@@ -24,7 +24,7 @@ class UITabBar extends UIElement {
     
     this.triwid = 4;
     this.mode = mode;
-    this.thickness = this.min_thickness = IsMobile ? 40 : 25;
+    this.thickness = this.min_thickness = IsMobile ? 28 : 25;
   }
   
   add_tab(String text, String tooltip="", Object id=undefined) {

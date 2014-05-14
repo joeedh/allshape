@@ -485,11 +485,14 @@ class UIFrame extends UIElement {
   }
   
   update_depth(UIElement e) {
+    return;
+    
     var p = this;
     this.depth = 0;
     
     while (p.parent != undefined) {
       p = p.parent;
+      this.depth++;
     }
     
     function rec(f, depth=0) {
@@ -501,7 +504,7 @@ class UIFrame extends UIElement {
       }
     }
     
-    rec(p);
+    //rec(p);
   }
   
   add(UIElement e, int packflag) { //packflag is optional

@@ -1394,7 +1394,7 @@ class ScrollButton extends UIElement {
       
     if (this.icon != undefined) {
       var clr = this.clicked ? undefined : [0.5, 0.5, 0.5, 1.0];
-      canvas.icon(this.icon, IsMobile ? [3, 3] : [0, 0], undefined, true, clr);
+      canvas.icon(this.icon, IsMobile ? [3, 7] : [0, 0], undefined, true, clr);
     }    
   }
 

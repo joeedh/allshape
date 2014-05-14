@@ -709,7 +709,9 @@ class TouchEventManager {
       //only compare same ids
       dis = new Vector2([event.x, event.y]).vectorDistance(new Vector2([last.x, last.y]));
       
-      console.log(dis);
+      if (DEBUG.touch)
+        console.log(dis);
+      
       if (same && dis < 50) {
         if (DEBUG.touch)
           console.log("destroying duplicate event", last.type, event.x, event.y, event.touches);

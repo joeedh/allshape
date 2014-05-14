@@ -1448,3 +1448,4 @@ View3DHandler.STRUCT = STRUCT.inherit(View3DHandler, Area) + """
 """
 
 View3DHandler.uiname = "3D Viewport";
+View3DHandler.debug_only = false;

@@ -5,6 +5,7 @@ class OpStackFrame extends RowFrame {
     RowFrame.call(this, ctx);
     
     this.pan_bounds = [[0, 0], [0, 0]];
+    this.bad = false;
     
     this.pos = [0, 0];
     this.size = size;
@@ -70,12 +71,13 @@ class OpStackFrame extends RowFrame {
     
     if (!this.panelmap.has(tool)) {
       var panel = this.gen_panel(tool, "operator_stack["+tool.stack_index+"]");
-      this.add(panel);
-      
-      panel.collapsed = tool.stack_index != undocur-1;
-      this.do_full_recalc();
-      
+
       this.panelmap.set(tool, panel);
+      this.add(panel);
+
+      panel.collapsed = tool.stack_index != undocur-1;
+      //this.do_full_recalc();
+      
       return panel;
     }
     
@@ -112,6 +114,11 @@ class OpStackFrame extends RowFrame {
   }
   
   build() {
+    if (g_app_state.toolstack.undostack.length > 50) {
+      this.bad = true;
+      return;
+    }
+    
     var oplist = g_app_state.toolstack.undostack;
     var pmap = this.panelmap;
     var keepset = new set();
@@ -176,6 +183,10 @@ class OpStackFrame extends RowFrame {
   }
   
   build_draw(UICanvas canvas, Boolean isVertical) {
+    if (this.bad)
+      canvas.text([10, this.size[1]/2], 
+                   "Too many operators to list", undefined, 16);
+    
     prior(OpStackFrame, this).build_draw.call(this, canvas, isVertical);
   }
 }
@@ -358,3 +369,4 @@ OpStackEditor.STRUCT = STRUCT.inherit(OpStackEditor, Area) + """
 """
 
 OpStackEditor.uiname = "Operator Stack";
+OpStackEditor.debug_only = true;

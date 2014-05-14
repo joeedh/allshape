@@ -250,3 +250,4 @@ SettingsEditor.STRUCT = STRUCT.inherit(SettingsEditor, Area) + """
   }
 """
 SettingsEditor.uiname = "Settings";
+SettingsEditor.debug_only = false;

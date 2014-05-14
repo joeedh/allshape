@@ -58,7 +58,8 @@ var DEBUG = {
   disable_on_tick : false,
   octree : false,
   netio : false,
-  compression : false
+  compression : false,
+  force_mobile : true
 };
 
 //private macro helper global for utildefine.js
