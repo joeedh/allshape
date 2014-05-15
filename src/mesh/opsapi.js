@@ -1246,12 +1246,26 @@ class AddCircleOp extends MeshOp {
   constructor() {
     MeshOp.call(this);
     
+    this.flag |= ToolFlags.USE_DEFAULT_INPUT;
+    
     this.uiname = "Add Circle"
     this.name = "add_circle";
+    
     this.inputs = {
       count: new IntProperty(8, "count", "count", "", [3, 500]),
       radius : new FloatProperty(1.0, "radius", "radius", "", [0.001, 200.0])
     };
+  }
+  
+  //function get_default(keyword, default_value, input_property);
+  default_inputs(Context ctx, ToolGetDefaultFunc get_default) {
+    var unit = Unit.get_unit(g_app_state.session.settings.unit)[0];
+
+    var radius = unit.attrs.geounit;
+    radius = get_default("radius", radius, this.inputs.radius);
+    
+    this.inputs.radius.set_data(radius*0.5);
+    this.inputs.radius.unit = g_app_state.session.settings.unit;
   }
 
   exec(op, mesh) {
