@@ -637,7 +637,7 @@ class TransformOp extends ToolOp {
     this.axis_drawlines.push(dy);
     this.axis_drawlines.push(dz);
 
-    var cent = new Vector3(this.mv2);
+    var cent = new Vector3(this.transdata.scenter);
     cent[2] = 0.0;
     this.axis_scent = cent;
     
@@ -661,6 +661,8 @@ class TransformOp extends ToolOp {
     }
     
     var axis = ctx.view3d.new_drawline()
+    
+    axis.v1.load(this.axis_scent);
     
     axis.clr = [1.0, 1.0, 0.289, 0.5];
     axis.oldclr = axis.clr;
