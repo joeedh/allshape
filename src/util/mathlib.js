@@ -1,5 +1,7 @@
 "use strict";
 
+#include "src/core/utildefine.js"
+
 var feps = 2.22e-16;
 
 var COLINEAR = 1;
@@ -421,27 +423,40 @@ function convex_quad(v1, v2, v3, v4) {
     return line_line_cross([v1, v3], [v2, v4]);
 }
 
-var _nt_e1 = new Vector3()
-var _nt_e2 = new Vector3()
 function normal_tri(v1, v2, v3) {
-  _nt_e1.load(v2).sub(v1);
-  _nt_e2.load(v3).sub(v1);
-    
-  _nt_e1.cross(_nt_e2);
-  _nt_e1.fast_normalize();
+  static e1 = new Vector3(), e2 = new Vector3(), e3 = new Vector3();
   
-  return _nt_e1;
+   /*
+  e1.load(v2).sub(v1);
+  e2.load(v3).sub(v1);
+  e1.cross(e2);
+  e1.normalize();
+  
+  return e1;
+  // */
+  
+  /*the use of these macros is actually faster.
+    I've tested it.  argh!*/
+  // /*
+  VSUB(e1, v2, v1);
+  VSUB(e2, v3, v1);
+  VCROSS(e3, e1, e2);
+  VNORMALIZE(e3);
+  
+  return e3;
+  // */
 }
 
-var _nq_n3 = new Vector3()
 function normal_quad(v1, v2, v3, v4) {
   var n = normal_tri(v1, v2, v3)
+  static n2 = new Vector3();
   
-  _nq_n3.load(n)
-  _nq_n3.add(normal_tri(v1, v3, v4))
-  _nq_n3.normalize()
+  VLOAD(n2, n);
+  n = normal_tri(v1, v3, v4);
+  VADD(n2, n2, n);
+  VNORMALIZE(n2);
   
-  return _nq_n3;
+  return n2;
 }
 
 var _li_vi = new Vector3()

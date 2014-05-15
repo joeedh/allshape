@@ -13,7 +13,6 @@ class UICollapseIcon extends UIButtonIcon {
      */
     var this2 = this;
     this._wrapped_callback = function() {
-      console.log("triangle");
       this2.collapsed ^= true;
     
       if (this2._callback != undefined)
@@ -64,8 +63,6 @@ class UIPanel extends RowFrame {
     /*collapser triangle*/
     var this2 = this;
     function callback1(iconbut, do_collapse) {
-      console.log("panel collapse callback");
-      
       this2.collapsed ^= true;
       this2.user_opened = !this2.collapsed;
       this2.user_closed = this2.collapsed;

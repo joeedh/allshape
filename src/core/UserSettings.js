@@ -90,6 +90,8 @@ class AppSettings {
           
           console.log("loading theme");
           
+          //add any new colors
+          g_theme.patch(settings.theme);
           g_theme = settings.theme;
           delete settings.theme;
           g_theme.gen_globals();

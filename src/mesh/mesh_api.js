@@ -2,19 +2,46 @@
 
 #include "src/core/utildefine.js"
 
-//#$(Face).class
-function FaceVertIter(Face data) {
-  this.ret = {done : false, value : undefined};
-  this.data = data
-  this.curlist = 0;
-  this.curloop = data.looplists[0].loop;
-  this.startloop = data.looplists[0].loop;
+/*unlike most resetable iterators,
+  mesh iterators don't auto-reset.
+  this is necassary for caching to
+  work properly.*/
+class MeshIterAbstract {
+  constructor() {
+    this.done = false; //done flag
+  }
   
-  //#$().Vertex
-  this.next = function() : Vertex {
+  __iterator__() {
+    return this;
+  }
+  
+  reset() {
+    
+  }
+}
+
+class FaceVertIter extends MeshIterAbstract {
+  constructor(Face data) {
+    MeshIterAbstract.call(this);
+    
+    this.ret = {done : false, value : undefined};
+    this.data = data
+    this.curlist = 0;
+    this.curloop = data.looplists[0].loop;
+    this.startloop = data.looplists[0].loop;
+  }
+  
+  reset() {
+    this.ret.done = this.done = false;
+    this.curlist = 0;
+    this.curloop = this.data.looplists[0].loop;
+    this.startloop = this.data.looplists[0].loop;
+  }
+  
+  next() : Vertex {
     var reti = this.ret;
     if (this.curloop == null) {
-      reti.done = true;
+      reti.done = this.done = true;
       return reti;
     }
 
@@ -35,20 +62,29 @@ function FaceVertIter(Face data) {
   }
 }
 
-//#$(Face).class
-function FaceLoopIter(Face data) {
-  this.ret = {done : false, value : undefined};
-  this.data = data
-  this.curlist = 0;
-  this.curloop = data.looplists[0].loop;
-  this.startloop = data.looplists[0].loop;
+class FaceLoopIter extends MeshIterAbstract{
+  constructor(Face data) {
+    MeshIterAbstract.call(this);
+    
+    this.ret = {done : false, value : undefined};
+    this.data = data
+    this.curlist = 0;
+    this.curloop = data.looplists[0].loop;
+    this.startloop = data.looplists[0].loop;
+  }
   
-  //#$().Vertex
-  this.next = function() : Loop {
+  reset() {
+    this.ret.done = this.done = false;
+    this.curlist = 0;
+    this.curloop = this.data.looplists[0].loop;
+    this.startloop = this.data.looplists[0].loop;
+  }
+  
+  next() : Loop {
     var reti = this.ret;
     
     if (this.curloop == null) {
-      reti.done = true;
+      reti.done = this.done = true;
 
       return reti;
     }
@@ -70,20 +106,28 @@ function FaceLoopIter(Face data) {
   }
 }
 
-//#$(Face).class
-function FaceEdgeIter(Face data) {
-  this.ret = {done : false, value : undefined};
-  this.data = data
-  this.curlist = 0;
-  this.curloop = data.looplists[0].loop;
-  this.startloop = data.looplists[0].loop;
+class FaceEdgeIter extends MeshIterAbstract {
+  constructor(Face data) {
+    MeshIterAbstract.call(this);
+    this.ret = {done : false, value : undefined};
+    this.data = data
+    this.curlist = 0;
+    this.curloop = data.looplists[0].loop;
+    this.startloop = data.looplists[0].loop;
+  }
   
-  //#$().Vertex
-  this.next = function() : Edge {
+  reset() {
+    this.ret.done = this.done = false;
+    this.curlist = 0;
+    this.curloop = this.data.looplists[0].loop;
+    this.startloop = this.data.looplists[0].loop;
+  }
+  
+  next() : Edge {
     var reti = this.ret;
     
     if (this.curloop == null) {
-      reti.done = true;
+      reti.done = this.done = true;
       return reti;
     }
     
@@ -104,45 +148,70 @@ function FaceEdgeIter(Face data) {
   }
 }
 
-//#$(Vert).class
-function VertEdgeIter(Vert data) {
-  this.ret = {done : false, value : undefined};
-  this.data = data
-  this.first = data;
-  this.cur = 0;
-
-  //#$().Edge
-  this.next = function() : Edge {
+class VertEdgeIter extends MeshIterAbstract {
+  constructor(Vert data) {
+    MeshIterAbstract.call(this);
+    
+    this.ret = {done : false, value : undefined};
+    this.data = data
+    this.first = data;
+    this.cur = 0;
+  }
+  
+  reset() {
+    this.first = this.data;
+    this.cur = 0;
+    this.done = false;
+  }
+  
+  next() : Edge {
     var reti = this.ret;
     if (this.cur < this.data.edges.length()) {
       reti.value = this.data.edges[this.cur++];
     } else {
-      reti.done = true;
+      reti.done = this.done = true;
     }
     
     return reti;
   }
 }
 
-function VertLoopIter(Vert data) {
-  this.ret = {done : false, value : undefined};
-  this.data = data;
-  this.first = data;
-  this.cur = 0;
+class VertLoopIter extends MeshIterAbstract {
+  constructor(Vert data) {
+    MeshIterAbstract.call(this);
+      
+    this.ret = {done : false, value : undefined};
+    this.data = data;
+    this.first = data;
+    this.cur = 0;
+    
+    this.startloop = data.loop;
+    this.curedge = 0;
+    if (data.edges.length != 0) 
+      this.curloop = data.edges[0].loop;
+    else
+      this.curloop = null;
+  }
   
-  this.startloop = data.loop;
-  this.curedge = 0;
-  if (data.edges.length != 0) 
-    this.curloop = data.edges[0].loop;
-  else
-    this.curloop = null;
+  reset() {
+    this.first = this.data;
+    this.cur = 0;
+    
+    this.done = false;
+    this.startloop = this.data.loop;
+    this.curedge = 0;
+    if (this.data.edges.length != 0) 
+      this.curloop = this.data.edges[0].loop;
+    else
+      this.curloop = null;
+  }
   
-  this.next = function() : Loop {
+  next() : Loop {
     var ret = null;
     var reti = this.ret;
     
     if (this.curloop == null) {
-      reti.done = true;
+      reti.done = this.done = true;
       return reti;
     }
     
@@ -480,27 +549,34 @@ function MeshAPI(Mesh mesh) {
       }
     }
   }
-
+  
   this.recalc_normals = function() {
     var k = 0;
     var m2 = this.mesh;
     
-    var cent = new Vector3();
-    
     for (var v in m2.verts) {
-      v.no[0] = v.no[1] = v.no[2] = 0.0;
+      var no = v.no;
+      no[0] = no[1] = no[2] = 0.0;
     }
     
     for (var f in m2.faces) {
       f.recalc_normal();
       
-      for (var v in f.verts) {
-        v.no.add(f.no);
-      }
+      var fno = f.no;
+      
+      var list = f.looplists[0];
+      var l = list.loop;
+      do {
+        var n = l.v.no;
+        VADD(n, n, fno);
+        
+        l = l.next;
+      } while (l != list.loop);
     }
     
     for (var v in m2.verts) {
-      v.no.normalize();
+      var n = v.no;
+      VNORMALIZE(n);
     }
   }
   

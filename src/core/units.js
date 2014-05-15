@@ -26,10 +26,49 @@ ml       : mile
 
 var number_regexpr = /(0x[0-9a-fA-F]+)|((\d|(\d\.\d+))+(e|e\-|e\+)\d+)|(\d*\.\d+)|(\d+)/;
 
+/*
+  we store grid subdivision levels for units.
+  
+  since some units have multiple subdivision steps
+  (i.e. feet are divided into 12 inches, which are
+   further divided into eights), we store two levels.
+*/
+
+class UnitAttr {
+  constructor(attrs) {
+    function getval(defval, key, required=false) {
+      if (key in attrs) return attrs[key];
+      
+      if (required)
+        throw new Error("Missing required unit parameter");
+      return defval;
+    }
+    
+    this.grid_steps = getval(undefined, "grid_steps", true);
+    this.grid_substeps = getval(undefined, "grid_substeps", true);
+    
+    //unit size in unit space, in centimeters
+    //basically, default size of new objects
+    this.geounit = getval(1.0, "geounit", false);
+  }
+}
+
 class Unit {
-  constructor(suffices, cfactor) {
+  constructor(Array<String> suffices, float cfactor, 
+              int grid_subd_1, int grid_subd_2=grid_subd_1, ObjectMap attrs={}) 
+  {
     this.cfactor = cfactor;
     this.suffix_list = suffices;
+    
+    attrs.grid_steps = grid_subd_1;
+    attrs.grid_substeps = grid_subd_2;
+    
+    if (!("geounit" in attrs)) {
+      attrs.geounit = cfactor;
+    }
+    
+    //validate
+    this.attrs = new UnitAttr(attrs);
   }
   
   //expects normalized (centimeters) values
@@ -168,13 +207,13 @@ class Unit {
 }
   
 Unit.units = [
-  new Unit(["cm"], 1.0),
-  new Unit(["in", "''", "``", '"'], 2.54),
-  new Unit(["ft", "'", "`"], 30.48),
-  new Unit(["m"], 100),
-  new Unit(["mm"], 0.1),
-  new Unit(["km"], 100000),
-  new Unit(["mile"], 160934.4)
+  new Unit(["cm"], 1.0, 10),
+  new Unit(["in", "''", "``", '"'], 2.54, 8),
+  new Unit(["ft", "'", "`"], 30.48, 12, 8),
+  new Unit(["m"], 100, 10),
+  new Unit(["mm"], 0.1, 10),
+  new Unit(["km"], 100000, 10),
+  new Unit(["mile"], 160934.4, 10)
 ];
 
 Unit.metric_units = ["cm", "m", "mm", "km"];

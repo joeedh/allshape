@@ -151,7 +151,7 @@ function gen_default_file(size) {
   
   //a 3d viewport
   var view3d = new View3DHandler(gl, undefined, gl.program, gl.program2,
-                     drawmats, 0, 0, size[0], size[1], 0.1, 1000.0);
+                     drawmats, 0, 0, size[0], size[1], 0.75, 1000.0);
   
   g.view3d = g.active_view3d = view3d;
   g.view3d.gen_persmat()

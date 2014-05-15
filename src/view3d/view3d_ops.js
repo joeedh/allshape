@@ -524,6 +524,7 @@ class MeshToolOp extends ToolOp {
     
     this.is_modal = false;
     
+    this.flag |= meshop.flag;
     this.meshop = meshop;
     
     if (this.meshop) {
@@ -532,6 +533,10 @@ class MeshToolOp extends ToolOp {
     }
     
     this._partial = undefined : Mesh;
+  }
+  
+  default_inputs(Context ctx, ToolGetDefaultFunc get_default) {  
+    this.meshop.default_inputs(ctx, get_default);
   }
 
   undo_pre(ctx) {

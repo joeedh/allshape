@@ -163,6 +163,7 @@ class Area extends UIFrame {
     }
     
     this.canvas.destroy(g_app_state.gl);
+    this.grid.destroy(g_app_state.gl);
   }
   
   static fromSTRUCT(reader) {

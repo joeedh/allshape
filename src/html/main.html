@@ -657,48 +657,49 @@ body, html {
     uniform vec4 uColor;
 
     attribute vec4 vPosition;
-    attribute vec3 vNormal;
+    attribute vec2 vUV;
     attribute vec4 vColor;
     
     varying vec4 g_Color;
-    varying vec3 v_Dir;
+    varying vec2 v_UV;
     void main()
     {
        gl_Position = vPosition;
        g_Color = vColor;
-       v_Dir = vNormal;
+       v_UV = vUV;
     }
 </script>
+
 <script id="2d_line_fshader" type="x-shader/x-fragment">
     precision mediump float;
-    
-    varying vec4 g_Color;
-    varying vec3 v_Dir;
-    
-    float line_mod(float size, float space, float off)
-    {
-      float x = gl_FragCoord[0]/size;
-      float y = gl_FragCoord[1]/size;
-      vec3 vdir = normalize(v_Dir);
-      vec3 cn = normalize(vec3(x, y, 0.0));
+    uniform vec2 viewport; //size
 
-      float an = (dot(vdir, cn));
+    varying vec4 g_Color;
+    varying vec2 v_UV;
+    
+    float line_mod(float wid, float space) {
+      float u = v_UV[0]*viewport[0];
+      float v = v_UV[1]*viewport[1];
       
-      x *= an;
-      y *= an;
-      float d = mod(x+off, 5.0)/5.0;
-      if (d > space) d = 0.0;
-      else d = 1.0;
+      float m = sqrt(u*u + v*v);
+      float tot = wid+space;
+      float totfac = 1.0 / tot;
       
-      return d;
+      m = mod(m, tot) * totfac;
+      wid *= totfac; space *= totfac;
+      
+      if (m < wid) m = 1.0;
+      else m = 0.0;
+      
+      return m;
     }
     
-
     void main()
     {
       vec4 clr = g_Color;
       
-      clr[3] *= line_mod(2.0, 0.5, 0.0);
+      clr[3] *= line_mod(20.0, 20.0);
+      
       gl_FragColor = clr;
     }
 </script>

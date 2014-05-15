@@ -1,3 +1,7 @@
+"use strict";
+
+#include "src/core/utildefine.js"
+
 class Element {
   constructor(set_sid) {
     if (set_sid == undefined)
@@ -117,10 +121,7 @@ class Vertex extends Element {
     this.mapco = unpack_vec3(data, uctx);
   }
     
-  recalc_normal(Boolean redo_face_normals) {
-    if (redo_face_normals == undefined)
-      redo_face_normals = true;
-      
+  recalc_normal(Boolean redo_face_normals=true) {
     this.no.zero();
     
     for (var f in this.faces) {
@@ -341,6 +342,10 @@ class Face extends Element{
     
     Element.call(this);
     
+    this._liter = undefined;
+    this._eiter = undefined;
+    this._viter = undefined;
+    
     this.type = MeshTypes.FACE;
     this.looplists = looplists;
     this.totvert = 0;
@@ -363,19 +368,49 @@ class Face extends Element{
   }
   
   get loops() {
-    return new MeshIterate(MeshIter.FACE_ALL_LOOPS, this);
-  }
-  
-  get bounds() {
-    return new MeshIterate(MeshIter.FACE_LISTS, this);
-  }
-  
-  get verts() {
-    return new MeshIterate(MeshIter.FACE_VERTS, this);
+    if (this._liter == undefined) {
+      this._liter = new MeshIterate(MeshIter.FACE_ALL_LOOPS, this).__iterator__();
+      return this._liter;
+    }
+    
+    if (!this._liter.done) {
+      return new MeshIterate(MeshIter.FACE_ALL_LOOPS, this).__iterator__();
+    } else {
+      this._liter.reset();
+      return this._liter;
+    }
   }
   
   get edges() {
-    return new MeshIterate(MeshIter.FACE_EDGES, this);
+    if (this._eiter == undefined) {
+      this._eiter = new MeshIterate(MeshIter.FACE_EDGES, this).__iterator__();
+      return this._eiter;
+    }
+    
+    if (!this._eiter.done) {
+      return new MeshIterate(MeshIter.FACE_EDGES, this).__iterator__();
+    } else {
+      this._eiter.reset();
+      return this._eiter;
+    }
+  }
+
+  get bounds() {
+    return new MeshIterate(MeshIter.FACE_LISTS, this).__iterator__();
+  }
+  
+  get verts() {
+    if (this._viter == undefined) {
+      this._viter = new MeshIterate(MeshIter.FACE_VERTS, this).__iterator__();
+      return this._viter;
+    }
+    
+    if (!this._viter.done) {
+      return new MeshIterate(MeshIter.FACE_VERTS, this).__iterator__();
+    } else {
+      this._viter.reset();
+      return this._viter;
+    }
   }
 
   toSource() : String {
@@ -480,41 +515,58 @@ class Face extends Element{
 
   recalc_normal() {
     var Vector3 n = null;
+    static cent = new Vector3();
     
-    /*recalculate centroids*/
-    _static_cent[0] = _static_cent[1] = _static_cent[2] = 0.0;
+    /*recalculate centroid*/
+    VZERO(cent);
     
-    for (var v in this.verts) {
-      _static_cent.add(v.co);
-    }
+    var list = this.looplists[0];
     
-    _static_cent.divideScalar(this.totvert);
-    this.center.load(_static_cent)
-    
+    var n = cent;
     if (this.totvert == 3) {
-      var l = this.looplists[0].loop;
+      var l1 = list.loop;
+      var l2 = l1.next;
+      var l3 = l2.next;
       
-      var n = normal_tri(l.v.co, l.next.v.co, l.next.next.v.co);
+      VADD(cent, cent, l1.v.co);
+      VADD(cent, cent, l2.v.co);
+      VADD(cent, cent, l3.v.co);
+      
+      n = normal_tri(l1.v.co, l2.v.co, l3.v.co);
     } else if (this.totvert == 4) {
-      var l = this.looplists[0].loop;
+      var l1 = list.loop;
+      var l2 = l1.next;
+      var l3 = l2.next;
+      var l4 = l3.next;
       
-      var n = normal_quad(l.v.co, l.next.v.co, l.next.next.v.co, l.next.next.next.v.co);
+      VADD(cent, cent, l1.v.co);
+      VADD(cent, cent, l2.v.co);
+      VADD(cent, cent, l3.v.co);
+      VADD(cent, cent, l4.v.co);
+      
+      n = normal_quad(l1.v.co, l2.v.co, l3.v.co, l4.v.co);
     } else {
-      var l = this.looplists[0].loop;
+      var l = list.loop;
       var firstl = l;
       
-      var n = _frn_n1;
-      n.zero();
+      n = _frn_n1;
+      VZERO(n);
       do {
-        n.add(normal_tri(l.v.co, l.next.v.co, _static_cent));
+        VADD(cent, cent, l.v.co);
+        VADD(n, n, normal_tri(l.v.co, l.next.v.co, cent));
         l = l.next;
       } while (l != firstl);
 
-      n.normalize();
+      VNORMALIZE(n);
     }
     
-    n.normalize();
-    this.no.load(n);
+    var cent2 = this.center;
+    var div = 1.0 / this.totvert;
+    VMULF(cent, div);
+    VLOAD(cent2, cent);
+    
+    var n2 = this.no;
+    VLOAD(n2, n);
   }
 }
 

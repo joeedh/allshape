@@ -93,7 +93,7 @@ class IndexBufItem {
 class View3DHandler extends Area {
    constructor(WebGLRenderingContext gl, Mesh mesh, ShaderProgram vprogram, ShaderProgram fprogram, 
                        DrawMats drawmats, int x, int y, int width, 
-                       int height, int znear, int zfar) 
+                       int height, int znear=0.75, int zfar=1000) 
   {
     static int v3d_id = 0;
     
@@ -108,6 +108,7 @@ class View3DHandler extends Area {
       -0.4107475418280071, 0, 0, 0, 0, 1]);
     }
     
+    this.grid = new ViewGrid();
     this.mesh = mesh;
     this.sidmap = {}; //stores objects, and possibly manipulator widgets and the like
     
@@ -124,8 +125,9 @@ class View3DHandler extends Area {
     
     this.flagprop = 1;
     
-    this.zoomfac = 0.0
-    this.zoomwheel = 0.0
+    this.zoomfac = -20.0;
+    this.zoomwheel = -57.142857;
+    
     this.screen = undefined : Screen;
     this.ui_canvas = null;
     this.framerate = 0.1;
@@ -160,15 +162,15 @@ class View3DHandler extends Area {
     this.alt = false;
     this.ctrl = false;
     
-    this.zoom_wheelrange = [-20, 20]
-    this.zoom_range = [-7.0, 7.0]
+    this.zoom_wheelrange = View3DHandler.zoom_wheelrange;
+    this.zoom_range = View3DHandler.zoom_range;
     this.tools_define = {}
     
     this.ss_mesh = null;
     this.last_steps = 0;
     this.drawlines = new GArray<drawline>();
     
-    this.line_2d_shader = new ShaderProgram(gl, "2d_line_vshader", "2d_line_fshader", ["vPosition", "vNormal", "vColor"]);
+    this.line_2d_shader = new ShaderProgram(gl, "2d_line_vshader", "2d_line_fshader", ["vPosition", "vUV", "vColor"]);
     
     Area.call(this, View3DHandler.name, "3D Viewport", new Context(), [x, y], [width, height]);
     
@@ -374,7 +376,7 @@ class View3DHandler extends Area {
     this.gl = gl;
     this.framebuffer = undefined;
     this.drawlines = new GArray();
-    this.line_2d_shader = new ShaderProgram(gl, "2d_line_vshader", "2d_line_fshader", ["vPosition", "vNormal", "vColor"]);
+    this.line_2d_shader = new ShaderProgram(gl, "2d_line_vshader", "2d_line_fshader", ["vPosition", "vUV", "vColor"]);
     this.csg_render = undefined;
     
     for (var e in this.editors) {
@@ -382,6 +384,7 @@ class View3DHandler extends Area {
     }
     
     prior(View3DHandler, this).on_gl_lost.call(this, new_gl);
+    this.grid.on_gl_lost(new_gl);
   }
   
   get_framebuffer() : FrameBuffer
@@ -735,14 +738,10 @@ class View3DHandler extends Area {
     gl.disableVertexAttribArray(3);
     gl.disableVertexAttribArray(4);
       
-    var normals = []
+    var uvs = []
     var verts = []
     var colors = []
     for (var dl in this.drawlines) {
-      var no = new Vector3(dl.v2);
-      no.sub(dl.v1);
-      no.normalize();
-      
       for (var i=0; i<4; i++)
         colors.push(dl.clr[i]);
       for (var i=0; i<4; i++)
@@ -750,24 +749,25 @@ class View3DHandler extends Area {
       
       for (var i=0; i<3; i++) {
         verts.push(dl.v1[i]);
-        normals.push(no[i]);
       }
-      
       for (var i=0; i<3; i++) {
         verts.push(dl.v2[i]);
-        normals.push(no[i]);
       }
-    }    
+      
+      var vlen = dl.v1.vectorDistance(dl.v2);
+      uvs.push(0); uvs.push(0);
+      uvs.push(vlen); uvs.push(vlen);
+    }
     
     gl.disable(gl.DEPTH_TEST);
     
     verts = new Float32Array(verts);
-    normals = new Float32Array(normals);
+    uvs = new Float32Array(uvs);
     colors = new Float32Array(colors);
     
-    gl.useProgram(this.line_2d_shader.program);
-    var color = [0.9, 0.9, 0.9, 1.0];
-    gl.uniform4fv(gl.getUniformLocation(this.line_2d_shader.program, "vColor"), color);
+    var shader = this.line_2d_shader;
+    gl.useProgram(shader.program);
+    gl.uniform2fv(shader.uniformloc(gl, "viewport"), [this.size[0], this.size[1]]);
     
     gl.enableVertexAttribArray(0);
     gl.enableVertexAttribArray(1);
@@ -778,11 +778,11 @@ class View3DHandler extends Area {
     gl.bufferData(gl.ARRAY_BUFFER, verts, gl.STATIC_DRAW);
     gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
 
-    var nbuf = gl.createBuffer();    
-    gl.bindBuffer(gl.ARRAY_BUFFER, nbuf);
-    gl.bufferData(gl.ARRAY_BUFFER, normals, gl.STATIC_DRAW);
-    gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 0, 0);
-    gl.bindBuffer(gl.ARRAY_BUFFER, nbuf);
+    var uvbuf = gl.createBuffer();    
+    gl.bindBuffer(gl.ARRAY_BUFFER, uvbuf);
+    gl.bufferData(gl.ARRAY_BUFFER, uvs, gl.STATIC_DRAW);
+    gl.vertexAttribPointer(1, 2, gl.FLOAT, false, 0, 0);
+    gl.bindBuffer(gl.ARRAY_BUFFER, uvbuf);
 
     var cbuf = gl.createBuffer();    
     gl.bindBuffer(gl.ARRAY_BUFFER, cbuf);
@@ -792,7 +792,8 @@ class View3DHandler extends Area {
     gl.drawArrays(gl.LINES, 0, this.drawlines.length*2);
     
     gl.deleteBuffer(vbuf);
-    gl.deleteBuffer(nbuf);
+    gl.deleteBuffer(uvbuf);
+    gl.deleteBuffer(cbuf);
     
     gl.disableVertexAttribArray(1);
     gl.disableVertexAttribArray(2);
@@ -802,6 +803,7 @@ class View3DHandler extends Area {
   on_tick() {
     this.editor.on_tick(this.ctx);
     prior(View3DHandler, this).on_tick.call(this);
+    this.grid.on_tick();
   }
   
   destroy() {
@@ -881,6 +883,9 @@ class View3DHandler extends Area {
     
     var scene = ctx.scene;
     var objects = scene.objects;
+    
+    gl.enable(gl.DEPTH_TEST);
+    this.grid.on_draw(gl, this.drawmats, this.zoomfac);
     
     for (var ob in objects) {
       if (ob.csg && ob != ctx.object) {
@@ -984,8 +989,20 @@ class View3DHandler extends Area {
         console.log("executing unit tests...");
         window.unit_test_env.execute();
       } else {
-        //fix_object_mesh(new Context().object);
+        var mesh = new Context().mesh;
+        var ret = time_func(function() {
+          mesh.api.recalc_normals();
+        }, 100);
         
+        var av = 0.0;
+        for (var i=0; i<ret.length; i++) {
+          av += ret[i];
+        }
+        
+        console.log("average: ", av/ret.length);
+        
+        //fix_object_mesh(new Context().object);
+        /*
         var mesh = new Context().mesh;
         var repeat = 32;
         var times = new GArray();
@@ -1008,6 +1025,7 @@ class View3DHandler extends Area {
         for (var t in times) {
           console.log(t);
         }
+        */
         //console.log(g_app_state.api.get_prop(ctx, "operator_stack[0].test"));
         //test_dapi_parser();
         //test_ui_structs();
@@ -1134,7 +1152,7 @@ class View3DHandler extends Area {
                      Array<float> pos, Array<float> size) {
     var ret = new View3DHandler(gl, ctx.mesh, gl.program2, gl.program, 
                                new DrawMats(), pos[0], pos[1], size[0], 
-                               size[1], 0.1, 100000);
+                               size[1], 0.75, 100000);
     return ret;
   }
   
@@ -1244,9 +1262,9 @@ class View3DHandler extends Area {
     col.packflag |= PackFlags.IGNORE_LIMIT|PackFlags.NO_AUTO_SPACING;
     
     col.size = [this.size[0], Area.get_barhgt()];
-    col.draw_background = true
-    col.rcorner = 100.0
-    col.pos = [0, this.size[1]-Area.get_barhgt()]
+    col.draw_background = true;
+    col.rcorner = 100.0;
+    col.pos = [0, this.size[1]-Area.get_barhgt()];
     
     col.label("                      ");
     var iconflag = IsMobile ? PackFlags.USE_LARGE_ICON : PackFlags.USE_SMALL_ICON;
@@ -1449,3 +1467,5 @@ View3DHandler.STRUCT = STRUCT.inherit(View3DHandler, Area) + """
 
 View3DHandler.uiname = "3D Viewport";
 View3DHandler.debug_only = false;
+View3DHandler.zoom_wheelrange = [-20, 20];
+View3DHandler.zoom_range = [-500, 500];

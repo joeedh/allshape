@@ -213,6 +213,19 @@ function list<T>(Iterator<T> iter) : GArray<T> {
 }
 EXPORT_FUNC(list)
 
+function time_func(func, steps=10) {
+  var times = [];
+  
+  for (var i=0; i<steps; i++) {
+    var last_ms = time_ms();
+    func();
+    times.push(time_ms()-last_ms);
+  }
+  
+  console.log(times);
+  return times;
+}
+
 //turns any iterator into a (cached) array
 function cached_list<T>(Iterator<T> iter) : GArray<T> {
   static lst = new GArray<T>();

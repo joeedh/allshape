@@ -1184,12 +1184,26 @@ class AddCubeOp extends MeshOp {
   constructor() {
     MeshOp.call(this);
     
+    this.flag |= ToolFlags.USE_DEFAULT_INPUT;
+    
     this.uiname = "Add Cube"
     this.name = "add_cube";
     this.inputs = {
+      size : new FloatProperty(1.0, "size", "Size", "Size of cube")
     }
   }
 
+  //function get_default(keyword, default_value, input_property);
+  default_inputs(Context ctx, ToolGetDefaultFunc get_default) {
+    var unit = Unit.get_unit(g_app_state.session.settings.unit)[0];
+
+    var size = unit.attrs.geounit;
+    size = get_default("size", size, this.inputs.size);
+    
+    this.inputs.size.set_data(size);
+    this.inputs.size.unit = g_app_state.session.settings.unit;
+  }
+  
   exec(op, mesh) {
     // box
     //    v7----- v8
@@ -1202,7 +1216,7 @@ class AddCubeOp extends MeshOp {
     //
     
     
-    var d = 0.5;
+    var d = this.inputs.size.data*0.5;
     var v1 = mesh.make_vert(new Vector3([-d, -d, -d]));
     var v2 = mesh.make_vert(new Vector3([d, -d, -d]));
     var v3 = mesh.make_vert(new Vector3([d, -d, d]));

@@ -107,7 +107,8 @@ function api_define_view3d() {
     this.ctx.view3d.selectmode = this.values[this.data];
   }
   
-  var zoomfac = new FloatProperty(0, "zoomfac", "Zoom", "Zoom Factor", [-7, 7], [-7, 7]);
+  var range = View3DHandler.zoom_range;
+  var zoomfac = new FloatProperty(0, "zoomfac", "Zoom", "Zoom Factor", range, range);
   zoomfac.update = function() {
     var view3d = this.ctx.view3d;
     
