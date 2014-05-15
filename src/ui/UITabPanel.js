@@ -258,7 +258,7 @@ class UITabPanel extends UIFrame {
   
   build_draw(UICanvas canvas, Boolean isVertical) {
     //strange, shouldn't have to manually call pack here. . .
-    this.pack(canvas, isVertical);
+    //this.pack(canvas, isVertical);
     
     canvas.simple_box(this.pos, this.size);
     
@@ -294,7 +294,7 @@ class UITabPanel extends UIFrame {
     if (id != undefined)
       content.add(id);
     
-    //content.do_full_recalc();
+    content.do_full_recalc();
   }
   
   pack(UICanvas canvas, Boolean isVertical) {
@@ -341,6 +341,9 @@ class UITabPanel extends UIFrame {
     
     //make sure uhash() returns consistent results
     frame.parent = this.content;
+    
+    //trigger reflow
+    this.do_full_recalc();
   }
   
   get_min_size(UICanvas canvas, Boolean isVertical) {

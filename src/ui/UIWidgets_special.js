@@ -586,22 +586,27 @@ class UIBoxWColor extends ColumnFrame {
     //this.data_path = path;
     //this.state |= UIFlags.USE_PATH;
     
-    this.prop("color");
-    var row = this.prop("weights");
-    
-    row.packflag |= PackFlags.NO_AUTO_SPACING|PackFlags.ALIGN_BOTTOM;
-    var i = 1;
-    for (var c in row.children) {
-      if (c instanceof UINumBox) {
-        c.slide_power = 2.0;
-        c.slide_mul = 4.0;
-        c.unit = undefined;
-        c.text = ""+i;
-        i++;
+    try {
+      this.prop("color");
+      var row = this.prop("weights");
+      
+      row.packflag |= PackFlags.NO_AUTO_SPACING|PackFlags.ALIGN_BOTTOM;
+      var i = 1;
+      for (var c in row.children) {
+        if (c instanceof UINumBox) {
+          c.slide_power = 2.0;
+          c.slide_mul = 4.0;
+          c.unit = undefined;
+          c.text = ""+i;
+          i++;
+        }
       }
+      row.children.reverse();
+      row.pad[0] = 20;
+    } catch (_err) {
+      print_stack(_err);
+      console.log("failed to create UIBoxWColor!");
     }
-    row.children.reverse();
-    row.pad[0] = 20;
   }
 }
 

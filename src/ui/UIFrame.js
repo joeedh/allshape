@@ -695,8 +695,6 @@ class UIFrame extends UIElement {
         canvas.push_transform();
         canvas.translate(this.velpan.pan);
       }
-      this.abspos[0] += this.velpan.pan[0];
-      this.abspos[1] += this.velpan.pan[1];
     }
     
     if (this.pos == undefined) {
@@ -729,8 +727,8 @@ class UIFrame extends UIElement {
       
       isect = isect || aabb_isect_2d(c.pos, c.size, pos, this.size);
       if (!isect) {
-        this.has_hidden_elements = true;
-        continue;
+         this.has_hidden_elements = true;
+         continue;
       }
       
       if (c.pos == undefined) {

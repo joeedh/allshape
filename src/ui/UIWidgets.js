@@ -1256,11 +1256,11 @@ class UIListBox extends ColumnFrame {
   }
 
   build_draw(UICanvas canvas, Boolean isVertical) {
-    this.canvas = this.get_canvas();
-    
     canvas.push_scissor([0,0], this.size);
+    
     canvas.simple_box([0,0], this.size, uicolors["ListBoxBG"]);
     prior(UIListBox, this).build_draw.call(this, canvas, isVertical);
+    
     canvas.pop_scissor();
   }
 

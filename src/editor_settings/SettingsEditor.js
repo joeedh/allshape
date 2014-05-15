@@ -3,9 +3,9 @@
 /******************* main area struct ********************************/
 
 class SettingsEditor extends Area {
-  do_theme_color(int i) : UIFrame {
+  do_theme_color(int i, String prefix) : UIFrame {
     var ctx=this.ctx;
-    var path = "theme.ui.colors["+i+"]";
+    var path = prefix+i+"]";
     
     var type = this.ctx.api.get_prop(ctx, path+".type");
     
@@ -25,32 +25,51 @@ class SettingsEditor extends Area {
     }
   }
   
-  theme_panel() {
+  /*
+  theme_panel() : UIFrame {
+    var ret = new UITabPanel(this.ctx);
+    
+    var panel1 = this.colortheme_panel("theme.ui.colors[", g_theme.ui.flat_colors)
+    var panel2 = this.colortheme_panel("theme.view3d.colors[", g_theme.view3d.flat_colors)
+    
+    ret.add_tab("Interface", panel1);
+    ret.add_tab("3D Viewport", panel2);
+    
+    ret.packflag |= PackFlags.NO_AUTO_SPACE|PackFlags.INHERIT_WIDTH;
+    
+    return ret;
+  }
+  */
+  
+  colortheme_panel(String prefix, Array<float> flat_colors) : UIFrame {
     var ctx = this.ctx;
     
     var panel = new RowFrame(ctx);
     var listbox = new UIListBox(ctx, undefined, [200, 200]);
     var theme = g_theme;
-    for (var j=0; j<g_theme.ui.flat_colors.length; j++) {
-      listbox.add_item(theme.ui.flat_colors[j][0], j);
+    
+    for (var j=0; j<flat_colors.length; j++) {
+      listbox.add_item(flat_colors[j][0], j);
     }
     
     var this2 = this;
-    listbox.callback = function(listbox, text, id) {
-      var e = this2.do_theme_color(id);
+    function callback(listbox, text, id) {
+      var e = this2.do_theme_color(id, prefix);
       
-      if (this2.themebox != undefined) {
-      panel.replace(this2.themebox, e);
+      if (panel.themebox != undefined) {
+        panel.replace(panel.themebox, e);
       } else {
         panel.add(e);
       }
       
-      this2.themebox = e;
+      panel.themebox = e;
     }
     
+    listbox.callback = callback;
+    
     panel.add(listbox);
-    this.themebox = this.do_theme_color(0);
-    panel.add(this.themebox);
+    panel.themebox = this.do_theme_color(0, prefix);
+    panel.add(panel.themebox);
     
     panel.packflag |= PackFlags.INHERIT_WIDTH;
     
@@ -86,7 +105,6 @@ class SettingsEditor extends Area {
     this._filter_sel = false;
     this.gl = undefined;
     this.ctx = new Context();
-    this.themebox = undefined;
     
     this.subframe = new UITabPanel(new Context(), [size[0], size[1]]);
     this.subframe.packflag |= PackFlags.NO_AUTO_SPACE|PackFlags.INHERIT_WIDTH;
@@ -98,7 +116,8 @@ class SettingsEditor extends Area {
     this.subframe.velpan = new VelocityPan();
     
     this.subframe.add_tab("Units", this.units_panel());
-    this.subframe.add_tab("Theme", this.theme_panel());
+    this.subframe.add_tab("UI Colors", this.colortheme_panel("theme.ui.colors[", g_theme.ui.flat_colors));
+    this.subframe.add_tab("View3D Colors", this.colortheme_panel("theme.view3d.colors[", g_theme.view3d.flat_colors));
     
     this.add(this.subframe);
   }
