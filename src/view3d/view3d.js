@@ -811,7 +811,8 @@ class View3DHandler extends Area {
       this.framebuffer.destroy(this.gl);
       this.framebuffer = undefined;
     }
-   
+    
+    this.grid.destroy(g_app_state.gl);
     Area.prototype.destroy.call(this);
   }
   

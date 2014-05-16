@@ -36,7 +36,8 @@ var GridTypes = {CART: 1, TRIANGLE: 2};
 var GridFlags = {
   XRULER: 1,
   YRULER: 2,
-  ZRULER: 4
+  ZRULER: 4,
+  DEFAULT: 1|2|4
 };
 
 class GridBuffer {
@@ -94,7 +95,7 @@ class ViewGrid {
     this.dir = new Vector3([0, 0, 1.0]);
     
     this.auto_steps = true;
-    this.flag = 0;  
+    this.flag = GridFlags.DEFAULT;
     this.recalc = 1;
     this.shader = undefined;
     this.totline = 0;

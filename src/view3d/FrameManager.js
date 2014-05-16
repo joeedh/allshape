@@ -163,7 +163,6 @@ class Area extends UIFrame {
     }
     
     this.canvas.destroy(g_app_state.gl);
-    this.grid.destroy(g_app_state.gl);
   }
   
   static fromSTRUCT(reader) {
@@ -350,10 +349,16 @@ class ScreenArea extends UIFrame {
     }
     var area = this.editors[cls.name];
     
-    this.area.push_ctx_active(); //push
-    this.area.on_area_inactive();
+    try {
+      this.area.push_ctx_active(); //push
+      this.area.on_area_inactive();
+      this.area.pop_ctx_active(); //pop
+    } catch (_err) {
+      print_stack(_err);
+      console.log("Error switching editor", this.area);
+    }
+    
     this.remove(this.area);
-    this.area.pop_ctx_active(); //pop
     
     area.push_ctx_active(); //push
     
@@ -368,12 +373,11 @@ class ScreenArea extends UIFrame {
     this.canvas.reset();
     
     this.area.do_full_recalc();
+    this.type = cls.name;
     
     area.on_area_active();
     area.on_resize(this.size, new Vector2(area.size));
     area.pop_ctx_active(); //pop 
-    
-    this.type = cls.name;
   }
   
   static fromSTRUCT(reader) {
