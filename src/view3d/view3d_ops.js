@@ -159,10 +159,12 @@ class ViewRotateZoomPanOp extends ToolOp {
     var range = (view3d.zoom_wheelrange[1]-view3d.zoom_wheelrange[0]);
     var zoom2 = (this.start_zoom - view3d.zoom_wheelrange[0]) / range;
     
+    //console.log("start_zoom", this.start_zoom);
     
     //multiply by touch zoom fac
-    zoom2 *= zoom;
-   //console.log("zoomfac", zoom, startdis, v3, v4);
+    zoom2 += 0.025*(zoom-1.0);
+    
+    //console.log("zoomfac", zoom, startdis, v3, v4);
     //denormalize
     zoom2 = zoom2*range + view3d.zoom_wheelrange[0];
     
