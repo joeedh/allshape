@@ -1459,8 +1459,6 @@ View3DHandler.STRUCT = STRUCT.inherit(View3DHandler, Area) + """
     zoomwheel       : float;
     _id             : int;
     selectmode      : int;
-    zoom_wheelrange : array(float);
-    zoom_range      : array(float);
     editors         : array(abstract(View3DEditor));
     editor          : int | obj.editors.indexOf(obj.editor);
   }
