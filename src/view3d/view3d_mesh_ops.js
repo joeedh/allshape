@@ -623,6 +623,7 @@ class MeshEditor extends View3DEditor {
 
   findnearestedge_mapco(Vector2 mpos) {
     var pmat = new Matrix4(this.view3d.drawmats.rendermat);
+    pmat.multiply(this.object.matrix);
     
     if (this.view3d.use_backbuf_sel)
       return this.findnearest_backbuf(mpos, MeshTypes.EDGE);
@@ -653,6 +654,7 @@ class MeshEditor extends View3DEditor {
 
   findnearestedge_octree(Array<float> mpos) : Edge {
     var pmat = new Matrix4(this.view3d.drawmats.rendermat);
+    pmat.multiply(this.object.matrix);
     
     //first, find a face
     var f = this.findnearestface_octree(mpos);
@@ -685,6 +687,7 @@ class MeshEditor extends View3DEditor {
   
   findnearestedge(Vector2 mpos) {
     var pmat = new Matrix4(this.view3d.drawmats.rendermat);
+    pmat.multiply(this.object.matrix);
     
     if (this.view3d.use_backbuf_sel) {
       if (use_octree_select)
@@ -720,6 +723,7 @@ class MeshEditor extends View3DEditor {
 
   findnearestvert_mapco(Vector2 mpos) {
     var pmat = new Matrix4(this.view3d.drawmats.rendermat);
+    pmat.multiply(this.object.matrix);
     
     if (this.view3d.use_backbuf_sel)
       return this.findnearest_backbuf(mpos, MeshTypes.VERT);
@@ -749,6 +753,7 @@ class MeshEditor extends View3DEditor {
   
   findnearestvert_octree(Array<float> mpos) : Vertex {
     var pmat = new Matrix4(this.view3d.drawmats.rendermat);
+    pmat.multiply(this.object.matrix);
     
     //first, find a face
     var f = this.findnearestface_octree(mpos);
@@ -786,6 +791,7 @@ class MeshEditor extends View3DEditor {
   
   findnearestvert(Vector2 mpos) : Vertex {
     var pmat = new Matrix4(this.view3d.drawmats.rendermat);
+    pmat.multiply(this.object.matrix);
 
     if (this.view3d.use_backbuf_sel) {
       if (use_octree_select)
@@ -826,6 +832,7 @@ class MeshEditor extends View3DEditor {
 
   findnearestface_mapco(Vector2 mpos) {
     var pmat = new Matrix4(this.view3d.drawmats.rendermat);
+    pmat.multiply(this.object.matrix);
     
     if (this.view3d.use_backbuf_sel)
       return this.findnearest_backbuf(mpos, MeshTypes.FACE);
@@ -997,6 +1004,7 @@ class MeshEditor extends View3DEditor {
     r2[2] = 4000.0;
     
     pmat.load(this.view3d.drawmats.rendermat);
+    pmat.multiply(this.object.matrix);
     pmat.invert();
     
     r1.multVecMatrix(pmat);
@@ -1012,6 +1020,7 @@ class MeshEditor extends View3DEditor {
   
   findnearestface(Vector2 mpos) {
     var pmat = new Matrix4(this.view3d.drawmats.rendermat);
+    pmat.multiply(this.object.matrix);
     
     if (this.view3d.use_backbuf_sel) {
       if (use_octree_select)

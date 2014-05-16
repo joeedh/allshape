@@ -262,6 +262,9 @@ class TransData {
     
     var add_obj = true;
     for (var ob in objlist) {
+      if (ob instanceof DataRef)
+        ob = ctx.datalib.get(ob);
+      
       var imat = new Matrix4(ob.matrix);
       imat.invert();
       
@@ -298,6 +301,7 @@ class TransData {
     var center = this.center;
     var loc = new Vector3();
     for (var ob in this.objects) {
+      console.log("ob", ob, this.objects, active_ob);
       ob.matrix.decompose(loc);
       center.add(loc);
     }
@@ -421,7 +425,7 @@ class TransformOp extends ToolOp {
       console.log("3-", this.inputs.object.get_block(ctx));
     }
     return new TransData(ctx, this, this.inputs.object.get_block(ctx), 
-                          this.inputs.object.data, this.inputs.datamode.data);
+                          this.inputs.objects.data, this.inputs.datamode.data);
   }
  
   undo_pre(Context ctx) {

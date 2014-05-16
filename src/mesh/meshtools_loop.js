@@ -194,7 +194,8 @@ class LoopCutOp extends ToolOp {
     }
     
     var i = 0;
-    var pmat = ctx.view3d.drawmats.rendermat;
+    var pmat = new Matrix4(ctx.view3d.drawmats.rendermat);
+    pmat.multiply(ctx.object.matrix);
     
     var eset = new set(edges);
     
@@ -247,12 +248,21 @@ class LoopCutOp extends ToolOp {
     
     var elen = ret[2] ? loops[0].length : loops[0].length-1;
     
+    var vec1 = new Vector3(), vec2 = new Vector3();
+    var obmat = ctx.object.matrix;
+    
     for (var i=0; i<elen; i++) {
       for (var j=0; j<cuts; j++) {
         var v1 = loops[j][i];
         var v2 = loops[j][(i+1)%edges.length];
         
-        var dl = ctx.view3d.new_drawline(v1, v2);
+        var vec1 = new Vector3(loops[j][i]);//.multVecMatrix(obmat);
+        var vec2 = new Vector3(loops[j][(i+1)%edges.length]);//.multVecMatrix(obmat);
+        
+        //vec1.multVecMatrix(obmat);
+        //vec2.multVecMatrix(obmat);
+        
+        var dl = ctx.view3d.new_drawline(vec1, vec2);
         this.drawlines.push(dl);
       }
     }
