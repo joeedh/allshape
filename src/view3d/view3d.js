@@ -252,7 +252,13 @@ class View3DHandler extends Area {
     var v3d = new View3DHandler(g_app_state.gl)
     v3d._in_from_struct = true;
     
+    var zoomrange = v3d.zoom_range;
+    var wheelrange = v3d.zoom_wheelrange;
+    
     reader(v3d)
+    
+    v3d.zoom_range = zoomrange;
+    v3d.zoom_wheelrange = wheelrange;
     
     v3d.editors = new GArray(v3d.editors);
     v3d.editor = v3d.editors[v3d.editor];
