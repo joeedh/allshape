@@ -202,6 +202,8 @@ class TransData {
     
     if (ctx.constructor == Context) {
       this.projmat = new Matrix4(ctx.view3d.drawmats.rendermat);
+      this.projmat.multiply(ctx.object.matrix);
+      
       this.iprojmat = new Matrix4(this.projmat);
       this.iprojmat.invert();
       this.start_mpos = new Vector2(ctx.view3d.mpos);
