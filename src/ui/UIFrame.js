@@ -156,7 +156,8 @@ class UIFrame extends UIElement {
       last_mpos = mpos;
     }
 
-    console.log("sy", mpos[1]);
+    if (DEBUG.touch)
+      console.log("sy", mpos[1]);
     
     var f = this;
     while (f.parent != undefined) {
@@ -773,8 +774,8 @@ class UIFrame extends UIElement {
          //if (c instanceof UITextBox) {
           //console.log(c.pos, c.size, pos, this.size);
          //}
-         //this.has_hidden_elements = true;
-         //continue;
+         this.has_hidden_elements = true;
+         continue;
       }
       
       if (c.pos == undefined) {

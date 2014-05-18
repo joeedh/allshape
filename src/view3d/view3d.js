@@ -181,11 +181,11 @@ class View3DHandler extends Area {
     this.editor = new MeshEditor(this);
     this.editors = new GArray([this.editor]);
     
-    this.touch_delay = 100;
+    this.touch_delay = 80;
   }
   
   push_modal(EventHandler e) {
-    this.push_touch_delay(20);
+    this.push_touch_delay(1);
     
     prior(View3DHandler, this).push_modal.call(this, e);
   }
@@ -663,15 +663,21 @@ class View3DHandler extends Area {
       g_app_state.toolstack.exec_tool(new ViewRotateOp());
     //need to add mouse keymaps to properly handle this next one
     } else if ((this.editor instanceof MeshEditor) && event.button == 0 && g_app_state.screen.ctrl) {
+      this.on_mousemove(event);
+      
       console.log("Click Extrude");
       var op = new ClickExtrude();
       
       g_app_state.toolstack.exec_tool(op);
       op.on_mousedown(event);
     } else if (event.button == 0 && event.altKey) {
+      this.on_mousemove(event);
+      
       this._mstart = new Vector2(this.mpos);
       selfound = this.do_alt_select(event, this.mpos, this);
     } else if (event.button == 0) {
+      this.on_mousemove(event);
+      
       this._mstart = new Vector2(this.mpos);
       selfound = this.do_select(event, this.mpos, this, this.shift|g_app_state.select_multiple); 
     }

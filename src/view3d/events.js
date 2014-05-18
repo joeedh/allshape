@@ -618,7 +618,8 @@ class VelocityPan extends EventHandler {
     //give coordinates in same space as on_mousemove,
     //which is why init of these vars is down here,
     //not in .start().
-    console.log("py", mpos[1]);
+    if (DEBUG.touch)
+      console.log("py", mpos[1]);
     
     /*if (this.first) {
       this.mpos.load(mpos);
@@ -803,9 +804,11 @@ class TouchEventManager {
       
       try {
         if (e.type == MyMouseEvent.MOUSEDOWN) {
-          console.log("td1", e.x, e.y);
+          if (DEBUG.touch)
+            console.log("td1", e.x, e.y);
           owner._on_mousedown(e);
-          console.log("td2", e.x, e.y);
+          if (DEBUG.touch)
+            console.log("td2", e.x, e.y);
         } else if (e.type == MyMouseEvent.MOUSEMOVE) {
           owner._on_mousemove(e);
         } else if (e.type == MyMouseEvent.MOUSEUP) {
