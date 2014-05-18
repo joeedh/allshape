@@ -134,7 +134,7 @@ class SettingsEditor extends Area {
   
   on_mousedown(MouseEvent event) {
     if (event.button == 1 && !g_app_state.was_touch) {
-      this.subframe.start_pan(event, 1);
+      this.subframe.start_pan([event.x, event.y], 1);
     } else {
       prior(SettingsEditor, this).on_mousedown.call(this, event);
     }

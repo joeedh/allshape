@@ -374,17 +374,21 @@ class UIElement extends EventHandler {
     }
   }
   
-  start_pan(MouseEvent event=undefined, int button=0) {
+  start_pan(Array<float> start_mpos, int button=0, Array<float> last_mpos=undefined) {
     if (!(this.state & UIFlags.HAS_PAN)) {
       if (this.parent == undefined) {
         console.trace();
         console.log("Warning: UIFrame.start_pan: no parent frame with pan support");
       } else {
-        if (event != undefined) {
-          event.x += this.pos[0];
-          event.y += this.pos[1];
+        if (start_mpos != undefined) {
+          start_mpos[0] += this.pos[0];
+          start_mpos[1] += this.pos[1];
         }
-        this.parent.start_pan(event, button);
+        if (last_mpos != undefined) {
+          last_mpos[0] += this.pos[0];
+          last_mpos[1] += this.pos[1];
+        }
+        this.parent.start_pan(start_mpos, button, last_mpos);
       }
     }
   }

@@ -521,7 +521,7 @@ class VelocityPan extends EventHandler {
     
     this.vel = new Vector2();
     this.pan = new Vector2();
-    this.damp = 0.9;
+    this.damp = 0.99;
     
     this.start_pan = new Vector2();
     
@@ -563,17 +563,25 @@ class VelocityPan extends EventHandler {
     }
     
     vel.load(this.last_mpos).sub(this.mpos).divideScalar(t);
-    this.vel.load(vel);
-    //this.vel.add(vel);
-    //this.vel.mulScalar(0.5);
+    
+    //blend with last value, if it exists
+    this.vel.add(vel);
+    /*if (this.vel.vectorLength() > 0.0) {
+      this.vel.load(vel);
+      this.vel.add(vel);
+      this.vel.mulScalar(0.5);
+    } else {
+      this.vel.load(vel);
+    }*/
     
     this.coasting = (this.vel.vectorLength() > 0.25);
     this.last_ms = time_ms();
   }
   
-  start(Array<float> mpos, UIElement owner) {
+  start(Array<float> start_mpos, Array<float> last_mpos, UIElement owner) {
+    this.vel.zero();
     this.coasting = false;
-    this.first = true;
+    this.first = false; //true;
     
     if (this.panning) {
       console.log("warning, duplicate call to VelocityPan.start()");
@@ -589,7 +597,11 @@ class VelocityPan extends EventHandler {
     this.start_time = time_ms();
     this.was_touch = g_app_state.was_touch;
     
-    //this.do_mousemove(mpos);
+    this.start_mpos.load(start_mpos);
+    this.last_mpos.load(start_mpos);
+    this.mpos.load(start_mpos);
+    
+    this.do_mousemove(last_mpos);
   }
   
   end() {
@@ -606,19 +618,24 @@ class VelocityPan extends EventHandler {
     //give coordinates in same space as on_mousemove,
     //which is why init of these vars is down here,
     //not in .start().
-    if (this.first) {
+    console.log("py", mpos[1]);
+    
+    /*if (this.first) {
       this.mpos.load(mpos);
       this.last_mpos.load(mpos);
       this.start_mpos.load(mpos);
       this.first = false;
       return;
-    }
+    }*/
     
     this.last_mpos.load(this.mpos);
     this.mpos.load(mpos);
     
     this.pan[0] = this.start_pan[0] + mpos[0] - this.start_mpos[0];
     this.pan[1] = this.start_pan[1] + mpos[1] - this.start_mpos[1];
+    
+    this.vel.zero();
+    this.calc_vel();
     
     this.clamp_pan();
     this.owner.on_pan(this.pan, this.start_pan);
@@ -694,6 +711,9 @@ class TouchEventManager {
   
   queue_event(MouseEvent event) {
     var last = this.get_last(event.type);
+
+    if (DEBUG.touch && this == touch_manager)
+      console.log("touch event", event.type);
     
     //merge repeated events, which may
     //contain different touch states
@@ -709,11 +729,11 @@ class TouchEventManager {
       //only compare same ids
       dis = new Vector2([event.x, event.y]).vectorDistance(new Vector2([last.x, last.y]));
       
-      if (DEBUG.touch)
+      if (DEBUG.touch && this == touch_manager)
         console.log(dis);
       
       if (same && dis < 50) {
-        if (DEBUG.touch)
+        if (DEBUG.touch && this == touch_manager)
           console.log("destroying duplicate event", last.type, event.x, event.y, event.touches);
         
         for (var k in event.touches) {
@@ -732,6 +752,9 @@ class TouchEventManager {
     var ts = event.touches;
     var dl = new GArray;
     
+    if (DEBUG.touch && this == touch_manager)
+      console.log("touch cancel", event);
+      
     for (var e in this.queue) {
       for (var k in ts) {
         if (k in e.touches) {
@@ -779,12 +802,15 @@ class TouchEventManager {
       g_app_state.was_touch = true;
       
       try {
-        if (e.type == MyMouseEvent.MOUSEDOWN)
+        if (e.type == MyMouseEvent.MOUSEDOWN) {
+          console.log("td1", e.x, e.y);
           owner._on_mousedown(e);
-        else if (e.type == MyMouseEvent.MOUSEMOVE)
+          console.log("td2", e.x, e.y);
+        } else if (e.type == MyMouseEvent.MOUSEMOVE) {
           owner._on_mousemove(e);
-        else if (e.type == MyMouseEvent.MOUSEUP)
+        } else if (e.type == MyMouseEvent.MOUSEUP) {
           owner._on_mouseup(e);
+        }
       } catch (_err) {
         print_stack(_err)
         console.log("Error executing delayed touch event");

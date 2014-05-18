@@ -83,7 +83,7 @@ class UIButtonAbstract extends UIHoverHint {
         this.stop_hover();
         this.clicked = false;
         this.do_recalc();
-        this.start_pan(event);
+        this.start_pan([event.x, event.y]);
       }
     }
   }
@@ -877,9 +877,13 @@ class UILabel extends UIElement {
   }
   
   on_mousemove(MouseEvent event) {
+    var dis = this.start_mpos.vectorDistance([event.x, event.y]);
+    //console.trace();
+    
     if (this.clicked) {
       var dis = this.start_mpos.vectorDistance([event.x, event.y]);
       
+      console.log("-dis", dis, event.x, event.y, this.start_mpos[0], this.start_mpos[1]);
       if (dis > 4) {
         //cancel, then pan
         
@@ -889,16 +893,28 @@ class UILabel extends UIElement {
         }
         
         this.clicked = false;
-        this.start_pan(event, 0);
+        this.start_pan(this.start_mpos, 0, [event.x, event.y]);
       }
+    } else {
+      //console.log("dis", dis, event.x, event.y, this.start_mpos[0], this.start_mpos[1]);
     }
     
     prior(UILabel, this).on_mousemove.call(this, event);
   }
   
   on_mousedown(MouseEvent event) {
-    this.start_mpos.load([event.x, event.y]);
+    //console.log("md", event.x, event.y);
     
+    this.start_mpos.load([event.x, event.y]);
+ 
+    if (this.clicked) {
+      if (this.do_modal)
+        this.push_modal()
+      
+      this.clicked = false;
+      this.do_recalc();
+    }
+   
     if (!this.clicked && event.button == 0) {
       this.clicked = true;
       
@@ -919,7 +935,7 @@ class UILabel extends UIElement {
       this.did_modal = false;
     }
     
-    if (this.clicked && event.button == 0) {
+    if (this.clicked) {
       this.clicked = false;
       
       if (inrect_2d_button([event.x, event.y], [0,0], this.size)) {
@@ -1160,6 +1176,11 @@ class UIListBox extends ColumnFrame {
     pflag |= PackFlags.INHERIT_WIDTH|PackFlags.ALIGN_LEFT;
 
     this.listbox = new RowFrame(ctx);
+    
+    //no spacing allowed; messes up velocity pan
+    this.listbox.packflag |= PackFlags.NO_AUTO_SPACING;
+    this.listbox.pad[1] = 0;
+    
     this.listbox.state |= UIFlags.HAS_PAN;
     this.add(this.listbox, pflag);
     

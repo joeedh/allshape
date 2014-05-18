@@ -1487,7 +1487,9 @@ function toJSON_intern (ob, tlevel) {
           
           g_app_state.was_touch = false;
           if (g_app_state.eventhandler != undefined) {
-            g_app_state.eventhandler._on_mousemove(new MyMouseEvent(e.pageX, g_app_state.screen.size[1] - e.pageY, 0, MyMouseEvent.MOUSEMOVE));
+            var evt = new MyMouseEvent(e.pageX, g_app_state.screen.size[1] - e.pageY, 0, 
+                                       MyMouseEvent.MOUSEMOVE);
+            g_app_state.eventhandler._on_mousemove(evt);
           }
         }
 
@@ -1586,7 +1588,7 @@ function toJSON_intern (ob, tlevel) {
             
             var x, y;
             
-            if (DEBUG.touch)
+            if (DEBUG.touch == 2)
               console.log(e.targetTouches.length, e);
             
             var t = e.targetTouches[0];
@@ -1622,7 +1624,7 @@ function toJSON_intern (ob, tlevel) {
             
             var x, y;
             
-            if (DEBUG.touch)
+            if (DEBUG.touch == 2)
               console.log(e);
             
             var t = e.targetTouches[0];
@@ -1655,13 +1657,16 @@ function toJSON_intern (ob, tlevel) {
           
           g_app_state.was_touch = false;
           if (g_app_state.screen != undefined) {
-            var e2 = new MyMouseEvent(e.pageX, g_app_state.screen.size[1] - e.pageY, e.button, MyMouseEvent.MOUSEDOWN);
+            var e2 = new MyMouseEvent(e.pageX, g_app_state.screen.size[1] - e.pageY, 
+                                      e.button, MyMouseEvent.MOUSEDOWN);
             
             e2.shiftKey = e.shiftKey;
             e2.altKey = e.altKey;
             e2.ctrlKey = e.ctrlKey;
-            
+
+            console.log("md1", e.x, e.y);
             g_app_state.eventhandler._on_mousedown(e2);
+            console.log("md2", e.x, e.y);
           }
           
           if (e.button == 2) {
@@ -1675,7 +1680,8 @@ function toJSON_intern (ob, tlevel) {
           
           g_app_state.was_touch = false;
           if (g_app_state.screen != undefined) {
-            var e2 = new MyMouseEvent(e.pageX, g_app_state.screen.size[1] - e.pageY, e.button, MyMouseEvent.MOUSEDOWN);
+            var e2 = new MyMouseEvent(e.pageX, g_app_state.screen.size[1] - e.pageY, 
+                                      e.button, MyMouseEvent.MOUSEUP);
             
             e2.shiftKey = e.shiftKey;
             e2.altKey = e.altKey;

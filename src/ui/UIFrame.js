@@ -113,43 +113,57 @@ class UIFrame extends UIElement {
     this.do_full_recalc();
   }
   
-  start_pan(MouseEvent event=undefined, int button=0) {
+  start_pan(Array<float> start_mpos=undefined, int button=0, Array<float> last_mpos=undefined) {
     if (!(this.state & UIFlags.HAS_PAN)) {
       if (this.parent == undefined) {
         console.trace();
         console.log("Warning: UIFrame.start_pan: no parent frame with pan support");
       } else {
-        if (event != undefined) {
-          event.x += this.pos[0];
-          event.y += this.pos[1];
+        if (start_mpos != undefined) {
+          start_mpos[0] += this.pos[0];
+          start_mpos[1] += this.pos[1];
         }
-        this.parent.start_pan(event, button);
+        if (last_mpos != undefined) {
+          last_mpos[0] += this.pos[0];
+          last_mpos[1] += this.pos[1];
+        }
+        this.parent.start_pan(start_mpos, button, last_mpos);
       }
     } else {
-      this.start_pan_main(event, button);
+      this.start_pan_main(start_mpos, button, last_mpos);
     }
   }
   
   /*callback functions to start or 
     end panning, enable with UIFlags.HAS_PAN*/
-  start_pan_main(MouseEvent event=undefined, int button=0) {
-    if (event != undefined) {
-      this._offset_mpos(event);
-      this.mpos[0] = event.x; this.mpos[1] = event.y;
+  start_pan_main(Array<float> start_mpos, int button=0, Array<float> last_mpos=start_mpos) {
+    if (start_mpos != undefined) {
+      this.mpos[0] = start_mpos[0]; this.mpos[1] = start_mpos[1];
     }
     
     if (this.velpan == undefined)
       this.velpan = new VelocityPan();
     
     var mpos = [this.mpos[0], this.mpos[1]];
+    var lastmpos;
+    
     this.abs_transform(mpos);
+    
+    if (last_mpos != undefined) {
+      last_mpos = [last_mpos[0], last_mpos[1]];
+      this.abs_transform(last_mpos);
+    } else {
+      last_mpos = mpos;
+    }
+
+    console.log("sy", mpos[1]);
     
     var f = this;
     while (f.parent != undefined) {
       f = f.parent;
     }
     
-    this.velpan.start(mpos, this);
+    this.velpan.start(mpos, last_mpos, this);
     f.push_modal(this.velpan);
   }
   
@@ -266,16 +280,12 @@ class UIFrame extends UIElement {
       return this.on_mousemove(event);
     }
   }
-
-  on_mousemove(MouseEvent e) {
-    if (this.bad_event(e)) return;
+  
+  //assumes event has had this._offset_mpos called on it
+  _find_active(MouseEvent e) {
+    var mpos = [e.x, e.y];
     
-    this._offset_mpos(e);
-
-    //current mouse position relative to this.pos
-    var mpos = this.mpos = [e.x, e.y];
     var found = false;
-    
     for (var i=this.children.length-1; i >= 0; i--) {
       var c = this.children[i];
       
@@ -307,6 +317,18 @@ class UIFrame extends UIElement {
       this.active.do_recalc();
       this.active = undefined;
     }
+  }
+  
+  on_mousemove(MouseEvent e) {
+    if (this.bad_event(e)) return;
+    
+    this._offset_mpos(e);
+  
+    //current mouse position relative to this.pos
+    var mpos = this.mpos = [e.x, e.y];
+    var found = false;
+    
+    this._find_active(e);
     
     if (this.active != undefined) {
       e.x -= this.active.pos[0];
@@ -334,14 +356,16 @@ class UIFrame extends UIElement {
     }
   }
 
-  on_mousedown(MouseEvent e, Boolean feed_mousemove=true) {
+  on_mousedown(MouseEvent e, Boolean feed_mousemove=false) {
     if (this.bad_event(e)) return;
     
     if (feed_mousemove)
       this.on_mousemove(e);
+    else
+      this._offset_mpos(e);
     
-    this._offset_mpos(e);
     var mpos = this.mpos = [e.x, e.y];
+    this._find_active(e);
     
     if (this.active != undefined) {
       e.x -= this.active.pos[0];
@@ -352,7 +376,7 @@ class UIFrame extends UIElement {
     
     if ((this.state & UIFlags.USE_PAN) && this.active == undefined) {
       console.log("panning");
-      this.start_pan();
+      this.start_pan([e.x, e.y]);
     }
     
     this._unoffset_mpos(e);
