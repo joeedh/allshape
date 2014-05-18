@@ -1,4 +1,4 @@
-DialogFlags = {MODAL : 1, END_ON_ESCAPE : 2, DEFAULT: 2}
+DialogFlags = {MODAL : 1, END_ON_ESCAPE : 2, DEFAULT: 2};
 
 class _TitleBar extends UIElement {
   constructor(Context ctx)
@@ -13,7 +13,7 @@ class _TitleBar extends UIElement {
     canvas.simple_box([0, 0], this.size, uicolors["DialogTitle"]);
     
     var tsize = canvas.textsize(this.text);
-    canvas.text([12, (this.size[1]-tsize[1])*0.25], this.text, uicolors["DialogText"]);
+    canvas.text([12, (this.size[1]-tsize[1])*0.5], this.text, uicolors["DialogText"], 12.0);
   }
 
   on_mousedown(event) {
@@ -43,7 +43,7 @@ class Dialog extends UIFrame {
     this.title = title;
     this.screen = screen;
     this.canvas = screen.canvas;
-    this.headersize = 25
+    this.headersize = 33
     this.callback = undefined;
     
     if (flag == undefined)
@@ -136,9 +136,13 @@ class Dialog extends UIFrame {
     this.titlebar.size = [this.size[0], this.headersize]
     this.titlebar.text = this.title
     
+    canvas.shadow_box([5,-1], this.size);
     canvas.simple_box([0,0], this.size, uicolors["DialogBox"]);
     
     UIFrame.prototype.build_draw.call(this, canvas, isVertical);
+    
+    //outline
+    canvas.box_outline([0,0], this.size, uicolors["DialogBorder"]);
     
     canvas.pop_scissor();
   }
@@ -213,7 +217,7 @@ class PackedDialog extends Dialog {
 
   call(pos) {
     this.size = this.subframe.get_min_size(this.canvas);
-    this.size[1] += this.headersize + 15
+    this.size[1] += this.headersize
     this.size[0] += 15
     
     Dialog.prototype.call.call(this, pos);

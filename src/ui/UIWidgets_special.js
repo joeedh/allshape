@@ -478,6 +478,7 @@ class UIColorPicker extends RowFrame {
     row.add(r);
     row.add(g);
     row.add(b);
+    row.add(a);
     
     var this2 = this;
     function slider_callback(axis) {
@@ -494,8 +495,6 @@ class UIColorPicker extends RowFrame {
     a.callback = slider_callback(3);
 
     this.r = r; this.g = g; this.b = b; this.a = a;
-    this.add(a, PackFlags.INHERIT_WIDTH);
-    
     this.update_widgets();
   }
   

@@ -629,8 +629,10 @@ class UINumBox extends UIHoverHint {
     var numbox = this;
     
     if (event.button == 0 && !this.clicked && !event.shiftKey) {
-      this.set_prop_data(this.val, true);
-
+      if (this.state & UIFlags.USE_PATH) {
+        this.set_prop_data(this.val, true);
+      }
+      
       this.push_modal()
       
       this.start_mpos = [event.x, event.y]

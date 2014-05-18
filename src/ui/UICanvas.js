@@ -1491,7 +1491,7 @@ class UICanvas {
     }
 #undef LOAD_CLR
 
-    trilist.line_strip(lines, colors, undefined, 1.5, true);
+    trilist.line_strip(lines, colors, undefined, outline_only ? 1.4 : 1.5, !outline_only);
     
     return trilist;
   }
