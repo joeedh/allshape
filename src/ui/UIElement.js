@@ -12,9 +12,9 @@ var UIFlags = {
   //          e.g. if a tablet user touches a button, then drags,
   //          execute pan
   //- pan_canvas_mat : change canvas global matrix, not frame position
-  HAS_PAN        :  512, USE_PAN        : 1024, 
-  PAN_CANVAS_MAT : 2048, IS_CANVAS_ROOT : 4096, 
-  NO_FRAME_CACHE : 8192
+  HAS_PAN              :  512, USE_PAN        : 1024, 
+  PAN_CANVAS_MAT       : 2048, IS_CANVAS_ROOT : 4096, 
+  NO_FRAME_CACHE       : 8192
 };
 
 var CanvasFlags = {NOT_ROOT : 1, NO_PROPEGATE : 2}
@@ -56,6 +56,21 @@ function inrect_2d_button(Array<float> p, Array<float> pos, Array<float> size) :
 }
 
 class UIElement extends EventHandler {
+  Boolean defunt;
+  String description;
+  Array<float> abspos, _minsize, pos, size;
+  String _h12;
+  String data_path;
+  Context ctx;
+  UIElement parent;
+  Timer status_timer = undefined;
+  UICanvas canvas;
+  
+  int _uiel_id, flash_timer_len, flash_ival, last_flash;
+  int recalc, recalc_minsize;
+  int state;
+  int packflag;
+  
   constructor(ctx, path=undefined, pos=undefined, size=undefined) {
     EventHandler.call(this)
     
@@ -251,11 +266,17 @@ class UIElement extends EventHandler {
     
     ui_call_menu(menu, frame, off, false, min_width);
   }
-
-  set_prop_data(data) {
+  
+  /*undo_push is only relevent if datapaths are using
+    toolstack.exec_datapath instead of api.set_prop.*/
+  set_prop_data(data, undo_push=true) {
     var ctx = this.ctx;
+    var prop = ctx.api.get_prop_meta(ctx, this.data_path);
     
-    ctx.api.set_prop(ctx, this.data_path, data);
+    if (prop.flag & TPropFlags.USE_UNDO)
+      g_app_state.toolstack.exec_datapath(ctx, this.data_path, data, undo_push);
+    else
+      ctx.api.set_prop(ctx, this.data_path, data);
   }
 
   get_prop_data() {
@@ -333,7 +354,7 @@ class UIElement extends EventHandler {
   }
 
   is_canvas_root() : Boolean {
-    var ret = this.parent == undefined || this.parent.canvas == undefined || (this.parent.canvas != this.canvas);
+    var ret = this.parent == undefined || (this.canvas != undefined && this.parent.get_canvas() != this.canvas);
     
     ret = ret || this.state & UIFlags.IS_CANVAS_ROOT;
     ret = ret || this instanceof ScreenArea;

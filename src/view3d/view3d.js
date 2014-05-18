@@ -996,7 +996,17 @@ class View3DHandler extends Area {
         console.log("executing unit tests...");
         window.unit_test_env.execute();
       } else {
-        var mesh = new Context().mesh;
+        console.log("testing DataPathOp");
+        
+        var ts = g_app_state.toolstack;
+        ts.exec_datapath(ctx, "object.use_subsurf", !ctx.object.subsurf);
+        
+        /*var op = new DataPathOp("object.use_subsurf");
+        op.inputs.bool.set_data(!ctx.object.subsurf);
+        
+        g_app_state.toolstack.exec_tool(op);*/
+        
+        /*var mesh = new Context().mesh;
         var ret = time_func(function() {
           mesh.api.recalc_normals();
         }, 100);
@@ -1007,7 +1017,7 @@ class View3DHandler extends Area {
         }
         
         console.log("average: ", av/ret.length);
-        
+        */
         //fix_object_mesh(new Context().object);
         /*
         var mesh = new Context().mesh;

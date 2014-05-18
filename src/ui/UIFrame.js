@@ -7,6 +7,23 @@ var _ufbd_v1 = new Vector3();
 //hack for spreading updates across frames
 var _canvas_threshold = 1.0;
 class UIFrame extends UIElement {
+  GArray<UIElement> _children;
+  UIElement active;
+
+  Array<float> bgcolor;
+  Array<float> mpos;
+
+  VelocityPan velpan;
+  KeyMap keymap;
+
+  Boolean draw_background, has_hidden_elements;
+  
+  //private variables?
+  ObjectMap _pan_cache;
+  int depth;
+  int leafcount, framecount;
+  float rcorner;
+  
   constructor(ctx, canvas, path, pos, size) { //path, pos, size are optional
     UIElement.call(this, ctx, path, pos, size);
     
@@ -545,8 +562,10 @@ class UIFrame extends UIElement {
     if (a == this.modalhandler) {
       a.pop_modal();
     }
+    
     a.on_remove(this);
     this.children.replace(a, b);
+    
     if (this.canvas != undefined)
       this.canvas.remove_cache(a);
     if (a == this.active)
@@ -727,8 +746,11 @@ class UIFrame extends UIElement {
       
       isect = isect || aabb_isect_2d(c.pos, c.size, pos, this.size);
       if (!isect) {
-         this.has_hidden_elements = true;
-         continue;
+         //if (c instanceof UITextBox) {
+          //console.log(c.pos, c.size, pos, this.size);
+         //}
+         //this.has_hidden_elements = true;
+         //continue;
       }
       
       if (c.pos == undefined) {
@@ -757,6 +779,9 @@ class UIFrame extends UIElement {
           canvas2.pop_transform();
         }
         
+        if (c instanceof UITextBox) {
+          console.log("eek!!", this.get_canvas(), c.canvas, c.is_canvas_root());
+        }
         continue;
       }
       

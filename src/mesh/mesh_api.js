@@ -550,9 +550,37 @@ function MeshAPI(Mesh mesh) {
     }
   }
   
+  this.recalc_bounds = function() {
+    var m2 = this.mesh;
+    var use_mapco = m2.flag & MeshFlags.USE_MAP_CO;
+    
+    var bb = m2.bb;
+    bb.reset();
+    
+    for (var v in m2.verts) {
+      if (use_mapco)
+        m2.bb.minmax(v.mapco);
+      else
+        m2.bb.minmax(v.co);
+    }
+    
+    //bounded box of current selection
+    bb = m2.sel_bb;
+    bb.reset();
+    for (var v in m2.verts.selected) {
+      if (use_mapco)
+        bb.minmax(v.mapco);
+      else
+        bb.minmax(v.co);
+    }
+  }
+  
   this.recalc_normals = function() {
     var k = 0;
     var m2 = this.mesh;
+    
+    //recalc bounding boxes
+    this.recalc_bounds();
     
     for (var v in m2.verts) {
       var no = v.no;

@@ -72,16 +72,57 @@ def traverse(n, ntype, func, use_depth=False,
   for c in cs:
     traverse(c, ntype, func, use_depth, exclude, copy_children, use_scope, scope, depth+1)
 
-
-def expand_harmony_class(cls):
+def validate_class_this_refs(typespace, cls, scope):
+  def visit(n):
+    #this isn't bound in nested functions
+    if type(n) == FunctionNode:
+      return;
+    
+    if type(n) == IdentNode and n.val == "this":
+      if type(n.parent) == BinOpNode and n.parent.op == "." and n == n.parent[0]:
+        if n.parent[1].gen_js(0).strip() not in scope:
+          typespace.error("Unknown property " + n.parent[1].gen_js(0).strip(), n.parent)
+      
+    for c in n:
+      visit(c)
+    
+  for c2 in cls:
+    if type(c2) != VarDeclNode:
+      visit(cls)
+  
+def expand_harmony_class(typespace, cls):
   node = FunctionNode(cls.name, 0)  
   
   params = ExprListNode([])
   slist = StatementList()
+  vars = [];
+  cls_scope = {}
+  
+  #properties
+  for c in cls:
+    if type(c) == VarDeclNode:
+      cls_scope[c.val] = c;
+      cs = c[2:]
+      c.children = c.children[:2]
+      
+      vars.append(c)
+      for c2 in cs:
+        cls_scope[c2.val] = c2;
+        vars.append(c2)
+  
+  methods = []
+  for c in cls:
+    if type(c) in [MethodNode, MethodGetter, MethodSetter]:
+      if c.name != "constructor":
+        cls_scope[c.name] = c
+      methods.append(c)
+  
+  if glob.g_validate_classes:
+    validate_class_this_refs(typespace, cls, cls_scope)
   
   #find constructor method
   found_con = False
-  for m in cls:
+  for m in methods:
     if m.name == "constructor":
       if found_con: raise SyntaxError("Cannot have multiple constructor methods")
       if type(m) != MethodNode: raise SyntaxError("Constructors cannot be get/setters")
@@ -103,13 +144,23 @@ def expand_harmony_class(cls):
     
     m.add(params)
     m.add(slist)
-    
+  
+  vars.reverse();
+  for c in vars:
+    val = c[0]
+    if type(val) == ExprNode and len(val) == 0:
+      #val = IdentNode("undefined");
+      continue;
+      
+    a = AssignNode(BinOpNode("this", c.val, "."), val)
+    slist.prepend(a)
+  
   #do getters/setters
   gets = {}
   sets = {}
   props = set()
   
-  for m in cls:
+  for m in methods:
     if m.name == "constructor": continue
     if type(m) == MethodGetter:
       gets[m.name] = m
@@ -307,7 +358,10 @@ def gen_manifest_file(result, typespace):
     s += " {\n"
     
     for c in n:
-      s += "  " + function_sig(c) + "\n"
+      if type(c) == VarDeclNode:
+        s += c.gen_js(0) + ";\n"
+      else:
+        s += "  " + function_sig(c) + "\n"
     s += "}"
     
     return s
@@ -344,7 +398,7 @@ def gen_manifest_file(result, typespace):
   return s
 def expand_harmony_classes(result, typespace):
     def visit(n):
-      n.parent.replace(n, expand_harmony_class(n))
+      n.parent.replace(n, expand_harmony_class(typespace, n))
     traverse(result, ClassNode, visit)
     flatten_statementlists(result, typespace)
     

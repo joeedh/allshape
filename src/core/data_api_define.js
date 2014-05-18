@@ -291,8 +291,21 @@ function api_define_object() {
   
   var name = new StringProperty("", "name", "name", "Name", TPropFlags.LABEL);
   var use_subsurf = new BoolProperty(false, "use_subsurf", "Use Subsurf", "Enable subdivision surface rendering");
-  var use_csg = new BoolProperty(false, "use_csg", "Enable CSG", "Enable CSG rendering")
+  var use_csg = new BoolProperty(false, "use_csg", "Enable CSG", "Enable CSG rendering");
   var csg_mode = csg_mode_enum.copy();
+  var ctx_bb = new Vec3Property(new Vector3(), "dimensions", "Dimensions", "Editable dimensions");
+  
+  ctx_bb.flag |= TPropFlags.USE_UNDO;
+  
+  //contextual, editable bounding box
+  //(well, dimensions).
+  ctx_bb.update = function() {
+    if (this.ctx.mesh != undefined)
+      this.ctx.mesh.regen_render();
+    if (this.ctx.view3d != undefined && this.ctx.view3d.selectmode & EditModes.GEOMETRY) {
+      this.ctx.object.dag_update();
+    }
+  }
   
   csg_mode.update = function() {
     this.ctx.object.csg_mode = this.values[this.data];
@@ -302,7 +315,8 @@ function api_define_object() {
     new DataPath(name, "name", "name", true),
     new DataPath(use_subsurf, "use_subsurf", "subsurf", true),
     new DataPath(use_csg, "use_csg", "csg", true),
-    new DataPath(csg_mode, "csg_mode", "csg_mode", true)
+    new DataPath(csg_mode, "csg_mode", "csg_mode", true),
+    new DataPath(ctx_bb, "ctx_bb", "ctx_bb", true)
   ]);
   
   return ObjectStruct;

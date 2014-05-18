@@ -3,6 +3,10 @@
 #include "src/core/utildefine.js"
 
 class UIButtonAbstract extends UIHoverHint {
+  Boolean clicked, click_on_down, can_pan, modal_click, was_touch;
+  Array<float> start_mpos;
+  int text_size;
+  
   constructor(ctx, path=undefined, pos=undefined, size=undefined) {
     UIHoverHint.call(this, ctx, path, pos, size);
     
@@ -624,6 +628,36 @@ class UINumBox extends UIHoverHint {
   on_mousedown(MouseEvent event) {
     var numbox = this;
     
+    if (event.button == 0 && !this.clicked && !event.shiftKey) {
+      this.push_modal()
+      
+      this.set_prop_data(this.val, true);
+      
+      this.start_mpos = [event.x, event.y]
+      this.start_val = this.val
+      this.stop_hover();
+      this.clicked = true;
+      this.do_recalc();
+    } else if (event.button == 2 && !this.clicked) {
+      var this2 = this;
+      
+      function callback(entry, id) {
+        if (id == 0) {
+          this2.swap_textbox();
+        }
+      }
+      
+      var menu = new UIMenu("", callback);
+      menu.add_item("Manual input", "", 0);
+      
+      this.call_menu(menu);
+    } else if (event.shiftKey) {
+      this.swap_textbox();
+    }
+  }
+
+  swap_textbox() {
+    var numbox = this;
     function unit_error(numbox) {
       console.log(["numbox error", numbox]);
       numbox.flash(UIFlags.REDERROR);
@@ -632,35 +666,26 @@ class UINumBox extends UIHoverHint {
     
     //callback for ending text edit swap;
     function on_end_edit(tbox, cancelled) {
-      this.parent.replace(textbox, numbox);
+      tbox.parent.replace(tbox, numbox);
       numbox.set_val(Unit.parse(tbox.text, numbox.val, unit_error, numbox, numbox.unit));
     }
     
-    if (event.button == 0 && !this.clicked && !event.shiftKey) {
-      this.push_modal()
-      
-      this.start_mpos = [event.x, event.y]
-      this.start_val = this.val
-      this.stop_hover();
-      this.clicked = true;
-      this.do_recalc();
-    } else if (event.shiftKey) {
-      //swap out with text button
-      var unit = this.unit;
-      
-      var valstr = Unit.gen_string(this.val, unit);      
-      var textbox = new UITextBox(this.ctx, valstr, this.pos, this.size);
-      
-      textbox.packflag |= PackFlags.NO_REPACK;
-      this.parent.replace(this, textbox);
-
-      textbox.begin_edit(event);
-      textbox.set_cursor();
-      
-      textbox.on_end_edit = on_end_edit;
-    }
+    //swap out with text button
+    var unit = this.unit;
+    
+    var valstr = Unit.gen_string(this.val, unit);      
+    var textbox = new UITextBox(this.ctx, valstr, this.pos, this.size);
+    
+    textbox.packflag |= PackFlags.NO_REPACK;
+    this.parent.do_full_recalc();
+    this.parent.replace(this, textbox);
+    
+    textbox.begin_edit(event);
+    textbox.set_cursor();
+    
+    textbox.on_end_edit = on_end_edit;  
   }
-
+  
   on_mouseup(MouseEvent event) {
     if (this.clicked && event.button == 0) {
       this.pop_modal();
@@ -682,7 +707,7 @@ class UINumBox extends UIHoverHint {
         this.callback(this, this.val);
       }
       if (this.state & UIFlags.USE_PATH) {
-        this.set_prop_data(this.val);
+        this.set_prop_data(this.val, false);
       }
       
       this.do_recalc();
@@ -734,7 +759,7 @@ class UINumBox extends UIHoverHint {
       this.do_recalc()
       
       if (this.state & UIFlags.USE_PATH) {
-        this.set_prop_data(this.val);
+        this.set_prop_data(this.val, false);
       }
       
       if (this.callback != undefined) {

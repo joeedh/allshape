@@ -225,7 +225,12 @@ class MeshEditor extends View3DEditor {
     row2.toolop("mesh.vertsmooth(verts=mesh_selected(v))");
     row2.toolop("mesh.loopcut()");
     row2.toolop("mesh.split_edges(edges=mesh_selected(e))");
-
+    
+    /*dimension tab*/
+    var dim = tab.panel("DIM");
+    dim.prop("object.ctx_bb", PackFlags.INHERIT_WIDTH);
+    
+    /*select panel*/
     var col = row.panel("Select", "select").col();
     var row2 = col.row(undefined, undefined, PackFlags.USE_LARGE_ICON);
     row2.pad[1] = spacing;

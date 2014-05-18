@@ -170,7 +170,7 @@ function simple_tri_aabb_isect(v1, v2, v3, min, max) {
 }
 
 class MinMax {
-  constructor(int totaxis) {
+  constructor(int totaxis=1) {
     this.totaxis = totaxis;
     
     //we handle the empty set case by separating the 
@@ -193,6 +193,18 @@ class MinMax {
     
     this._static_mr_co = new Array(this.totaxis);
     this._static_mr_cs = new Array(this.totaxis*this.totaxis);
+  }
+  
+  load(MinMax mm) {
+    if (this.totaxis == 1) {
+      this.min = mm.min; this.max = mm.max;
+      this._min = mm.min; this._max = mm.max;
+    } else {
+      this.min = new Vector3(mm.min);
+      this.max = new Vector3(mm.max);
+      this._min = new Vector3(mm._min);
+      this._max = new Vector3(mm._max);
+    }
   }
   
   reset() {
@@ -254,7 +266,25 @@ class MinMax {
       }
     }
   }
+  
+  static fromSTRUCT(reader) {
+    var ret = new MinMax();
+    
+    reader(ret);
+    
+    return ret;
+  }
 }
+
+MinMax.STRUCT = """
+  MinMax {
+    min     : vec3;
+    max     : vec3;
+    _min    : vec3;
+    _max    : vec3;
+    totaxis : int;
+  }
+""";
 
 function winding(a, b, c) {
     for (var i=0; i<a.length; i++) {

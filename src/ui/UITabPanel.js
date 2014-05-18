@@ -307,7 +307,7 @@ class UITabPanel extends UIFrame {
   panel(String label, int align=0, int default_packflag=0) {
     align |= this.default_packflag|PackFlags.ALIGN_LEFT;
     
-    var ret = new RowFrame(this.ctx, label);
+    var ret = new RowFrame(this.ctx);
     ret.packflag |= align;
     ret.default_packflag = this.default_packflag|default_packflag;
     

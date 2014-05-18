@@ -12,6 +12,7 @@ class TransDataType {
   static get_size(TransData tdata, int i)       : Vector3            {}
   static get_imat(TransData tdata, int i)       : Matrix4            {}
   static get_mat(TransData tdata, int i)        : Matrix4            {}
+  static finish(TransData tdata) {}
   
   static undo_pre(TransformOp top, TransData tdata, ToolContext ctx) {}
   static undo(TransformOp top, TransData tdata, ToolContext ctx)     {}
@@ -96,6 +97,25 @@ class TransMeshType extends TransDataType {
     tdata.mesh.regen_normals();
   }
   
+  static finish(TransData tdata) {
+    var vs = tdata.verts;
+    var vlen = vs.length;
+    
+    var bb = tdata.mesh.bb;
+    bb.reset();
+    
+    var use_mapco = tdata.mesh.flag & MeshFlags.USE_MAP_CO;
+    if (use_mapco) {
+      for (var v in tdata.mesh.verts) {
+        bb.minmax(v.mapco);
+      }
+    } else {
+      for (var v in tdata.mesh.verts) {
+        bb.minmax(v.co);
+      }
+    }
+  }
+  
   static get_co(TransData tdata, int i) : Vector3 {
     if (tdata.mesh.flag & MeshFlags.USE_MAP_CO) {
       return tdata.verts[i].mapco;
@@ -124,6 +144,9 @@ class TransObjectType {
   
   static get_rot_euler(TransData tdata, int i) : Vector3 {
     return tdata.objects[i].rot_euler;
+  }
+  
+  static finish(TransData tdata) {
   }
   
   static undo_pre(TransformOp top, TransData tdata, ToolContext ctx) {
@@ -192,6 +215,20 @@ class TransObjectType {
 }
 
 class TransData {
+  Matrix4 projmat, iprojmat, imat;
+  Array<float> start_mpos;
+  
+  Context ctx;
+  ASObject object;
+  GArray<ASObject> objects;
+  Mesh mesh;
+  
+  Vector3 center;
+  Vector3 scenter;
+  Vector3 min, max;
+  
+  int datamode, length;
+  
   //objlist is only valid for objectmode transforms
   constructor(Context ctx, TransformOp top, Object obj, Object objlist, int datamode) {
     if (obj == undefined) {
@@ -319,6 +356,10 @@ class TransData {
     this.startcos = new GArray<Vector3>();
     this.faces = new set<Face>();
     this.loops = new set<Face>();
+    
+    //cache start bounding box for fast update
+    this.start_bb = new MinMax(3);
+    this.start_bb.load(obj.data.bb);
     
     var faces = this.faces;
     var loops = this.loops;
@@ -451,7 +492,7 @@ class TransformOp extends ToolOp {
       if (l.f.totvert > 4 || verts.length < 20)
           l.f.recalc_normal();    
     }
-    
+      
     if (verts.length > 20 && this.modal_ctx != undefined) {
       var view3d = this.modal_ctx.view3d
       
@@ -694,8 +735,10 @@ class TransformOp extends ToolOp {
   }
 
   end_modal() {
-    if (this.inputs.datamode.data & EditModes.GEOMETRY) 
+    if (this.inputs.datamode.data & EditModes.GEOMETRY)
       this.do_normals(this.modal_ctx);
+    
+    this.datatype.finish(this.transdata);
     
     for (var dl in this.axis_drawlines) {
       this.modal_ctx.view3d.kill_drawline(dl);

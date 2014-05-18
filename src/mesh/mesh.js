@@ -67,7 +67,7 @@ class Mesh extends DataBlock {
   }
   
   get aabb() {
-    return this.aabb;
+    return this.bb;
   }
   
   get selected() {
@@ -152,6 +152,9 @@ class Mesh extends DataBlock {
         }
       }
     }
+    
+    //ensure up to date bounding boxes
+    m.api.recalc_bounds();
     
     return m;
   }
@@ -1255,10 +1258,12 @@ class Mesh extends DataBlock {
 }
 
 Mesh.STRUCT = STRUCT.inherit(Mesh, DataBlock) + """
-    idgen : EIDGen;
-    _id : int;
-    verts : iter(Vertex);
-    edges : iter(Edge);
-    faces : iter(Face);
+    idgen  : EIDGen;
+    _id    : int;
+    verts  : iter(Vertex);
+    edges  : iter(Edge);
+    faces  : iter(Face);
+    bb     : MinMax;
+    sel_bb : MinMax;
   }
 """;

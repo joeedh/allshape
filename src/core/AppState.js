@@ -1725,6 +1725,42 @@ class ToolStack {
     }
   }
   
+  /*the undo-friendly way to set a datapath*/
+  exec_datapath(Context ctx, String path, Object val, Boolean undo_push=true, 
+                Boolean use_simple_undo=false, Function cls=DataPathOp) 
+  {
+    var api = g_app_state.api;
+    
+    //first, ensure we can access the data path
+    var prop = api.get_prop_meta(ctx, path);
+    if (prop == undefined) {
+      console.trace("Error in exec_datapath", path);
+      return;
+    }
+    
+    var good = this.undostack.length > 0 && this.undostack[this.undocur-1] instanceof cls;
+    good = good && this.undostack[this.undocur-1].path == path;
+    var exists = false;
+    
+    if (undo_push || !good) {
+      var op = new cls(path, use_simple_undo);
+    } else {
+      op = this.undostack[this.undocur-1];
+      this.undo();
+      exists = true;
+    }
+   
+    console.log("exists", exists, "undo_push", undo_push, "path, prop", path, prop);
+    var input = op.get_prop_input(path, prop);
+    input.set_data(val);
+    
+    if (exists) {
+      this.redo();
+    } else {
+      this.exec_tool(op);
+    }
+  }
+  
   exec_tool(ToolOp tool) {
     this.set_tool_coll_flag(tool);
     

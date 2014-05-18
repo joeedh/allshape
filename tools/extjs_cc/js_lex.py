@@ -21,7 +21,7 @@ res = [
 'float', 'int', 'const', 'short', 'double', 'char',
 'unsigned', 'signed', 'variable', 'template', 'byte',
 'global', 'inferred', 'native', 'class', 'extends',
-'static', 'typed', 'finally'
+'static', 'typed', 'finally', 'get', 'set'
 ]
 
 reserved = {}
@@ -114,6 +114,7 @@ tokens = (
    "ASSIGNBOR",
    "ASSIGNBAND",
    "ASSIGNBXOR",
+   "VAR_TYPE_PREC",
    
    "ASSIGNLSHIFT",
    "ASSIGNRSHIFT",

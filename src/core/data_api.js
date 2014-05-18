@@ -863,6 +863,7 @@ class DataAPI {
         prop.set_data(eval(valpath));
       }
       
+      ret[0].ctx = ctx;
       if (ret[0].update != undefined)
         ret[0].update.call(ret[0]);
     }

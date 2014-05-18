@@ -32,6 +32,7 @@ precedence = (
   ("left", "PLUS", "MINUS"),
   ("left", "TIMES", "DIVIDE"),
   ("right", "UMINUS"), #negation prefix operation, note this is a "fictitious" token
+  ("right", "VAR_TYPE_PREC"), #ficitious token
   ("right", "BITINV"),
   ("right", "NOT"),
   ("right", "TYPEOF"),
@@ -463,25 +464,27 @@ def p_type_modifiers(p):
                     | STATIC
   '''
   set_parse_globals(p)
-    
-  if len(p) == 2:
-    if p[1] == "var":
-      p[1] = "local"
-    
-    p[0] = set([p[1]])
-  else:
+   
+  if len(p) == 3:
     p[0] = p[1]
     if p[2] == "var":
       p[2] = "local"
         
-    p[0].add(p[2])
-
+    p[0].add(p[2])   
+  elif len(p) == 2:
+    if p[1] == "var":
+      p[1] = "local"
+    
+    p[0] = set([p[1]])
+  elif len(p) == 1:
+    p[0] = set("global");
+    
 def p_left_id(p):
-  '''left_id : ID ''' # %prec ID_TEMPL'''
+  '''left_id : id ''' # %prec ID_TEMPL'''
   p[0] = p[1]
 
 def p_id_opt(p):
-  ''' id_opt : ID
+  ''' id_opt : id
              |
   '''
   if len(p) == 2:
@@ -531,7 +534,7 @@ def p_gthan_restrict(p):
   pop_restrict()
 
 def p_id1(p):
-  '''id_1 : ID
+  '''id_1 : id
   '''
   set_parse_globals(p)
   p[0] = p[1]
@@ -591,8 +594,8 @@ def p_var_decl_no_list(p):
 def p_var_decl(p):
   '''var_decl : type_modifiers var_type
               | var_decl ASSIGN expr
-              | var_decl COMMA ID
-              | var_decl COMMA ID ASSIGN expr
+              | var_decl COMMA id
+              | var_decl COMMA id ASSIGN expr
   '''
   set_parse_globals(p)
   
@@ -659,7 +662,7 @@ def p_var_decl(p):
     p[0].add(p[3])
 
 def p_ident_arr(p):
-  '''ident_arr : ID
+  '''ident_arr : id
                | ident_arr LSBRACKET NUMBER RSBRACKET
   '''
   set_parse_globals(p)
@@ -730,13 +733,13 @@ def p_var_decl_with_arr(p):
     n.add(n.type)
     
 def p_id_var_type(p):
-  '''id_var_type : ID 
+  '''id_var_type : id 
   '''
   set_parse_globals(p, p[1])
   p[0] = IdentNode(p[1])
 
 def p_id_var_decl(p):
-  '''id_var_decl : ID 
+  '''id_var_decl : id 
   '''
   set_parse_globals(p)
   p[0] = p[1]
@@ -877,8 +880,8 @@ def p_simple_templatedeflist(p):
         
     
 def p_simple_var_decl(p):
-  '''simple_var_decl : VAR ID
-                     | ID
+  '''simple_var_decl : VAR id
+                     | id
   '''
   
   set_parse_globals(p)
@@ -946,9 +949,9 @@ def p_exprlist(p):
   
   #'''
   #  exprlist : expr
-  #           | ID ASSIGN expr
+  #           | id ASSIGN expr
   #           | exprlist COMMA expr
-  #           | exprlist COMMA ID ASSIGN expr
+  #           | exprlist COMMA id ASSIGN expr
   #'''
   
   set_parse_globals(p)
@@ -970,7 +973,7 @@ supported.
 """
 
 def p_typed_class(p):
-    '''typed_class : TYPED CLASS ID template_opt typed_class_tail
+    '''typed_class : TYPED CLASS id template_opt typed_class_tail
     '''
     set_parse_globals(p)
     
@@ -1029,7 +1032,7 @@ def p_typed_class_element(p):
   p[0] = p[1]
 
 def p_typed_inherit_opt(p):
-  '''typed_inherit_opt : EXTENDS ID
+  '''typed_inherit_opt : EXTENDS id
                        |
   '''
   set_parse_globals(p)
@@ -1041,7 +1044,7 @@ def p_typed_inherit_opt(p):
     
 #page 239 of january2014 draft harmony spec (page 257 as chrome sees it)
 def p_class(p):
-  '''class : CLASS ID template_opt class_tail'''
+  '''class : CLASS id template_opt class_tail'''
   set_parse_globals(p)
    
   tail = p[4]
@@ -1136,21 +1139,29 @@ def p_class_element_list(p):
   else:
     p[0] = p[1]
     p[0].append(p[2])
-  
+    
 def p_class_element(p):
-  '''class_element : method_def
-                   | STATIC method_def
+  '''class_element : STATIC method_def
+                   | method_def
+                   | class_property SEMI
   '''
   set_parse_globals(p)
   
   if len(p) == 2:
     p[0] = p[1]
-  else:
+  elif p[1] == "static":
     p[0] = p[2]
     p[0].is_static = True
-
+  elif p[2] == ";":
+    p[0] = p[1]
+      
+def p_id_right(p):
+  '''id_right : id %prec UMINUS
+  '''
+  p[0] = p[1]
+  
 def p_method(p):
-  '''method : ID LPAREN funcdeflist RPAREN func_type_opt LBRACKET statementlist_opt RBRACKET'''
+  '''method : id_right LPAREN funcdeflist RPAREN func_type_opt LBRACKET statementlist_opt RBRACKET'''
   set_parse_globals(p)
   
   name = p[1]
@@ -1167,7 +1178,7 @@ def p_method(p):
     p[0].type = p[5]
 
 def p_getset_id(p):
-  '''getset_id : ID
+  '''getset_id : id
                | NUMBER
   '''
   
@@ -1178,8 +1189,8 @@ def p_method_def(p):
   #so I'm going to enforce that here in the production function.
   
   '''method_def : method
-                | ID getset_id LPAREN RPAREN func_type_opt LBRACKET statementlist_opt RBRACKET
-                | ID getset_id LPAREN setter_param_list RPAREN func_type_opt LBRACKET statementlist_opt RBRACKET
+                | GET getset_id LPAREN RPAREN func_type_opt LBRACKET statementlist_opt RBRACKET
+                | SET getset_id LPAREN setter_param_list RPAREN func_type_opt LBRACKET statementlist_opt RBRACKET
   '''
   
   if len(p) == 2:
@@ -1205,10 +1216,94 @@ def p_method_def(p):
     glob.g_error_pre = p
     print_err(p, True)
     raise SyntaxError("Expected 'get' or 'set'");
+
+#right associativity! that's how you do c-style type
+#declarations and not have var_type eat up all the id tokens!
+def p_var_element(p):
+  '''
+    var_element : id %prec VAR_TYPE_PREC
+                | INT %prec VAR_TYPE_PREC
+                | SHORT %prec VAR_TYPE_PREC
+                | FLOAT %prec VAR_TYPE_PREC
+                | DOUBLE %prec VAR_TYPE_PREC
+                | CHAR %prec VAR_TYPE_PREC
+                | BYTE %prec VAR_TYPE_PREC
+                | id template_ref %prec VAR_TYPE_PREC
+  '''
+  if len(p) == 2:
+    p[0] = p[1]
+  elif len(p) == 3:
+    pn = IdentNode(p[1])
+    
+    p[0] = p[2]
+    p[0].add(pn)
+    p[0].name_expr = pn
+
+def p_var_type2(p):
+  '''
+      var_type2 : var_element
+             
+  '''
+  if len(p) == 2:
+    p[0] = p[1]
+    if p[0] in ["int", "short", "float", "double", "char", "byte"]:
+      p[0] = BuiltinTypeNode(p[0])
+    else:
+      p[0] = TypeRefNode(p[0])
+
+def p_class_property(p):
+  '''class_property : var_type2 id
+                    | class_property ASSIGN expr
+                    | class_property COMMA id
+                    | class_property COMMA id ASSIGN expr
+  '''
+  set_parse_globals(p)
   
+  if len(p) == 3:
+    p[0] = VarDeclNode(ExprNode([]), name=p[2])
+    
+    p[0].add(ExprNode([]));
+    p[0].type = p[0][1]
+  elif len(p) == 4 and p[2] == "=":
+    p[0] = p[1]
+    if len(p[1][0]) == 0 and type(p[1][0]) == ExprNode:
+      p[1].replace(p[1][0], p[3])
+    else:
+      p[1].replace(p[1][0], AssignNode(p[1][0], p[3]))
+  elif len(p) == 4 and p[2] == ",":
+    if type(p[3]) == IdentNode:
+      p[3] = p[3].val
+    
+    if type(p[3]) == str:
+      n = p[1].copy()
+      n.children = [ExprNode([]), n.type];
+      
+      n.val = p[3]
+      scope_add(n.val, n)
+      p[3] = n
+      
+    p[0] = p[1]
+    p[0].add(p[3])
+  elif len(p) == 6 and p[2] == ",":
+    if type(p[3]) == IdentNode:
+      p[3] = p[3].val
+    
+    if type(p[3]) == str:
+      n = p[1].copy()
+      n.children = [ExprNode([]), n.type];
+      
+      n.val = p[3]
+      scope_add(n.val, n)
+      p[3] = n
+    
+    p[3].replace(p[3][0], p[5]);
+    
+    p[0] = p[1]
+    p[0].add(p[3])
+    
 def p_setter_param_list(p):
   '''
-    setter_param_list : var_type_opt ID
+    setter_param_list : var_type_opt id
                       | var_type
   '''
   set_parse_globals(p)
@@ -1292,7 +1387,7 @@ def p_func_type_opt(p):
     p[0] = None
  
 def p_funcref(p):
-  ''' funcref : FUNCTION ID template_opt push_scope LPAREN funcdeflist RPAREN func_type_opt
+  ''' funcref : FUNCTION id template_opt push_scope LPAREN funcdeflist RPAREN func_type_opt
   '''
   
   set_parse_globals(p)
@@ -1313,7 +1408,7 @@ def p_funcref(p):
   pop_scope()
   
 def p_func_native(p):
-  ''' func_native : NATIVE push_scope FUNCTION ID template_opt LPAREN funcdeflist RPAREN func_type_opt
+  ''' func_native : NATIVE push_scope FUNCTION id template_opt LPAREN funcdeflist RPAREN func_type_opt
   '''
   
   set_parse_globals(p)
@@ -1336,7 +1431,7 @@ def p_func_native(p):
   pop_scope()
     
 def p_function(p):
-  ''' function : FUNCTION ID template_opt push_scope LPAREN funcdeflist RPAREN func_type_opt LBRACKET statementlist_opt RBRACKET
+  ''' function : FUNCTION id template_opt push_scope LPAREN funcdeflist RPAREN func_type_opt LBRACKET statementlist_opt RBRACKET
   '''
   
   set_parse_globals(p)
@@ -1452,7 +1547,7 @@ def p_array_literal(p):
     p[0] = ArrayLitNode(ExprListNode([]))
 
 def p_id_str_or_num(p):
-  '''id_str_or_num : ID
+  '''id_str_or_num : id
                | NUMBER
                | STRINGLIT
   '''
@@ -1584,8 +1679,8 @@ def p_rsbracket_restrict(p):
 def p_expr(p):
     '''expr : NUMBER
             | strlit
-            | ID
-            | ID template_ref
+            | id
+            | id template_ref
             | template_ref
             | array_literal
             | exprfunction
@@ -1728,8 +1823,8 @@ def p_re_lit(p):
   p[0] = RegExprNode(p[1])
 
 def p_for_var_decl(p):
-  '''for_var_decl : ID
-                  | ID ASSIGN expr
+  '''for_var_decl : id
+                  | id ASSIGN expr
                   | var_decl
   '''
   global parsescope
@@ -1981,7 +2076,16 @@ def p_yield(p):
     p[0] = YieldNode(p[2])
   else:
     p[0] = YieldNode(ExprNode([]))
-  
+
+#wrapper rule to include GET and SET,
+#which are "soft" keywords.
+def p_id(p):
+  ''' id : ID
+         | GET
+         | SET
+  '''
+  p[0] = p[1]
+    
 # Error rule for syntax errors
 def err_find_line(lexer, lpos):
   if type(lexer) != Lexer: lexer = lexer.lexer

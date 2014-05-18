@@ -1237,6 +1237,13 @@ class Vector3 extends Array {
     
     return this;
   }
+  
+  divideVect(Array<float> v)
+  {
+      this[0] /= v[0]; this[1] /= v[1]; this[2] /= v[2];
+      
+      return this;
+  }
 
   divide(float divisor)
   {

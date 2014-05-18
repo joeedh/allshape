@@ -38,6 +38,7 @@ gcs["g_write_manifest"] = "wm"
 gcs["g_warn_types"] = "WT"
 gcs["g_debug_print_calls"] = "dpr"
 gcs["g_gen_es6"] = "es6"
+gcs["g_validate_classes"] = "vc"
 
 def argv_to_argline():
   s = ""
@@ -255,5 +256,6 @@ class Glob(AbstractGlob):
     g_warn_types = False
     g_debug_print_calls = False
     g_gen_es6 = False
+    g_validate_classes = False
     
 glob = Glob()

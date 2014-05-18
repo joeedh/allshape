@@ -3,15 +3,10 @@
 #include "src/core/utildefine.js"
 
 class Element {
-  constructor(set_sid) {
-    if (set_sid == undefined)
-      set_sid = true;
-    
-    this.type = 0;
-    this.eid = 0;
+  int type=0, eid=0, flag=0, index=0, sid=0;
+  
+  constructor(set_sid=true) {
     this.gdata = new ElementData();
-    this.flag = 0;
-    this.index = 0;
     
     if (set_sid)
       this.sid = ibuf_idgen.gen_id();
@@ -54,6 +49,11 @@ Element.STRUCT = """
 """
 
 class Vertex extends Element {
+  Vector3 co, no, td_sco, mapco;
+  Loop loop;
+  Array<Edge> edges;
+  int type;
+  
   constructor(Vector3 co, Vector3 no) {
     Element.call(this);
     
@@ -144,6 +144,9 @@ Vertex.STRUCT = STRUCT.inherit(Vertex, Element) + """
 """;
 
 class Edge extends Element {  
+  Vertex v1, v2;
+  Loop loop;
+  
   constructor(Vert v1, Vert v2) {
     Element.call(this);
     
@@ -239,6 +242,12 @@ Edge.STRUCT = STRUCT.inherit(Edge, Element) + """
 """;
 
 class Loop extends Element {
+  Vertex v;
+  Edge e;
+  Face f;
+  LoopList list;
+  Loop next, prev, radial_next, radial_prev;
+  
   constructor(Vertex v, Edge e, Face f) {
     Element.call(this, false);  
     this.type = MeshTypes.LOOP;
@@ -297,13 +306,19 @@ Loop.STRUCT = """
   }
 """
 
-function LoopIter(LoopList looplist) {
-  this.ret = {done : false, value : undefined};
-  this.list = looplist;
-  this.startl = looplist.loop;
-  this.cur = this.startl;
+class LoopIter {
+  ObjectMap ret;
+  LoopList list;
+  Loop startl, cur;
   
-  this.next = function() : Loop {
+  constructor(LoopList looplist) {
+    this.ret = {done : false, value : undefined};
+    this.list = looplist;
+    this.startl = looplist.loop;
+    this.cur = this.startl;
+  }
+  
+  next() : Loop {
     var ret2 = this.ret;
     var ret = this.cur;
     
@@ -322,6 +337,9 @@ function LoopIter(LoopList looplist) {
 }
 
 class LoopList {
+  Loop loop;
+  int length;
+  
   constructor(Loop loop) {
     this.loop = loop;
     this.length = 0;
@@ -335,6 +353,11 @@ var _static_cent = new Vector3();
 var _frn_n1 = new Vector3();
 
 class Face extends Element{
+  Iterator _liter, _eiter, _viter;
+  GArray<LoopList> looplists;
+  Vector3 no, center, mapcenter;
+  int totvert;
+  
   constructor(GArray< GArray<Loop> > looplists) {
     /*
     Note: copies looplists
@@ -579,7 +602,11 @@ Face.STRUCT = STRUCT.inherit(Face, Element) + """
   }
 """;
 
-class GeoArrayIter {  
+class GeoArrayIter<T> {
+  ObjectMap ret;
+  GeoArray<T> arr;
+  int cur;
+  
   constructor(GeoArray arr) {
     this.ret = {done : false, value : undefined};
     this.cur = 0;
@@ -617,6 +644,11 @@ class GeoArrayIter {
 }
 
 class AllTypesSelectIter extends TCanSafeIter {
+  ObjectMap ret;
+  Mesh mesh;
+  Iter iter;
+  int type;
+  
   constructor(mesh) {
     TCanSafeIter.call(this);
     
@@ -674,7 +706,17 @@ class AllTypesSelectIter extends TCanSafeIter {
   }
 }
 
-class GeoArray {
+class GeoArray<T> {
+  Array arr;
+  EIDGen idgen;
+  ObjectMap<int,Element> global_eidmap;
+  ObjectMap<int,T> sidmap, eidmap;
+  T highlight;
+  GArray<T> freelist;
+  GeoArrayIter<T> iter;
+  ObjectMap<int,T> _selected;
+  int length, type, _totsel;
+  
   constructor(type, idgen, eidmap, sidmap) {
     this.arr = new Array();
     this.length = 0;  

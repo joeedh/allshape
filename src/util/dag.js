@@ -270,7 +270,7 @@ class Dag {
       
       _i++;
       
-      if (_i > 10) { //XXX make this bigger
+      if (_i > 10000) { //XXX make this bigger
         console.log("infinite loop in dag sort");
         return;
       }

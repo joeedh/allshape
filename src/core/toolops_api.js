@@ -495,6 +495,97 @@ ToolMacro.STRUCT = STRUCT.inherit(ToolMacro, ToolOp) + """
 }
 """
 
+/*note: datapathops can only access data paths
+  in ToolContext, u.e. object, scene, and mesh.*/
+class DataPathOp extends ToolOp {
+  constructor(String path="", use_simple_undo=false) {
+    ToolOpAbstract.call(this, "DataPathOp", "DataPath", "DataPath Value Set");
+    
+    this.use_simple_undo = use_simple_undo;
+    this.is_modal = false;
+    this.path = path;
+    
+    this.inputs = {
+      path      : new StringProperty(path, "path", "path", "path"),
+      vec3      : new Vec3Property(undefined, "vec3", "vec3", "vec3"),
+      vec4      : new Vec4Property(undefined, "vec4", "vec4", "vec4"),
+      pint      : new IntProperty(0, "pint", "pint", "pint"),
+      pfloat    : new FloatProperty(0, "pfloat", "pfloat", "pfloat"),
+      str       : new StringProperty("", "str", "str", "str"),
+      bool      : new BoolProperty(false, "bool", "bool", "bool"),
+      val_input : new StringProperty("", "val_input", "val_input", "val_input")
+    };
+    
+    this.outputs = {
+    };
+    
+    for (var k in this.inputs) {
+      this.inputs[k].flag |= TPropFlags.PRIVATE;
+    }
+  }
+  
+  undo_pre(Context ctx) {
+    this._undocpy = g_app_state.create_undo_file();
+  }
+
+  undo(Context ctx) {
+    g_app_state.load_undo_file(this._undocpy);
+  }
+  
+  get_prop_input(String path, ToolProperty prop) {
+    if (prop == undefined) {
+      console.trace("Warning: DataPathOp failed!", path, prop);
+      return;
+    }
+    
+    var input;
+    
+    if (prop.type == PropTypes.INT) {
+      input = this.inputs.pint;
+    } else if (prop.type == PropTypes.FLOAT) {
+      input = this.inputs.pfloat;
+    } else if (prop.type == PropTypes.VEC3) {
+      input = path.endsWith("]") ? this.inputs.pfloat : this.inputs.vec3;
+    } else if (prop.type == PropTypes.VEC4) {
+      input = path.endsWith("]") ? this.inputs.pfloat : this.inputs.vec4;
+    } else if (prop.type == PropTypes.BOOL) {
+      input = this.inputs.bool;
+    } else if (prop.type == PropTypes.STR) {
+      input = this.inputs.str;
+    } else if (prop.type == PropTypes.FLAG) {
+      input = this.inputs.str;
+    } else if (prop.type == PropTypes.ENUM) {
+      input = this.inputs.pint;
+    } else {
+      console.trace("ERROR: unimplemented prop type "+prop.type+"in DataPathOp", prop, this);
+      return undefined;
+    }
+    
+    return input;
+  }
+  
+  exec(ToolContext ctx) {
+    var api = g_app_state.api;
+    
+    var path = this.inputs.path.data.trim();
+    
+    //HA! FINALLY! A use case where passing
+    //ctx to DataAPI.get_XXX, instead of caching
+    //one in DataAPI, makes sense!
+    
+    var prop = api.get_prop_meta(ctx, path);
+    if (prop == undefined) {
+      console.trace("Warning: DataPathOp failed!");
+      return;
+    }
+    
+    var input = this.get_prop_input(path, prop);
+    
+    api.set_prop(ctx, path, input.data);
+  }
+}
+
+
 //generates default toolop STRUCTs/fromSTRUCTS, as needed
 //genereated STRUCT/fromSTRUCT should be identical with 
 //ToolOp.STRUCT/fromSTRUCT, except for the change in class name.
@@ -581,3 +672,4 @@ function init_toolop_structs() {
     }
   }
 }
+

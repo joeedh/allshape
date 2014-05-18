@@ -1,5 +1,7 @@
 "use strict";
 
+#include "src/core/utildefine.js"
+
 var RecalcFlags = {
   TRANSFORM : 1,
   DATA_COS  : 2,
@@ -27,6 +29,38 @@ var csg_debug_names = {
 
 var RotTypes = {EULER: 0};
 var BBDispTypes = {BOX: 1, SPHERE: 2, CYLINDER: 3, CONE: 4, VIEWCIRCLE: 5};
+
+//evil!
+class DimArray {
+  constructor(Array<float> dim, ASObject ob) {
+    this.length = 0;
+    this.dim = new Vector3(dim);
+    this.ob = ob;
+  }
+  
+  set 0(float val) : float {
+    this.dim[0] = val;
+    this.ob.ctx_bb = this.dim;
+  }
+  set 1(float val) : float {
+    this.dim[1] = val;
+    this.ob.ctx_bb = this.dim;
+  }
+  set 2(float val) : float {
+    this.dim[2] = val;
+    this.ob.ctx_bb = this.dim;
+  }
+
+  get 0() : float {
+    return this.dim[0];
+  }
+  get 1() {
+    return this.dim[1];
+  }
+  get 2() {
+    return this.dim[2];
+  }
+}
 
 class ASObject extends DagNode {
   constructor(data, name) {
@@ -115,6 +149,46 @@ class ASObject extends DagNode {
     }
     
     this._data.update_callback(this, octree_callback);
+  }
+  
+  /*this property implements the "dimensions" panel, 
+    for resizing objects or, if in a geometry select
+    mode, resizing the selection*/
+  get ctx_bb() {
+    if (this.data == undefined || !(this.data instanceof Mesh)) {
+     console.trace("error in ctx_bb");
+     return new Vector3();
+    }
+    
+    var m = this.data;
+    var bb = m.bb;
+    
+    var vec = new Vector3();
+    vec.load(bb.max).sub(bb.min);
+    vec.multVecMatrix(this.matrix);
+    
+    return new DimArray(vec, this);
+  }
+  
+  set ctx_bb(Vector3 val) {
+    var cur = this.ctx_bb;
+    
+    //sanity checks
+    if (cur[0] == 0) cur[0] = 1;
+    if (cur[1] == 0) cur[1] = 1;
+    if (cur[2] == 0) cur[2] = 1;
+    
+    static size = new Vector3();
+    
+    console.log("size", JSON.stringify(val));
+    
+    size.load(val).divideVect(cur);
+    this.size.mul(size);
+    this.recalc(RecalcFlags.TRANSFORM);
+    
+    //okay.  need a way to interface data api with the undo
+    //system.
+    console.log("dimension edit!");
   }
   
   regen_octree() {

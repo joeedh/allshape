@@ -25,9 +25,11 @@ var PropTypes = {
 };
 
 var TPropFlags = {
-  PRIVATE : 1, 
-  LABEL : 2, 
-  COLL_LOOSE_TYPE : 4
+  PRIVATE     : 1, 
+  LABEL       : 2, 
+  COLL_LOOSE_TYPE : 4,
+  USE_UNDO    : 8, //use toolstack.exec_datapath instead of api.set_prop
+  UNDO_SIMPLE : 16 //use simple undo implementation
 };
 
 class ToolProperty {

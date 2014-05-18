@@ -127,21 +127,28 @@ class DataRef extends Array {
 //(lowercase) dataref STRUCT type does.
 DataRef.STRUCT = """
   DataRef {
-    id : int;
+    id  : int;
     lib : int;
   }
 """
 
-class DataRefListIter extends ToolIter {
-  constructor(lst, ctx) {
+class DataRefListIter<T> extends ToolIter {
+  Array lst;
+  
+  DataLib datalib;
+  IterRet<T> ret;
+  Boolean init;
+  int i;
+  
+  constructor(Array lst, Context ctx) {
     this.lst = lst;
     this.i = 0;
     this.datalib = ctx.datalib;
-    this.ret = undefined : IterRet;
+    this.ret = undefined : IterRet<T>;
     this.init = true;
   }
   
-  next() {
+  next() : IterRet<T> {
     if (this.init) {
       this.ret = cached_iret();
       this.init = false;
@@ -165,7 +172,12 @@ class DataRefListIter extends ToolIter {
   }
 }
 
-class DataList {
+class DataList<T> {
+  GArray<T> list;
+  ObjectMap<String,T> namemap;
+  int type;
+  T active;
+  
   constructor(int type) {
     this.list = new GArray();
     this.namemap = {};
@@ -179,6 +191,12 @@ class DataList {
 }
 
 class DataLib {
+  hashtable<int,DataList>  datalists;
+  ObjectMap<int,DataBlock> idmap;
+  EIDGen idgen;
+  
+  int id;
+  
   constructor() {
     this.id = 0;
     this.datalists = new hashtable();
@@ -365,6 +383,9 @@ class DataLib {
 }
 
 class UserRef {
+  String user, srcname;
+  Function rem_func;
+  
   constructor() {
     this.user = 0;
     this.rem_func = 0;
@@ -374,6 +395,14 @@ class UserRef {
 
 var _db_hash_id = 1;
 class DataBlock {
+  String name;
+  DataLib lib_lib;
+  GArray lib_users;
+  
+  int flag, lib_type;
+  int lib_refs, lib_id;
+  int _hash_id;
+  
   constructor(int type, String name) {
     this.constructor.datablock_type = type;
     

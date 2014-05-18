@@ -523,6 +523,6 @@ class UITextBox extends UIElement {
 
   get_min_size(UICanvas canvas, Boolean isvertical)
   {
-    return CACHEARR2(this.min_width, 26)
+    return [this.min_width, 26];
   }
 }

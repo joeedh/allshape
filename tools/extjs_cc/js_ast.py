@@ -335,6 +335,10 @@ class IdentNode (ValueNode):
     
 class VarDeclNode(IdentNode):
   def __init__(self, expr, local=False, name="(unnamed)"):
+    #self[0] is assignment expression
+    #self[1] is type
+    #self[2..] are chained var decl child nodes
+    
     super(VarDeclNode, self).__init__(expr)
     self.modifiers = set()
     self.val = name
