@@ -52,7 +52,7 @@ class UIMenuEntry extends UIElement{
     var textclr, hotclr;
     if (this.state & UIFlags.HIGHLIGHT) {
       //console.log(uicolors["MenuTextHigh"], "--=-=-=")
-      canvas.simple_box([0, -2], [this.size[0]-3, this.size[1]], uicolors["MenuHighlight"], 35.0)
+      canvas.simple_box([-2, -2], [this.size[0]-1, this.size[1]], uicolors["MenuHighlight"], 0.0)
       textclr = hotclr = uicolors["MenuTextHigh"];
     } else {
       textclr = uicolors["MenuText"];
@@ -226,12 +226,16 @@ class UIMenu extends UIFrame {
     }
     
     canvas.shadow_box([8, -1], [this.size[0]-10, this.size[1]-10]);
-    canvas.simple_box([0, 0], this.size, uicolors["MenuBox"][0], 35.0);
-    canvas.box_outline([0, 0], this.size, uicolors["MenuBorder"], 35.0);
-    canvas.box([0, 0], this.size, uicolors["Box"], 35.0, true);
+    canvas.simple_box([0, 0], this.size, uicolors["MenuBox"][0], 0.0);
+    canvas.box_outline([0, 0], this.size, uicolors["MenuBorder"], 0.0);
+    //canvas.box([0, 0], this.size, uicolors["Box"], 0.0, true);
     canvas.text([24, this.size[1]-22], this.name, uicolors["MenuText"], menu_text_size)
+
+    var clr = uicolors["MenuSep"];
+    if (this.name != undefined && this.name != "")
+      canvas.line([0, Math.floor(this.size[1]-30), 0], [Math.floor(this.size[0]), 
+                                    Math.floor(this.size[1]-30), 0], clr, clr, 1.0);
     
-    var clr = uicolors["MenuSep"]
     var ehgt = this.ehgt
     y = ehgt+2
     
@@ -252,9 +256,6 @@ class UIMenu extends UIFrame {
     UIFrame.prototype.build_draw.call(this, canvas, true);
      
     y += 10;
-    
-    if (this.name != undefined && this.name != "")
-      canvas.line([0, y, 0], [this.size[0], y, 0], clr, clr, 1);
     
     //canvas.line([20, 0, 0], [20, this.size[1], 0], uicolors["MenuSep"], undefined, 1);
     //if (this.hkey_line_pos != 0)

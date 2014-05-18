@@ -450,7 +450,11 @@ class TriList {
       var c1 = _trilist_c1.load(lc1); var c2 = _trilist_c2.load(lc2);
       var c3 = _trilist_c3.load(lc2); var c4 = _trilist_c4.load(lc1);
       
-      c3[3] = 0.0; c4[3] = 0.0;
+      if (width >= 1.5) {
+        c3[3] = 0.0; 
+        c4[3] = 0.0;
+      }
+      
       n1.mulScalar(2.0);
       n2.mulScalar(2.0);
       
@@ -1387,7 +1391,14 @@ class UICanvas {
     var x = pos[0], y=pos[1];
     var w=size[0], h=size[1];
     
-    this.trilist.add_quad(CACHEARR3(x, y, 0), CACHEARR3(x+w, y, 0), CACHEARR3(x+w, y+h, 0), CACHEARR3(x, y+h, 0), cs[0], cs[1], cs[2], cs[3]);
+    if (outline_only) {
+      this.line([pos[0], pos[1]], [pos[0], pos[1]+size[1]], clr, clr, 1.0);
+      this.line([pos[0], pos[1]+size[1]], [pos[0]+size[0], pos[1]+size[1]], clr, clr, 1.0);
+      this.line([pos[0]+size[0], pos[1]+size[1]], [pos[0]+size[0], pos[1]], clr, clr, 1.0);
+      this.line([pos[0]+size[0], pos[1]], [pos[0], pos[1]], clr, clr, 1.0);
+    } else {
+      this.trilist.add_quad(CACHEARR3(x, y, 0), CACHEARR3(x+w, y, 0), CACHEARR3(x+w, y+h, 0), CACHEARR3(x, y+h, 0), cs[0], cs[1], cs[2], cs[3]);
+    }
   }
   
   gen_box_trilist(Array<float> size, Array<float> clr=undefined, float rfac=1, Boolean outline_only=false) {
@@ -1480,7 +1491,7 @@ class UICanvas {
     }
 #undef LOAD_CLR
 
-    trilist.line_strip(lines, colors, undefined, 4, true);
+    trilist.line_strip(lines, colors, undefined, 1.5, true);
     
     return trilist;
   }
