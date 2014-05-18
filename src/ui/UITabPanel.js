@@ -133,6 +133,9 @@ class UITabBar extends UIElement {
   }
   
   on_mousedown(MouseEvent event) {
+    var mpos = [event.x, event.y];
+    this.find_active(mpos);
+    
     if (this.highlight != undefined) {
       if (this.highlight != this.active) {
         this.active = this.highlight;
@@ -144,8 +147,7 @@ class UITabBar extends UIElement {
     }
   }
   
-  on_mousemove(MouseEvent event) {
-    var mpos = [event.x, event.y];
+  find_active(Array<float> mpos) {
     var tab = undefined;
     
     for (var t in this.tabs) {
@@ -158,6 +160,11 @@ class UITabBar extends UIElement {
     if (tab != this.highlight)
       this.do_recalc();
     this.highlight = tab;
+  }
+  
+  on_mousemove(MouseEvent event) {
+    var mpos = [event.x, event.y];
+    this.find_active(mpos);
   }
 }
 //want to see if I can use the same code for vertical/horizontal tab
