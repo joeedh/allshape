@@ -826,6 +826,7 @@ class UILabel extends UIElement {
     this.color = undefined;
     this.did_modal = false;
     this.clicked = false;
+    this.was_touch = false;
     
     if (this.state & UIFlags.USE_PATH) {
       this.prop = ctx.api.get_prop_meta(ctx, this.data_path);
@@ -906,7 +907,10 @@ class UILabel extends UIElement {
     //console.log("md", event.x, event.y);
     
     this.start_mpos.load([event.x, event.y]);
- 
+    this.was_touch = g_app_state.was_touch;
+    
+    //sanity check
+    //reset, in case event order got messed up
     if (this.clicked) {
       if (this.do_modal)
         this.push_modal()
@@ -918,7 +922,7 @@ class UILabel extends UIElement {
     if (!this.clicked && event.button == 0) {
       this.clicked = true;
       
-      if (this.callback != undefined) {
+      if (!this.was_touch && this.callback != undefined) {
         this.callback(this);
       }
         
@@ -938,7 +942,7 @@ class UILabel extends UIElement {
     if (this.clicked) {
       this.clicked = false;
       
-      if (inrect_2d_button([event.x, event.y], [0,0], this.size)) {
+      if (this.was_touch && inrect_2d_button([event.x, event.y], [0,0], this.size)) {
         //console.log("clicked")
         if (this.callback != undefined) {
           this.callback(this);
@@ -1361,7 +1365,7 @@ class UIListEntry extends UILabel {
       canvas.simple_box([0,0], this.size);
       canvas.simple_box([0,0], this.size);
     } else if (this.state & UIFlags.HIGHLIGHT) {
-      canvas.simple_box([0,0], this.size);
+      //canvas.simple_box([0,0], this.size);
     }
     
     var tsize = canvas.textsize(this.text);
