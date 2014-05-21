@@ -270,7 +270,8 @@ from js_typespace import *
 from js_generators import *
 from js_process_ast import traverse, traverse_i, null_node, \
                            find_node, flatten_statementlists, \
-                           kill_bad_globals, expand_harmony_classes
+                           kill_bad_globals, expand_harmony_classes, \
+                           transform_exisential_operators
 
 from js_typed_classes import expand_typed_classes
 
@@ -839,6 +840,9 @@ def parse_intern(data, create_logger=False, expand_loops=True, expand_generators
     
   if glob.g_force_global_strict:
     kill_bad_globals(result, typespace)
+  
+  #handle .? operator
+  transform_exisential_operators(result, typespace)
   
   if glob.g_write_manifest and glob.g_outfile != "":
     buf = gen_manifest_file(result, typespace);

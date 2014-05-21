@@ -1092,7 +1092,13 @@ class AssignNode (Node):
     self.copy_children(n2)
     
     return n2
-    
+
+def legacy_endstatem(c, c2):
+  ret = len(c2.strip()) > 0 and not c2.strip().endswith(";")
+  ret2 = not c2.strip().endswith("}") or type(c) in [ExprListNode, VarDeclNode, AssignNode, ExprNode, BinOpNode]
+
+  return ret and ret2
+  
 class StatementList (Node):
   def __init__(self):
     super(StatementList, self).__init__()
@@ -1118,7 +1124,7 @@ class StatementList (Node):
               self.smap.segments.pop(-1)
           continue
         
-        if len(c2.strip()) > 0 and not c2.strip().endswith("}") and not c2.strip().endswith(";"):
+        if legacy_endstatem(c, c2):
           c2 += self.s(";")
           
         c2 = t + c2

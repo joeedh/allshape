@@ -39,8 +39,8 @@ precedence = (
   ("left", "LPAREN"),
   ("left", "LSBRACKET"),
   ("left", "DEC", "INC"),
-  ("left", "NEW"),
-  ("left", "DOT"),
+  ("left", "NEW"),  
+  ("left", "DOT", "COND_DOT"),
   #("left", "ID_TEMPL"),
   #("left", "GTHAN_TEMPL"),
   #("left", "LTHAN_TEMPL"),
@@ -1691,6 +1691,7 @@ def p_expr(p):
             | expr LSHIFT expr
             | expr LLSHIFT expr
             | expr RRSHIFT expr
+            | expr COND_DOT expr
             | expr DOT expr
             | expr LAND expr
             | expr LOR expr

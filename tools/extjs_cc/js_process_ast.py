@@ -89,7 +89,185 @@ def validate_class_this_refs(typespace, cls, scope):
   for c2 in cls:
     if type(c2) != VarDeclNode:
       visit(cls)
+
+
+def transform_exisential_operators(node, typespace):
+  tfuncmap = {}
+  idfuncmap = {}
   
+  def ensure_tempvar(n, prefix="$_eop"):
+    startn = n
+    while n.parent != None and not isinstance(n, FunctionNode):
+      n = n.parent
+    
+    if n not in tfuncmap:
+      tfuncmap[n] = {}
+      idfuncmap[n] = 0
+      
+    tmap = tfuncmap[n]
+    
+    if startn not in tmap:
+      tmap[startn] = idfuncmap[n];
+      idfuncmap[n] += 1
+    else:
+      idx = tmap[startn]
+      tname = "%s%i" % (prefix, idx)
+      return tname
+      
+    idx = tmap[startn]
+    tname = "%s%i" % (prefix, idx)
+    
+    for c in n:
+      if type(c) == VarDeclNode and c.val == tname:
+        #return tname
+        pass
+      pass
+      
+    n2 = VarDeclNode(ExprNode([]), name=tname)
+    n2.add(UnknownTypeNode())
+    n2.modifiers.add("local")
+    n.prepend(n2)
+    
+    return tname
+  
+  def has_leaf(n):
+    for c in n:
+      if type(c) == BinOpNode and c.op == "?.": return True
+      if has_leaf(c): return True
+      
+    return False
+  
+  doneset = set()
+  
+  def tag(n):
+    doneset.add(n)
+    for c in n:
+      tag(c);
+  
+  def has_cond(n):
+    if type(n) == BinOpNode and n.op == "?.": return True
+    
+    n2 = n
+    while type(n2.parent) == BinOpNode and type(n2) == BinOpNode and n2.op in [".", "?."]:
+      n2 = n2.parent
+      if n2.op == "?.": return True
+      
+    for c in n:
+      if has_cond(c):
+        return True
+    return False
+  
+  condset = set()
+  def start_tag(n):
+    if has_cond(n):
+      condset.add(n)
+    for c in n:
+      start_tag(c)
+      
+  def visit(n):
+    if n in doneset: return
+    doneset.add(n)
+    
+    if type(n) == BinOpNode and n.op in [".", "?."]:
+      start_tag(n)
+     
+    for c in n:
+      visit(c)
+      
+    if type(n) != BinOpNode: return
+    if n.op not in ["?.", "."]: return
+    if n not in condset: return
+    
+    #find head of chain
+    n2 = n
+    while n2.parent != None and type(n2.parent) == BinOpNode and n2.parent.op in ["?.", "."]:
+      n2 = n2.parent
+      
+    t = ensure_tempvar(n2, "$_eop_t")
+    name = t
+    
+    idx = -1
+    if type(n[0]) == ExprListNode and type(n[1]) == ExprListNode:
+      accu = n[0]
+      for c in n[1]:
+        accu.add(c)
+    elif type(n[0]) == ExprListNode:
+      accu = n[0]
+      idx = 1
+    elif type(n[1]) == ExprListNode:
+      accu = n[1]
+      idx = 0
+    else:
+      accu = ExprListNode([])
+      accu.add_parens = True
+      idx = 2
+   
+    if idx in [0, 1]:
+      n2 = js_parse("""
+        $s1 = $s1 ? $s1.$n2 : undefined
+      """, [name, n[1]], start_node=AssignNode)
+      
+      accu.add(n2)
+    elif idx == 2:
+      n2 = js_parse("""
+        $s1 = $n2 ? $n2.$n3 : undefined
+      """, [name, n[0], n[1]], start_node=AssignNode)
+      
+      accu.add(n2)
+    
+    n.parent.replace(n, accu)
+    
+    #print(n)
+    
+  def visit1(n):
+    if n in doneset: return
+    doneset.add(n)
+    
+    stop = has_leaf(n) #and (type(n) == BinOpNode and n.op == "?.")
+    
+    for c in n:
+      visit(c)
+        
+    if stop: return
+    if type(n) != BinOpNode: return
+    if type(n.parent) != BinOpNode: return
+    if n.op != "?.": return
+    
+    #print(stop, n.get_line_str(), n[0].get_line_str(), n[1].get_line_str(), n.op if type(n) == BinOpNode else "")
+    
+    tname = ensure_tempvar(n, "t")
+    
+    startn = n
+    lst = [tname, n[0], n[0], n[1]]
+    n2 = js_parse("$s = $n != undefined ? $n.$n : undefined;", lst, start_node=AssignNode)
+    
+    accu = ExprListNode([])
+    accu.add(n2)
+    return
+    n = n.parent
+    lastn = n
+    while n != None and type(n) == BinOpNode and n.op in [".", "?."]:
+      doneset.add(n)
+      
+      tag(n)
+      print(type(n.children[0]), type(n.children[1]))
+      lst = [tname, n[1]]
+      n3 = js_parse("$s1 = $s1 != undefined ? $s1.$n2 : undefined;", lst, start_node=AssignNode)
+      accu.prepend(n3)
+      
+      lastn = n
+      n = n.parent
+    
+    #print(lastn)
+    #startn.parent.remove(startn)
+    tag(lastn)
+    if lastn in lastn.parent.children:
+      print("removing")
+      lastn.parent.replace(lastn, accu)
+  
+  print("--starting")
+  visit(node)
+      
 def expand_harmony_class(typespace, cls):
   node = FunctionNode(cls.name, 0)  
   
