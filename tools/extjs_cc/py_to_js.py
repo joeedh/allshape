@@ -1,180 +1,454 @@
-import os, sys, time, random, math, re, imp, io
+import os, sys, os.path, math, time, random
+import ast, re
 
-bracket = "__PLACEHOLDER_LBRACKET"
+valid_id = re.compile(r'[a-zA-Z$_]+[a-zA-Z0-9$_]*')
 
-def replace_for_range(buf):
-  def range_for_sub(m):
-    gs = m.groups()
-    
-    print(gs)
-    
-    if len(gs) == 5 and gs[3].strip() != '':
-      return "for (var %s=%s; %s<%s; %s++) %s" % (gs[0], gs[1], gs[0], gs[3], gs[0], bracket)
+def get_type_name(t):
+  s = str(t).replace("<_ast.", "").replace("<class '_ast.", "").replace("'>", "")
+  if "object at" in s:
+    s = s[:s.find(" ")]
+  s = s.replace("[", "").replace("]", "").strip()
+  s = s.replace("<class '", "")
+  return s
+
+def get_children(node):
+  lst = []
+  if not isinstance(node, ast.AST):
+    if type(node) in [list, tuple, set]:
+      lst = []
+      for c in node:
+        lst.append(c)
     else:
-      return "for (var %s=0; %s<%s; %s++) %s" % (gs[0], gs[0], gs[1], gs[0], bracket)
+      print(type(node))
+      return
+  else:
+    for k in node._fields:
+      lst.append(getattr(node, k))
+  return lst
   
-  pat = r'for\s([a-zA-Z_]+[0-9a-zA-Z_]*)\sin\srange\(([a-zA-Z0-9_\[\]\+\-\*\%\/\(]*(\)(?!\:))*),?\s?([a-zA-Z0-9_\[\]\+\-\*\%\/\(]*(\)(?!\:))*)?\)\:'
-  
-  m = re.sub(pat, range_for_sub, buf)
-  return m
-
-def replace_for(buf):
-    def for_sub(m):
-      gs = m.groups()
-      print(gs)
-      
-      return "for (var " + gs[0] + ") " + bracket
-      
-    pat = 'for\s(.*)\:'
-    m = re.sub(pat, for_sub, buf)
-    
-    return m
-
-def replace_def(buf):
-    def for_sub(m):
-      gs = m.groups()
-      print(gs)
-      
-      return "function " + gs[0] + " " + bracket
-      
-    pat = 'def\s(.*)\:'
-    m = re.sub(pat, for_sub, buf)
-    
-    return m
-
-def replace_class(buf):
-    def for_sub(m):
-      gs = m.groups()
-      print(gs)
-      
-      return "function " + gs[0] + " " + bracket + " //class"
-      
-    pat = 'class\s(.*)?\:'
-    m = re.sub(pat, for_sub, buf)
-    
-    return m
-    
-def replace_pass(buf):
-  return re.sub(r'pass', '', buf)
-
-def replace_comment(buf):
-  return re.sub(r'\#', '//', buf)
-
-def destroy_triple_quotes(buf):
-  lines = buf.split("\n")
-  in_str = 0
-  
-  buf2 = ""
-  for l in lines:
-    if '"""' in l:
-      if "#" in l and l.find("#") > l.find('"""'):
-        in_str ^= 1
-      else:
-        in_str ^= 1
-    
-    if '"""' in l:
-      l = l.replace('"""', "")
-      if l.strip() == "": continue
-      
-    if not in_str:
-      buf2 += l + "\n"
-  return buf2
-  
-def add_rbrackets(buf):
-  lines = buf.split("\n")
-  
-  def find_tablevel(s):
-    j = 0
-    tlvl = 0
-    while j < len(s) and s[j] in [" ", "\t"]:
-      tlvl += 1
-      j += 1
-      
-    return tlvl
-    
-  def find_tablevel_str(s):
-    j = 0
-    tlvl = 0
-    while j < len(s) and s[j] in [" ", "\t"]:
-      tlvl += 1
-      j += 1
-      
-    return s[:tlvl]
-    
-  buf2 = ""
-  i = 0
-  stack = []
-  while i < len(lines):
-    l = lines[i]
-
-    l = lines[i]
-    if l.strip() != "" and not l.strip().startswith("#"):
-      t = find_tablevel(l)
-      while len(stack) > 0 and stack[-1] >= t:
-        
-        print("yay, found closing place", stack[-1], t)
-        print("line: ", l)
-        ts = ""
-        for j in range(stack[-1]):
-          ts += " "
-          
-        buf2 += "\n" + ts + "}\n"
-        stack.pop(-1)
-        
-    buf2 += l + "\n"
-
-    if bracket in l:
-      stack.append(find_tablevel(l))
-      print(stack)
-    
-    i += 1
-  
-  buf2 = buf2.replace(bracket, "{")
-  return buf2
-  
-def main(buf, inpath, outpath):
-  _buf = """
-  for i in range(2):
-    print(b)
-    
-  for i in list(2):
-    print("bleh")
-    
-  def a(b, c, d):
+class NodeVisit:
+  def __init__(self):
     pass
   
-  \"""
-  yay
-     yay
-  \"""
-  class c:
-    def __init__(self):
-      pass
+  def traverse(self, n, scope=None, tlevel=0):
+    if scope == None: scope = {}
+    
+    if not isinstance(n, ast.AST) and type(n) not in [tuple, list, set]:
+      return
+    
+    name = get_type_name(type(n))
+    if not hasattr(self, name):
+      if type(n) != list:
+        sys.stderr.write("Warning: missing callback for node type " + name + "\n");
+      
+      for c in get_children(n):
+        self.traverse(c, scope, tlevel)
+      
+      return
+    
+    def traverse(node, scope, tlevel=0):
+      self.traverse(node, scope, tlevel)
+    
+    getattr(self, name)(n, scope, traverse, tlevel)
+      
+def tab(n):
+  t = ""
+  for i in range(n):
+    t += "  "
+  return t
   
-  class c(b):
-    def __init__(self):
-      pass
-  """
-  
-  m = replace_for_range(buf)
-  m = replace_for(m)
-  m = replace_def(m)
-  m = replace_class(m)
-  m = destroy_triple_quotes(m)
-  m = add_rbrackets(m)
-  m = replace_pass(m)
-  m = replace_comment(m)
-  
-  #"""
-  file = open(outpath, "w")
-  file.write(m)
-  file.close()
-  #"""
-  
-  print(m)
+class TransformVisit (NodeVisit):
+  def __init__(self):
+    NodeVisit.__init__(self)
+    self.buf = ""
+    
+  def o(self, s):
+    self.buf += str(s)
+    
+  def Module(self, n, scope, t, tlevel):
+    self.body(n.body, scope, t, tlevel)
+    
+  def Name(self, n, scope, t, tlevel):
+    if n.id == "self":
+      n.id = "this"
+      
+    self.o(n.id)
+    t(get_children(n), scope, tlevel)
 
-print(sys.argv)
+  def Store(self, n, scope, t, tlevel):
+    t(get_children(n), scope, tlevel)
 
+  def Call(self, n, scope, t, tlevel):
+    t(n.func, scope, tlevel)
+    self.o("(")
+    for i, a in enumerate(n.args):
+      if i > 0:
+        self.o(", ")
+      t(a, scope, tlevel)
+    self.o(")")
+   
+  def Load(self, n, scope, t, tlevel):
+    t(get_children(n), scope, tlevel)
+    
+  def For(self, n, scope, t, tlevel):
+    self.o("for (var ")
+    t(n.target, scope, tlevel)
+    self.o(" in ")
+    t(n.iter, scope, tlevel)
+    self.o(") {\n")
+    
+    self.body(n.body, scope, t, tlevel+1)
+    
+    self.o(tab(tlevel) + "}")
+    #t(get_children(n), scope, tlevel)
+  
+  def endstatem(self, n):
+    s = self.buf.strip()
+    return not s.endswith("}") and not s.endswith(";")
+    
+  def body(self, lst, scope, t, tlevel):
+    tab = ""
+    for i in range(tlevel): tab += "  ";
+    
+    for n in lst:
+      self.o(tab)
+      t(n, scope, tlevel)
+      if self.endstatem(n):
+        self.o(";")
+      self.o("\n")
+      
+  def Num(self, n, scope, t, tlevel):
+    self.o(n.n)
+  
+  def Expr(self, n, scope, t, tlevel):
+    t(get_children(n), scope, tlevel)
+  
+  def If(self, n, scope, t, tlevel):
+    self.o("if (")
+    t(n.test, scope, tlevel)
+    self.o(") {\n")
+    self.body(n.body, scope, t, tlevel+1)
+    self.o(tab(tlevel) + "}")
+    
+    if n.orelse not in [None, [], tuple()]:
+      if len(n.orelse) == 1:
+        self.o(" else ")
+        t(n.orelse, scope, tlevel)
+      else:
+        self.o(" else {\n")
+        self.body(n.orelse, scope, t, tlevel+1)
+        self.o(tab(tlevel) + "}\n")
+  
+  #binary operators
+  def Mod(self, n, scope, t, tlevel):
+    self.o("%")
+  def Add(self, n, scope, t, tlevel):
+    self.o("+")
+  def Sub(self, n, scope, t, tlevel):
+    self.o("-")
+  def Mult(self, n, scope, t, tlevel):
+    self.o("*")
+  def Div(self, n, scope, t, tlevel):
+    self.o("/")
+  def Pow(self, n, scope, t, tlevel):
+    self.o("**")
+  def BitAnd(self, n, scope, t, tlevel):
+    self.o("&")
+  def BitOr(self, n, scope, t, tlevel):
+    self.o("|")
+  def BitXor(self, n, scope, t, tlevel):
+    self.o("^")
+  def And(self, n, scope, t, tlevel):
+    self.o(" && ")
+  def Or(self, n, scope, t, tlevel):
+    self.o(" || ")
+  def Not(self, n, scope, t, tlevel):
+    self.o("!")
+  def Lt(self, n, scope, t, tlevel):
+    self.o("<")
+  def Gt(self, n, scope, t, tlevel):
+    self.o(">")
+  def LtE(self, n, scope, t, tlevel):
+    self.o("<=")
+  def GtE(self, n, scope, t, tlevel):
+    self.o(">=")
+  def NotEq(self, n, scope, t, tlevel):
+    self.o("!=")
+  def Index(self, n, scope, t, tlevel):
+    t(n.value, scope, tlevel)
+  
+  def Subscript(self, n, scope, t, tlevel):
+    t(n.value, scope, tlevel)
+    
+    if type(n.slice) == ast.Index:
+      self.o("[")
+      t(n.slice, scope, tlevel)
+      self.o("]")
+    else:
+      self.o(".slice(")
+      t(n.slice.lower, scope, tlevel)
+      self.o(", ")
+      t(n.slice.upper, scope, tlevel)
+      self.o(")")
+
+  #unary operators
+  def Invert(self, n, scope, t, tlevel):
+    self.o("~")
+  def USub(self, n, scope, t, tlevel):
+    self.o("-")
+   
+  def Eq(self, n, scope, t, tlevel):
+    self.o("==")
+  
+  def BoolOp(self, n, scope, t, tlevel):
+    for i, c in enumerate(n.values):
+      if i > 0:
+        t(n.op, scope, tlevel)
+      t(c, scope, tlevel)
+    
+  def Tuple(self, n, scope, t, tlevel):
+    self.o("[")
+    for i, c in enumerate(n.elts):
+      if i > 0: self.o(", ")
+      t(c, scope, tlevel)
+    self.o("]")
+  
+  def List(self, n, scope, t, tlevel):
+    self.o("[")
+    for i, c in enumerate(n.elts):
+      if i > 0: self.o(", ")
+      t(c, scope, tlevel)
+    self.o("]")
+  
+  def Str(self, n, scope, t, tlevel):
+    self.o('"%s"' % n.s)
+  
+  def Dict(self, n, scope, t, tlevel):
+    ks = n.keys
+    vs = n.values
+    self.o("{")
+    for i in range(len(n.keys)):
+      if i > 0:
+        self.o(", ")
+        
+      print(ks[i].s)
+      m = valid_id.match(ks[i].s)
+      if m != None and m.span()[0] == 0 and m.span()[1] == len(ks[i].s):
+        self.o(ks[i].s)
+      else:
+        t(ks[i], scope, tlevel)
+      
+      self.o(" : ")
+      t(vs[i], scope, tlevel)
+    self.o("}")
+  
+  def BinOp(self, n, scope, t, tlevel):
+    if type(n.op) == ast.Pow:
+      self.o("Math.pow(")
+      t(n.left, scope, tlevel)
+      self.o(", ")
+      t(n.right, scope, tlevel)
+      self.o(")")
+    elif type(n.op) == ast.In:
+      t(n.right, scope, tlevel)
+      self.o(".has(")
+      t(n.left, scope, tlevel)
+      self.o(")")
+    else:
+      t(n.left, scope, tlevel)
+      self.o(" ")
+      t(n.op, scope, tlevel)
+      self.o(" ")
+      t(n.right, scope, tlevel)
+  
+  def AugAssign(self, n, scope, t, tlevel):
+    t(n.target, scope, tlevel)
+    self.o(" ")
+    t(n.op, scope, tlevel)
+    self.o("=")
+    self.o(" ")
+    t(n.value, scope, tlevel)
+  
+  def Attribute(self, n, scope, t, tlevel):
+    t(n.value, scope, tlevel)
+    
+    self.o(".")
+    self.o(n.attr)
+    
+  def do_scope(self, n, scope, add_var=False):
+    k = None
+    v = None
+    
+    if type(n) == ast.Name:
+      k = n.id
+      v = n
+    
+    if k != None and k not in scope:
+      if type(n) == ast.Name and add_var: 
+        self.o("var ")
+      scope[k] = v
+      
+  def Assign(self, n, scope, t, tlevel):
+    val = n.value;
+    
+    lst = n.targets
+    if len(lst) == 1 and type(lst[0]) == ast.Tuple:
+      lst = lst[0].elts
+    
+    if len(lst) == 1:
+      self.do_scope(lst[0], scope, True)
+      
+      t(lst[0], scope, tlevel)
+      self.o(" = ")
+      t(val, scope, tlevel)
+    else:
+      self.o("var _lst = pythonic_iter(")
+      t(val, scope, tlevel)
+      self.o(");\n")
+      
+      for i, c in enumerate(lst):
+        self.o(tab(tlevel))
+        self.do_scope(c, scope, True)
+          
+        t(c, scope, tlevel)
+        self.o(" = _lst.next().value")
+        if i != len(lst)-1:
+          self.o(";\n")
+    self.o("[[ASSIGN_MARK]]")
+    
+  def Compare(self, n, scope, t, tlevel):
+    if type(n.ops[0]) != ast.In:
+      t(n.left, scope, tlevel)
+    
+    #x < y < z
+    #x < y and y < z
+    
+    lastval = n.left
+    for i in range(len(n.comparators)):
+      op = n.ops[i]
+      val = n.comparators[i]
+      
+      if i > 0:
+        self.o(" && ")
+        if type(op) != ast.In:
+          t(lastval, scope, tlevel)
+      
+      if type(op) == ast.In:
+        t(val, scope, tlevel)
+        self.o(".has(")
+        t(lastval, scope, tlevel)
+        self.o(")")
+      else:
+        t(op, scope, tlevel)
+        t(val, scope, tlevel)
+        
+      lastval = val
+  
+  def arg(self, n, scope, t, tlevel):
+    self.o(n.arg)
+  
+  def arguments(self, n, scope, t, tlevel):
+    max = len(n.args)
+    for i, c in enumerate(n.args):
+      if i > 0:
+        self.o(", ")
+      t(c, scope, tlevel)
+      
+      if i < max-len(n.defaults): continue
+      
+      di = i - max+len(n.defaults)
+      self.o("=")
+      t(n.defaults[di], scope, tlevel)
+      
+  def FunctionDef(self, n, scope, t, tlevel, ftype="function"):
+    if ftype != "":
+      self.o(ftype + " ")
+
+    self.o(n.name)
+    
+    self.o("(")
+    t(n.args, scope, tlevel)
+    self.o(") {\n")
+    
+    self.body(n.body, scope, t, tlevel+1)
+    self.o(tab(tlevel) + "}\n")
+    
+  def ClassDef(self, n, scope, t, tlevel):
+    bases = n.bases
+    
+    print(n._fields)
+    self.o("class ")
+    self.o(n.name)
+    
+    if len(bases) > 0:
+      self.o(" extends ")
+      for i, b in enumerate(bases):
+        if i > 0: self.o(", ")
+        
+        t(b, scope, tlevel)
+    
+    self.o(" {\n")
+    
+    t1 = tab(tlevel+1)
+    for b in n.body:
+      if type(b) != ast.FunctionDef: continue
+      
+      #destroy self
+      if (len(b.args.args) > 0):
+        b.args.args.pop(0)
+        
+      if b.name == "__init__":
+        b.name = "constructor"
+        
+      if b.name == "__iter__":
+        b.name = "__iterator__"
+      
+      self.o(t1)
+      self.FunctionDef(b, scope, t, tlevel+1, "")
+      
+    self.o(tab(tlevel) + "\n}\n")
+  
+  def Global(self, n, scope, t, tlevel):
+    self.o("global ")
+    
+    for i, n2 in enumerate(n.names):
+      if i > 0:
+        self.o(", ")
+      self.o(n2)
+      
+  def Return(self, n, scope, t, tlevel):
+    self.o("return")
+    
+    if n.value != None:
+      self.o(" ")
+    
+    t(n.value, scope, tlevel)
+  
+  def While(self, n, scope, t, tlevel):
+    self.o("while (")
+    t(n.test, scope, tlevel)
+    self.o(") {\n")
+    
+    self.body(n.body, scope, t, tlevel+1)
+    self.o(tab(tlevel) + "}\n")
+   
+  def Break(self, n, scope, t, tlevel):
+    self.o("break")
+  def Continue(self, n, scope, t, tlevel):
+    self.o("continue")
+ 
+def main(buf, infile, outfile):
+  n = ast.parse(buf, infile)
+  
+  #print(ast.dump(n))
+  visit = TransformVisit()
+  visit.traverse(n)
+  
+  buf = visit.buf.replace("[[ASSIGN_MARK]]", "")
+  
+  print("\n")
+  print(buf)
+  
 if len(sys.argv) not in [2, 3]:
   print("Usage: py_to_js.py infile outfile")
 else:
