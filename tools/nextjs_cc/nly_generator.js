@@ -12,22 +12,14 @@ function tok_defhdlr(t) {
 function esc(str) {
   var s = "'";
   
-  li = "[".charCodeAt(0);
-  ri = "]".charCodeAt(0);
-  di = "$".charCodeAt(0);
+  var bad = new set(["[", "]", "$", "\r", "\n", "\\", "\"", "'"])
   
   for (var i=0; i<str.length; i++) {
     var c = str[i];
-    if (c == "[") {
-      s += "'+String.fromCharCode("+li+")+'";
-    } else if (c == "]") {
-      s += "'+String.fromCharCode("+ri+")+'";
-    } else if (c == "$") {
-      s += "'+String.fromCharCode("+di+")+'";
-    } else if (c == "\\") { // && i < str.length-1 && str[i+1] == "\\") {
-      s += c + "\\";
+    if (bad.has(c)) {
+      s += "'+String.fromCharCode("+c.charCodeAt(0)+")+'";
     } else {
-      s += c;
+      s += c
     }
   }
   

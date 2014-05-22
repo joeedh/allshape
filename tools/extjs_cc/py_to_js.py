@@ -63,7 +63,9 @@ class TransformVisit (NodeVisit):
     self.buf = ""
     
   def o(self, s):
-    self.buf += str(s)
+    s = str(s).replace("\r", "\\r")
+    
+    self.buf += s
     
   def Module(self, n, scope, t, tlevel):
     self.body(n.body, scope, t, tlevel)
@@ -125,6 +127,7 @@ class TransformVisit (NodeVisit):
   
   def If(self, n, scope, t, tlevel):
     self.o("if (")
+    
     t(n.test, scope, tlevel)
     self.o(") {\n")
     self.body(n.body, scope, t, tlevel+1)
@@ -221,7 +224,17 @@ class TransformVisit (NodeVisit):
     self.o("]")
   
   def Str(self, n, scope, t, tlevel):
-    self.o('"%s"' % n.s)
+    n.s = n.s.replace("\"", "\\\"")
+    totline = n.s.count("\n")
+    
+    n.s = n.s.replace("\t", "\\t")
+    if totline > 0 and totline < 3:
+      n.s = n.s.replace("\n", "\\n").replace("\r", "\\r")
+      self.o('"%s"' % n.s)
+    elif n.s.count("\n") > 2:
+      self.o('"""%s"""' % n.s)
+    else:
+      self.o('"%s"' % n.s)
   
   def Dict(self, n, scope, t, tlevel):
     ks = n.keys
@@ -241,7 +254,7 @@ class TransformVisit (NodeVisit):
       self.o(" : ")
       t(vs[i], scope, tlevel)
     self.o("}")
-  
+    
   def BinOp(self, n, scope, t, tlevel):
     if type(n.op) == ast.Pow:
       self.o("Math.pow(")
@@ -250,6 +263,12 @@ class TransformVisit (NodeVisit):
       t(n.right, scope, tlevel)
       self.o(")")
     elif type(n.op) == ast.In:
+      t(n.right, scope, tlevel)
+      self.o(".has(")
+      t(n.left, scope, tlevel)
+      self.o(")")
+    elif type(n.op) == ast.NotIn:
+      self.o("!")
       t(n.right, scope, tlevel)
       self.o(".has(")
       t(n.left, scope, tlevel)
@@ -317,9 +336,8 @@ class TransformVisit (NodeVisit):
     self.o("[[ASSIGN_MARK]]")
     
   def Compare(self, n, scope, t, tlevel):
-    if type(n.ops[0]) != ast.In:
+    if type(n.ops[0]) not in [ast.In, ast.NotIn]:
       t(n.left, scope, tlevel)
-    
     #x < y < z
     #x < y and y < z
     
@@ -330,10 +348,16 @@ class TransformVisit (NodeVisit):
       
       if i > 0:
         self.o(" && ")
-        if type(op) != ast.In:
+        if type(op) not in [ast.In, ast.NotIn]:
           t(lastval, scope, tlevel)
       
       if type(op) == ast.In:
+        t(val, scope, tlevel)
+        self.o(".has(")
+        t(lastval, scope, tlevel)
+        self.o(")")
+      elif type(op) == ast.NotIn:
+        self.o("!")
         t(val, scope, tlevel)
         self.o(".has(")
         t(lastval, scope, tlevel)
@@ -424,6 +448,13 @@ class TransformVisit (NodeVisit):
     
     t(n.value, scope, tlevel)
   
+  def IfExp(self, n, scope, t, tlevel):
+    t(n.test, scope, tlevel)
+    self.o(" ? ")
+    t(n.body, scope, tlevel)
+    self.o(" : ")
+    t(n.orelse, scope, tlevel)
+    
   def While(self, n, scope, t, tlevel):
     self.o("while (")
     t(n.test, scope, tlevel)
@@ -440,7 +471,7 @@ class TransformVisit (NodeVisit):
 def main(buf, infile, outfile):
   n = ast.parse(buf, infile)
   
-  #print(ast.dump(n))
+  print(ast.dump(n))
   visit = TransformVisit()
   visit.traverse(n)
   
@@ -449,6 +480,8 @@ def main(buf, infile, outfile):
   print("\n")
   print(buf)
   
+  return buf
+  
 if len(sys.argv) not in [2, 3]:
   print("Usage: py_to_js.py infile outfile")
 else:
@@ -456,10 +489,14 @@ else:
   if len(sys.argv) == 3:
     outfile = sys.argv[2]
   else:
-    outfile = infile
+    outfile = None
 
   file = open(infile)
   buf = file.read()
   file.close()
   
-  main(buf, infile, outfile)
+  ret = main(buf, infile, outfile)
+  if outfile != None:
+    f = open(outfile, "w")
+    f.write(ret)
+    f.close()

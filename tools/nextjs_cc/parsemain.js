@@ -61,6 +61,11 @@ function find_linestr(t, last_t, col_off=0) {
   return [s, cols];
 }
 function print_err(t, lastt) {
+  if (t == undefined) {
+    console.log("\nError at end of input");
+    return;
+  }
+  
   console.log("\nError at line " + t.lineno);
   var ret = find_linestr(t, lastt);
   var line = ret[0];
@@ -70,19 +75,42 @@ function print_err(t, lastt) {
   console.log(col);
 }
 
+function get_argvs() {
+ return process.argv.slice(2, process.argv.length);
+}
+
+var fs = require('fs');
+function file_read(path) {
+  var buf=new Buffer(256);
+  var file=fs.openSync(path, "r");
+  var s="";
+  var read=0;
+  do {
+   read = fs.readSync(file, buf, 0, 256);
+   s+=buf.slice(0, read).toString();
+  } while (read!=0);
+  
+  fs.close(file);
+  return s;
+}
+
 function nla_main() {
   var offs = [];
   var offtokens = [];
   var stack = [];
   
-  var script = """
-    function bleh(a, b, c=0) { 
-      a.c = 1; 
-      var bleh = {a : (1+2)+{t : [f.d=0]}, b : 2};
-      return bleh; 
-    }
-  """;
-  var ret = __parse(script, stack, offs, offtokens);
+  var arguments = get_argvs();
+  console.log(arguments);
+  
+  if (arguments.length < 1) {
+    console.log("cc.js: no input files")
+    return -1
+  }
+  
+  var infile = arguments[0];
+  var buf = file_read(infile)
+  
+  var ret = __parse(buf, stack, offs, offtokens);
   
   console.log("\n\n");
   if (ret == 0)  {
@@ -97,10 +125,12 @@ function nla_main() {
     stack.push(new StatementList());
   
   var result = stack[0];
-  //console.log(result.toString());
+  console.log(result.toString());
+  
   var writer = new WriterVisit();
   writer.visit(result);
   
+  console.log("result:")
   console.log(writer.buf);
   //console.log(stack[0][0].constructor.name);
   /*console.log("\n");

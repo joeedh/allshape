@@ -541,10 +541,17 @@ def t_STRINGLIT(t):
   t.lexer.push_state("instr")
   
 def t_instr_STRINGLIT(t):
-  r'\"|\'|\\"|\\\''
+  r'\"|\''
+  
   global strlit_val, start_q
   
-  if "\\" in t.value or start_q not in t.value:
+  i = t.lexpos-1
+  totslash = 0
+  while i >= 0 and t.lexer.lexdata[i] == "\\":
+    totslash += 1
+    i -= 1
+    
+  if (totslash%2) == 1 or start_q not in t.value:
     strlit_val = StringLit(strlit_val + t.value)
     return
   

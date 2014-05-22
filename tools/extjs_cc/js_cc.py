@@ -207,7 +207,8 @@ def js_parse(data, args=None, file="", flatten=True,
           
         data = data[:i1] + buf + data[i:]
         
-        i = i1
+        i = i1 + len(buf)
+        
       i += 1      
   
   glob.reset()

@@ -1661,8 +1661,34 @@ def process_docstrings(result, typespace):
     n2.replace(n2[0], BinOpNode(n2[0], IdentNode(dprop), "."))
     an.parent.insert(an.parent.index(an)+1, n2)
     return True
+  
+  def case3(node, dstr): #static class methods
+    if node.parent == None: return
+    if type(node.parent.parent) != FuncCallNode: return
+    if (node.parent.parent[0].gen_js(0) != "define_static"): return
     
-  cases = [case1, case2]
+    lastn = node
+    slist = node.parent
+    while slist != None and type(slist) != StatementList and not isinstance(slist, FunctionNode):
+      lastn = slist
+      slist = slist.parent
+    
+    if slist == None: return
+    
+    fc = node.parent
+    sname = fc[1]
+    sname = sname.gen_js(0).replace("'", "").replace('"', "")
+    
+    #print(fc[0], "dsfsdf")
+    #sys.exit()
+    #return
+    n = js_parse("$n.$s.__doc__ = $n;", [fc[0], sname, dstr])
+    
+    dstr.parent.remove(dstr)
+    slist.insert(slist.index(lastn)+1, n)
+    return True
+    
+  cases = [case1, case2, case3]
   def visit(node):
     if node in vset:
       return

@@ -30,7 +30,7 @@ function theparser() {
     }
     
     static p_func(p) {
-      """6 func : FUNCTION ID LPARAM funcdeflist RPARAM LBRACKET statementlist RBRACKET
+      """6 func : FUNCTION ID LPAREN funcdeflist RPAREN LBRACKET statementlist RBRACKET
       """
       
       p[0] = new FunctionNode(p[2]);
@@ -110,7 +110,7 @@ function theparser() {
     
     static p_id_or_str(p) {
       """18 id_or_str : ID
-                      | STRLIT
+                      | STRINGLIT
       """
       p[0] = p[1];
     }
@@ -160,13 +160,14 @@ function theparser() {
                  | expr ASSIGN expr
                  | expr PLUS expr
                  | expr MINUS expr
-                 | expr MULTIPLY expr
+                 | expr TIMES expr
                  | expr DIVIDE expr
                  | expr DOT expr
-                 | LPARAM expr RPARAM
+                 | LPAREN expr RPAREN
                  | objlit
                  | arrlit
       """
+      
       if (p.length == 2) {
         p[0] = p[1];
       } else if (p.length == 4) {
