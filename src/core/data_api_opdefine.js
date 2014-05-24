@@ -136,21 +136,7 @@ function api_define_ops() {
       if (!("geometry" in args))
         throw TinyParserError;
       
-      var meshop = new ExtrudeAllOp(args["geometry"]);
-      
-      var op = new MeshToolOp(meshop);
-      var macro = new ToolMacro("extrude_grab", "Extrude");
-      
-      macro.add_tool(op);
-      macro.description = op.description;
-      macro.icon = op.icon;
-      
-      var transop = new TranslateOp(EditModes.GEOMETRY)
-      macro.add_tool(transop);
-
-      macro.connect_tools(op.outputs.group_no, transop.inputs.axis);
-      
-      return macro;
+      return new ExtrudePullOp(args["geometry"]);
     },
     "mesh.duplicate_transform" : function(ctx, args) {
       var meshop = new MeshDuplicateOp(ctx.mesh.selected);

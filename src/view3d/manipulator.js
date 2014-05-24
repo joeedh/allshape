@@ -256,7 +256,7 @@ class Manipulator {
     this.view3d = view3d;
     var mpos = new Vector3([event.x, event.y, 0]);
     
-    var limit = 10;
+    var limit = IsMobile ? 20 : 15;
     var min = undefined;
     var handle = undefined;
     var pmat = view3d.drawmats.rendermat;

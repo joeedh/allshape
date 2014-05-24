@@ -100,6 +100,7 @@ class UIButton extends UIButtonAbstract {
     this.clicked = false;
     this.text = text;
     this.hint = hint;
+    this.path_exec_widget = false;
     this.callback = callback;
     this._do_err_on_draw = false;
   }
@@ -132,7 +133,19 @@ class UIButton extends UIButtonAbstract {
     }
     
     if (this.state & UIFlags.USE_PATH) {
-      this.ctx.api.call_op(this.ctx, this.data_path);
+      if (this.path_exec_widget) {
+        var ctx = this.ctx;
+        
+        if (ctx.view3d.manipulators.active)
+          ctx.view3d.manipulators.end();
+        
+        var op = this.ctx.api.get_op(ctx, this.data_path);
+        if (op != undefined) {
+          op.constructor.create_widgets(ctx.view3d.manipulators, ctx);
+        }
+      } else {
+        this.ctx.api.call_op(this.ctx, this.data_path);
+      }
     }
   }
   

@@ -741,8 +741,6 @@ function init_toolop_structs() {
 //builds a basic, flexible mesh widget that centers on selected geometry
 //gen_toolop has prototype: gen_toolop(ctx, id, widget) { }
 class WidgetToolOp extends ToolOp {
-  Boolean align_normal = false;
-  
   static create_widgets(ManipulatorManager manager, Context ctx) {
     var widget = manager.create();
     

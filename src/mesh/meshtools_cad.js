@@ -528,7 +528,7 @@ class BridgeOp extends MeshOp {
 }
 
 class ExtrudePullOp extends WidgetToolOp, ToolMacro {
-  constructor() {
+  constructor(Iter elements=undefined) {
     var name = "ExtrudePullOp";
     var uiname = "Extrude"
 
@@ -540,6 +540,9 @@ class ExtrudePullOp extends WidgetToolOp, ToolMacro {
     
     var meshop = new ExtrudeAllOp();
     var op = new MeshToolOp(meshop);
+    
+    if (elements)
+      op.inputs.elements.set_data(elements);
     
     this.extop = op;
     

@@ -218,7 +218,11 @@ class MeshEditor extends View3DEditor {
     row2.toolop("mesh.subdivide(faces=mesh_selected(f))");
     row2.toolop("mesh.inset_transform(faces=mesh_selected(f))");
     var row2 = col.row(undefined, undefined, PackFlags.USE_LARGE_ICON); row2.pad[1] = spacing;
-    row2.toolop("mesh.extrude(geometry=mesh_selected(vef))");
+    
+    var ret = row2.toolop("mesh.extrude(geometry=mesh_selected(vef))");
+    if (ret != undefined)
+      ret.path_exec_widget = true;
+    
     row2.toolop("mesh.tri2quad(faces=mesh_selected(f))");
     row2.toolop("mesh.dissolve_faces(faces=mesh_selected(f))");
     var row2 = col.row(undefined, undefined); row2.pad[1] = spacing;

@@ -89,7 +89,7 @@ class UIPackFrame extends UIFrame {
         
         c.packflag |= inherit_flag;
         this.add(c);
-        return;
+        return c;
       }
       
       if (DEBUG.icons)
@@ -101,7 +101,7 @@ class UIPackFrame extends UIFrame {
         var c = new UIButtonIcon(ctx, opname, op.icon, [0,0], [0,0], path, undefined, undefined, use_small);
         c.packflag |= inherit_flag;
         this.add(c);
-        return; //NON-PRECONDITION EXIT POINT
+        return c; //NON-PRECONDITION EXIT POINT
       }
     }
     
@@ -111,6 +111,7 @@ class UIPackFrame extends UIFrame {
       c.packflag |= inherit_flag;
       
     this.add(c);
+    return c;
   }
 
   pack(canvas, isVertical) {
