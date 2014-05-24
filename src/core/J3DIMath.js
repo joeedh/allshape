@@ -1501,7 +1501,7 @@ class Vector3 extends Array {
     this[1] = t2;
   }
 
-  multVecMatrix(Matrix4 matrix)
+  multVecMatrix(Matrix4 matrix, ignore_w=false)
   {
       var x = this[0];
       var y = this[1];
@@ -1511,11 +1511,13 @@ class Vector3 extends Array {
       this[1] = matrix.$matrix.m42 + x * matrix.$matrix.m12 + y * matrix.$matrix.m22 + z * matrix.$matrix.m32;
       this[2] = matrix.$matrix.m43 + x * matrix.$matrix.m13 + y * matrix.$matrix.m23 + z * matrix.$matrix.m33;
       var w = matrix.$matrix.m44 + x * matrix.$matrix.m14 + y * matrix.$matrix.m24 + z * matrix.$matrix.m34;
-      if (w != 1 && w != 0 && matrix.isPersp) {
+      if (!ignore_w && w != 1 && w != 0 && matrix.isPersp) {
           this[0] /= w;
           this[1] /= w;
           this[2] /= w;
       }
+      
+      return w;
   }
 
   interp(Vector3 b, Number t) {
@@ -1885,6 +1887,8 @@ Vector4.prototype.multVecMatrix = function(Matrix4 matrix)
     this[1] = matrix.$matrix.m42 + x * matrix.$matrix.m12 + y * matrix.$matrix.m22 + z * matrix.$matrix.m32 + w*matrix.$matrix.m42;
     this[2] = matrix.$matrix.m43 + x * matrix.$matrix.m13 + y * matrix.$matrix.m23 + z * matrix.$matrix.m33 + w*matrix.$matrix.m43;
     this[3] = w*matrix.$matrix.m44 + x * matrix.$matrix.m14 + y * matrix.$matrix.m24 + z * matrix.$matrix.m34;
+    
+    return w;
 }
 
 Vector4.prototype.interp = function(Vector4 b, Number t) {

@@ -17,6 +17,7 @@ class UIFrame extends UIElement {
   KeyMap keymap;
 
   Boolean draw_background, has_hidden_elements;
+  Timer tick_timer;
   
   //private variables?
   ObjectMap _pan_cache;
@@ -36,6 +37,7 @@ class UIFrame extends UIElement {
     this._children = new GArray([])
     this.active = undefined;
     this.velpan = new VelocityPan();
+    this.tick_timer = new Timer(90);
     
     //current mouse position relative to this.pos
     this.mpos = [0, 0];
@@ -867,6 +869,9 @@ class UIFrame extends UIElement {
 
   //pre_func is optional, and is called before each child's on_tick is executed
   on_tick(pre_func) {
+    if (!this.tick_timer.ready())
+      return;
+    
     prior(UIFrame, this).on_tick.call(this);
     
     if (this.state & UIFlags.HAS_PAN && this.valpan == undefined) {

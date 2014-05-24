@@ -93,7 +93,7 @@ class IndexBufItem {
 class View3DHandler extends Area {
    constructor(WebGLRenderingContext gl, Mesh mesh, ShaderProgram vprogram, ShaderProgram fprogram, 
                        DrawMats drawmats, int x, int y, int width, 
-                       int height, int znear=0.75, int zfar=1000) 
+                       int height, int znear=0.75, int zfar = 200.0) 
   {
     static int v3d_id = 0;
     
@@ -182,6 +182,8 @@ class View3DHandler extends Area {
     this.editors = new GArray([this.editor]);
     
     this.touch_delay = 80;
+    
+    this.manipulators = new ManipulatorManager(this);
   }
   
   push_modal(EventHandler e) {
@@ -408,7 +410,7 @@ class View3DHandler extends Area {
   gen_persmat() : String {
     this.drawmats.persmat = new Matrix4();
     this.drawmats.persmat.perspective(30, this.size[0] / this.size[1], 0.2, 10000);
-    this.drawmats.persmat.lookat(0, 0, 7, 0, 0, 0, 0, 1, 0);
+    //this.drawmats.persmat.lookat(0, 0, 7, 0, 0, 0, 0, 1, 0);
   }
 
   kill_drawline(DrawLine dl) {
@@ -477,7 +479,7 @@ class View3DHandler extends Area {
     gl.viewport(this.parent.pos[0], this.parent.pos[1], this.size[0], this.size[1]);
   }
 
-  project(Vector3 co, Matrix4 pmat) {
+  project(Vector3 co, Matrix4 pmat=this.drawmats.rendermat, zero_z=true) {
     pmat.isPersp = true;
     co.multVecMatrix(pmat);
     
@@ -486,7 +488,9 @@ class View3DHandler extends Area {
     
     co[0] = (co[0]+1.0)*0.5*this.size[0];
     co[1] = (co[1]+1.0)*0.5*this.size[1];
-    co[2] = 0.0;
+    
+    if (zero_z)
+      co[2] = 0.0;
   }
   
   test_render_selbuf(int typemask) {
@@ -609,7 +613,12 @@ class View3DHandler extends Area {
   do_select(MouseEvent event, Array<float> mpos, 
             View3DHandler view3d, Boolean do_multiple=false) 
   {
-    return this.editor.do_select(event, mpos, view3d, do_multiple);
+    var ret = this.manipulators.do_select(event, this);
+    
+    if (ret)
+      return true;
+    else
+      return this.editor.do_select(event, mpos, view3d, do_multiple);
   }
   
   do_alt_select(MouseEvent event, Array<float> mpos, View3DHandler view3d) {
@@ -816,6 +825,7 @@ class View3DHandler extends Area {
     this.editor.on_tick(this.ctx);
     prior(View3DHandler, this).on_tick.call(this);
     this.grid.on_tick();
+    this.manipulators.on_tick();
   }
   
   destroy() {
@@ -919,6 +929,8 @@ class View3DHandler extends Area {
       this.transmat.pop();
     }
     
+    this.manipulators.on_draw(gl, this);
+    
     //clean up transformation stack
     this.transmat.reset(cameramat_backup);
     this.drawmats.cameramat.load(cameramat_backup);
@@ -1002,10 +1014,12 @@ class View3DHandler extends Area {
         console.log("executing unit tests...");
         window.unit_test_env.execute();
       } else {
-        console.log("testing DataPathOp");
+        ExtrudePullOp.create_widgets(ctx.view3d.manipulators, ctx);
         
-        var ts = g_app_state.toolstack;
-        ts.exec_datapath(ctx, "object.use_subsurf", !ctx.object.subsurf);
+        //TranslateOp.create_widgets(ctx.view3d.manipulators, ctx);
+        //console.log(Mesh.to_b64(ctx.mesh));
+       // var ts = g_app_state.toolstack;
+       // ts.exec_datapath(ctx, "object.use_subsurf", !ctx.object.subsurf);
         
         /*var op = new DataPathOp("object.use_subsurf");
         op.inputs.bool.set_data(!ctx.object.subsurf);
@@ -1419,7 +1433,7 @@ class View3DHandler extends Area {
     //return
     if (object.data instanceof Mesh) {
       this.check_subsurf(this.ctx, object);
-      var drawmode = gl.LINES;
+      var drawmode = gl.TRIANGLES;
       
       if (object.subsurf) {
         var prog = gl.ss_flat;

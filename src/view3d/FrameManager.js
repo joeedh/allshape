@@ -1593,10 +1593,18 @@ class Screen extends UIFrame {
     gl.viewport(0, 0, this.size[0], this.size[1]);
     prior(Screen, this).on_draw.call(this, gl);
     
-    if (time_ms() - this.last_tick > 90) { //(IsMobile ? 500 : 150)) {
-      if (!DEBUG.disable_on_tick) {
-        this.on_tick();
-        this.last_tick = time_ms();
+    if (!DEBUG.disable_on_tick && time_ms() - this.last_tick > 32) { //(IsMobile ? 500 : 150)) {
+      this.last_tick = time_ms();
+      this.on_tick();
+      
+      var ready = this.tick_timer.ready();
+      for (var c in this.children) {
+        if (c instanceof ScreenArea) {
+          if (ready) c.on_tick();
+          else c.area.on_tick()
+        } else if (ready) {
+          c.on_tick();
+        }
       }
     }
     

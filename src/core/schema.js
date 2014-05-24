@@ -877,7 +877,7 @@ class STRUCT {
   }
 
   //uctx is a private, optional parameter
-  read_object(data, cls, unpack_ctx uctx=new unpack_ctx()) {
+  read_object(data, cls, unpack_ctx uctx=new unpack_ctx()) : Object {
     var stt = this.structs[cls.name];
     var thestruct = this;
     

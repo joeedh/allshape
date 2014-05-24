@@ -106,6 +106,8 @@ sources = [
   "src/shaders/csg_vshader.js",
   "src/shaders/csg_fshader.js",
   "src/view3d/fbo.js",
+  "src/view3d/manipulator_shapes.js",
+  "src/view3d/manipulator.js",
 	"src/view3d/view3d.js",
 	"src/view3d/view3d_ops.js",
 	"src/view3d/select_ops.js",

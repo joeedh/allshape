@@ -156,6 +156,18 @@ PropPair.STRUCT = """
 """;
 
 class ToolOp extends EventHandler, ToolOpAbstract {
+  String name, uiname, description;
+  ToolOp parent;
+  Context modal_ctx;
+  ToolContext modal_tctx;
+  ObjectMap<String, ToolProperty> inputs;
+  ObjectMap<String, ToolProperty> outputs;
+  GArray widgets;
+  KeyHandler keyhandler;
+  Boolean is_modal, modal_running;
+  Function on_modal_end, _widget_on_tick;
+  int flag, icon, undoflag;
+  
   constructor(String apiname="(undefined)", 
               String uiname="(undefined)", 
               String description=undefined,
@@ -169,6 +181,7 @@ class ToolOp extends EventHandler, ToolOpAbstract {
     
     this.is_modal = false;
     this.undoflag = 0;
+    this.on_modal_end = undefined; //modal end callback
     
     this.modal_ctx = null;
     this.flag = 0;
@@ -178,8 +191,28 @@ class ToolOp extends EventHandler, ToolOpAbstract {
     
     this.keyhandler = undefined;
     this.parent = undefined; //parent macro
+    
+    this.widgets = new GArray();
+    this.modal_running = false;
+    
+    this._widget_on_tick = undefined;
   }
-
+  
+  /*creates 3d widgets, that either
+     a), create a new toolop of this type
+          whenever they are clicked, or
+     b), creates a toolop of this type if
+         the active tool isn't one already,
+         otherwise edits the active toolop.
+  */
+  static create_widgets(ManipulatorManager manager, Context ctx) {
+  }
+  
+  /*forcably resets widgets to "default" state (the meaning of which
+    may vary from tool to tool).*/
+  static reset_widgets(ToolOp op, Context ctx) {
+  }
+  
   pack(data) {
     pack_static_string(data, this.constructor.name, 32);
     pack_static_string(data, this.name, 32);
@@ -221,13 +254,18 @@ class ToolOp extends EventHandler, ToolOpAbstract {
   
   /*private function*/
   _start_modal(Context ctx) {
+    this.modal_running = true;
     ctx.view3d.push_modal(this);
     this.modal_ctx = ctx;
   }
 
   _end_modal() {
-      this.saved_context = new SavedContext(this.modal_ctx);
-      this.modal_ctx.view3d.pop_modal();
+    this.modal_running = false;
+    this.saved_context = new SavedContext(this.modal_ctx);
+    this.modal_ctx.view3d.pop_modal();
+    
+    if (this.on_modal_end != undefined)
+      this.on_modal_end(this);
   }
 
   end_modal() 
@@ -312,6 +350,7 @@ class ToolMacro extends ToolOp {
     ToolOp.call(this, name, uiname);
     
     this.cur_modal = 0;
+    this._chained_on_modal_end = false;
     
     if (tools == undefined)
       this.tools = new GArray<ToolOp>();
@@ -378,8 +417,34 @@ class ToolMacro extends ToolOp {
   can_call(Context ctx) {
     return this.tools[0].can_call(ctx); //only check with first tool
   }
-
+  
   modal_init(Context ctx) {
+    if (!this._chained_on_modal_end) {
+      //find last modal op, and chain its on_modal_end callback
+      var last_modal = undefined;
+      for (var op in this.tools) {
+        if (op.is_modal)
+          last_modal = op;
+      }
+      
+      console.log("last_modal", last_modal);
+      if (last_modal != undefined) {
+        console.log("yay, found last modal")
+        var on_modal_end = last_modal.on_modal_end;
+        var this2 = this;
+        
+        last_modal.on_modal_end = function(toolop) {
+          if (on_modal_end != undefined)
+            on_modal_end(toolop);
+          
+          if (this2.on_modal_end)
+            this2.on_modal_end(this2);
+        }
+        
+        this._chained_on_modal_end = true;
+      }
+    }
+    
     for (var i=0; i<this.tools.length; i++) {
       this.tools[i].saved_context = this.saved_context;
     }
@@ -673,3 +738,158 @@ function init_toolop_structs() {
   }
 }
 
+//builds a basic, flexible mesh widget that centers on selected geometry
+//gen_toolop has prototype: gen_toolop(ctx, id, widget) { }
+class WidgetToolOp extends ToolOp {
+  Boolean align_normal = false;
+  
+  static create_widgets(ManipulatorManager manager, Context ctx) {
+    var widget = manager.create();
+    
+    var enabled_axes = this.widget_axes;
+    var do_widget_center = this.widget_center;
+    var gen_toolop = this.gen_toolop;
+    
+    var do_x = enabled_axes[0], do_y = enabled_axes[1], do_z = enabled_axes[2];
+    
+    if (do_x) widget.arrow([1, 0, 0], 0, [1, 0, 0, 1]);
+    if (do_y) widget.arrow([0, 1, 0], 1, [0, 1, 0, 1]);
+    if (do_z) widget.arrow([0, 0, 1], 2, [0, 0, 1, 1]);
+    
+    //XXX implementme! do_center
+    
+    var this2 = this; //constructor, not instance
+    function widget_on_tick(widget) {
+      var mat = widget.matrix;
+      var mesh = ctx.mesh;
+      
+      var cent = new Vector3();
+      var len = 0;
+      var v1 = new Vector3();
+      
+      for (var v in mesh.verts.selected) {
+        cent.add(v.co);
+        
+        v1.load(v.edges[0].v1.co).sub(v.edges[0].v2.co);
+        v1.normalize();
+        
+        len++;
+      }
+      
+      if (len > 0)
+        cent.mulScalar(1.0/len);
+      
+      mat.makeIdentity();
+      mat.translate(cent[0], cent[1], cent[2]);
+      if (1) { //this.widget_align_normal) {
+        var n = new Vector3();
+        var tan = new Vector3();
+        
+        len = 0;
+        var v1 = new Vector3();
+        for (var f in mesh.faces.selected) {
+          var e = f.looplists[0].loop.e;
+          //v1.load(e.v2.co).sub(e.v1.co).normalize();
+          //tan.add(v1);
+          
+          len++;
+          n.add(f.no);
+        }
+        
+        n.mulScalar(1.0/len);
+        n.normalize();
+        
+        if (tan.dot(tan) == 0.0) {
+          tan.loadXYZ(0, 0, 1);
+        } else {
+          tan.mulScalar(1.0/len);
+          tan.normalize();
+        }
+        
+        static zaxis = new Vector3([0, 0, -1]);
+        
+        var angle = Math.PI - Math.acos(zaxis.dot(n));
+        if (n.dot(zaxis) > 0.9) { //n[0] == 0 && n[1] == 0 && n[2] == -1) {
+          //angle = Math.PI;
+        }
+        
+        if (1) { //Math.abs(angle) > 0.1) {
+          if (Math.abs(angle) < 0.001 || Math.abs(angle) > Math.PI-0.001) {
+            n.loadXYZ(1, 0, 0);
+          } else {
+            n.cross(zaxis);
+            n.normalize();
+          }
+          
+          var q = new Quat();
+          q.axisAngleToQuat(n, angle);
+          
+          var rmat = q.toMatrix();
+          mat.multiply(rmat);
+        }
+      }
+      mat.multiply(ctx.object.matrix);
+    }
+    
+    widget.on_tick = widget_on_tick;
+    widget.on_click = function(widget, id) {
+      console.log("widget click: ", id);
+      
+      //prevent drag transform
+      ctx.view3d._mstart = null;
+      
+      var toolop = undefined;
+      if (gen_toolop != undefined) {
+        var toolop = gen_toolop(id, widget, ctx);
+      } else {
+        console.trace("IMPLEMENT ME! missing widget gen_toolop callback!");
+        return;
+      }
+      
+      if (toolop == undefined) {
+        console.log("Evil! Undefined toolop in WidgetToolOp.create_widgets()!");
+        return;
+      }
+      
+      widget.user_data = toolop;
+      toolop._widget_on_tick = widget_on_tick;
+      toolop.widgets.push(widget);
+      
+      toolop.on_modal_end = function(toolop) {
+        console.log("widget modal end");
+        toolop.widgets = new GArray();
+        widget.on_tick = widget_on_tick;
+      }
+      
+      if (toolop.widget_on_tick)
+        widget.widget_on_tick = toolop.widget_on_tick;
+      
+      widget.on_tick = function(widget) {
+        toolop.widget_on_tick.call(toolop, widget);
+      }
+      /*
+      widget.on_tick = function() {
+        if (toolop.transdata == undefined) return;
+        
+        var c = toolop.transdata.center;
+        var t = toolop.inputs.translation.data;
+        var mat = widget.matrix;
+        
+        mat.makeIdentity();
+        mat.translate(c[0], c[1], c[2]);
+        mat.translate(t[0], t[1], t[2]);
+        mat.multiply(ctx.object.matrix);
+      }
+      */
+      g_app_state.toolstack.exec_tool(toolop);
+    }
+  }
+  
+  //only called while tool is running, in modal mode
+  //by default, calls the the auto-generated on_tick
+  //that's used outside of modal mode
+  widget_on_tick(widget) {
+    if (this._widget_on_tick != undefined)
+      this._widget_on_tick(widget);
+  }
+}

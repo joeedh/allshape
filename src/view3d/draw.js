@@ -1208,7 +1208,7 @@ function render_mesh_intern(WebGLRenderingContext gl, View3DHandler view3d,
   return;
   // */
   
-  gl.enable(gl.DEPTH_TEST);
+  //gl.enable(gl.DEPTH_TEST);
   gl.enable(gl.POLYGON_OFFSET_FILL);
   
   // Set shaders and draw solid pass
@@ -1314,7 +1314,7 @@ function render_mesh_object(WebGLRenderingContext gl, View3DHandler view3d,
     gen_mesh_render(gl, mesh, drawprogram, mesh.render.vertprogram, mesh.render.recalc);
   }
   
-  gl.enable(gl.DEPTH_TEST);
+  //gl.enable(gl.DEPTH_TEST);
   gl.enable(gl.POLYGON_OFFSET_FILL);
   
   // Set shaders and draw solid pass

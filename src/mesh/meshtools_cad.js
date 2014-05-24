@@ -526,3 +526,41 @@ class BridgeOp extends MeshOp {
     mesh.api.recalc_normals();
   }
 }
+
+class ExtrudePullOp extends WidgetToolOp, ToolMacro {
+  constructor() {
+    var name = "ExtrudePullOp";
+    var uiname = "Extrude"
+
+    WidgetToolOp.call(name, uiname, "extrude out geometry");
+    ToolMacro.call(this, name, uiname, new GArray());
+    this.icon = Icons.EXTRUDE;
+    
+    this.align_normal = true;
+    
+    var meshop = new ExtrudeAllOp();
+    var op = new MeshToolOp(meshop);
+    
+    this.extop = op;
+    
+    this.add_tool(op);
+    this.description = op.description;
+    this.icon = op.icon;
+    
+    var transop = new TranslateOp(EditModes.GEOMETRY)
+    this.add_tool(transop);
+
+    this.connect_tools(op.outputs.group_no, transop.inputs.axis);
+  }
+  
+  static gen_toolop(id, widget, ctx) {
+    var macro = new ExtrudePullOp();
+    macro.extop.inputs.elements.set_data(ctx.mesh.selected);
+    
+    return macro;
+  }
+}
+
+ExtrudePullOp.widget_axes = [0, 0, 1];
+ExtrudePullOp.widget_center = false;
+ExtrudePullOp.widget_align_normal = true;

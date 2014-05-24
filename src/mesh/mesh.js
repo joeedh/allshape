@@ -62,6 +62,21 @@ class Mesh extends DataBlock {
     this.sel_bb = new MinMax(3);
   }
   
+  static to_b64(Mesh mesh) {
+    var data = []
+    istruct.write_object(data, mesh);
+    
+    return b64encode(data);
+  }
+  
+  static from_b64(Mesh existing, String data) {
+    var data = b64decode(data);
+    data = new DataView(data.buffer);
+    
+    var me = istruct.read_object(data, Mesh);
+    existing.load(me);
+  }
+  
   get sel_aabb() {
     return this.sel_bb;
   }

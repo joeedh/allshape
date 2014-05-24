@@ -21,7 +21,87 @@ class TranslateOp extends TransformOp {
     if (ob_active != undefined)
       this.inputs.object.set_data(ob_active);
   }
-
+  
+  /*creates 3d widgets, that either
+     a), create a new toolop of this type
+          whenever they are clicked, or
+     b), creates a toolop of this type if
+         the active tool isn't one already,
+         otherwise edits the active toolop.
+  */
+  static create_widgets(ManipulatorManager manager, Context ctx) {
+    var widget = manager.create()
+    
+    widget.arrow([1, 0, 0], 0, [1, 0, 0, 1]);
+    widget.arrow([0, 1, 0], 1, [0, 1, 0, 1]);
+    widget.arrow([0, 0, 1], 2, [0, 0, 1, 1]);
+    
+    function widget_on_tick(widget) {
+      var mat = widget.matrix;
+      var mesh = ctx.mesh;
+      
+      var cent = new Vector3();
+      var len = 0;
+      for (var v in mesh.verts.selected) {
+        cent.add(v.co);
+        len++;
+      }
+      
+      if (len > 0)
+        cent.mulScalar(1.0/len);
+      
+      mat.makeIdentity();
+      mat.translate(cent[0], cent[1], cent[2]);
+      mat.multiply(ctx.object.matrix);
+    }
+    
+    this._widget_on_tick = widget_on_tick;
+    
+    widget.on_tick = widget_on_tick;
+    widget.on_click = function(widget, id) {
+      console.log("widget click: ", id);
+      
+      //prevent drag transform
+      ctx.view3d._mstart = null;
+      
+      var toolop = new TranslateOp(EditModes.GEOMETRY, ctx.object);
+      toolop.widgets.push(widget);
+      
+      var axis = new Vector3();
+      axis[id] = 1.0;
+      
+      toolop.inputs.axis.set_data(axis);
+      toolop.on_modal_end = function(toolop) {
+        toolop.widgets = new GArray();
+        widget.on_tick = widget_on_tick;
+      }
+      
+      widget.on_tick = function() {
+        if (toolop.transdata == undefined) return;
+        
+        var c = toolop.transdata.center;
+        var t = toolop.inputs.translation.data;
+        var mat = widget.matrix;
+        
+        mat.makeIdentity();
+        mat.translate(c[0], c[1], c[2]);
+        mat.translate(t[0], t[1], t[2]);
+        mat.multiply(ctx.object.matrix);
+      }
+      
+      g_app_state.toolstack.exec_tool(toolop);
+    }        
+  }
+  
+  /*forcably resets widgets to "default" state (the meaning of which
+    may vary from tool to tool).*/
+  static reset_widgets(ToolOp op, Context ctx) {
+    if (op.widgets.length == 0) return;
+    
+    op.widgets = new GArray();
+    op.widgets[0].on_tick = this._widget_on_tick;
+  }
+  
   can_call(ctx) {
     var totsel = 0;
     
