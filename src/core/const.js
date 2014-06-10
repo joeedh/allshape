@@ -29,7 +29,7 @@ var fuzzy_ui_press_hotspot = 25;
 var new_api_parser = true;
 
 //debug flags
-var DEBUG = {
+var _DEBUG = {
   alias_g_app_state : true, //make a G alias to g_app_state at runtime
   gl_objects : false,
   Struct : false,
@@ -59,8 +59,21 @@ var DEBUG = {
   octree : false,
   netio : false,
   compression : false,
-  force_mobile : true
+  force_mobile : true,
+  tesselator : false
 };
+
+//make sure debug global is declared;
+//if it is, it'll be in config.js
+if (!("DEBUG" in window))
+  var DEBUG = {};
+  
+//set default debug flags
+for (var k in _DEBUG) {
+  if (!(k in DEBUG)) {
+    DEBUG[k] = _DEBUG[k];
+  }
+}
 
 //private macro helper global for utildefine.js
 var $_mh = undefined;

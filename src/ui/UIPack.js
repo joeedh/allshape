@@ -65,6 +65,13 @@ class UIPackFrame extends UIFrame {
     UIFrame.prototype.prepend.call(this, child);
   }
   
+  toolwidget(path, inherit_flag=0, label=undefined) {
+    var ret = this.toolop(path, inherit_flag, label);
+    ret.path_exec_widget = true;
+    
+    return ret;
+  }
+  
   toolop(path, inherit_flag=0, label=undefined) {
     var ctx = this.ctx;
     var opname = ctx.api.get_op_uiname(ctx, path);

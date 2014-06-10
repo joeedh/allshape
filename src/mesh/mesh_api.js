@@ -592,14 +592,17 @@ function MeshAPI(Mesh mesh) {
       
       var fno = f.no;
       
-      var list = f.looplists[0];
-      var l = list.loop;
-      do {
-        var n = l.v.no;
-        VADD(n, n, fno);
+      for (var i=0; i<f.looplists.length; i++) {
+        var list = f.looplists[i];
         
-        l = l.next;
-      } while (l != list.loop);
+        var l = list.loop;
+        do {
+          var n = l.v.no;
+          VADD(n, n, fno);
+          
+          l = l.next;
+        } while (l != list.loop); 
+      }
     }
     
     for (var v in m2.verts) {

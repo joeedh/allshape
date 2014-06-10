@@ -314,6 +314,51 @@ function inrect_2d(p, pos, size) {
   return p[0] >= pos[0] && p[0] <= pos[0]+size[0] && p[1] >= pos[1] && p[1] <= pos[1]+size[1];
 }
 
+function aabb_isect_line_2d(v1, v2, min, max) {
+  static smin = new Vector2(), smax = new Vector2();
+  static ssize = new Vector2();
+  
+  for (var i=0; i<2; i++) {
+    smin[i] = Math.min(min[i], v1[i]);
+    smax[i] = Math.max(max[i], v2[i]);
+  }
+  
+  //convert to the pos, size form aabb_isect_2d can understand
+  smax.sub(smin);
+  ssize.load(max).sub(min);
+  
+  if (!aabb_isect_2d(smin, smax, min, ssize))
+    return false;
+  
+  for (var i=0; i<4; i++) {
+    if (inrect_2d(v1, min, ssize)) return true;
+    if (inrect_2d(v2, min, ssize)) return true;
+  }
+  
+  static sv1 = new Vector2();
+  static sv2 = new Vector2();
+  static ps = [new Vector2(), new Vector2(), new Vector2()];
+  
+  ps[0] = min;
+  ps[1][0] = min[0]; ps[1][1] = max[1];
+  ps[2] = max;
+  ps[3][0] = max[0]; ps[3][1] = min[1];
+  
+  static l1 = [0, 0], l2 = [0, 0];
+  l1[0] = v1; l1[1] = v2;
+  
+  for (var i=0; i<4; i++) {
+    var a = ps[i], b = ps[(i+1)%4];
+    
+    l2[0] = a;
+    l2[1] = b;
+    
+    if (line_line_cross(l1, l2)) return true;
+  }
+  
+  return false;
+}
+
 function aabb_isect_2d(pos1, size1, pos2, size2) {
   var ret = 0;
   
@@ -388,7 +433,7 @@ function colinear(a, b, c) {
 var _llc_l1 = [new Vector3(), new Vector3()]
 var _llc_l2 = [new Vector3(), new Vector3()]
 
-function line_line_cross(l1, l2, margin) {//margin is optional
+function line_line_cross(l1, l2) {
     //if (margin == undefined) margin = 0;
     
     /*var l1 = [new Vector3(l1[0]), new Vector3(l1[1])];

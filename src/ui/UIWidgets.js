@@ -137,7 +137,7 @@ class UIButton extends UIButtonAbstract {
         var ctx = this.ctx;
         
         if (ctx.view3d.manipulators.active)
-          ctx.view3d.manipulators.end();
+          ctx.view3d.manipulators.active.end();
         
         var op = this.ctx.api.get_op(ctx, this.data_path);
         if (op != undefined) {

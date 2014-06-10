@@ -9,6 +9,7 @@
 #ifdef USE_THREADS
 function face_fill_threads(f, looptris) {
 #else
+//XXX
 function face_fill(f, looptris) {
 #endif
   var eps = 2.22e-16; //something between the 32 && 64 bit epsilons should work nicely
@@ -52,6 +53,7 @@ function face_fill(f, looptris) {
       vset.add(v);
     }
   }
+
   function find_outer_verts(tris, edges) {
     var verts = new GArray();
     var vset = new set();

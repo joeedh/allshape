@@ -58,6 +58,10 @@ function gen_tris(Mesh mesh) {
 }
 
 function face_fill_with_cache(mesh, f, ls) {
+  //XXX
+  face_fill(f, ls);
+  return;
+  
   var oldls = mesh.looptris;
   
   if (f.flag & Flags.DIRTY) {
@@ -101,11 +105,13 @@ function face_fill_with_cache(mesh, f, ls) {
         }
       }
     } catch (err) {
+      print_stack(err);
       console.log("face_fill_with_cache failed");
       face_fill(f, ls);
     }
   }
 }
+
 function gen_tris_job(Mesh mesh) {
   var ls = new Array<Loop>();
   
@@ -1380,20 +1386,22 @@ function render_points(WebGLRenderingContext gl, Float32Array floatbuf,
 }
 
 function render_mesh(WebGLRenderingContext gl, View3DHandler view3d, Mesh mesh1, DrawMats drawmats, Boolean draw_overlay) {
- 
-  /*
-  var eid = 5442;
-  var mesh2 = face_fill(mesh1.faces.get(eid), new GArray()); //mesh1.faces.__iterator__().next(), new GArray());
-  
-  mesh2.render = new render();
-  mesh2.render.vertprogram = mesh1.render.vertprogram;
-  mesh2.render.drawprogram = mesh1.render.drawprogram;
-  mesh2.render.recalc = MeshRecalcFlags.REGEN_TESS|MeshRecalcFlags.REGEN_COLORS|MeshRecalcFlags.REGEN_NORS|MeshRecalcFlags.REGEN_COS;
-  mesh2.api.recalc_normals();
-  mesh1 = mesh2
-  // */
+  if (DEBUG.tesselator) {
+    var eid = mesh1.faces.__iterator__().next().value.eid; //2681;
+    var mesh2 = face_fill(mesh1.faces.get(eid), new GArray());
+    
+    mesh2.render = new render();
+    mesh2.render.vertprogram = mesh1.render.vertprogram;
+    mesh2.render.drawprogram = mesh1.render.drawprogram;
+    mesh2.render.recalc = MeshRecalcFlags.REGEN_TESS|MeshRecalcFlags.REGEN_COLORS|MeshRecalcFlags.REGEN_NORS|MeshRecalcFlags.REGEN_COS;
+    mesh2.api.recalc_normals();
+    mesh1 = mesh2;
+  }
   
   render_mesh_intern(gl, view3d, mesh1, drawmats, draw_overlay);
-  //mesh2.render.destroy(gl);
+  
+  if (DEBUG.tesselator) {
+    mesh2.render.destroy(gl);
+  }
 }
 

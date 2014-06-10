@@ -554,6 +554,7 @@ class Face extends Element{
       VADD(cent, cent, l1.v.co);
       VADD(cent, cent, l2.v.co);
       VADD(cent, cent, l3.v.co);
+      VMULF(cent, 0.33333333);
       
       n = normal_tri(l1.v.co, l2.v.co, l3.v.co);
     } else if (this.totvert == 4) {
@@ -566,16 +567,23 @@ class Face extends Element{
       VADD(cent, cent, l2.v.co);
       VADD(cent, cent, l3.v.co);
       VADD(cent, cent, l4.v.co);
+      VMULF(cent, 0.25);
       
       n = normal_quad(l1.v.co, l2.v.co, l3.v.co, l4.v.co);
     } else {
       var l = list.loop;
       var firstl = l;
       
-      n = _frn_n1;
-      VZERO(n);
       do {
         VADD(cent, cent, l.v.co);
+      } while (l != firstl);
+      
+      var div = 1.0/this.totvert;
+      VMULF(cent, div);
+      
+      n = _frn_n1; VZERO(n);
+      l = firstl;
+      do {
         VADD(n, n, normal_tri(l.v.co, l.next.v.co, cent));
         l = l.next;
       } while (l != firstl);
@@ -584,8 +592,6 @@ class Face extends Element{
     }
     
     var cent2 = this.center;
-    var div = 1.0 / this.totvert;
-    VMULF(cent, div);
     VLOAD(cent2, cent);
     
     var n2 = this.no;

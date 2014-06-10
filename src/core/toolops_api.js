@@ -779,7 +779,8 @@ class WidgetToolOp extends ToolOp {
       
       mat.makeIdentity();
       mat.translate(cent[0], cent[1], cent[2]);
-      if (1) { //this.widget_align_normal) {
+      
+      if (this2.widget_align_normal) {
         var n = new Vector3();
         var tan = new Vector3();
         
@@ -854,6 +855,19 @@ class WidgetToolOp extends ToolOp {
       toolop.widgets.push(widget);
       
       toolop.on_modal_end = function(toolop) {
+        for (var w in toolop.widgets) {
+        
+          //destory all listeners belonging to w
+          for (var k in toolop.inputs) {
+            var p = toolop.inputs[k];  
+            p.remove_listener(w, true); //second arg tells remove_listener to selectly fail
+          }
+          for (var k in toolop.outputs) {
+            var p = toolop.outputs[k];
+            p.remove_listener(w, true); //second arg tells remove_listener to selectly fail
+          }
+        }
+        
         console.log("widget modal end");
         toolop.widgets = new GArray();
         widget.on_tick = widget_on_tick;

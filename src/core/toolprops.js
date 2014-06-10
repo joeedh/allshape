@@ -41,6 +41,14 @@ class ToolProperty {
     if (uiname == undefined)
       uiname = apiname;
       
+    /*
+      Okay.  Time for a toolproperty event listener api.
+      listeners are fire on set_data.
+    */
+    //list of [owner, callback] pairs.
+    //callback has property function(owner, property) 
+    this.listeners = new GArray();
+    
     this.uiname = uiname;
     this.flag = flag;
     this.description = description;
@@ -53,6 +61,47 @@ class ToolProperty {
     this.hotkey_ref = undefined;
     this.unit = undefined;
     this.icon = -1;
+  }
+  
+  //only one callback per owner allowed
+  //any existing callback will be overwritten
+  add_listener(owner, callback) {
+    for (var l in this.listeners) {
+      if (l[0] == owner) {
+        l[1] = callback;
+        return;
+      }
+    }
+    
+    this.listeners.push([owner, callback]);
+  }
+  
+  remove_listener(owner, silent_fail=false) {
+    for (var l in this.listeners) {
+      if (l[0] == owner) {
+        console.log("removing listener");
+        this.listeners.remove(l);
+        return;
+      }
+    }
+    
+    if (!silent_fail)
+      console.trace("warning: remove_listener called for unknown owner:", owner);
+  }
+  
+  _exec_listeners() {
+    for (var l in this.listeners) {
+      if (RELEASE) {
+        try {
+          l[1](l[0], this);
+        } catch (_err) {
+          print_stack(_err);
+          console.log("Warning: a property event listener failed", "property:", this, "callback:", l[1], "owner:", l[0])
+        }
+      } else {
+        l[1](l[0], this);
+      }
+    }
   }
   
   load_ui_data(ToolProperty prop) {
@@ -84,6 +133,7 @@ class ToolProperty {
     this.data = data;
     this.api_update(this.ctx, this.path);
     this.update.call(this);
+    this._exec_listeners();
   }
 
   toJSON() {

@@ -658,7 +658,7 @@ def themain():
   if build_cmd == "loop":
     while 1:
       buildall()
-      time.sleep(0.75);
+      time.sleep(2.5);
   else:
     buildall()
 
