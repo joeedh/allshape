@@ -51,7 +51,7 @@ else:
 #def print(arg, **args):
 #  theprint(arg, **args)
   
-def tab(tlvl, tstr=" "):
+def tab(tlvl, tstr="  "):
   s = ""
   for i in range(tlvl):
     s += tstr
@@ -942,6 +942,25 @@ class ObjLitNode (Node):
       
     s += self.s("}")
     return s
+
+#objlitnode whose gen_js formats in Require.JS class prototype style
+class RJSObjLitNode (ObjLitNode):
+  def gen_js(self, tlevel):
+    t1 = tab(tlevel-1)
+    t2 = tab(tlevel)
+    
+    s = "{\n"
+    for i, c in enumerate(self):
+      s += t2
+      s += c[0].gen_js(tlevel)
+      s += " : " + c[1].gen_js(tlevel+1)
+      
+      if i != len(self)-1:
+        s += ","
+      s += "\n\n"
+      
+    s += t1 + "}"
+    return s
     
 #duplicate of ExprNode, but with different type to (hopefully) avoid chain confusion
 class ExprListNode (ExprNode):
@@ -1639,6 +1658,11 @@ def endline(node, s):
   return s
   
 class ForLoopNode(Node):
+  """
+    self[0] : loop expression
+    self[1] : statementlist
+  """
+  
   def __init__(self, expr):
     super(ForLoopNode, self).__init__()
     self.add(expr)   

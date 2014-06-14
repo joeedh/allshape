@@ -267,7 +267,7 @@ def transform_exisential_operators(node, typespace):
   
   print("--starting")
   visit(node)
-      
+
 def expand_harmony_class(typespace, cls):
   node = FunctionNode(cls.name, 0)  
   
@@ -433,7 +433,6 @@ def expand_harmony_class(typespace, cls):
   node = slist
   
   if len(cls.parents) != 0:
-    #XXX for now, we're just doing single inheritance
     ps = cls.parents
     ps2 = []
     for p in ps:
@@ -579,6 +578,214 @@ def expand_harmony_classes(result, typespace):
       n.parent.replace(n, expand_harmony_class(typespace, n))
     traverse(result, ClassNode, visit)
     flatten_statementlists(result, typespace)
+
+def expand_requirejs_class(typespace, cls):
+  node = FunctionNode(cls.name, 0)  
+  
+  params = ExprListNode([])
+  slist = StatementList()
+  vars = [];
+  cls_scope = {}
+  
+  #properties
+  for c in cls:
+    if type(c) == VarDeclNode:
+      cls_scope[c.val] = c;
+      cs = c[2:]
+      c.children = c.children[:2]
+      
+      vars.append(c)
+      for c2 in cs:
+        cls_scope[c2.val] = c2;
+        vars.append(c2)
+  
+  methods = []
+  for c in cls:
+    if type(c) in [MethodNode, MethodGetter, MethodSetter]:
+      if c.name != "constructor":
+        cls_scope[c.name] = c
+      methods.append(c)
+  
+  if glob.g_validate_classes:
+    validate_class_this_refs(typespace, cls, cls_scope)
+  
+  #find constructor method
+  found_con = False
+  con = None
+  
+  for m in methods:
+    if m.name == "constructor":
+      if found_con: raise SyntaxError("Cannot have multiple constructor methods")
+      if type(m) != MethodNode: raise SyntaxError("Constructors cannot be get/setters")
+      
+      found_con = True
+      
+      params = m[0]
+      slist = m[1]
+      con = m
+  
+  parent = cls.parents[0] if len(cls.parents) != 0 else None
+  
+  if found_con == False:
+    #build a default constructor
+    m = MethodNode("constructor")
+    print("generating default constructor...");
+    
+    params = ExprListNode([])
+    slist = StatementList()
+    
+    m.add(params)
+    m.add(slist)
+    con = m
+  
+  vars.reverse();
+  for c in vars:
+    val = c[0]
+    if type(val) == ExprNode and len(val) == 0:
+      #val = IdentNode("undefined");
+      continue;
+      
+    a = AssignNode(BinOpNode("this", c.val, "."), val)
+    slist.prepend(a)
+  
+  #do getters/setters
+  gets = {}
+  sets = {}
+  props = set()
+  
+  for m in methods:
+    if m.name == "constructor": continue
+    if type(m) == MethodGetter:
+      gets[m.name] = m
+      props.add(m.name)
+      
+    if type(m) == MethodSetter:
+      sets[m.name] = m
+      props.add(m.name)
+  
+  def to_exprfunc(method):
+    f = FunctionNode("(anonymous)", 0)
+    
+    f.children = method.children
+    for c in f.children:
+      c.parent = f
+    
+    f.type = method.type
+    
+    f.line = method.line
+    f.lexpos = method.lexpos
+    
+    return f
+    
+  def gen_prop_define(prop, gets, sets, flags=[]):
+    #since this is called from *within* the parser, we
+    #can't use js_parse().  bleh!
+    name_expr = BinOpNode(IdentNode("Object"), IdentNode("defineProperty"), ".");
+    fcall = FuncCallNode(name_expr)
+    
+    exprlist = ExprListNode([])
+    fcall.add(exprlist)
+    
+    params = ObjLitNode()
+    if p in gets:
+      an = AssignNode(IdentNode("get"), to_exprfunc(gets[p]))
+      params.add(an)
+    if p in sets:
+      an = AssignNode(IdentNode("set"), to_exprfunc(sets[p]))
+      params.add(an)
+      
+    exprlist.add(IdentNode("this"))
+    exprlist.add(StrLitNode('"%s"'%prop))
+    exprlist.add(params)
+    
+    return fcall;
+  
+  def gen_method(cls, m):
+    f = FunctionNode(m.name)
+    f.children = m.children
+    f.name = "(anonymous)"
+    
+    for c in f.children:
+      c.parent = f
+    
+    if not m.is_static:
+      an = AssignNode(IdentNode(m.name), f)
+      f = an
+    else:
+      f2 = FuncCallNode(IdentNode("util.static_method"))
+      f2.add(f)
+      
+      an = AssignNode(IdentNode(m.name), f2)
+      f = an
+    
+    return f
+    
+  for p in props:
+    n = gen_prop_define(p, gets, sets)
+    slist.prepend(n)
+    
+
+  if found_con == False:
+    #call parents hackishly
+    lst = list(cls.parents)
+    lst.reverse()
+    for p in lst:
+      if type(p) == str: p = IdentNode(p)
+      
+      bn = BinOpNode(p, "apply", ".")
+      args = ExprListNode([IdentNode("this"), IdentNode("arguments")])
+      fn = FuncCallNode(bn)
+      fn.add(args)
+      slist.prepend(fn)
+
+  node.add(params)
+  node.add(slist)
+  node.name = "(anonymous)"
+  
+  an = AssignNode(BinOpNode("exports", cls.name, "."), node)
+  vn = VarDeclNode(an, local=True)
+  vn.val = cls.name
+  
+  node = vn
+  
+  #add stuff outside of the constructor function
+  slist = StatementList()
+  slist.add(node)
+  node = slist
+  
+  proto = RJSObjLitNode();
+  
+  if len(cls.parents) != 0:
+    #for requirejs, just do single inheritance
+    if len(cls.parents) > 1:
+      typespace.error("The type system we use for RequireJS doesn't support multiple inheritance", cls)
+   
+    p = cls.parents[0]
+    
+    fn = FuncCallNode(IdentNode("util.inherit"))
+    fn.add(ExprListNode([IdentNode(cls.name), p, proto]))
+    slist.add(AssignNode(BinOpNode(cls.name, "prototype", "."), fn))
+  else:
+    fn = FuncCallNode(IdentNode("create_prototype"))
+    fn.add(ExprListNode([IdentNode(cls.name), proto]))
+    slist.add(AssignNode(BinOpNode(cls.name, "prototype", "."), fn))
+  
+  #generate methods
+  for m in cls:
+    if type(m) != MethodNode: continue
+    if m.name == "constructor": continue
+    
+    n = gen_method(cls, m)
+    proto.add(n)
+  
+  return node
+    
+def expand_requirejs_classes(result, typespace):
+    def visit(n):
+      n.parent.replace(n, expand_requirejs_class(typespace, n))
+    
+    traverse(result, ClassNode, visit)
+    flatten_statementlists(result, typespace)
     
 class VarBinding:
   def __init__(self, node, name, type):
@@ -665,7 +872,7 @@ class NodeVisit:
     pass
   
   def traverse(self, node, scope=None, tlevel=0):
-    if scope == None and tlevel != 0:
+    if scope == None and tlevel > 0:
       raise RuntimeError("NodeVisit.traverse called without scope")
       
     if scope == None:
@@ -682,6 +889,211 @@ class NodeVisit:
         self.traverse(c, scope, tlevel)
     else:
       getattr(self, typestr)(node, scope, self.traverse, tlevel)
+ 
+def tab2(t):
+  s = ""
+  for i in range(t):
+    s += "  "
+  return s
+
+class RequireJSWriter (NodeVisit):
+  def __init__(self):
+    self.required_nodes = []
+    NodeVisit.__init__(self)
+    self.buf = ""
+  
+  def o(self, s):
+    self.buf += str(s)
+  
+  def traverse(self, node, scope=None, tlevel=-1):
+    return NodeVisit.traverse(self, node, scope, tlevel)
+    
+  def endstatem(self, node):
+    sb = self.buf.strip()
+    ret = not sb.endswith("\n") 
+    ret = ret and(not sb.endswith("}") or type(node) in [AssignNode, BinOpNode])
+    return ret
+    
+  def IdentNode(self, node, scope, t, tlevel):
+    self.o(node.val)
+  
+  def NumLitNode(self, node, scope, t, tlevel):
+    self.o(node.val)
+  
+  def StatementList(self, node, scope, t, tlevel):
+    t1 = tab2(tlevel)
+    t2 = tab2(tlevel+1)
+    for c in node:
+      self.o(t1)
+      t(c, scope, tlevel+1)
+      if self.endstatem(c):
+        self.o(";");
+      self.o("\n");
+  
+  def ForLoopNode(self, node, scope, t, tlevel):
+    t1 = tab2(tlevel)
+    self.o("for (")
+    t(node.children[0], scope, tlevel)
+    self.o(") {\n")
+    t(node.children[1], scope, tlevel+1)
+    self.o(t1+"}\n");
+    
+  def ForInNode(self, node, scope, t, tlevel):
+    t(node[0], scope, tlevel)
+    self.o(" in ")
+    self.o(node[1])
+    
+  def ForCNode(self, node, scope, t, tlevel):
+    t(node[0], scope, tlevel)
+    self.o("; ")
+    t(node[1], scope, tlevel)
+    self.o("; ")
+    t(node[2], scope, tlevel)
+    
+  def IfNode(self, node, scope, t, tlevel):
+    t1 = tab2(tlevel)
+    
+    self.o("if (")
+    t(node[0], scope, tlevel)
+    self.o(") {\n")
+    t(node[1], scope, tlevel+1)
+    self.o(t1+"}\n");
+    
+  def ElseNode(self, node, scope, t, tlevel):
+    t1 = tab2(tlevel)
+    if self.buf.endswith("\n"):
+      self.buf = self.buf[:-2]
+    self.o(" else ")
+    
+    if type(node[0]) == StatementList:
+      self.o("{\n")
+      t(node[0], scope, tlevel+1);
+      self.o(t1+"}\n");
+    else:
+      t(node[0], scope, tlevel)
+      
+  def BinOpNode(self, node, scope, t, tlevel):
+    t(node[0], scope, tlevel)
+    if node.op in ["in", "instanceof", "&&", "||", "<", ">", "<=", ">=", "==", "!=", "===", "!=="]:
+      self.o(" %s "%node.op)
+    else:
+      self.o(node.op)
+    t(node[1], scope, tlevel)
+    
+  def NegateNode(self, node, scope, t, tlevel):
+    self.o("-")
+    t(node[0], scope, tlevel)
+    
+  def AssignNode(self, node, scope, t, tlevel):
+    t(node[0], scope, tlevel)
+    self.o(" %s "%node.mode)
+    t(node[1], scope, tlevel)
+    
+  def WhileNode(self, node, scope, t, tlevel):
+    t1 = tab2(tlevel)
+    
+    self.o("while (")
+    t(node[0], scope, tlevel)
+    self.o(") {\n")
+    t(node[1], scope, tlevel+1)
+    self.o(t1+"}\n")
+    
+  def FunctionNode(self, node, scope, t, tlevel):
+    self.o("function ")
+    if node.name != "(anonymous)":
+      self.o(node.name)
+    self.o("(")
+    t(node[0], scope, tlevel)
+    self.o(") {\n")
+    
+    t1 = tab2(tlevel+1)
+    for c in node[1:]:
+      self.o(t1)
+      t(c, scope, tlevel+1)
+      if self.endstatem(node):
+        self.o(";")
+      self.o("\n")
+    
+    self.o(tab2(tlevel)+"}\n")
+    
+  def ExprListNode(self, node, scope, t, tlevel):
+    for i, c in enumerate(node):
+      if i > 0:
+        self.o(", ")
+      t(c, scope, tlevel)
+      
+  def VarDeclNode(self, node, scope, t, tlevel):
+    if "global" in node.modifiers: return
+    
+    if "local" in node.modifiers:
+      self.o("var ")
+    
+    self.o(node.val)
+    if len(node[0].gen_js(0).strip()) > 0: #type(node[0]) not in [ExprListNode, ExprListNode] or len(node[0]) > 0:
+      self.o(" = ")
+      t(node[0], scope, tlevel)
+  
+  
+  def BreakNode(self, node, scope, t, tlevel):
+    self.o("break");
+  def YieldNode(self, node, scope, t, tlevel):
+    self.o("yield");
+    if len(node) != 0:
+      self.o(" ")
+      t(node[0], scope, tlevel)
+  
+  def ContinueNode(self, node, scope, t, tlevel):
+    self.o("continue");
+    
+  def ReturnNode(self, node, scope, t, tlevel):
+    self.o("return");
+    if len(node) != 0:
+      self.o(" ")
+      t(node[0], scope, tlevel)
+  
+  def FuncCallNode(self, node, scope, t, tlevel):
+    t(node[0], scope, tlevel)
+    self.o("(")
+    t(node[1], scope, tlevel)
+    self.o(")")
+    
+  def StrLitNode(self, node, scope, t, tlevel):
+    self.o(node.val)
+  
+  def ArrayRefNode(self, node, scope, t, tlevel):
+    t(node[0], scope, tlevel)
+    self.o("[")
+    t(node[1], scope, tlevel)
+    self.o("]")
+    
+  def ClassNode(self, node, scope, t, tlevel):
+    #find constructor
+    cls = None
+    for m in node:
+      if type(m) == MethodNode and m.name == "constructor":
+        cls = m
+        break
+    
+    if cls == None:
+      typespace.error("Need constructor for class", node)
+    
+    t1 = tab2(tlevel)
+    
+    self.o("var %s = exports.%s = function(" % (cls.name, cls.name));
+    t(cls[0], scope, tlevel)
+    self.o(") {\n")
+    t(cls[1], scope, tlevel)
+    self.o(t1+"}\n")
+    pass
+    
+  def MethodNode(self, node, scope, t, tlevel):
+    self.o(node.name)
+  def MethodGetter(self, node, scope, t, tlevel):
+    pass
+  def MethodSetter(self, node, scope, t, tlevel):
+    pass
+  def ExprNode(self, node, scope, t, tlevel):
+    pass
   
 def handle_nodescope_pre(n, scope):
     if type(n) in [IdentNode, VarDeclNode]:

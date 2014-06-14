@@ -850,8 +850,11 @@ def parse_intern(data, create_logger=False, expand_loops=True, expand_generators
     file = open(glob.g_outfile+".manifest", "w")
     file.write(buf)
     file.close()
-    
-  expand_harmony_classes(result, typespace);
+  
+  if glob.g_require_js:
+    expand_requirejs_classes(result, typespace);
+  else:
+    expand_harmony_classes(result, typespace);
   expand_typed_classes(result, typespace)
   
   if glob.g_clear_slashr:
@@ -908,8 +911,8 @@ def parse_intern(data, create_logger=False, expand_loops=True, expand_generators
   if glob.g_print_nodes:
     print("nodes: ", result)
     pass
-  
-  if glob.g_replace_instanceof:
+    
+  if glob.g_replace_instanceof and not glob.g_require_js:
     replace_instanceof(result, typespace)
   
   if glob.g_enable_static_vars:
@@ -949,7 +952,7 @@ def parse_intern(data, create_logger=False, expand_loops=True, expand_generators
       buf = result.gen_js(0)
     else:
       buf, smap = js_minify(result)
-  
+    
   if glob.g_outfile == "":
     print(buf)
     if 0:

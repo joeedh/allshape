@@ -25,89 +25,6 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
- //okay. I just noticed this pun.  ITS HORRIBLE. - joe
- 
- //  (Jedi) - A support library for WebGL.
-
-/*
-     Math Classes. Currently includes:
-
-        Matrix4 - A 4x4 Matrix
-*/
-
-/*
-    Matrix4 class
-
-    This class implements a 4x4 matrix. It has functions which duplicate the
-    functionality of the OpenGL matrix stack and glut functions. On browsers
-    that support it, CSSMatrix is used to accelerate operations.
-
-    IDL:
-
-    [
-        Constructor(in Matrix4 matrix),                 // copy passed matrix into new Matrix4
-        Constructor(in sequence<float> array)               // create new Matrix4 with 16 floats (row major)
-        Constructor()                                       // create new Matrix4 with identity matrix
-    ]
-    interface Matrix4 {
-        void load(in Matrix4 matrix);                   // copy the values from the passed matrix
-        void load(in sequence<float> array);                // copy 16 floats into the matrix
-        sequence<float> getAsArray();                       // return the matrix as an array of 16 floats
-        Float32Array getAsFloat32Array();             // return the matrix as a Float32Array with 16 values
-        void setUniform(in WebGLRenderingContext ctx,       // Send the matrix to the passed uniform location in the passed context
-                        in WebGLUniformLocation loc,
-                        in boolean transpose);
-        void makeIdentity();                                // replace the matrix with identity
-        void transpose();                                   // replace the matrix with its transpose
-        void invert();                                      // replace the matrix with its inverse
-
-        void translate(in float x, in float y, in float z); // multiply the matrix by passed translation values on the right
-        void translate(in J3DVector3 v);                    // multiply the matrix by passed translation values on the right
-        void scale(in float x, in float y, in float z);     // multiply the matrix by passed scale values on the right
-        void scale(in J3DVector3 v);                        // multiply the matrix by passed scale values on the right
-        void rotate(in float angle,                         // multiply the matrix by passed rotation values on the right
-                    in float x, in float y, in float z);    // (angle is in radians)
-        void rotate(in float angle, in J3DVector3 v);       // multiply the matrix by passed rotation values on the right
-                                                            // (angle is in radians)
-        void multiply(in CanvasMatrix matrix);              // multiply the matrix by the passed matrix on the right
-        void divide(in float divisor);                      // divide the matrix by the passed divisor
-        void ortho(in float left, in float right,           // multiply the matrix by the passed ortho values on the right
-                   in float bottom, in float top,
-                   in float near, in float far);
-        void frustum(in float left, in float right,         // multiply the matrix by the passed frustum values on the right
-                     in float bottom, in float top,
-                     in float near, in float far);
-        void perspective(in float fovy, in float aspect,    // multiply the matrix by the passed perspective values on the right
-                         in float zNear, in float zFar);
-        void lookat(in J3DVector3 eye,                      // multiply the matrix by the passed lookat
-                in J3DVector3 center,  in J3DVector3 up);   // values on the right
-         bool decompose(in J3DVector3 translate,            // decompose the matrix into the passed vector
-                        in J3DVector3 rotate,
-                        in J3DVector3 scale,
-                        in J3DVector3 skew,
-                        in sequence<float> perspective);
-    }
-
-    [
-        Constructor(in J3DVector3 vector),                  // copy passed vector into new J3DVector3
-        Constructor(in sequence<float> array)               // create new J3DVector3 with 3 floats from array
-        Constructor(in float x, in float y, in float z)     // create new J3DVector3 with 3 floats
-        Constructor()                                       // create new J3DVector3 with (0,0,0)
-    ]
-    interface J3DVector3 {
-        void load(in J3DVector3 vector);                    // copy the values from the passed vector
-        void load(in sequence<float> array);                // copy 3 floats into the vector from array
-        void load(in float x, in float y, in float z);      // copy 3 floats into the vector
-        sequence<float> getAsArray();                       // return the vector as an array of 3 floats
-        Float32Array getAsFloat32Array();             // return the matrix as a Float32Array with 16 values
-        void multVecMatrix(in Matrix4 matrix);             // multiply the vector by the passed matrix (on the right)
-        float vectorLength();                               // return the length of the vector
-        float dot();                                        // return the dot product of the vector
-        void cross(in J3DVector3 v);                        // replace the vector with vector x v
-        void divide(in float divisor);                      // divide the vector by the passed divisor
-    }
-*/
-
 var HasCSSMatrix = false;
 var HasCSSMatrixCopy = false;
 /*
@@ -1533,6 +1450,7 @@ class Vector3 extends Array {
 }
 
 var _vec2_init = [0, 0];
+var _v2_static_mvm_co = new Vector3();
 function Vector2(Array<float> vec) {
   Array<float>.call(this, 2);
   
@@ -1671,7 +1589,6 @@ Vector2.prototype.subScalar = function(b) {
   return this;
 }
 
-var _v2_static_mvm_co = new Vector3();
 Vector2.prototype.multVecMatrix = function(mat) {
   var v3 = _v2_static_mvm_co;
   
@@ -1726,181 +1643,183 @@ function Color(Array<float> color) {
 //
 // Vector4
 //
-function Vector4(float x, float y, float z, float w)
-{
+class Vector4 extends Array {
+  constructor(float x, float y, float z, float w)
+  {
+    Array.call(this, 4);
     this.length = 4;
     this.load(x,y,z,w);
-}
-inherit(Vector4, Array);
-
-Vector4.prototype.toJSON = function() {
-  var arr = new Array(this.length);
-  
-  var i = 0;
-  for (var i=0; i<this.length; i++) {
-    arr[i] = this[i];
   }
   
-  return arr;
-}
-
-Vector4.prototype.load = function(x,y,z,w)
-{
-    if (typeof x == 'object' && "length" in x) {
-        this[0] = x[0];
-        this[1] = x[1];
-        this[2] = x[2];
-        this[3] = x[3];
-    }
-    else if (typeof x == 'number') {
-        this[0] = x;
-        this[1] = y;
-        this[2] = z;
-        this[3] = w;
-    }
-    else {
-        this[0] = 0;
-        this[1] = 0;
-        this[2] = 0;
-        this[3] = 0;
+  toJSON() {
+    var arr = new Array(this.length);
+    
+    var i = 0;
+    for (var i=0; i<this.length; i++) {
+      arr[i] = this[i];
     }
     
-    return this;
-}
+    return arr;
+  }
 
-Vector4.prototype.floor = function() {
-  this[0] = Math.floor(this[0]);
-  this[1] = Math.floor(this[1]);
-  this[2] = Math.floor(this[2]);
-  this[3] = Math.floor(this[3]);
-  
-  return this;
-}
+  load(x,y,z,w)
+  {
+      if (typeof x == 'object' && "length" in x) {
+          this[0] = x[0];
+          this[1] = x[1];
+          this[2] = x[2];
+          this[3] = x[3];
+      }
+      else if (typeof x == 'number') {
+          this[0] = x;
+          this[1] = y;
+          this[2] = z;
+          this[3] = w;
+      }
+      else {
+          this[0] = 0;
+          this[1] = 0;
+          this[2] = 0;
+          this[3] = 0;
+      }
+      
+      return this;
+  }
 
-Vector4.prototype.ceil = function() {
-  this[0] = Math.ceil(this[0]);
-  this[1] = Math.ceil(this[1]);
-  this[2] = Math.ceil(this[2]);
-  this[3] = Math.ceil(this[3]);
-  
-  return this;
-}
-
-Vector4.prototype.getAsArray = function() : Array<float>
-{
-    return [ this[0], this[1], this[2], this[3] ];
-}
-
-Vector4.prototype.getAsFloat32Array = function() : Float32Array
-{
-    return new Float32Array(this.getAsArray());
-}
-
-Vector4.prototype.vectorLength = function() : float
-{
-    return Math.sqrt(this[0] * this[0] + this[1] * this[1] + this[2] * this[2] + this[3] * this[3]);
-}
-
-Vector4.prototype.normalize = function()
-{
-  var len = this.vectorLength();
-  if (len > FLT_EPSILON) this.mulScalar(1.0/len);
-  
-  return len;
-}
-
-Vector4.prototype.divide = function(float divisor)
-{
-    this[0] /= divisor; this[1] /= divisor; this[2] /= divisor; this[3] /= divisor;
-}
-
-Vector4.prototype.negate = function()
-{
-  this[0] = -this[0];
-  this[1] = -this[1];
-  this[2] = -this[2];
-  this[3] = -this[3];
-  
-  return this;
-}
-
-Vector4.prototype.mulScalar = function(float scalar)
-{
-    this[0] *= scalar; this[1] *= scalar; this[2] *= scalar; this[3] *= scalar;
+  floor() {
+    this[0] = Math.floor(this[0]);
+    this[1] = Math.floor(this[1]);
+    this[2] = Math.floor(this[2]);
+    this[3] = Math.floor(this[3]);
     
     return this;
-}
+  }
 
-Vector4.prototype.mul = function(float scalar)
-{
-    this[0] =  this[0] * v[0];
-    this[1] =  this[1] * v[1];
-    this[2] =  this[2] * v[2];
-    this[3] =  this[3] * v[3];
-}
+  ceil() {
+    this[0] = Math.ceil(this[0]);
+    this[1] = Math.ceil(this[1]);
+    this[2] = Math.ceil(this[2]);
+    this[3] = Math.ceil(this[3]);
+    
+    return this;
+  }
 
-Vector4.prototype.cross = function(Vector4 v)
-{
-    this[0] =  this[1] * v[2] - this[2] * v[1];
-    this[1] = -this[0] * v[2] + this[2] * v[0];
-    this[2] =  this[0] * v[1] - this[1] * v[0];
-    //what do I do with the fourth component?
-}
+  getAsArray() : Array<float>
+  {
+      return [ this[0], this[1], this[2], this[3] ];
+  }
 
-Vector4.prototype.sub = function(Vector4 v)
-{
+  getAsFloat32Array() : Float32Array
+  {
+      return new Float32Array(this.getAsArray());
+  }
+
+  vectorLength() : float
+  {
+      return Math.sqrt(this[0] * this[0] + this[1] * this[1] + this[2] * this[2] + this[3] * this[3]);
+  }
+
+  normalize()
+  {
+    var len = this.vectorLength();
+    if (len > FLT_EPSILON) this.mulScalar(1.0/len);
+    
+    return len;
+  }
+
+  divide(float divisor)
+  {
+      this[0] /= divisor; this[1] /= divisor; this[2] /= divisor; this[3] /= divisor;
+  }
+
+  negate()
+  {
+    this[0] = -this[0];
+    this[1] = -this[1];
+    this[2] = -this[2];
+    this[3] = -this[3];
+
+    return this;
+  }
+
+  mulScalar(float scalar)
+  {
+      this[0] *= scalar; this[1] *= scalar; this[2] *= scalar; this[3] *= scalar;
+      
+      return this;
+  }
+
+  mul(float scalar)
+  {
+      this[0] =  this[0] * v[0];
+      this[1] =  this[1] * v[1];
+      this[2] =  this[2] * v[2];
+      this[3] =  this[3] * v[3];
+  }
+
+  cross(Vector4 v)
+  {
+      this[0] =  this[1] * v[2] - this[2] * v[1];
+      this[1] = -this[0] * v[2] + this[2] * v[0];
+      this[2] =  this[0] * v[1] - this[1] * v[0];
+      //what do I do with the fourth component?
+  }
+
+  sub(Vector4 v)
+  {
     this[0] =  this[0] - v[0];
     this[1] =  this[1] - v[1];
     this[2] =  this[2] - v[2];
     this[3] =  this[3] - v[3];
-}
+  }
 
-Vector4.prototype.add = function(Vector4 v)
-{
-    this[0] =  this[0] + v[0];
-    this[1] =  this[1] + v[1];
-    this[2] =  this[2] + v[2];
-    this[3] =  this[3] + v[3];
-}
+  add(Vector4 v)
+  {
+      this[0] =  this[0] + v[0];
+      this[1] =  this[1] + v[1];
+      this[2] =  this[2] + v[2];
+      this[3] =  this[3] + v[3];
+  }
 
-Vector4.prototype.dot = function(Vector4 v)
-{
-    return this[0] * v[0] + this[1] * v[1] + this[2] * v[2] + this[3] * v[3];
-}
+  dot(Vector4 v)
+  {
+      return this[0] * v[0] + this[1] * v[1] + this[2] * v[2] + this[3] * v[3];
+  }
 
-Vector4.prototype.combine = function(Vector4 v, float ascl, float bscl)
-{
-    this[0] = (ascl * this[0]) + (bscl * v[0]);
-    this[1] = (ascl * this[1]) + (bscl * v[1]);
-    this[2] = (ascl * this[2]) + (bscl * v[2]);
-    this[3] = (ascl * this[3]) + (bscl * v[3]);
-}
+  combine(Vector4 v, float ascl, float bscl)
+  {
+      this[0] = (ascl * this[0]) + (bscl * v[0]);
+      this[1] = (ascl * this[1]) + (bscl * v[1]);
+      this[2] = (ascl * this[2]) + (bscl * v[2]);
+      this[3] = (ascl * this[3]) + (bscl * v[3]);
+  }
 
-Vector4.prototype.multVecMatrix = function(Matrix4 matrix)
-{
-    var x = this[0];
-    var y = this[1];
-    var z = this[2];
-    var w = this[3];
+  multVecMatrix(Matrix4 matrix)
+  {
+      var x = this[0];
+      var y = this[1];
+      var z = this[2];
+      var w = this[3];
 
-    this[0] = matrix.$matrix.m41 + x * matrix.$matrix.m11 + y * matrix.$matrix.m21 + z * matrix.$matrix.m31 + w*matrix.$matrix.m41;
-    this[1] = matrix.$matrix.m42 + x * matrix.$matrix.m12 + y * matrix.$matrix.m22 + z * matrix.$matrix.m32 + w*matrix.$matrix.m42;
-    this[2] = matrix.$matrix.m43 + x * matrix.$matrix.m13 + y * matrix.$matrix.m23 + z * matrix.$matrix.m33 + w*matrix.$matrix.m43;
-    this[3] = w*matrix.$matrix.m44 + x * matrix.$matrix.m14 + y * matrix.$matrix.m24 + z * matrix.$matrix.m34;
-    
-    return w;
-}
+      this[0] = matrix.$matrix.m41 + x * matrix.$matrix.m11 + y * matrix.$matrix.m21 + z * matrix.$matrix.m31 + w*matrix.$matrix.m41;
+      this[1] = matrix.$matrix.m42 + x * matrix.$matrix.m12 + y * matrix.$matrix.m22 + z * matrix.$matrix.m32 + w*matrix.$matrix.m42;
+      this[2] = matrix.$matrix.m43 + x * matrix.$matrix.m13 + y * matrix.$matrix.m23 + z * matrix.$matrix.m33 + w*matrix.$matrix.m43;
+      this[3] = w*matrix.$matrix.m44 + x * matrix.$matrix.m14 + y * matrix.$matrix.m24 + z * matrix.$matrix.m34;
+      
+      return w;
+  }
 
-Vector4.prototype.interp = function(Vector4 b, Number t) {
-  this[0] += (b[0]-this[0])*t;
-  this[1] += (b[1]-this[1])*t;
-  this[2] += (b[2]-this[2])*t;
-  this[3] += (b[3]-this[3])*t;  
-}
+  interp(Vector4 b, Number t) {
+    this[0] += (b[0]-this[0])*t;
+    this[1] += (b[1]-this[1])*t;
+    this[2] += (b[2]-this[2])*t;
+    this[3] += (b[3]-this[3])*t;  
+  }
 
-Vector4.prototype.toString = function() : String
-{
-    return "["+this[0]+","+this[1]+","+this[2]+","+this[3]+"]";
+  toString() : String
+  {
+      return "["+this[0]+","+this[1]+","+this[2]+","+this[3]+"]";
+  }
 }
 #endif
 
