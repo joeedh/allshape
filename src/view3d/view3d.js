@@ -1014,7 +1014,12 @@ class View3DHandler extends Area {
         console.log("executing unit tests...");
         window.unit_test_env.execute();
       } else {
-        ExtrudePullOp.create_widgets(ctx.view3d.manipulators, ctx);
+        //ExtrudePullOp.create_widgets(ctx.view3d.manipulators, ctx);
+        if (localStorage.use_canvas2d == undefined)
+          localStorage.use_canvas2d = false;
+        
+        localStorage.use_canvas2d ^= true;
+        console.log("localStorage.use_canvas2d: ", localStorage.use_canvas2d);
         
         //TranslateOp.create_widgets(ctx.view3d.manipulators, ctx);
         //console.log(Mesh.to_b64(ctx.mesh));

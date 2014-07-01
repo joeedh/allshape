@@ -28,6 +28,9 @@ var fuzzy_ui_press_hotspot = 25;
 
 var new_api_parser = true;
 
+if (localStorage.use_canvas2d == undefined)
+  localStorage.use_canvas2d = false;
+
 //debug flags
 var _DEBUG = {
   alias_g_app_state : true, //make a G alias to g_app_state at runtime
@@ -60,7 +63,8 @@ var _DEBUG = {
   netio : false,
   compression : false,
   force_mobile : true,
-  tesselator : false
+  tesselator : false,
+  use_2d_uicanvas : !!parseInt(""+localStorage.use_canvas2d)
 };
 
 //make sure debug global is declared;

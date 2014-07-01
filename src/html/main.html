@@ -338,6 +338,7 @@ body, html {
 }
 #framerate {
   position: absolute;
+  z-index: 3;
   top: 10px;
   left: 300px;
   background-color: rgba(0,0,0,0.3);
@@ -355,6 +356,16 @@ body, html {
 #example {
   width: 100%;
   height: 100%;
+  position: absolute;
+  z-index: 1;
+}
+#canvas2d {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  z-index: 2;
+  background-color: rgba(255, 255, 255, 0);
+  opacity: 1.0;
 }
 </style>
 
@@ -1333,10 +1344,20 @@ function toJSON_intern (ob, tlevel) {
 
     function reshape(gl)
     {
-		var g = g_app_state;
+        var g = g_app_state;
 		
         // change the size of the canvas's backing store to match the size it is displayed.
         var canvas = document.getElementById('example');
+        var canvas2d = document.getElementById("canvas2d")
+        
+        //ensure canvas2d'd dimensions are correct
+        if (canvas2d.width != canvas.clientWidth || canvas2d.height != canvas.clientHeight) {
+          canvas2d.clientWidth = canvas.clientWidth;
+          canvas2d.clientHeight = canvas.clientHeight;
+          canvas2d.width = canvas.clientWidth;
+          canvas2d.height = canvas.clientHeight;
+        }
+        
         if (canvas.clientWidth == canvas.width && canvas.clientHeight == canvas.height)
             return;
         
@@ -1365,9 +1386,8 @@ function toJSON_intern (ob, tlevel) {
 
         // Make sure the canvas is sized correctly.
         reshape(gl);
-        
-        var canvas;
-        g.canvas = canvas = document.getElementById('example');
+
+        var canvas = g.canvas = document.getElementById('example');
 		
         if (g != undefined && g.eventhandler != undefined) {
           if (DEBUG.alias_g_app_state) {
@@ -1380,16 +1400,40 @@ function toJSON_intern (ob, tlevel) {
           gl.finish();
           
         // Show the framerate
-          //framerate.snapshot();
+          framerate.snapshot();
           //document.getElementById("tottri").innerHTML = "Tris: " + g.view3d.mesh.faces.length + " Edges: " + g.   view3d.mesh.edges.length + " Verts: " + g.view3d.mesh.verts.length
         }
     }
     
+    /*
+    function canvas2d_anim_frame() {
+      window.requestAnimFrame(canvas2d_anim_frame, canvas2d);
+    }
+    */
+    
+    _canvas2d_ctx = undefined;
     _draw_gl = undefined;
     function start()
     {
         var canvas;
         var c = canvas = document.getElementById("example");
+        
+        var canvas2d = document.getElementById("canvas2d");
+        
+        if (DEBUG.use_2d_uicanvas) {
+          _canvas2d_ctx = canvas2d.getContext("2d");
+        
+          //_canvas2d_ctx.globalAlpha = 1.0;
+          _canvas2d_ctx.fillStyle = "blue";
+          _canvas2d_ctx.clearRect(0, 0, 200, 200);
+          _canvas2d_ctx.globalCompositeOperation = "source-over";
+          _canvas2d_ctx.font = "bold 16px Arial";
+          
+          _canvas2d_ctx.fillStyle = "blue";
+          _canvas2d_ctx.fillRect(0, 0, 100, 100);
+        }
+        
+        //window.requestAnimFrame(canvas2d_anim_frame, canvas2d);
         
         document.onselectstart=new Function ("return false")  
         document.oncontextmenu=new Function ("return false")
@@ -1399,15 +1443,18 @@ function toJSON_intern (ob, tlevel) {
         //c.contentEditable = true;
         //document.designMode = true;
         
+        var ce = canvas2d; //DEBUG.use_2d_uicanvas ? canvas2d : canvas;
+        
         c.addEventListener('webglcontextlost', handleContextLost, false);
         c.addEventListener('webglcontextrestored', handleContextRestored, false);
-        c.addEventListener("mousemove", handleMouseMove, false);
-        c.addEventListener("mousedown", handleMouseDown, false);
-        c.addEventListener("touchstart", handleTouchDown, false);
-        c.addEventListener("touchmove", handleTouchMove, false);
-        c.addEventListener("mouseup", handleMouseUp, false);
-        c.addEventListener("touchend", handleTouchUp, false);
-        c.addEventListener("touchcancel", handleTouchCancel, false);
+        
+        ce.addEventListener("mousemove", handleMouseMove, false);
+        ce.addEventListener("mousedown", handleMouseDown, false);
+        ce.addEventListener("touchstart", handleTouchDown, false);
+        ce.addEventListener("touchmove", handleTouchMove, false);
+        ce.addEventListener("mouseup", handleMouseUp, false);
+        ce.addEventListener("touchend", handleTouchUp, false);
+        ce.addEventListener("touchcancel", handleTouchCancel, false);
         
         window.addEventListener("DOMMouseScroll", handleMouseWheel, false);
         window.addEventListener("mousewheel", handleMouseWheel, false);
@@ -1426,7 +1473,7 @@ function toJSON_intern (ob, tlevel) {
         
         _draw_gl = gl;
         
-        //framerate = new Framerate("framerate");
+        framerate = new Framerate("framerate");
         var f = function() {
           try {
             if (!_skip_draw) 
@@ -1835,7 +1882,8 @@ function toJSON_intern (ob, tlevel) {
 <body onload="start()">
 
 <canvas height="404" width="1171" id="example"><TK></canvas>
-<!-- <div id="framerate">Framerate:51fps</div> -->
+<canvas id="canvas2d"></canvas>
+<div id="framerate">Framerate:51fps</div>
 <!-- <div id="tottri">Number of tris: </div> -->
 
 

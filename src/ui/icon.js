@@ -41,6 +41,25 @@ class IconManager {
     return ret;
   }
   
+  enum_to_xy(int tile) {
+    static ret = [0, 0];
+    
+    var size = this.size;
+    var cellsize = this.cellsize;
+    
+    var fx = Math.floor(size[0]/cellsize[0]);
+    
+    var y = Math.floor(tile/fx);
+    var x = tile%fx;
+    
+    x *= cellsize[0]; y *= cellsize[1];
+    
+    ret[0] = x;
+    ret[1] = y;
+    
+    return ret;
+  }
+  
   gen_tile(int tile, Array<float> texcos) {
     var size = this.size;
     var cellsize = this.cellsize;

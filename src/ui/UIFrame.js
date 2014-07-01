@@ -713,11 +713,60 @@ class UIFrame extends UIElement {
      this._pan_cache = cache2;
   }
   
+  calc_dirty() {
+    var d = this.last_dirty;
+    var ret = [[0, 0], [0, 0]]; //[d[0][0], d[0][1]], [d[1][0], d[1][1]]];
+    var first = true;
+    
+    for (var c in this.children) {
+      if (!(c instanceof UIFrame) && !c.recalc)
+        continue;
+      
+      var ret2;
+      
+      if (c instanceof UIFrame) {
+        ret2 = c.calc_dirty();
+      } else {
+        ret2 = c.last_dirty;
+      }
+      
+      if (first) {
+        ret[0][0] = ret2[0][0]
+        ret[0][1] = ret2[0][1]
+        ret[1][0] = ret2[1][0]+ret2[0][0]
+        ret[1][1] = ret2[1][1]+ret2[0][1]
+        first = false;
+      } else {
+        for (var i=0; i<2; i++) {
+          ret[0][i] = Math.min(ret[0][i], ret2[0][i]);
+          ret[1][i] = Math.max(ret[1][i], ret2[1][i]+ret2[0][i]);
+        }
+      }
+    }
+    
+    ret[1][0] -= ret[0][0];
+    ret[1][1] -= ret[0][1];
+    
+    return ret;
+  }
+  
   build_draw(canvas, isVertical, cache_frame=undefined) {
     var mat = _static_mat;
     this.has_hidden_elements = false;
     
     if (this.is_canvas_root()) {
+      if (DEBUG.use_2d_uicanvas) {
+        var d = this.calc_dirty();
+        
+        for (var c in this.children) {
+          if (aabb_isect_2d(c.pos, c.size, d[0], d[1])) {
+            c.do_recalc();
+          }
+        }
+        
+        this.canvas.clear(d[0], d[1]);
+      }
+      
       this.canvas.push_transform();
       this.canvas.translate(this.pos);
     }
@@ -762,6 +811,16 @@ class UIFrame extends UIElement {
     for (var c in this.children) {
       c.abspos[0] = 0; c.abspos[1] = 0;
       c.abs_transform(c.abspos);
+      
+      /*build dirty rects*/
+      var t = c.dirty;
+      c.dirty = c.last_dirty;
+      c.last_dirty = t;
+      
+      c.dirty[0][0] = c.abspos[0];
+      c.dirty[0][1] = c.abspos[1];
+      c.dirty[1][0] = c.size[0];
+      c.dirty[1][1] = c.size[0];
       
       var isect = aabb_isect_2d(c.abspos, c.size, viewport[0], viewport[1]);
       var pos;

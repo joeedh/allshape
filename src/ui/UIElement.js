@@ -59,6 +59,7 @@ class UIElement extends EventHandler {
   Boolean defunt;
   String description;
   Array<float> abspos, _minsize, pos, size;
+  Array<float> dirty, last_dirty;
   String _h12;
   String data_path;
   Context ctx;
@@ -79,6 +80,10 @@ class UIElement extends EventHandler {
     this._uiel_id = _ui_element_id_gen++;
     
     this.description = "";
+    
+    this.dirty = [[0, 0], [0, 0]];
+    this.last_dirty = [[0, 0], [0, 0]];
+    this.dirty_flag = 0;
     
     this.abspos = [0, 0];
     this._minsize = [0, 0]; //cached variable;

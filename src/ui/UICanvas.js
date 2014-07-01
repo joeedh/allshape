@@ -753,7 +753,8 @@ function _box_process_clr(default_cs, clr) {
   return cs;
 }
 
-class UICanvas {
+//XXX XXX!
+class UICanvas_ {
   constructor(viewport) { 
     static _id = 1;
     

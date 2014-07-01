@@ -653,17 +653,18 @@ function Framerate(id)
 }
 
 Framerate.prototype.updateFramerate = function() {
-    var tot = 0;
-    for (var i = 0; i < this.framerates.length; ++i)
-        tot += this.framerates[i];
+  var tot = 0;
+  for (var i = 0; i < this.framerates.length; ++i)
+      tot += this.framerates[i];
 
-    var framerate = tot / this.framerates.length;
-    framerate = Math.round(framerate);
+  var framerate = tot / this.framerates.length;
+  framerate = Math.round(framerate);
     
 	if (g.view3d != undefined) {
 		g.view3d.framerate = framerate;
 	}
-    //document.getElementById(this.id).innerHTML = "Framerate:"+framerate+"fps";
+  
+  document.getElementById(this.id).innerHTML = "Framerate:"+framerate+"fps";
 }
 
 Framerate.prototype.snapshot = function()
