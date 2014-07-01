@@ -64,8 +64,10 @@ var _DEBUG = {
   compression : false,
   force_mobile : true,
   tesselator : false,
-  use_2d_uicanvas : !!parseInt(""+localStorage.use_canvas2d)
+  use_2d_uicanvas : false
 };
+
+_DEBUG["use_2d_uicanvas"] = !!parseInt(""+localStorage.use_canvas2d);
 
 //make sure debug global is declared;
 //if it is, it'll be in config.js
