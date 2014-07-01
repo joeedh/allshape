@@ -1390,7 +1390,7 @@ function toJSON_intern (ob, tlevel) {
         var canvas = g.canvas = document.getElementById('example');
 		
         if (g != undefined && g.eventhandler != undefined) {
-          if (DEBUG.alias_g_app_state) {
+          if (DEBUG != undefined && DEBUG.alias_g_app_state) {
             G = g_app_state;
           }
           g.eventhandler.on_draw(gl);
