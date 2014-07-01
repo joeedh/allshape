@@ -70,7 +70,7 @@ var _DEBUG = {
 //make sure debug global is declared;
 //if it is, it'll be in config.js
 if (!("DEBUG" in window))
-  var DEBUG = {};
+  var DEBUG = window.DEBUG = {};
   
 //set default debug flags
 for (var k in _DEBUG) {
