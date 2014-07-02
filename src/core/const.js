@@ -71,7 +71,7 @@ _DEBUG["use_2d_uicanvas"] = !!parseInt(""+localStorage.use_canvas2d);
 
 //make sure debug global is declared;
 //if it is, it'll be in config.js
-if (!("DEBUG" in window))
+if (window.DEBUG == undefined || DEBUG == undefined)
   var DEBUG = window.DEBUG = {};
   
 //set default debug flags
