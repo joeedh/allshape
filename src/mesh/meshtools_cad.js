@@ -567,3 +567,289 @@ class ExtrudePullOp extends WidgetToolOp, ToolMacro {
 ExtrudePullOp.widget_axes = [0, 0, 1];
 ExtrudePullOp.widget_center = false;
 ExtrudePullOp.widget_align_normal = true;
+
+function bicubic_u(u, v, ps) {
+  return (-(((pow(v-1, 2)*ps[1][0]-2*(v-1)*ps[1][1]*v+ps[1][2]*pow(v, 2))*(2*u-3)-
+   (pow(v-1, 2)*ps[2][0]-2*(v-1)*ps[2][1]*v+ps[2][2]*pow(v, 2))*u)*u-(pow(v-1, 2)*
+   ps[0][0]-2*(v-1)*ps[0][1]*v+ps[0][2]*pow(v, 2))*(pow(u, 2)-3*u+3))*u)/3
+}
+
+function bicubic_v(u, v, ps) {
+  return (((2*(((2*v-3)*ps[1][1]-ps[1][2]*v)*v-(pow(v, 2)-3*v+3)*ps[1][0])*(u-1
+    )-(((2*v-3)*ps[2][1]-ps[2][2]*v)*v-(pow(v, 2)-3*v+3)*ps[2][0])*u)*u-(((2*
+    v-3)*ps[0][1]-ps[0][2]*v)*v-(pow(v, 2)-3*v+3)*ps[0][0])*pow(u-1, 2))*v)/3;
+}
+
+function approxu1(u, v, psu) {
+  return sin(bicubic_u(u, v, psu));
+}
+
+function approxv1(u, v, psv) {
+  return cos(bicubic_v(u, v, psv));
+}
+
+function approxu2(u, v, psu) {
+  return cos(bicubic_u(u, v, psu));
+}
+
+function approxv2(u, v, psv) {
+  return sin(bicubic_v(u, v, psv));
+}
+
+function approx(u, v, vi, dfunc, param) {
+  var steps = 11;
+  var ret = 0;
+  
+  var uv = [u, v];
+  var mul = (uv[vi])/steps;
+  var ds = (uv[vi])/steps;
+  var start = uv[vi];
+  
+  uv[vi] = 0;
+  
+  for (var i=0; i<steps; i++) {
+    var df = dfunc(uv[0], uv[1], param);
+    ret += df*mul;
+    
+    uv[vi] += ds;
+  }
+  
+ // if (start < 0) return -ret;
+  return ret;
+}
+
+var KSTART, KEULER, KSCALE, KQUAD, KPQUAD;
+
+function default_pquad(ks) {
+  var quad = [1, 0,   0, 0,   0, 1,   1, 1];
+  for (var i=0; i<quad.length; i++) {
+    ks[KPQUAD+i] = quad[i];
+  }
+}
+
+function make_ks(psu, psv, start, scale, quad, pquad, euler) {
+  if (scale == undefined)
+    scale = 1;
+    
+  var ks = []
+  for (var i=0; i<psu.length; i++) {
+    for (var j=0; j<psu.length; j++) {
+      ks.push(psu[i][j]);
+    }
+  }
+  for (var i=0; i<psu.length; i++) {
+    for (var j=0; j<psu.length; j++) {
+      ks.push(psv[i][j]);
+    }
+  }
+  
+  KPQUAD = ks.length;
+  if (pquad == undefined) {
+    for (var i=0; i<8; i++) {
+      ks.push(0);
+    }
+    default_pquad(ks);
+  } else {
+    for (var i=0; i<8; i++) {
+      ks.push(pquad[i]);
+    }
+  }
+  
+  KQUAD = ks.length;
+  if (pquad == undefined) {
+    for (var i=0; i<8; i++) {
+      ks.push(0);
+    }
+  } else {
+    for (var i=0; i<8; i++) {
+      ks.push(quad[i]);
+    }
+  }
+  
+  KSTART = ks.length;
+  start.concat_array(ks);
+  
+  KEULER = ks.length;
+  euler.concat_array(ks);
+  
+  KSCALE = ks.length;
+  ks.push(scale); //scale
+  
+  return ks;
+}
+
+function unbind_ks(ks) {
+  var psu = [];
+  var psv = [];
+  var c = 0;
+  for (var i=0; i<4; i++) {
+    psu.push([]);
+    for (var j=0; j<4; j++) {
+      psu[i].push(ks[c++]);
+    }
+  }
+  
+  for (var i=0; i<4; i++) {
+    psv.push([]);
+    for (var j=0; j<4; j++) {
+      psv[i].push(ks[c++]);
+    } }
+  
+  var start = new Vector3();
+  start[0] = ks[c++];
+  start[1] = ks[c++];
+  start[2] = ks[c++];
+  var scale = ks[c++];
+  
+  return [psu, psv, start, scale];
+}
+
+function eval_surf(u, v, psu, psv, ks) {
+  static rotmatrix = new Matrix4();
+  static rets = [new Vector3(), new Vector3(), new Vector3(), new Vector3(), new Vector3()];
+  static reti = 0;
+  
+  u = Math.max(Math.min(u, 1), 0);
+  v = Math.max(Math.min(v, 1), 0);
+  
+  //parameterization transform
+  var u2 = ks[KPQUAD+2] + (ks[KPQUAD+0]-ks[KPQUAD+2])*u;
+  var u3 = ks[KPQUAD+4] + (ks[KPQUAD+6]-ks[KPQUAD+4])*u;
+  
+  var v2 = ks[KPQUAD+3] + (ks[KPQUAD+1]-ks[KPQUAD+3])*u;
+  var v3 = ks[KPQUAD+5] + (ks[KPQUAD+7]-ks[KPQUAD+5])*u;
+   
+  u = u2 + (u3-u2)*v;
+  v = v2 + (v3-v2)*v;
+  
+  var x =  approx(u, v, 1, approxv1, psv);
+  var y =  approx(u, v, 0, approxu2, psu);
+
+  var z1 =  approx(u, v, 1, approxv2, psv);
+  var z2 =  approx(u, v, 0, approxu1, psu);
+  
+  x += 0.5;
+  y += 0.5;
+  
+  var x2 = ks[KQUAD+2] + (ks[KQUAD+0]-ks[KQUAD+2])*x;
+  var x3 = ks[KQUAD+4] + (ks[KQUAD+6]-ks[KQUAD+4])*x;
+  var y2 = ks[KQUAD+3] + (ks[KQUAD+1]-ks[KQUAD+3])*x;
+  var y3 = ks[KQUAD+5] + (ks[KQUAD+7]-ks[KQUAD+5])*x;
+   
+  var xn = x2 + (x3-x2)*y;
+  var yn = y2 + (y3-y2)*y;
+  
+  x = xn;
+  y = yn;
+  
+  var z = z2+z1;
+
+  var ret = rets[reti];
+  reti = (reti+1)%rets.length;
+
+  ret[0] = x; ret[1] = y; ret[2] = z;
+  ret.mulScalar(ks[KSCALE]);
+
+  rotmatrix.makeIdentity();
+  rotmatrix.rotate(ks[KEULER], ks[KEULER+1], ks[KEULER+2]);
+  ret.multVecMatrix(rotmatrix);
+
+  ret[0] += ks[KSTART];
+  ret[1] += ks[KSTART+1];
+  ret[2] += ks[KSTART+2];
+}
+
+/*
+0,1      1,1
+ v2------v3
+ |        |
+ |        |
+ |        |
+ v1------v4
+0,0      1,0
+*/
+
+function edge_uv(i, t) {
+  static ret = [0, 0];
+  switch (i) {
+    case 0:
+      ret[0] = 0;
+      ret[1] = t;
+      break;
+    case 1:
+      ret[0] = t;
+      ret[1] = 1;
+      break;
+    case 2:
+      ret[0] = 1;
+      ret[1] = 1-t;
+      break;
+    case 3:
+      ret[0] = 1-t;
+      ret[1] = 0;
+      break;
+  }
+  
+  return ret;
+}
+
+class SpiralPatch {
+  constructor(Face f) { //f should be a quad
+    var psu = [];
+    
+    for (var i=0; i<4; i++) {
+      psu.push([]);
+      for (var j=0; j<4; j++) {
+        psu[i].push(0);
+      }
+    }
+    
+    this.ks = make_ks(psu, psv, new Vector3(), 1, undefined, undefined, new Vector3());
+    this.f = f;
+  }
+  
+  fit_face() {  
+    var ks = this.ks;
+    var f = this.f;
+    
+    var vs = list(f.verts);
+    var start = new Vector3(vs[0].co);
+    var mat = new Matrix4();
+    static axis = new Vector3([1, 0, 0]);
+    
+    var cross = new Vector3(axis).cross(f.no);
+    cross.normalize();
+    
+    var q = new Quat();
+    q.axisAngleToQuat(cross, f.no.dot(axis));
+    
+    var mat = q.toMatrix();
+    var cos2d = [new Vector3(), new Vector3(), new Vector3(), new Vector3()];
+    
+    var mm2d = new MinMax(2), mm = new MinMax(3);
+    for (var i=0; i<4; i++) {
+      cos2d[i].load(vs[i].co).multVecMatrix(mat);
+      mm2d.minmax(cos2d[i]);
+    }
+    
+    var scale = 1/mm2d.max.vectorDistance(mm.min);
+    
+    for (var i=1; i<4; i++) {
+      cos2d[i].sub(cos2d[0]).mulScalar(scale);
+    }
+    cos2d[0].zero();
+    
+    ks[KQUAD]   = cos2d[0][0]; ks[KQUAD+1] = cos2d[0][1];
+    ks[KQUAD+2] = cos2d[1][0]; ks[KQUAD+3] = cos2d[1][1];
+    ks[KQUAD+4] = cos2d[2][0]; ks[KQUAD+5] = cos2d[2][1];
+    ks[KQUAD+6] = cos2d[3][0]; ks[KQUAD+7] = cos2d[3][1];
+    
+    ks[KSTART] = start[0];
+    ks[KSTART+1] = start[1];
+    ks[KSTART+2] = start[2];
+    
+    for (var i=0; i<32; i++) {
+      ks[i] = 0;
+    }
+  }
+}

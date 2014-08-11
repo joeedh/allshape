@@ -525,14 +525,14 @@ class UIHoverBox extends UIElement {
   build_draw(UICanvas canvas, Boolean isVertical) {
     canvas.begin(this);
     
-    canvas.shadow_box([4, -4], this.size);
+    canvas.shadow_box([0, 0], this.size);
     
     //hrm, something is wrong with canvas.box1, which is used
     //to draw rounded boxes on desktops.  box2, used on tablets,
     //works correctly.  this size offset shouln't be necassary.
-    var size = IsMobile ? this.size : [this.size[0], this.size[1]+2];
+    var size = IsMobile ? this.size : [this.size[0], this.size[1]];
 
-    canvas.box2([0, 0], size, uicolors["HoverHint"]);
+    canvas.box([0, 0], size, uicolors["HoverHint"]);
     canvas.text([4, 7], this.text, uicolors["BoxText"]);
     
     canvas.end(this);
@@ -569,7 +569,7 @@ class UIHoverHint extends UIElement {
     
     size.add([8.0, 12.0]);
     
-    var pos = new Vector2([this.pos[0], this.pos[1]-size[1]]);
+    var pos = new Vector2([this.pos[0]+4, this.pos[1]-size[1]]);
     var hintbox = new UIHoverBox(this.ctx, hint, is_modal, pos, size);
     
     /*ensure hint is fully within view*/

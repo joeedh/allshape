@@ -1984,6 +1984,7 @@ class HintPickerOpElement extends UIElement {
   
   build_draw(UICanvas canvas, Boolean isVertical) {
     this.op.canvas = canvas;
+    
     this.op.build_draw();
   }
 }
@@ -2109,16 +2110,17 @@ class HintPickerOp extends ToolOp {
   }
   
   build_draw() {
+    
     //console.log("rebuilding draw...");
     
     //this.canvas.reset();
     var clr = [0, 0, 0, 0.35];
     
     if (this.active == undefined) {
-      this.canvas.simple_box([0, 0], g_app_state.screen.size, clr);
+      //this.canvas.simple_box([0, 0], g_app_state.screen.size, clr);
     } else {
       var pos = this.active.get_abs_pos();
-      this.canvas.passpart(pos, this.active.size, clr);
+      //this.canvas.passpart(pos, this.active.size, clr);
     }
   }
   

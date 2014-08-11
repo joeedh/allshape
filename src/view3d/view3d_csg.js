@@ -110,6 +110,11 @@ class CSGDraw {
     gl.clearColor(0, 0, 0.0, 1.0);
     gl.clearDepth(10000);
     gl.clear(gl.DEPTH_BUFFER_BIT|gl.COLOR_BUFFER_BIT);
+    
+    var view3d_bg = colors3d["Background"];
+    if (view3d_bg == undefined)
+      view3d_bg = [1, 1, 1, 1];
+    
     gl.clearColor(view3d_bg[0], view3d_bg[1], view3d_bg[2], view3d_bg[3]);
   }
   

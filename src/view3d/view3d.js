@@ -908,7 +908,7 @@ class View3DHandler extends Area {
     var objects = scene.objects;
     
     gl.enable(gl.DEPTH_TEST);
-    this.grid.on_draw(gl, this.drawmats, this.zoomfac);
+    //this.grid.on_draw(gl, this.drawmats, this.zoomfac);
     
     for (var ob in objects) {
       if (ob.csg && ob != ctx.object) {

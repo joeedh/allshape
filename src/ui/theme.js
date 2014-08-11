@@ -221,11 +221,17 @@ ColorTheme.STRUCT = """
 var menu_text_size = IsMobile ? 14 : 10;
 var default_ui_font_size = 10;
 var ui_hover_time = 800;
-var view3d_bg = [0.6, 0.6, 0.9, 1.0];
+//var view3d_bg = [0.6, 0.6, 0.9, 1.0];
 
 var View3DTheme = new ColorTheme({
+  Background   : [1, 1, 1, 1],
   ActiveObject : [0.8, 0.6, 0.3, 1.0],
-  Selection : [0.7, 0.4, 0.1, 1.0]
+  "Selection"    : [0.699999988079071,0.4000000059604645,0.10000000149011612,1],
+  "GridLineBold" : [0.38, 0.38, 0.38, 1.0],
+  "GridLine"     : [0.5, 0.5, 0.5, 1.0],
+  "AxisX" : [0.9, 0.0, 0.0, 1.0],
+  "AxisY" : [0.0, 0.9, 0.0, 1.0],
+  "AxisZ" : [0.0, 0.0, 0.9, 1.0]
 });
 
 function ui_weight_clr(clr, weights) {

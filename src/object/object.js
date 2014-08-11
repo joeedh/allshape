@@ -260,7 +260,7 @@ class ASObject extends DagNode {
     
     steps = Math.max(steps, 3.0);
     
-    return steps;
+    return steps*2;
   }
 
   get csg() {

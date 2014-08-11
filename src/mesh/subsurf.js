@@ -796,7 +796,7 @@ function gpu_subsurf(gl, in_mesh2, steps, ss_mesh) {
   themesh.render.ss_program = new ShaderProgram(
           gl,
           // The ids of the vertex and fragment shaders
-          "ss_vshader", "fshader",
+          "ss_vshader", "ss_fshader",
           // The vertex attribute names used by the shaders.
           // The order they appear here corresponds to their index
           // used later.

@@ -1324,3 +1324,21 @@ class WVector3 extends Vector3 {
     this.view[2] = n;
   }
 }
+
+var cos = Math.cos;
+var sin = Math.sin;
+
+function rot2d(vec, A, axis=0) {
+  var x = vec[0];
+  var y = vec[1];
+  
+  if (axis == 1) {
+    vec[0] = x * cos(A) + y*sin(A);
+    vec[1] = y * cos(A) - x*sin(A);
+  } else {
+    vec[0] = x * cos(A) - y*sin(A);
+    vec[1] = y * cos(A) + x*sin(A);
+  }
+  
+  return vec;
+}

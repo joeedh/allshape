@@ -28,6 +28,8 @@ class UIFrame extends UIElement {
   constructor(ctx, canvas, path, pos, size) { //path, pos, size are optional
     UIElement.call(this, ctx, path, pos, size);
     
+    this.dirty_rects = new GArray();
+    
     this.bgcolor = undefined;
     this._pan_cache = {};
     this.pan_bounds = [[0, 0], [0, 0]];
@@ -590,6 +592,8 @@ class UIFrame extends UIElement {
       a.pop_modal();
     }
     
+    this.dirty_rects.push([[a.abspos[0], a.abspos[1]], [a.size[0], a.size[1]]]);
+    
     a.on_remove(this);
     this.children.replace(a, b);
     
@@ -612,6 +616,8 @@ class UIFrame extends UIElement {
 
   remove(UIElement e) {
     e.defunct = true;
+    
+    this.dirty_rects.push([[e.abspos[0], e.abspos[1]], [e.size[0], e.size[1]]]);
     
     if (!(e instanceof UIFrame)) {
       this.leafcount--;
@@ -717,6 +723,21 @@ class UIFrame extends UIElement {
     var d = this.last_dirty;
     var ret = [[0, 0], [0, 0]]; //[d[0][0], d[0][1]], [d[1][0], d[1][1]]];
     var first = true;
+    
+    for (var r in this.dirty_rects) {
+      if (first) {
+        first = false;
+        ret[0][0] = r[0][0];
+        ret[0][1] = r[0][1];
+        ret[1][0] = r[1][0]+r[0][0];
+        ret[1][1] = r[1][1]+r[0][1];
+      } else {
+        ret[0][0] = Math.min(ret[0][0], r[0][0]);
+        ret[0][1] = Math.min(ret[0][1], r[0][1]);
+        ret[1][0] = Math.max(ret[1][0], r[0][0]+r[1][0]);
+        ret[1][1] = Math.max(ret[1][1], r[0][1]+r[1][1]);
+      }
+    }
     
     for (var c in this.children) {
       if (!(c instanceof UIFrame) && !c.recalc)
@@ -924,6 +945,8 @@ class UIFrame extends UIElement {
     if (this.is_canvas_root()) {
       this.canvas.pop_transform();
     }
+    
+    this.dirty_rects.reset();
   }
 
   //pre_func is optional, and is called before each child's on_tick is executed
