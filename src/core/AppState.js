@@ -118,13 +118,13 @@ function gen_default_file(size) {
   var g = g_app_state;
   global startup_file_str;
   
-  if (RELEASE && (!("startup_file" in localStorage) || localStorage.startup_file == undefined || localStorage.startup_file == "undefined")) {
-    localStorage.startup_file = startup_file_str;
+  if (RELEASE && (!("startup_file_allshape" in localStorage) || localStorage.startup_file_allshape == undefined || localStorage.startup_file_allshape == "undefined")) {
+    localStorage.startup_file_allshape = startup_file_str;
   }
   
-  if (localStorage.startup_file) {
+  if (localStorage.startup_file_allshape) {
     try {
-      var buf = localStorage.startup_file
+      var buf = localStorage.startup_file_allshape
       buf = new DataView(b64decode(buf).buffer);
       
       g.load_user_file_new(buf, new unpack_ctx());
@@ -166,7 +166,7 @@ function gen_default_file(size) {
 }
 
 function output_startup_file() : String {
-  var str = localStorage.startup_file;
+  var str = localStorage.startup_file_allshape;
   var out = ""
   
   for (var i=0; i<str.length; i++) {
@@ -325,7 +325,7 @@ class AppState {
     
     buf = b64encode(buf);
     
-    localStorage.startup_file = buf;
+    localStorage.startup_file_allshape = buf;
   }
 
   //file minus ui data, used by BasicFileDataOp
@@ -776,6 +776,21 @@ class AppState {
       } else if (subtype == "SDEF") {
         bdata = unpack_static_string(data, uctx, len).trim();
         fstructs.parse_structs(bdata);
+        
+        //append any unrecognized dummy structs to istruct
+        for (var stt in fstructs.dummies) {
+          console.log(" - loading dummy class ", stt.name);
+          
+          //don't override if already in istruct
+          if (stt.name in istruct.structs) continue;
+          
+          stt.id = istruct.idgen.gen_id();
+          
+          istruct.dummies.push(stt);
+          istruct.structs[stt.name] = stt;
+          istruct.struct_cls[stt.name] = fstructs.struct_cls[stt.name];
+          istruct.struct_ids[stt.id] = stt;
+        }
       } else {
         console.log(subtype, type, uctx.i, data.byteLength);
         console.trace();

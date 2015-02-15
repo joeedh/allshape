@@ -115,6 +115,9 @@ class ObjectEditor extends View3DEditor {
   }
   
   draw_object(gl, view3d, object, is_active) {
+    if (view3d.do_addon_draw(gl, object))
+      return;
+    
     this.object = object;
     var drawmode = gl.TRIANGELS;
     

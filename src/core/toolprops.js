@@ -272,7 +272,7 @@ class RefListProperty extends ToolProperty {
       for (var i=0; i<value.length; i++) {
         var block = value[i];
         
-        if (block == undefined || !this.types.has(block.lib_type)) {
+        if (block == undefined || (block instanceof DataBlock && !this.types.has(block.lib_type))) {
           console.trace();
           if (block == undefined)
             console.log("Undefined datablock in list passed to RefListProperty.set_data");

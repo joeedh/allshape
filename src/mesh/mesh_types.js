@@ -712,7 +712,7 @@ class AllTypesSelectIter extends TCanSafeIter {
   }
 }
 
-class GeoArray<T> {
+class GeoArray<T> extends ES5Iter {
   Array arr;
   EIDGen idgen;
   ObjectMap<int,Element> global_eidmap;
@@ -868,5 +868,47 @@ class GeoArray<T> {
     this.freelist.push(item._gindex);
     item._gindex = -1;
     this.length -= 1;
+  }
+}
+
+class MeshMaterialHandler {
+  constructor(gl, ctx) {
+    
+  }
+  
+  load_shader(Mesh mesh, DrawMats drawmats) {
+  }
+  
+  unload_shader(Mesh mesh, DrawMats drawmats) {
+  }
+  
+  get_textures(Mesh mesh, DrawMats drawmats) {
+  }
+  
+  destroy(WebGLRenderingContext gl) {
+  }
+  
+  on_context_lost(WebGLRenderingContext gl) {
+  }
+}
+
+class DefaultMatHandler extends MeshMaterialHandler {
+  constructor(gl, ctx) {
+    
+  }
+  
+  load_shader(Mesh mesh, DrawMats drawmats) {
+  }
+  
+  unload_shader(Mesh mesh, DrawMats drawmats) {
+  }
+  
+  get_textures(Mesh mesh, DrawMats drawmats) {
+  }
+  
+  destroy(WebGLRenderingContext gl) {
+  }
+  
+  on_context_lost(WebGLRenderingContext gl) {
   }
 }

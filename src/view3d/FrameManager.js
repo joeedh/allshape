@@ -1221,6 +1221,11 @@ class Screen extends UIFrame {
     }
     
     var k = this.keymap;
+    
+    k.add(new KeyHandler("F1", [], "Reload Add-Ons"), new FuncKeyHandler(function(ctx) {
+      reload_addons();
+    }));
+    
     k.add_tool(new KeyHandler("O", ["CTRL"], "Open File"),
                "appstate.open()");
     k.add_tool(new KeyHandler("S", ["CTRL", "ALT"], "Open File"),

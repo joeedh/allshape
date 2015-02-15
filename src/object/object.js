@@ -241,6 +241,8 @@ class ASObject extends DagNode {
     var ob = new ASObject(undefined, "");
     
     unpacker(ob);
+    DataBlock.do_fromSTRUCT(ob);
+    
     ob.init_from_pack();
     
     return ob;
@@ -260,7 +262,7 @@ class ASObject extends DagNode {
     
     steps = Math.max(steps, 3.0);
     
-    return steps*2;
+    return steps;
   }
 
   get csg() {

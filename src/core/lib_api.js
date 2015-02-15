@@ -47,6 +47,11 @@ for (var k in DataTypes) {
   DataNames[DataTypes[k]] = k.charAt(0) + k.slice(1, k.length).toLowerCase();
 }
 
+var DataConstMap = {};
+for (var k in DataTypes) {
+  DataConstMap[DataTypes[k]] = k;
+}
+
 //other than SELECT, the first two bytes
 //of block.flag are reserved for exclusive
 //use by subclasses.  
@@ -172,7 +177,7 @@ class DataRefListIter<T> extends ToolIter {
   }
 }
 
-class DataList<T> {
+class DataList<T> extends ES5Iter {
   GArray<T> list;
   ObjectMap<String,T> namemap;
   int type;
@@ -183,6 +188,10 @@ class DataList<T> {
     this.namemap = {};
     this.type = type;
     this.active = undefined;
+  }
+  
+  find(name) : DataBlock {
+    return this.namemap[name];
   }
 
   __iterator__() : GArrayIter {
@@ -217,7 +226,7 @@ class DataLib {
     var dl;
     
     if (!this.datalists.has(typeid)) {
-      dl = new DataLib(typeid);
+      dl = new DataList(typeid);
       this.datalists.add(dl);
     } else {
       dl = this.datalists.get(typeid);
@@ -350,6 +359,17 @@ class DataLib {
     block.on_add(this);
   }
 
+  on_rename(DataBlock db) {
+    var list = this.datalists.get(db.lib_type);
+    for (var k in db.namemap) {
+      if (db.namemap[k] === db) {
+        delete db.namemap[k];
+      }
+    }
+    
+    db.namemap[db.name] = db;
+  }
+  
   get_active(int data_type) {
     if (this.datalists.has(data_type)) {
       var lst = this.datalists.get(data_type);
@@ -393,6 +413,26 @@ class UserRef {
   }
 }
 
+class _DBCustomDataKeyVal {
+  constructor(key, val) {
+    this.key = key;
+    this.val = val;
+  }
+  
+  static fromSTRUCT(reader) {
+    var ret = new _DBCustomDataKeyVal();
+    reader(ret);
+    return ret;
+  }
+}
+
+_DBCustomDataKeyVal.STRUCT = """
+  _DBCustomDataKeyVal {
+    key : static_string[64];
+    val : abstract(Object);
+  }
+""";
+
 var _db_hash_id = 1;
 class DataBlock {
   String name;
@@ -403,8 +443,12 @@ class DataBlock {
   int lib_refs, lib_id;
   int _hash_id;
   
+  ObjLit custom_data;
+  
   constructor(int type, String name) {
     this.constructor.datablock_type = type;
+    
+    this.custom_data = {};
     
     //name is optional
     if (name == undefined)
@@ -448,7 +492,27 @@ class DataBlock {
       this.lib_refs += 1;
     }
   }
-
+  
+  _save_cdata() {
+    var arr = [];
+    for (var k in this.custom_data) {
+      arr.push(new _DBCustomDataKeyVal(k, this.custom_data[k]));
+    }
+    
+    return arr;
+  }
+  
+  get_addon_data(AddOn addon) {
+    //console.log("=-=-==-=-", addon, "\n");
+    //console.log(this.lib_type, DataConstMap, this, addon);
+    
+    if (!(addon.name in this.custom_data)) {
+      this.custom_data[addon.name] = new addon.datablock_classes[DataConstMap[this.lib_type]]();
+    }
+    
+    return this.custom_data[addon.name];
+  }
+  
   toJSON() : Object {
     return {
       lib_id : this.lib_id,
@@ -547,6 +611,19 @@ class DataBlock {
       console.log("Ref count error when deleting a datablock!", this.lib_refs,  this);
     }
   }
+  
+  static do_fromSTRUCT(ret) {
+    if (ret.custom_data != undefined) {
+      var custom_data = {};
+      for (var i=0; i<ret.custom_data.length; i++) {
+        var cd = ret.custom_data[i];
+        
+        custom_data[cd.key] = cd.val;
+      }
+    }
+    
+    ret.custom_data = custom_data;
+  }
 }
 
 //'name' and 'flag' are deliberately not
@@ -560,5 +637,6 @@ DataBlock.STRUCT = """
 
     lib_refs : int;
     flag     : int;
+    custom_data : array(abstract(Object)) | obj._save_cdata();
   }
 """;

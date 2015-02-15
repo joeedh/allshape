@@ -105,6 +105,10 @@ function gen_tabstr(t) {
   return s;
 }
 
+function _cls_sname(cls) {
+  return cls.structName != undefined ? cls.structName : cls.name;
+}
+
 function SchemaParser() {
   var basic_types = new set([
     "int", 
@@ -444,16 +448,16 @@ var _st_packers = [
       throw new Error("Undefined passed to tstruct, for field " + JSON.stringify(field));
     }
     
-    if (type.data == "Object" || (val.constructor.name != type.data && (val instanceof cls))) {
+    if (type.data == "Object" || (_cls_sname(val.constructor) != type.data && (val instanceof cls))) {
       if (DEBUG.Struct) {
-        console.log(val.constructor.name + " inherits from " + cls.name);
+        console.log(_cls_sname(val.constructor) + " inherits from " + _cls_sname(cls));
       }
-      stt = thestruct.get_struct(val.constructor.name);
+      stt = thestruct.get_struct(_cls_sname(val.constructor));
     } else if (val.constructor.name == type.data) {
       stt = thestruct.get_struct(type.data);
     } else {
       console.trace();
-      throw new Error("Bad struct " + val.constructor.name + ", " + JSON.stringify(val) + " passed to write_struct");
+      throw new Error("Bad struct " + _cls_sname(val.constructor) + ", " + JSON.stringify(val) + " passed to write_struct");
     }
     
     if (stt.id == 0 || stt.id == undefined) {
@@ -568,10 +572,145 @@ function _st_pack_type(data, val, obj, thestruct, field, type) {
   _st_packers[field.type.type](data, val, obj, thestruct, field, type);
 }
 
+function test_struct_rename() {
+  class ObjA {
+    static fromSTRUCT(reader) {
+    }
+  }
+  ObjA.STRUCT = """
+    ObjA {
+      b : ObjB;
+      c : array(abstract(ObjB));
+    }
+  """;
+  
+  class ObjB {
+    static fromSTRUCT(reader) {
+    }
+  }
+  ObjB.STRUCT = """
+    ObjB {
+      data : abstract(ObjA);
+      type : ObjA;
+    }
+  """
+  
+  var s = new STRUCT();
+  
+  s.add_struct(ObjA);
+  s.add_struct(ObjB);
+  
+  console.log("renaming struct a. . .");
+  s.rename_struct("ObjA", "ObjA_2");
+  
+  console.log("renaming struct b. . .");
+  s.rename_struct("ObjB", "ObjB_2");
+  
+  console.log(gen_struct_str(s));
+  console.log(s);
+  
+  return s;
+}
+
+function create_dummy_class(tstruct, stt) {
+    var dummy = function() {
+    }
+    
+    dummy.prototype = Object.create(Object.prototype);
+    dummy.STRUCT = STRUCT.fmt_struct(stt);
+    dummy.structName = stt.name;
+    
+    dummy.fromSTRUCT = function(reader) {
+      var obj = new dummy();
+      reader(obj);
+      
+      return obj;
+    }
+    
+    dummy.prototype.constructor = dummy;
+    
+    tstruct.struct_cls[stt.name] = dummy;
+    tstruct.struct_ids[stt.id] = stt;
+    tstruct.structs[stt.name] = stt;
+    
+    tstruct.dummies.push(stt);
+    
+    return dummy;
+}
+
 class STRUCT {
+  join(structdef) {
+    for (var k in structdef.structs) {
+      if (structdef.null_natives[k]) continue;
+      
+      var stt = structdef.structs[k];
+      var id = undefined;
+      
+      if (stt.name in this.structs) {
+        console.log("Replacing existing struct", stt.name);
+        
+        id = this.structs[stt.name].id;
+      } else {
+        id = this.idgen.gen_id();
+      }
+      
+      stt.id = id;
+      this.structs[stt.name] = stt;
+      this.struct_cls[stt.name] = structdef.struct_cls[stt.name];
+      this.struct_ids[id] = stt;
+    }
+  }
+  
+  rename_struct(oldname, newname) {
+    var stt = this.structs[oldname];
+    if (stt == undefined) {
+      console.trace("WARNING: unknown struct[3] ", oldname, " in STRUCT.rename_struct!");
+      return;
+    }
+    
+    if (newname in this.structs) {
+      console.trace("WARNING: STRUCT.rename_struct: struct name", newname, " is already taken; overriding");
+    }
+    
+    var cls = this.struct_cls[oldname];
+    
+    delete this.structs[oldname];
+    delete this.struct_cls[oldname];
+    
+    stt.name = newname;
+    this.structs[newname] = stt;
+    this.struct_cls[newname] = stt;
+    
+    function recurse_rename(f) {
+      if (f.type == oldname) f.type = newname;
+      if (f.type.data == oldname)
+        f.type.data = newname;
+      
+      if (f.type.type == T_ARRAY || f.type.type == T_ITER) {
+        recurse_rename(f.type.data);
+      }
+    }
+    
+    
+    for (var k in this.structs) {
+      if (k == newname) continue;
+      
+      var stt2 = this.structs[k];
+      for (var i=0; i<stt2.fields.length; i++) {
+        var f = stt2.fields[i];
+        
+        recurse_rename(f);
+      }
+    }
+    
+    stt.name = newname;
+  }
+  
   constructor()
   {
     this.idgen = new EIDGen();
+    
+    this.dummies = new GArray();
     
     this.structs = {};
     this.struct_cls = {};
@@ -609,7 +748,7 @@ class STRUCT {
     var clsmap = {}
     
     for (var i=0; i<defined_classes.length; i++) {
-      clsmap[defined_classes[i].name] = defined_classes[i];
+      clsmap[_cls_sname(defined_classes[i])] = defined_classes[i];
     }
     
     schema_parse.input(buf);
@@ -621,21 +760,7 @@ class STRUCT {
         if (!(stt.name in this.null_natives))
           console.log("WARNING: struct " + stt.name + " no longer exists.  will try to convert.");
         
-        var dummy = Object.create(Object.prototype);
-        dummy.prototype = Object.create(Object.prototype);
-        dummy.STRUCT = STRUCT.fmt_struct(stt);
-        dummy.fromSTRUCT = function(reader) {
-          var obj = {};
-          reader(obj);
-          
-          return obj;
-        }
-        dummy.name = stt.name;
-        dummy.prototype.name = dummy.name;
-        dummy.prototype.constructor = dummy;
-        
-        this.struct_cls[dummy.name] = dummy;
-        this.struct_cls[dummy.name] = stt;
+        create_dummy_class(this, stt);
         
         if (stt.id != -1)
           this.struct_ids[stt.id] = stt;
@@ -652,15 +777,15 @@ class STRUCT {
       }
     }  
   }
-
+  
   add_struct(cls) {
     var stt = schema_parse.parse(cls.STRUCT);
     
     if (stt.id == -1)
       stt.id = this.idgen.gen_id();
     
-    this.structs[cls.name] = stt;
-    this.struct_cls[cls.name] = cls;
+    this.structs[_cls_sname(cls)] = stt;
+    this.struct_cls[_cls_sname(cls)] = cls;
     this.struct_ids[stt.id] = stt;
   }
 
@@ -671,7 +796,7 @@ class STRUCT {
   get_struct(name) {
     if (!(name in this.structs)) {
       console.trace();
-      throw new Error("Unknown struct " + name);
+      throw new Error("Unknown struct[1] " + name);
     }
     return this.structs[name];
   }
@@ -679,7 +804,7 @@ class STRUCT {
   get_struct_cls(name) {
     if (!(name in this.struct_cls)) {
       console.trace();
-      throw new Error("Unknown struct " + name);
+      throw new Error("Unknown struct[2] " + name);
     }
     
     return this.struct_cls[name];
@@ -687,7 +812,7 @@ class STRUCT {
 
   static inherit(child, parent) {
     var stt = schema_parse.parse(parent.STRUCT);
-    var code = child.name + "{\n" 
+    var code = _cls_sname(child) + "{\n" 
     code += STRUCT.fmt_struct(stt, true);
     
     return code;
@@ -871,14 +996,17 @@ class STRUCT {
   }
 
   write_object(data, obj) {
-    var cls = obj.constructor.name;
+    var cls = _cls_sname(obj.constructor);
     var stt = this.get_struct(cls);
     this.write_struct(data, obj, stt);  
   }
 
   //uctx is a private, optional parameter
   read_object(data, cls, unpack_ctx uctx=new unpack_ctx()) : Object {
-    var stt = this.structs[cls.name];
+    if (cls == undefined)
+      console.log("  ===> CLS", cls, data);
+    
+    var stt = this.structs[_cls_sname(cls)];
     var thestruct = this;
     
     var unpack_funcs = {
@@ -978,11 +1106,17 @@ class STRUCT {
           throw new Error(""+uctx.i+": Unknown struct type " + id + ".");
         }
         
-        var cls2 = thestruct.get_struct_id(id);
-        packer_debug("struct name: " + cls2.name);
+        var stt = thestruct.get_struct_id(id);
+        if (stt == undefined)
+          throw new Error("Bad struct ID " + id);
         
-        cls2 = thestruct.struct_cls[cls2.name];
-
+        var cls2 = thestruct.struct_cls[stt.name];
+        if (cls2 == undefined) {
+          cls2 = create_dummy_class(thestruct, stt);
+        }
+        
+        packer_debug("struct name: " + _cls_sname(cls2));
+        
         var ret = thestruct.read_object(data, cls2, uctx);
         packer_debug_end("tstruct");
         
@@ -1022,7 +1156,7 @@ class STRUCT {
     }
     
     if (cls.fromSTRUCT == undefined) {
-      console.log("-------->", cls.name, cls);
+      console.log("-------->", _cls_sname(cls), cls);
     }
     
     var ret = cls.fromSTRUCT(load);
@@ -1147,7 +1281,7 @@ function init_struct_packer() {
       }
     } catch (err) {
       if (err instanceof PUTLParseError) {
-        console.log("cls.name: ", cls.name)
+        console.log("cls name: ", _cls_sname(cls))
         print_stack(err);
         console.log("Error parsing struct: " + err.message);
       } else {
@@ -1165,10 +1299,10 @@ function init_struct_packer() {
   }
 }
 
-function gen_struct_str() {
+function gen_struct_str(thestruct=istruct) {
   var buf = ""
-  for (var k in istruct.structs) {
-    buf += STRUCT.fmt_struct(istruct.structs[k], false, true) + "\n";
+  for (var k in thestruct.structs) {
+    buf += STRUCT.fmt_struct(thestruct.structs[k], false, true) + "\n";
   }
   
   //strip out leading whitespace from lines

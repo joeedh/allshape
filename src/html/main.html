@@ -1525,7 +1525,7 @@ function toJSON_intern (ob, tlevel) {
         
         var view3d_bg = colors3d["Background"];
         if (view3d_bg == undefined)
-          view3d_bg = [1, 1, 1, 1];
+          view3d_bg = [0.25, .3, .6, 1];
         
         gl.clearColor(view3d_bg[0], view3d_bg[1], view3d_bg[2], view3d_bg[3]);
         gl.clearDepth(10000);
@@ -1580,8 +1580,7 @@ function toJSON_intern (ob, tlevel) {
         canvas.width = canvas.clientWidth;
         canvas.height = canvas.clientHeight;
         
-        //don't mangle current app state on
-        //context loss, which also calls init()
+        //don't run this section in context losss events
         if (g_app_state == undefined) {
           //initialize struct pack system
           init_struct_packer();
@@ -1595,8 +1594,10 @@ function toJSON_intern (ob, tlevel) {
         
           console.log("generating start file...");
           gen_default_file([canvas.clientWidth, canvas.clientHeight]);
-        
+          
           g_app_state.session.validate_session();
+          
+          reload_addons();
         }
         
         return gl;

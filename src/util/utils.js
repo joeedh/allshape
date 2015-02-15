@@ -16,6 +16,20 @@ class CanIter {
   }
 }
 
+class ES5Iter { //bridge class for es5 forEach iterators
+  forEach(cb, thisvar) {
+    if (thisvar != undefined) {
+      for (var item in this) {
+        cb.call(thisvar, item);
+      }
+    } else {
+      for (var item in this) {
+        cb(item);
+      }
+    }
+  }
+}
+
 var int debug_int_1 = 0;
 class GArray extends Array {
   constructor(Object input) {
@@ -353,7 +367,7 @@ class SetIter {
 }
 EXPORT_FUNC(SetIter)
 
-class set {
+class set extends ES5Iter {
   constructor(Object input) {
     this.items = {}
     this.length = 0;
@@ -499,7 +513,7 @@ class HashKeyIter {
 }
 EXPORT_FUNC(HashKeyIter)
 
-class hashtable {
+class hashtable extends ES5Iter {
   constructor() {
     this.items = {};
     this.keymap = {};

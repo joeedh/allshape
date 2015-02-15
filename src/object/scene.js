@@ -31,6 +31,8 @@ class Scene extends DataBlock {
     var sce = new Scene();
     unpacker(sce);
     
+    DataBlock.do_fromSTRUCT(sce);
+    
     sce.init_from_pack();
     return sce;
   }

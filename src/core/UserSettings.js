@@ -61,6 +61,9 @@ class AppSettings {
       function finish2(DataView data) {  
         console.log("loading settings data...");
         
+        var sd = DEBUG.Struct;
+        DEBUG.Struct = 0;
+        
         var ret = g_app_state.load_blocks(data);
         if (ret == undefined) {
           console.trace("could not load settings : load_blocks returned undefined");
@@ -104,6 +107,8 @@ class AppSettings {
         if (on_finish != undefined) {
           on_finish(settings);
         }
+        
+        DEBUG.Struct = sd;
       }
       
       try {

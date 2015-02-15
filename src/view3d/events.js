@@ -318,6 +318,8 @@ class EventHandler {
 var valid_modifiers = {"SHIFT": 1, "CTRL": 2, "ALT": 4}
 
 var charmap_latin_1 = {
+  "F1" : 121,
+  
   "Space": 32,
   "Escape" : 27,
   "Enter": 13,

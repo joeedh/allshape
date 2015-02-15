@@ -94,6 +94,8 @@ class Mesh extends DataBlock {
     var m = new Mesh()
     
     unpacker(m);
+
+    DataBlock.do_fromSTRUCT(m);
     
     m.gen_render_struct();
     m.regen_render();
@@ -101,6 +103,9 @@ class Mesh extends DataBlock {
     var verts = m.verts;
     var edges = m.edges;
     var faces = m.faces;
+    
+    if (m.idgen == undefined)
+      m.idgen = new EIDGen();
     
     m.verts = new GeoArray<Vert>(MeshTypes.VERT, m.idgen, m.eidmap, m.sidmap);
     m.edges = new GeoArray<Edge>(MeshTypes.EDGE, m.idgen, m.eidmap, m.sidmap);
@@ -166,6 +171,16 @@ class Mesh extends DataBlock {
           l.radial_prev = loops[l.radial_prev];
         }
       }
+    }
+    
+    if ("active_vert" in m) {
+      m.verts.active = eidmap[m.active_vert];
+      m.edges.active = eidmap[m.active_edge];
+      m.faces.active = eidmap[m.active_face];
+      
+      delete m.active_vert;
+      delete m.active_edge;
+      delete m.active_face;
     }
     
     //ensure up to date bounding boxes
@@ -1095,6 +1110,22 @@ class Mesh extends DataBlock {
     return f;
   }
 
+  kill_all() {
+    for (var v in this.verts) {
+      this.kill_vert(v);
+    }
+    
+    for (var e in this.edges) {
+      this.kill_edge(e);
+    }
+    
+    for (var f in this.faces) {
+      this.kill_face(f);
+    }
+    
+    this.regen_render();
+  }
+  
   kill(Element e) {
     if (e.type == MeshTypes.VERT) 
       this.kill_vert(e)
@@ -1278,6 +1309,11 @@ Mesh.STRUCT = STRUCT.inherit(Mesh, DataBlock) + """
     verts  : iter(Vertex);
     edges  : iter(Edge);
     faces  : iter(Face);
+    
+    active_vert : int | obj.verts.active != undefined ? obj.verts.active : -1;
+    active_edge : int | obj.edges.active != undefined ? obj.edges.active : -1;
+    active_face : int | obj.faces.active != undefined ? obj.faces.active : -1;
+    
     bb     : MinMax;
     sel_bb : MinMax;
   }

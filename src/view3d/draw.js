@@ -460,6 +460,9 @@ function gen_mesh_selbufs(gl, mesh)
 function gen_mesh_render(WebGLRenderingContext ctx, Mesh mesh, ShaderProgram drawprogram, 
                          ShaderProgram vertprogram, int recalcflags) 
 {
+  if (mesh.verts.length == 0) 
+    return;
+    
   function tess_finish(job) {
     mesh.flag |= MeshFlags.TESS_JOB_FINISHED;
   }
@@ -592,6 +595,7 @@ function gen_mesh_render(WebGLRenderingContext ctx, Mesh mesh, ShaderProgram dra
   
   mesh.render.kill_buf("vertbuf");
   mesh.render.vertbuf = ctx.createBuffer();
+  
   ctx.bindBuffer(ctx.ARRAY_BUFFER, mesh.render.vertbuf);
   ctx.bufferData(ctx.ARRAY_BUFFER, verts, ctx.STATIC_DRAW);
   
@@ -841,8 +845,12 @@ function gen_mesh_render(WebGLRenderingContext ctx, Mesh mesh, ShaderProgram dra
   ctx.bindBuffer(gl.ARRAY_BUFFER, mesh.render.vertbuf);
   ctx.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
 
-  ctx.bindBuffer(gl.ARRAY_BUFFER, mesh.render.norbuf);
-  ctx.vertexAttribPointer(2, 3, gl.FLOAT, false, 0, 0);
+  if (mesh.render.norbuf != undefined && mesh.render.norbuf != 0) {
+    ctx.bindBuffer(gl.ARRAY_BUFFER, mesh.render.norbuf);
+    ctx.vertexAttribPointer(2, 3, gl.FLOAT, false, 0, 0);
+  } else {
+    ctx.disableVertexAttribArray(2);
+  }
   
   if (mesh.render.vcolorbuf != 0) {
     ctx.bindBuffer(gl.ARRAY_BUFFER, mesh.render.vcolorbuf);
@@ -1313,6 +1321,8 @@ function render_mesh_object(WebGLRenderingContext gl, View3DHandler view3d,
                             Mesh mesh, DrawMats drawmats, use_alphamul=true, 
                             drawprogram=undefined, drawmode=gl.TRIANGLES) 
 {
+  if (mesh.faces.length == 0 || mesh.verts.length == 0) return;
+  
   if (drawprogram == undefined)
     drawprogram = mesh.render.drawprogram;
   

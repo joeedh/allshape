@@ -333,11 +333,14 @@ class RemoveDoublesOp extends MeshOp {
   /*this function works by finding clusters of vertices, then creating a new mesh with
       them welded together*/
   exec(op, mesh) {
+    console.log("RE-IMPLEMENT ME: RemoveDoubles");
+    return;
+    
     var mesh2 = mesh.shallow_copy();
     
-    mesh2.verts = new GeoArray();
-    mesh2.edges = new GeoArray();
-    mesh2.faces = new GeoArray();
+    mesh2.verts = new GeoArray(MeshTypes.VERT, mesh2.idgen, mesh2.eidmap, mesh2.sidmap);
+    mesh2.edges = new GeoArray(MeshTypes.EDGE, mesh2.idgen, mesh2.eidmap, mesh2.sidmap);
+    mesh2.faces = new GeoArray(MeshTypes.FACE, mesh2.idgen, mesh2.eidmap, mesh2.sidmap);
     
     var shash = this.shash;
     var r = this.inputs.radius.data

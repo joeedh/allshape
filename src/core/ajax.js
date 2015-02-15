@@ -797,7 +797,7 @@ function api_exec(path, netjob, mode,
       if (DEBUG.netio)
         console.log("headers:", netjob.headers)
       
-      if (netjob.headers["Content-Type"] == "application/x-javascript") {
+      if (netjob.headers["Content-Type"] == "application/json") {
         try {
           obj = JSON.parse(req.response);
         } catch (_error) {

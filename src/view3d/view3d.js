@@ -861,7 +861,23 @@ class View3DHandler extends Area {
   on_view_change() {
     this.redo_selbuf = true;
   }
-
+  
+  do_addon_draw(gl, ob) {
+    var skip_draw = false;
+    
+    for (var addon in loaded_addons) {
+      try {
+        if (addon.on_object_draw(gl, ob, this, this.ctx))
+          skip_draw = true;
+      } catch (err) {
+        print_stack(err);
+        console.log("Error in add-on");
+      }
+    }
+    
+    return skip_draw;
+  }
+  
   on_draw(WebGLRenderingContext gl, test) {
     this.gl = gl;
     this.editor.shift = this.shift;
@@ -920,10 +936,12 @@ class View3DHandler extends Area {
       this.transmat.multiply(ob.matrix);
       
       //draw object
-      if (ob == ctx.object) {
+      if (ob == ctx.scene.objects.active) {
         this.editor.draw_object(gl, this, ob, true);
+        //this.draw_object_basic(gl, ob);
       } else {
-        this.draw_object_basic(gl, ob);
+        if (!this.do_addon_draw(gl, ob))
+          this.draw_object_basic(gl, ob);
       }
       
       this.transmat.pop();
@@ -1134,6 +1152,7 @@ class View3DHandler extends Area {
       _do_frame_debug ^= 1;
       test_nested_with();
     }));
+    
     k.add(new KeyHandler("Up", [], "Increment Debug Value"), new FuncKeyHandler(function(ctx) {
       //flip_max++;
       global debug_int_1;
@@ -1159,6 +1178,8 @@ class View3DHandler extends Area {
     this.shift = this.editor.shift = event.shiftKey;
     this.alt = this.editor.alt = event.altKey;
     this.ctrl = this.editor.ctrl = event.ctrlKey;
+    
+    console.log("keyCode:", event.keyCode);
     
     prior(View3DHandler, this)._on_keyup.call(this, event);
   }
@@ -1332,6 +1353,14 @@ class View3DHandler extends Area {
     col.label("mesh.totvert", true);
     col.label("mesh.totedge", true);
     
+    col.label("|");
+    var button = new UIButton(this.ctx, "Reload Addons");
+    button.callback = function() {
+      reload_addons();
+    }
+    
+    col.add(button);
+    
     //UIMenuLabel(ctx, text, pos, size, menu, gen_menu_func)
     this.rows.push(col);
     this.add(col);
@@ -1473,7 +1502,7 @@ class View3DHandler extends Area {
     //this.render_selbuf_obj(gl, object, this.selectmode);
     //return
     gl.polygonOffset(0.5, 200);
-    if (object.data instanceof Mesh) {
+    if (object.data instanceof Mesh && object.data.verts.length > 0) {
       this.check_subsurf(this.ctx, object);
       
       if (object.subsurf) {

@@ -6,7 +6,7 @@
   mesh iterators don't auto-reset.
   this is necassary for caching to
   work properly.*/
-class MeshIterAbstract {
+class MeshIterAbstract extends ES5Iter {
   constructor() {
     this.done = false; //done flag
   }
@@ -366,12 +366,14 @@ MeshIter.FACE_EDGES = 10;
 MeshIter.FACE_ALL_LOOPS = 11;
 MeshIter.EDGE_VERTS = 12;
 
-function MeshIterate(type, data) {
-  this.type = type;
-  this.data = data;
-  this.flag = 0;
+class MeshIterate extends ES5Iter {
+  constructor(type, data) {
+    this.type = type;
+    this.data = data;
+    this.flag = 0;
+  }
   
-  this.__iterator__ = function() : Iterator {
+  __iterator__() : Iterator {
     if (this.type == MeshIter.FACE_VERTS)
       return new FaceVertIter(this.data);
     else if (this.type == MeshIter.VERT_EDGES)

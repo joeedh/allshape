@@ -54,7 +54,30 @@ class DataPath {
     
     return true;
   }
+  
+  static fromSTRUCT(ret) {
+    var ret = new DataPath()
+    
+    reader(ret);
+    ret.use_path = !!ret.use_path;
+    ret.dest_is_prop = !!ret.dest_is_prop;
+    
+    if (!(ret.prop instanceof ToolProperty))
+      ret.prop.parent = ret;
+    
+    return ret;
+  }
 }
+DataPath.STRUCT = """
+  DataPath {
+    name         : static_string[64];
+    prop         : abstract(Object);
+    use_path     : int;
+    flag         : int;
+    type         : int;
+    dest_is_prop : int;
+  }
+""";
 
 class DataStructIter {
   constructor(s) {
@@ -98,10 +121,11 @@ class DataStructIter {
   a struct definition
  */
 class DataStructArray {
-  constructor(array_item_struct_getter) {
+  constructor(array_item_struct_getter, structdef=undefined) {
     this.getter = array_item_struct_getter;
     
     this.type = DataPathTypes.STRUCT_ARRAY;
+    this.structdef = structdef;
   }
 }
 
@@ -196,7 +220,29 @@ class DataStruct {
     
     this.add(p);
   }
+  
+  static fromSTRUCT(reader) {
+    var ret = new DataStruct();
+    
+    reader(ret);
+    
+    ret.paths = new GArray(ret.paths);
+    for (var p in ret.paths) {
+      p.parent = ret;
+    }
+    
+    return ret;
+  }
 }
+
+DataStruct.STRUCT = """
+  DataStruct {
+    flag  : int;
+    type  : int;
+    paths : array(DataPath);
+  }
+""";
+
 
 /*TinyParser is optimization to only be used with the data api.
   DO NOT USE IT ELSEWHERE.  It can only process a limited number

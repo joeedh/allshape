@@ -107,6 +107,8 @@ class MeshEditor extends View3DEditor {
   
   draw_object(gl, view3d, object, is_active)
   {
+    //return;
+    
     this.ctx = new Context();
     this.mesh = object.data;
     this.object = object;
@@ -143,6 +145,9 @@ class MeshEditor extends View3DEditor {
         if (ss_recalc & MeshRecalcFlags.REGEN_TESS)
           object.data.flag |= MeshFlags.USE_MAP_CO;
         
+        if (object.data.verts.length == 0) 
+          return;
+          
         gen_mesh_render(gl, object.data, object.data.render.drawprogram, object.data.render.vertprogram, object.data.render.recalc);        
       }
       
@@ -152,7 +157,11 @@ class MeshEditor extends View3DEditor {
       
       //this.view3d.test_render_selbuf(1|2|8)
     } else {
-      this.mesh.flag &= ~MeshFlags.USE_MAP_CO;
+      if (object.data.verts.length == 0) 
+        return;
+          
+      object.data.flag &= ~MeshFlags.USE_MAP_CO;
+      
       if (object.csg) {
         render_mesh_elements(gl, view3d, object.data, view3d.drawmats, 1.0, true);
       } else {

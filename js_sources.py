@@ -19,7 +19,9 @@ sources = [
 	"src/util/utils.js",
   "src/util/strutils.js",
   "src/util/workerutils.js",
+  "src/core/addon.js",
 	"src/core/lib_api.js",
+  "src/core/lib_blockdata.js",
 	"src/util/mathlib.js",
   "src/util/colorutils.js",
   "src/util/isect.js",
@@ -102,7 +104,8 @@ sources = [
 	"src/view3d/dialog.js",
 	"src/view3d/dialogs.js",
 	"src/view3d/FrameManager.js",
-
+  "src/node_editor/node_editor.js",
+  
   "src/view3d/notifications.js",
 
 	"src/util/dag.js",

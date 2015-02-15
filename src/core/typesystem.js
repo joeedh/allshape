@@ -108,7 +108,7 @@ so as to linearize the prototype chain.
 the final prototype is flattened, so that all the methods
 of the parent prototypes are copied into it.
 */
-function inherit_multiple(obj, parents) {
+function inherit_multiple(obj, parents, initproto=undefined) {
   var bad = false;
   
   if (parents == undefined) {
@@ -365,6 +365,9 @@ function inherit_multiple(obj, parents) {
   for (var k in obj.__statics__) {
     obj.__flatstatics__[k] = obj.__statics__[k];
   }
+  
+  _handle_init_proto(obj, initproto);
+  return obj.prototype;
 }
 
 function subclass_of(child, parent) {
@@ -396,8 +399,10 @@ function __instance_of(child, parent) {
 
 var instance_of = __instance_of;
 
-function inherit(obj, parent) {
-  inherit_multiple(obj, [parent]);
+function inherit(obj, parent, initproto=undefined) {
+  inherit_multiple(obj, [parent], initproto);
+  
+  return obj.prototype;
 }
 
 function inherit_old(obj, parent) {
@@ -431,7 +436,39 @@ function inherit_old(obj, parent) {
 
 EXPORT_FUNC(inherit)
 
-function create_prototype(obj) {
+function _static_def(func) {
+  this.func = func;
+  this.constructor = _static_def;
+}
+function static_method(func) {
+  return new _static_def(func);
+}
+
+function  _handle_init_proto(obj, initproto=undefined) {
+  //console.log("in _handle_init_proto\n", obj, initproto);
+  
+  if (initproto == undefined) return;
+  
+  for (var k in initproto) {
+//    console.log("  k: ", k);
+//    console.log("  v: ", v);
+//    console.log("\n\n");
+    
+    var v = initproto[k];
+      
+    if (v.constructor === _static_def) {
+      v.name = k;
+      
+//      console.log("    static!");
+      define_static(obj, k, v.func);
+    } else {
+//      console.log("    instance!");
+      obj.prototype[k] = v;
+    }
+  }
+}
+
+function create_prototype(obj, initproto=undefined) {
   defined_classes.push(obj);
   
   obj.prototype.constructor = obj;
@@ -447,6 +484,9 @@ function create_prototype(obj) {
   obj.__subclass_map__[obj.__prototypeid__] = obj;
   var name = obj.name;
   obj.__hash__ = function() { return name };
+  
+  _handle_init_proto(obj, initproto);
+  return obj.prototype;
 }
 EXPORT_FUNC(create_prototype)
 
@@ -578,3 +618,22 @@ function define_docstring(func, docstr) {
   return func;
 }
 
+/*
+//create ES5 forEach iterator bridge
+Object.prototype.forEach = function(Function cb, Object thisvar=undefined) {
+  if (!("__iterator__" in this.__proto__))  {
+    console.log(this);
+    throw new Error("Object doesn't implement ES6 iterator api");
+  }
+  
+  if (thisvar != undefined) {
+    for (var item in this) {
+      cb.call(thisvar, item);
+    }
+  } else {
+    for (var item in this) {
+      cb(item);
+    }
+  }
+}
+*/
