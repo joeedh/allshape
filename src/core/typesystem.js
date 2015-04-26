@@ -1,3 +1,5 @@
+"not_a_module";
+
 #ifndef EXPORT
 #define EXPORT
 #define EXPORT_FUNC(func)
@@ -30,6 +32,35 @@ var defined_tests = new Array();
 
 function create_test(obj) {
   defined_tests.push(obj);
+}
+
+function get_non_props(obj) {
+  var names = Object.getOwnPropertyNames(obj);
+  
+  var ret = [];
+  
+  for (var i=0; i<names.length; i++) {
+    var k = names[i];
+    var des = Object.getOwnPropertyDescriptor(obj, k);
+    
+    var add = des.get == undefined && des.set == undefined;
+    
+    if (add) {
+      ret.push(k);
+    }
+  }
+  
+  return ret;
+}
+
+function __typesystem_copy_prop(dest, src, name) {
+  var des = Object.getOwnPropertyDescriptor(src, name);
+  
+  if (des != undefined && (des.get != undefined || des.set != undefined)) {
+    Object.defineProperty(dest, name, des);
+  } else {
+    dest[name] = src[name];
+  }
 }
 
 var int _prototype_id_gen = 1
@@ -79,6 +110,8 @@ function test_inherit_multiple() {
   return [d, b, c, a];
 }
 
+var native_types = {};
+
 function init_native_type(obj) {
   obj.__subclass_map__ = {};
   obj.__prototypeid__ =_prototype_id_gen++;
@@ -90,6 +123,8 @@ function init_native_type(obj) {
   
   obj.prototype.__class__ = obj.name;
   obj.prototype.__prototypeid__ = obj.__prototypeid__;
+  
+  native_types[obj.prototype.__prototypeid__] = obj;
 }
 
 init_native_type(Function);
@@ -108,7 +143,160 @@ so as to linearize the prototype chain.
 the final prototype is flattened, so that all the methods
 of the parent prototypes are copied into it.
 */
-function inherit_multiple(obj, parents, initproto=undefined) {
+
+function _time_ms() {
+  if (window.performance)
+    return window.performance.now();
+  else
+    return new Date().getMilliseconds();
+}
+
+var _im_total = 0;
+var _im_max = {
+  time : 0,
+  cls  : undefined
+}
+
+function _get_obj_keys(ob) {
+  var ks = Object.getOwnPropertyNames(ob);
+  
+  if (ob.toString != undefined)
+    ks.push("toString");
+  return ks;
+}
+
+var _ts_exclude = ["__prototypeid__", "__class__", "priors", "prototype", "constructor"];
+var eset = {};
+
+for (var i=0; i<_ts_exclude.length; i++) {
+  eset[_ts_exclude[i]] = _ts_exclude[i];
+}
+_ts_exclude = eset;
+
+delete _ts_exclude["toString"];
+ 
+function simple_inherit_multiple(obj, parents) {
+  var exclude = _ts_exclude;
+  var parent = parents[0];
+  
+  defined_classes.push(obj);
+  
+  obj.__clsorder__ = [];
+  var p = parents[0].prototype;
+  
+  while (p != undefined && p.constructor != undefined && p != undefined && p.prototype != p && p.prototype !== Object.prototype) {
+    obj.__clsorder__.push(p.constructor);
+    p = p.prototype;
+  }
+  
+  var proto = Object.create(parent.prototype);
+  proto.priors = obj.__clsorder__;
+  proto.constructor = obj;
+  proto.__prototypeid__ = _prototype_id_gen++;
+  proto.__class__ = obj.name;
+  
+  obj.prototype = proto;
+  obj.__prototypeid__ = proto.__prototypeid__;
+  obj.__parents__ = parents;
+  obj.__subclass_map__ = {};
+  obj.__subclass_map__[obj.__prototypeid__] = obj
+  
+  var name = obj.name;
+  obj.__hash__ = function() { return name };
+  
+  //add to instanceof helper map
+  if (!("__subclass_map__" in parent)) {
+    if (!("__prototypeid__" in parent)) {
+      parent.__prototypeid__ = _prototype_id_gen++;
+      parent.prototype.__prototypeid__ = parent.__prototypeid__;
+    }
+    parent.__subclass_map__ = {};
+    parent.__subclass_map__[parent.__prototypeid__] = parent;
+  }
+  
+  parent.__subclass_map__[obj.__prototypeid__] = obj;
+  
+  obj.__statics__ = {};
+  
+  //add inherited statics
+  obj.__flatstatics__ = {}
+ 
+  if (("__statics__" in parent)) {
+    var keys = _get_obj_keys(parent.__statics__);
+    
+    for (var j=0; j<keys.length; j++) {
+      var k = keys[j];
+      if (k == "__proto__" || (exclude.hasOwnProperty(k) && k != "toString"))
+        continue;
+      
+      obj.__flatstatics__[k] = k;
+      obj[k] = parent[k];
+      }
+  }
+  
+  for (var k in obj.__statics__) {
+    obj.__flatstatics__[k] = obj.__statics__[k];
+  }
+  
+  return obj;
+}
+
+function inherit_multiple(obj, parents, mod, name) {
+  var s = _time_ms();
+    
+  if (name != undefined) {
+    //console.log(name);
+  }
+  
+  //return simple_inherit_multiple(obj, parents);
+  
+  if (name != undefined && mod.already_processed[name] != undefined) {
+    //console.log("double call!", name);
+    
+    //don't just pass through existing object directly, that might mess up closures
+    var newcls = mod.already_processed[name];
+    
+    obj.__prototypeid__ = newcls.__prototypeid__;
+    obj.__clsorder__ = newcls.__clsorder__;
+    obj.__class__ = newcls.__class__;
+    obj.__parents__ = newcls.__parents__;
+    obj.__subclass_map__ = newcls.__subclass_map__;
+    obj.__hash__ = newcls.__hash__;
+    obj.__statics__ = newcls.__statics__;
+    obj.__flatstatics__ = newcls.__flatstatics__;
+    
+    if (newcls.__flatstatics__ != undefined) {
+      for (var k in newcls.__flatstatics__) {
+        obj[k] = newcls[k];
+      }
+    }
+    
+    obj.prototype = newcls.prototype;
+    obj.prototype.constructor = obj;
+    
+    return obj;
+  }
+  
+  //var ret = simple_inherit_multiple(obj, parents);
+  var ret = inherit_multiple_intern(obj, parents);
+  
+  var time = _time_ms() - s;
+  if (time > _im_max.time) {
+    _im_max.time = time;
+    _im_max.cls = obj;
+  }
+  
+  _im_total += time;
+  
+  return ret;
+}
+
+function inherit_multiple_intern(obj, parents) {
+  if (handle_duplicate_calls(obj)) return;
+  
+  var is_single = parents.length == 1;
+  
+  var exclude = _ts_exclude;
   var bad = false;
   
   if (parents == undefined) {
@@ -124,31 +312,30 @@ function inherit_multiple(obj, parents, initproto=undefined) {
   
   defined_classes.push(obj);
   
+  var mergesteps=0;
+  
   parents.reverse();
   function merge(ps, lsts) {
     var lst = []
     
     lsts.push(ps);
+    var totlst = 10000;
+    var trylimit = 2000;
     
-    for (var u=0; u<2000; u++) {
-      if (lsts.length == 0)
+    for (var u=0; u<trylimit; u++) {
+      if (lsts.length == 0 || totlst == 0)
         break;
       
+      totlst = 0;
       for (var i=0; i<lsts.length; i++) {
-        if (lsts[i].length == 0)
+        if (lsts[i].length == 0) {
           continue;
+        }
+        
+        totlst++;
         
         var p = lsts[i][0];
         var bad = false;
-        
-        if (0) {
-          for (var j=0; j<lst.length; j++) {
-            if (lst[j].__prototypeid__ == p.__prototypeid__) {
-              bad = true;
-              break;
-            }
-          }
-        }
         
         for (var j=0; !bad && j<lsts.length; j++) {
           if (i == j) continue;
@@ -189,6 +376,12 @@ function inherit_multiple(obj, parents, initproto=undefined) {
       }
     }
     
+    if (u == trylimit) {
+      throw new Error("Could not resolve inheritance order for ", obj.name);
+    }
+    
+    mergesteps = u;
+    
     var tot=0;
     for (var i=0; i<lsts.length; i++) {
       tot += lsts[i].length;
@@ -214,13 +407,15 @@ function inherit_multiple(obj, parents, initproto=undefined) {
     
     cs.push(p);
     obj.__clsorder__ = cs;
-  } else {
+  } else if (parents.length > 0) {
     var lsts = [];
     
     for (var i=0; i<parents.length; i++) {
       var cpy = [];
-      for (var j=0; j<parents[i].__clsorder__.length; j++) {
-        cpy.push(parents[i].__clsorder__[j]);
+      var corder = parents[i].__clsorder__;
+      
+      for (var j=0; j<corder.length; j++) {
+        cpy.push(corder[j]);
       }
       
       lsts.push(cpy);
@@ -229,65 +424,87 @@ function inherit_multiple(obj, parents, initproto=undefined) {
     obj.__clsorder__ = merge(parents, lsts);
   }
   
-  function _get_obj_keys(ob) {
-    var ks = Object.getOwnPropertyNames(ob);
-    if (ob.toString != undefined)
-      ks.push("toString");
-    return ks;
-  }
-  
+  //new object prototype
+  proto = Object.create(Object.prototype);
+  delete proto.toString;
+     
   //build prototype chain
   var cs = obj.__clsorder__;
-  var cs2 = [];
-  for (var i=0; i<cs.length; i++) {
-    cs2.push(Object.create(Object.prototype));
+  
+  if (is_single) {
+    var cs2 = [];
+    for (var i=0; i<cs.length; i++) {
+      var p = cs[i];
+      cs2.push(p.prototype);
+    }
+  } else {
+    var thekeys = []
+    for (var k=0; k<cs.length; k++) {
+      var p2 = cs[k];
+      thekeys.push(_get_obj_keys(p2.prototype));
+    }
     
-    var p = cs[i];
-    var keys = _get_obj_keys(p.prototype);
-    
-    for (var j=0; j<keys.length; j++) {
-      var val = p.prototype[keys[j]];
-      var bad = false;
+    var st = _time_ms();
+    var cs2 = [];
+    for (var i=0; i<cs.length; i++) {
+      cs2.push(Object.create(Object.prototype));
       
-      for (var k=0; !bad && k<i; k++) {
-        if (k == i) continue;
-        var p2 = cs[k];
+      var p = cs[i];
+      var keys = _get_obj_keys(p.prototype);
+      
+      for (var j=0; j<keys.length; j++) {
+        var des = Object.getOwnPropertyDescriptor(p.prototype, keys[j]);
         
-        if (p2.__prototypeid__ == p.__prototypeid__) continue;
+        if (des != undefined && (des.get != undefined || des.set != undefined)) {
+          __typesystem_copy_prop(cs2[i], p.prototype, keys[j]);
+          continue;
+        }
         
-        var keys2 = _get_obj_keys(p2.prototype);
-        for (var l=0; !bad && l<keys2.length; l++) {
-          if (p2.prototype[keys2[l]] == val) {
-            bad = true;
-            break;
+        var val = p.prototype[keys[j]];
+        var bad = false;
+        
+        for (var k=0; !bad && k<i; k++) {
+          if (k == i) continue;
+          var p2 = cs[k];
+          
+          if (p2.__prototypeid__ == p.__prototypeid__) continue;
+          
+          var keys2 = thekeys[k];
+          for (var l=0; !bad && l<keys2.length; l++) {
+            var des2 = Object.getOwnPropertyDescriptor(p2.prototype, keys2[l]);
+            
+            if (des2 != undefined && (des2.get != undefined || des2.set != undefined)) {
+              continue;
+            }
+            
+            if (p2.prototype[keys2[l]] === val) {
+              bad = true;
+              break;
+            }
           }
         }
+        
+        if (!bad)
+          __typesystem_copy_prop(cs2[i], p.prototype, keys[j]);
       }
-      
-      if (!bad)
-        cs2[i][keys[j]] = val;
+    }
+    
+    var time = _time_ms()-st;
+    if (time > 10) {
+      //console.log(time, cs2.length);
     }
   }
-  
-  var exclude = ["__prototypeid__", "__class__", "priors", "prototype", "constructor"];
-  var eset = {};
-  for (var i=0; i<exclude.length; i++) {
-    eset[exclude[i]] = exclude[i];
-  }
-  exclude = eset;
-  delete exclude["toString"];
   
   function excluded(k) {
     return exclude.hasOwnProperty(k) && k != "toString";
   }
   
-  proto = Object.create(Object.prototype);
-  delete proto.toString;
-  
   for (var i=0; i<cs2.length; i++) {
-    cs2[i].__prototypeid__ = cs[i].__prototypeid__;
-    cs2[i].constructor = cs[i];
-    cs2[i].__class__ = cs[i].name;
+    if (is_single) {
+      cs2[i].__prototypeid__ = cs[i].__prototypeid__;
+      cs2[i].constructor = cs[i];
+      cs2[i].__class__ = cs[i].name;
+    }
     
     var p = cs2[i];
     var keys = _get_obj_keys(p);
@@ -295,21 +512,22 @@ function inherit_multiple(obj, parents, initproto=undefined) {
     for (var j=0; j<keys.length; j++) {      
       if (excluded(keys[j]))
         continue;
-      if (p[keys[j]] == Object.prototype.toString)
+      if (keys[j] == "toString" && p[keys[j]] == Object.prototype.toString)
         continue;
       
-      proto[keys[j]] = p[keys[j]];
+      __typesystem_copy_prop(proto, p, keys[j]);
     }
     
-    if (i > 0) {
+    if (is_single && i > 0) {
       var keys2 = _get_obj_keys(cs2[i-1]);
       
       for (var j=0; j<keys2.length; j++) {
         if (excluded(keys2[j])) continue;
-        if (cs2[i][keys2[j]] != undefined) continue;
+        if (keys2[j] in cs2[i]) continue;
         
-        cs2[i][keys2[j]] = cs2[i-1][keys2[j]];
+        __typesystem_copy_prop(cs2[i], cs2[i-1], keys2[j]);
       }
+      
       cs2[i].prototype == cs2[i-1];
     }
   }
@@ -322,6 +540,7 @@ function inherit_multiple(obj, parents, initproto=undefined) {
   proto.__prototypeid__ = _prototype_id_gen++;
   proto.__class__ = obj.name;
   
+  obj.__mergesteps = mergesteps;
   obj.prototype = proto;
   obj.__prototypeid__ = proto.__prototypeid__;
   obj.__parents__ = parents;
@@ -366,8 +585,7 @@ function inherit_multiple(obj, parents, initproto=undefined) {
     obj.__flatstatics__[k] = obj.__statics__[k];
   }
   
-  _handle_init_proto(obj, initproto);
-  return obj.prototype;
+  return obj;
 }
 
 function subclass_of(child, parent) {
@@ -385,7 +603,7 @@ function subclass_of(child, parent) {
 function __instance_of(child, parent) {
   if (parent == undefined)
     return child == undefined;
-  if (typeof child != "object")
+  if (typeof child != "object" && typeof child != "function")
     return typeof child == typeof(parent); //return btypeof(child) == btypeof(parent);
   
   if ("__subclass_map__" in parent && "__prototypeid__" in child) {
@@ -399,13 +617,15 @@ function __instance_of(child, parent) {
 
 var instance_of = __instance_of;
 
-function inherit(obj, parent, initproto=undefined) {
-  inherit_multiple(obj, [parent], initproto);
+function inherit(obj, parent) {
+  if (handle_duplicate_calls(obj)) return;
   
-  return obj.prototype;
+  inherit_multiple(obj, [parent]);
 }
 
 function inherit_old(obj, parent) {
+  if (handle_duplicate_calls(obj)) return;
+  
   defined_classes.push(obj);
   
   obj.prototype = Object.create(parent.prototype);
@@ -436,39 +656,18 @@ function inherit_old(obj, parent) {
 
 EXPORT_FUNC(inherit)
 
-function _static_def(func) {
-  this.func = func;
-  this.constructor = _static_def;
-}
-function static_method(func) {
-  return new _static_def(func);
-}
-
-function  _handle_init_proto(obj, initproto=undefined) {
-  //console.log("in _handle_init_proto\n", obj, initproto);
-  
-  if (initproto == undefined) return;
-  
-  for (var k in initproto) {
-//    console.log("  k: ", k);
-//    console.log("  v: ", v);
-//    console.log("\n\n");
-    
-    var v = initproto[k];
-      
-    if (v.constructor === _static_def) {
-      v.name = k;
-      
-//      console.log("    static!");
-      define_static(obj, k, v.func);
-    } else {
-//      console.log("    instance!");
-      obj.prototype[k] = v;
-    }
+function handle_duplicate_calls(cls) {
+  if (cls.__prototypeid__ != undefined && !(cls.__prototypeid__ in native_types)) {
+    console.trace("Warning: duplicate call to type system init; possible module cycle?", cls.name);
+    return 1;
   }
+  
+  return 0;
 }
 
-function create_prototype(obj, initproto=undefined) {
+function create_prototype(obj) {
+  if (handle_duplicate_calls(obj)) return;
+  
   defined_classes.push(obj);
   
   obj.prototype.constructor = obj;
@@ -485,8 +684,7 @@ function create_prototype(obj, initproto=undefined) {
   var name = obj.name;
   obj.__hash__ = function() { return name };
   
-  _handle_init_proto(obj, initproto);
-  return obj.prototype;
+  return obj;
 }
 EXPORT_FUNC(create_prototype)
 
@@ -617,23 +815,3 @@ function define_docstring(func, docstr) {
   
   return func;
 }
-
-/*
-//create ES5 forEach iterator bridge
-Object.prototype.forEach = function(Function cb, Object thisvar=undefined) {
-  if (!("__iterator__" in this.__proto__))  {
-    console.log(this);
-    throw new Error("Object doesn't implement ES6 iterator api");
-  }
-  
-  if (thisvar != undefined) {
-    for (var item in this) {
-      cb.call(thisvar, item);
-    }
-  } else {
-    for (var item in this) {
-      cb(item);
-    }
-  }
-}
-*/
