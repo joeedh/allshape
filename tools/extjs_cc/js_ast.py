@@ -87,6 +87,7 @@ class Node:
     self.lexpos = glob.g_lexpos
     self.final_type = None
     self.smap = None
+    
     if glob.g_comment != None and glob.g_comment != "":
       self.comment = glob.g_comment
       self.commentline = glob.g_comment_line
@@ -1230,6 +1231,7 @@ class FunctionNode (StatementList):
     n2.path = self.path
     n2.ret = self.ret
     n2.is_native = self.is_native
+    n2.is_anonymous = self.is_anonymous
     
     return n2
     
@@ -1239,6 +1241,7 @@ class FunctionNode (StatementList):
     super(FunctionNode, self).__init__()
     self.name = name
     self.origname = name
+    self.is_anonymous = False
     
     self.is_native = False
     self.members = odict()
@@ -1300,7 +1303,7 @@ class FunctionNode (StatementList):
     
     if self.is_native: return ""
     
-    if self.name != "(anonymous)":
+    if self.name != "" and self.name != "(anonymous)":
       s = "function %s("%self.name
     else:
       s = "function("
@@ -1635,6 +1638,8 @@ class ForCNode(Node):
   
 class ForInNode(Node):
   def __init__(self, var, list):
+    self.of_keyword = "in"
+    
     super(ForInNode, self).__init__()
     self.add(var)
     self.add(list)
@@ -1722,8 +1727,11 @@ class DoWhileNode(Node):
     return s
 
 class ElseNode(Node):
-  def __init__(self):
+  def __init__(self, c=None):
     super(ElseNode, self).__init__()
+    
+    if c != None:
+      self.add(c)
   
   def copy(self):
     n2 = ElseNode()
@@ -2110,6 +2118,69 @@ class FinallyNode (Node):
     s += tab(tlevel) + "}\n"
     
     return s
+
+class ExportNode(Node):
+  def __init__(self, name, is_default=False): #first child is whats exported
+    Node.__init__(self)
+    self.name = name
+    self.bindname = name
+    self.is_default = is_default
+    
+  def extra_str(self):
+    if self.bindname != self.name:
+      return self.name + " as " + self.bindname
+    return self.name 
+    
+class ExportNameNode(Node):
+  def __init__(self): #children is list of ExportIdents
+    Node.__init__(self)
+    
+class ExportFromNode(Node):
+  def __init__(self, modname): #children are ExportIdent's of what to export  
+    Node.__init__(self)
+    self.name = modname
+
+class ExportIdent(IdentNode):
+  def __init__(self, name, binding=None):
+    if binding == None: binding = name
+    IdentNode.__init__(self, name)
+
+    self.bindname = binding
+    
+class ImportNode(Node):
+  '''
+  first node is always from clause
+  '''
+  
+  def __init__(self):
+    Node.__init__(self)
+    self.add(StrLitNode(""))
+    
+class ImportDeclNode(Node):
+  def __init__(self, name, bindname=None):
+    Node.__init__(self);
+    
+    self.import_all = False
+    
+    if bindname != None:
+      self.bindname = bindname;
+    else:
+      self.bindname = name
+    
+    self.name = name;
+    
+  def extra_str(self):
+    return str(self.name) + " as " + str(self.bindname)
+    
+  def gen_js(self, tlevel):
+    return ""
+    
+  def copy(self):
+    n2 = PreDec(self[0])
+    self.copy_basic(n2)
+    self.copy_children(n2)
+    
+    return n2
     
 def node_is_class(node):
   if type(node) != FunctionNode:

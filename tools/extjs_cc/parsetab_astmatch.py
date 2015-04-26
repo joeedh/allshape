@@ -7,7 +7,7 @@ _lr_method = 'LALR'
 
 _lr_signature = b'\x87\xfc\xcf\xdfD\xa2\x85\x13Hp\xa3\xe5Xz\xbcp'
     
-_lr_action_items = {'CODE':([0,2,3,5,6,7,8,9,10,11,12,14,15,16,17,18,19,],[-13,3,-7,-13,-13,-8,-9,3,-13,-6,3,3,-12,3,-2,-13,3,]),'COMMA':([3,5,6,7,8,10,11,12,13,14,15,16,17,18,19,],[-7,-5,-13,-8,-9,-13,-6,-3,18,-11,-12,-10,-2,-13,-4,]),'SPECIAL':([0,2,3,5,6,7,8,9,10,11,12,14,15,16,17,18,19,],[-13,4,-7,-13,-13,-8,-9,4,-13,-6,4,4,-12,4,-2,-13,4,]),'WORD':([4,],[11,]),'LBK':([0,2,3,5,6,7,8,9,10,11,12,14,15,16,17,18,19,],[-13,5,-7,-13,-13,-8,-9,5,-13,-6,5,5,-12,5,-2,-13,5,]),'$end':([0,1,2,3,6,7,8,10,11,14,15,16,17,],[-13,0,-1,-7,-13,-8,-9,-13,-6,-11,-12,-10,-2,]),'RBK':([3,5,6,7,8,10,11,12,13,14,15,16,17,18,19,],[-7,-5,-13,-8,-9,-13,-6,-3,17,-11,-12,-10,-2,-13,-4,]),'STAR':([0,2,3,5,6,7,8,9,10,11,12,14,15,16,17,18,19,],[-13,-13,-7,-13,-13,-8,-9,15,-13,-6,-13,-11,-12,-10,-2,-13,-13,]),'NOT':([0,2,3,5,6,7,8,9,10,11,12,14,15,16,17,18,19,],[-13,6,-7,-13,-13,-8,-9,6,-13,-6,6,6,-12,6,-2,-13,6,]),'OR':([0,2,3,5,6,7,8,9,10,11,12,14,15,16,17,18,19,],[-13,10,-7,-13,-13,-8,-9,10,-13,-6,10,10,-12,10,-2,-13,10,]),}
+_lr_action_items = {'SPECIAL':([0,2,4,5,6,7,8,9,10,11,12,13,15,16,17,18,19,],[-13,3,-13,-13,-13,-9,-8,-7,3,-6,3,3,3,-12,-13,-2,3,]),'OR':([0,2,4,5,6,7,8,9,10,11,12,13,15,16,17,18,19,],[-13,4,-13,-13,-13,-9,-8,-7,4,-6,4,4,4,-12,-13,-2,4,]),'NOT':([0,2,4,5,6,7,8,9,10,11,12,13,15,16,17,18,19,],[-13,5,-13,-13,-13,-9,-8,-7,5,-6,5,5,5,-12,-13,-2,5,]),'CODE':([0,2,4,5,6,7,8,9,10,11,12,13,15,16,17,18,19,],[-13,9,-13,-13,-13,-9,-8,-7,9,-6,9,9,9,-12,-13,-2,9,]),'LBK':([0,2,4,5,6,7,8,9,10,11,12,13,15,16,17,18,19,],[-13,6,-13,-13,-13,-9,-8,-7,6,-6,6,6,6,-12,-13,-2,6,]),'WORD':([3,],[11,]),'COMMA':([4,5,6,7,8,9,11,12,13,14,15,16,17,18,19,],[-13,-13,-5,-9,-8,-7,-6,-10,-11,17,-3,-12,-13,-2,-4,]),'$end':([0,1,2,4,5,7,8,9,11,12,13,16,18,],[-13,0,-1,-13,-13,-9,-8,-7,-6,-10,-11,-12,-2,]),'RBK':([4,5,6,7,8,9,11,12,13,14,15,16,17,18,19,],[-13,-13,-5,-9,-8,-7,-6,-10,-11,18,-3,-12,-13,-2,-4,]),'STAR':([0,2,4,5,6,7,8,9,10,11,12,13,15,16,17,18,19,],[-13,-13,-13,-13,-13,-9,-8,-7,16,-6,-10,-11,-13,-12,-13,-2,-13,]),}
 
 _lr_action = { }
 for _k, _v in _lr_action_items.items():
@@ -16,7 +16,7 @@ for _k, _v in _lr_action_items.items():
       _lr_action[_x][_k] = _y
 del _lr_action_items
 
-_lr_goto_items = {'ast_match':([0,],[1,]),'ast_set':([2,9,12,14,16,19,],[8,8,8,8,8,8,]),'ast_special':([2,9,12,14,16,19,],[7,7,7,7,7,7,]),'ast_expr':([0,2,5,6,9,10,12,14,16,18,19,],[2,9,12,14,9,16,9,9,9,19,9,]),'ast_exprlist':([5,],[13,]),}
+_lr_goto_items = {'ast_match':([0,],[1,]),'ast_special':([2,10,12,13,15,19,],[8,8,8,8,8,8,]),'ast_exprlist':([6,],[14,]),'ast_expr':([0,2,4,5,6,10,12,13,15,17,19,],[2,10,12,13,15,10,10,10,10,19,10,]),'ast_set':([2,10,12,13,15,19,],[7,7,7,7,7,7,]),}
 
 _lr_goto = { }
 for _k, _v in _lr_goto_items.items():
@@ -26,17 +26,17 @@ for _k, _v in _lr_goto_items.items():
 del _lr_goto_items
 _lr_productions = [
   ("S' -> ast_match","S'",1,None,None,None),
-  ('ast_match -> ast_expr','ast_match',1,'p_ast_match','js_ast_match.py',45),
-  ('ast_set -> LBK ast_exprlist RBK','ast_set',3,'p_ast_set','js_ast_match.py',51),
-  ('ast_exprlist -> ast_expr','ast_exprlist',1,'p_ast_exprlist','js_ast_match.py',59),
-  ('ast_exprlist -> ast_exprlist COMMA ast_expr','ast_exprlist',3,'p_ast_exprlist','js_ast_match.py',60),
-  ('ast_exprlist -> <empty>','ast_exprlist',0,'p_ast_exprlist','js_ast_match.py',61),
-  ('ast_special -> SPECIAL WORD','ast_special',2,'p_ast_noderef','js_ast_match.py',75),
-  ('ast_expr -> ast_expr CODE','ast_expr',2,'p_ast_expr','js_ast_match.py',81),
-  ('ast_expr -> ast_expr ast_special','ast_expr',2,'p_ast_expr','js_ast_match.py',82),
-  ('ast_expr -> ast_expr ast_set','ast_expr',2,'p_ast_expr','js_ast_match.py',83),
-  ('ast_expr -> ast_expr OR ast_expr','ast_expr',3,'p_ast_expr','js_ast_match.py',84),
-  ('ast_expr -> ast_expr NOT ast_expr','ast_expr',3,'p_ast_expr','js_ast_match.py',85),
-  ('ast_expr -> ast_expr ast_expr STAR','ast_expr',3,'p_ast_expr','js_ast_match.py',86),
-  ('ast_expr -> <empty>','ast_expr',0,'p_ast_expr','js_ast_match.py',87),
+  ('ast_match -> ast_expr','ast_match',1,'p_ast_match','c:\\dev\\fairmotion\\tools\\extjs_cc\\js_ast_match.py',46),
+  ('ast_set -> LBK ast_exprlist RBK','ast_set',3,'p_ast_set','c:\\dev\\fairmotion\\tools\\extjs_cc\\js_ast_match.py',52),
+  ('ast_exprlist -> ast_expr','ast_exprlist',1,'p_ast_exprlist','c:\\dev\\fairmotion\\tools\\extjs_cc\\js_ast_match.py',60),
+  ('ast_exprlist -> ast_exprlist COMMA ast_expr','ast_exprlist',3,'p_ast_exprlist','c:\\dev\\fairmotion\\tools\\extjs_cc\\js_ast_match.py',61),
+  ('ast_exprlist -> <empty>','ast_exprlist',0,'p_ast_exprlist','c:\\dev\\fairmotion\\tools\\extjs_cc\\js_ast_match.py',62),
+  ('ast_special -> SPECIAL WORD','ast_special',2,'p_ast_noderef','c:\\dev\\fairmotion\\tools\\extjs_cc\\js_ast_match.py',76),
+  ('ast_expr -> ast_expr CODE','ast_expr',2,'p_ast_expr','c:\\dev\\fairmotion\\tools\\extjs_cc\\js_ast_match.py',82),
+  ('ast_expr -> ast_expr ast_special','ast_expr',2,'p_ast_expr','c:\\dev\\fairmotion\\tools\\extjs_cc\\js_ast_match.py',83),
+  ('ast_expr -> ast_expr ast_set','ast_expr',2,'p_ast_expr','c:\\dev\\fairmotion\\tools\\extjs_cc\\js_ast_match.py',84),
+  ('ast_expr -> ast_expr OR ast_expr','ast_expr',3,'p_ast_expr','c:\\dev\\fairmotion\\tools\\extjs_cc\\js_ast_match.py',85),
+  ('ast_expr -> ast_expr NOT ast_expr','ast_expr',3,'p_ast_expr','c:\\dev\\fairmotion\\tools\\extjs_cc\\js_ast_match.py',86),
+  ('ast_expr -> ast_expr ast_expr STAR','ast_expr',3,'p_ast_expr','c:\\dev\\fairmotion\\tools\\extjs_cc\\js_ast_match.py',87),
+  ('ast_expr -> <empty>','ast_expr',0,'p_ast_expr','c:\\dev\\fairmotion\\tools\\extjs_cc\\js_ast_match.py',88),
 ]

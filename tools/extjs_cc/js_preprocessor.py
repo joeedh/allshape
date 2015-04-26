@@ -2,18 +2,50 @@ import os, sys, traceback, struct, random, math, time, io, imp, os.path
 import ply_preprocessor_parse as ppp
 
 def preprocess_text_intern(data, filename, working_dir=None):
+  #kill \r's
+  data = data.replace("\r", "")
+  
   lexer = ppp.lexer
   p = ppp.Preprocessor(lexer)
   p.parse(data, filename);
+  
   s = ""
+  s2 = ""
   while True:
     tok = p.token()
     if not tok: break
-    s += tok.value
-  
+    
+    if tok.type == "CPP_WS" and "\n" in tok.value:
+      s2 += str(tok.lineno)
+      pass
+      
+    #print(tok.type)
+    if 1: #tok.type != "CPP_COMMENT":
+      s += tok.value
+      s2 += tok.value
+    
   #ensure trailing newline
   if not s.endswith("\n"):
     s += "\n"
+  
+  #smap = p.sourcemap
+  #print(smap.map)
+  
+  #smap.invert(s)
+  #print(s)
+  
+  """
+  out = ""
+  for i, c in enumerate(s):
+    if c == "\n":
+      line = smap.lookup(i)
+      out += " -> "+str(line[0])+":"+line[1]
+      
+    out += c 
+  
+  print(out)
+  print("\n====\n\n", s2)
+  #"""
   
   return s
   

@@ -281,7 +281,7 @@ def p_statementlist(p):
                     | statement_nonctrl
                     | statementlist statement
                     | statementlist statement_nonctrl 
-                    |
+                    | 
   '''
   set_parse_globals(p);
   if len(p) == 1:
@@ -345,6 +345,8 @@ def p_statement(p):
                 | finally
                 | switch
                 | func_native SEMI
+                | import_decl
+                | export_decl
   '''
   set_parse_globals(p)
   
@@ -355,6 +357,120 @@ def p_statement(p):
       p[0] = p[1]
   else:
     p[0] = p[1];
+
+def p_import_decl(p):
+  '''import_decl : IMPORT import_clause from_clause SEMI
+                 | IMPORT module_spec SEMI
+  '''
+  if len(p) == 5:
+    p[0] = p[2]
+    if type(p[3]) == StrLitNode:
+      p[0][0] = p[3]
+    else:
+      p[0][0].val = p[3]
+  elif len(p) == 4:
+    p[0] = ImportNode()
+    p[0].replace(p[0][0], p[2])
+    
+def p_import_clause(p):
+  '''import_clause : import_def_bind
+                   | name_space_import
+                   | named_imports
+                   | import_def_bind COMMA name_space_import
+                   | import_def_bind COMMA named_imports
+  '''
+  
+  if len(p) == 2:
+    p[0] = ImportNode()
+    
+    if type(p[1]) != str:
+      if isinstance(p[1], Node):
+        p[0].add(p[1])
+      else:
+        for n in p[1]:
+          p[0].add(n)
+    else:
+      p[0].add(StrLitNode(p[1]))
+  else:
+    p[0] = ImportNode()
+    p[0].add(p[1])
+    p[0].add(p[3])
+  
+def p_import_def_bind(p):
+  '''import_def_bind : import_bind
+  '''
+  p[0] = p[1]
+  
+def p_name_space_import(p):
+  '''name_space_import : TIMES ID import_bind'''
+  
+  if p[2] != "as":
+    raise SyntaxError("Expected 'as'")
+    
+  p[0] = ImportDeclNode("*")
+  p[0].bindname = p[3]
+  
+def p_named_imports(p):
+  ''' named_imports : LBRACKET RBRACKET
+                    | LBRACKET import_list RBRACKET
+  '''
+  if len(p) == 3:
+    p[0] = []
+  elif len(p) == 4:
+    p[0] = p[2]
+    
+def p_from_clause(p):
+  ''' from_clause : FROM module_spec'''
+  p[0] = p[2]
+  
+def p_import_list(p):
+  ''' import_list : import_spec
+                  | import_list COMMA import_spec
+  '''
+  if len(p) == 2:
+    p[0] = [p[1]]
+  else:
+    p[0] = p[1]
+    p[0].append(p[3])
+  
+    
+def p_import_spec(p):
+  '''
+      import_spec : import_bind
+                  | ID ID import_bind
+  '''
+  
+  #second id is 'soft' keyword
+  if len(p) ==4 and p[2] != "as":
+    raise SyntaxError("Expected 'as'")
+  
+  if len(p) == 4:
+    n = ImportDeclNode(p[1], p[2])
+  else:
+    n = ImportDeclNode(p[1])
+  
+  p[0] = n
+
+def p_import_bind(p):
+  ''' import_bind : binding_ident
+  '''
+  p[0] = p[1]
+
+def p_module_spec(p):
+  ''' module_spec : STRINGLIT
+  '''
+  
+  p[0] = p[1]
+  if type(p[0]) != StrLitNode:
+    p[0] = StrLitNode(p[1])
+  
+  p[0].val = p[0].val.replace("'", "").replace("\"", "");
+
+def p_binding_ident(p):
+  ''' binding_ident : ID
+  '''
+  p[0] = p[1]
+ 
 
 """
 def p_statement_error(p):
@@ -1067,6 +1183,7 @@ def p_exprclass(p):
   
   if p[2] == None:
     p[2] = "(anonymous)"
+    p[2].is_anonymous = True
     
   cls = ClassNode(p[2], heritage)
   
@@ -1084,10 +1201,20 @@ def p_class_tail(p):
   for i in range(2):
     if p[0][i] == None:
       p[0][i] = []
+
+def p_class_parent_id(p):
+  '''class_parent_id : var_type
+                     | class_parent_id DOT var_type
+  '''
+
+  if len(p) == 2:
+    p[0] = p[1];
+  else:
+    p[0] = BinOpNode(p[1], p[3], ".")
   
 def p_class_list(p):
-  '''class_list : var_type
-                | class_list COMMA var_type
+  '''class_list : class_parent_id
+                | class_list COMMA class_parent_id
   '''
   set_parse_globals(p)
   
@@ -1488,10 +1615,19 @@ def p_colon_opt(p):
   '''
   if len(p) == 2:
     p[0] = p[1]
-  
+    
+def p_func_name_opt(p):
+  ''' func_name_opt : ID
+               |
+  '''
+  if len(p) == 1:
+    p[0] = "(anonymous)"
+  else:
+    p[0] = p[1]
+    
 def p_exprfunction(p):
-  ''' exprfunction : FUNCTION template_opt push_scope LPAREN funcdeflist RPAREN colon_opt var_type_opt lbracket_restrict statementlist_opt rbracket_restrict
-                   | FUNCTION template_opt push_scope LPAREN RPAREN colon_opt var_type_opt lbracket_restrict statementlist_opt rbracket_restrict
+  ''' exprfunction : FUNCTION func_name_opt template_opt push_scope LPAREN funcdeflist RPAREN colon_opt var_type_opt lbracket_restrict statementlist_opt rbracket_restrict
+                   | FUNCTION func_name_opt template_opt push_scope LPAREN RPAREN colon_opt var_type_opt lbracket_restrict statementlist_opt rbracket_restrict
   '''
   
   set_parse_globals(p)
@@ -1499,26 +1635,29 @@ def p_exprfunction(p):
   colon = None
   type1 = None
   template = None
-  if len(p) == 12:
-    p[0] = FunctionNode("(anonymous)", p.lineno)
-    p[0].add(p[5])
-    p[5].flatten()
-
-    colon = p[7]
-    type1 = p[8]
-    template = p[2]
+  if len(p) == 13:
+    p[0] = FunctionNode(p[2], p.lineno)
+    p[0].is_anonymous = True
+    p[0].add(p[6])
     
-    for c in p[10].children:
+    p[6].flatten()
+
+    colon = p[8]
+    type1 = p[9]
+    template = p[3]
+    
+    for c in p[11].children:
       p[0].add(c)
   else:
-    p[0] = FunctionNode("(anonymous)", p.lineno)
+    p[0] = FunctionNode(p[2], p.lineno)
+    p[0].is_anonymous = True
     p[0].add(ExprNode([]))
     
-    colon = p[6]
-    type1 = p[7]
-    template = p[2]
+    colon = p[7]
+    type1 = p[8]
+    template = p[3]
     
-    for c in p[9].children:
+    for c in p[10].children:
       p[0].add(c)
     
   if type(p[0].type) == str:
@@ -1851,15 +1990,33 @@ def p_for_var_decl(p):
     p[0].local = True
     p[0].add(p[0].type)
     
+#is 'of' a reserved keyword?
+#it must be, because otherwise the grammar is ambiguous
+#unless I'm doing something wrong, that is
+def p_in_or_of(p):
+  '''in_or_of : IN
+              | OF
+  '''
+  #if p[1] not in ["in", "of"]:
+  #  raise SyntaxError()
   
+  p[0] = p[1]
+
+
 def p_for_decl(p):
   '''
     for_decl : for_var_decl SEMI expr_opt SEMI expr_opt
-             | for_var_decl IN expr
+             | for_var_decl in_or_of expr
   '''
+  
   set_parse_globals(p)
   if len(p) == 4:
+    of_keyword = p[2]
+    #if of_keyword not in ["in", "of"]:
+    #  raise SyntaxError()
+    
     p[0] = ForInNode(p[1], p[3])
+    p[0].of_keyword = of_keyword
   else:
     p[0] = ForCNode(p[1], p[3], p[5])
   
@@ -2022,6 +2179,103 @@ def p_finally(p):
   p[0] = FinallyNode()
   p[0].add(p[3]);
   
+def p_export_decl(p):
+  '''export_decl : EXPORT TIMES from_clause SEMI
+                 | EXPORT export_clause from_clause SEMI
+                 | EXPORT export_clause SEMI
+                 | EXPORT var_decl SEMI
+                 | EXPORT function
+                 | EXPORT class
+                 | EXPORT DEFAULT function
+                 | EXPORT DEFAULT class
+                 | EXPORT DEFAULT assign
+  '''
+  
+  def get_name(n):
+    if isinstance(n, VarDeclNode) or isinstance(n, IdentNode):
+      return n.val
+    elif type(n) in [ClassNode, FunctionNode]:
+      return n.name
+    elif type(n) == AssignNode:
+      return n[0].gen_js(0).strip()
+      
+  if len(p) == 5 and p[2] == "*":
+    p[0] = ExportFromNode(p[3])
+    p[0].add(ExportIdent("*"))
+  elif len(p) == 5:
+    p[0] = ExportFromNode(p[3])
+    for n in p[2]:
+      p[0].add(n)
+  elif len(p) == 4 and p[2] == "default":
+    n = p[3]
+    
+    name = get_name(n)
+    
+    p[0] = ExportNode(name, is_default=True)
+    p[0].is_default = True
+    p[0].add(p[3])
+  elif len(p) == 4 and type(p[2]) == list:
+    p[0] = StatementList()
+    for n in p[2]:
+      p[0].add(ExportNode(n.val))      
+  elif len(p) == 4:
+    n = p[2]
+    
+    name = get_name(n)
+    
+    p[0] = StatementList()
+    
+    if type(p[2]) == list:
+      for n in p[2]:
+        n2 = ExportNode(name)
+        p[0].add(n2)
+    else:
+      name = get_name(p[2])
+      p[0] = ExportNode(name)
+      p[0].add(p[2])
+  elif len(p) == 3:
+    n = p[2]
+    
+    name = get_name(n)
+    
+    p[0] = ExportNode(name)
+    p[0].add(p[2])
+  
+def p_export_clause(p):
+  '''export_clause : LBRACKET RBRACKET
+                   | LBRACKET exports_list RBRACKET
+                   | LBRACKET exports_list COMMA RBRACKET
+  '''
+  if len(p) == 3:
+    p[0] = []
+  elif len(p) in [4, 5]: 
+    p[0] = p[2]
+  
+def p_exports_list(p):
+  ''' exports_list : export_spec
+                   | exports_list COMMA export_spec
+  '''
+  if len(p) == 2:
+    p[0] = [p[1]]
+  else:
+    if type(p[1]) != list:
+      p[0] = [p[1]]
+    else:
+      p[0] = p[1]
+      p[0].append(p[3])
+  
+def p_export_spec(p):
+  ''' export_spec : ID
+                  | ID ID ID
+  '''                  #middle ID is 'as'
+  if len(p) == 4 and p[2] != "as":
+    raise SyntaxError("expected 'as'")
+  
+  if len(p) == 2:
+    p[0] = ExportIdent(p[1])
+  elif len(p) == 4:
+    p[0] = ExportIdent(p[1], p[3])
+    
 def p_catch(p):
   '''catch : CATCH paren_expr statement_nonctrl
            | CATCH paren_expr LBRACKET statementlist RBRACKET

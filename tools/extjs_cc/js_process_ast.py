@@ -90,8 +90,144 @@ def validate_class_this_refs(typespace, cls, scope):
     if type(c2) != VarDeclNode:
       visit(cls)
 
+"""
+a.b.?c().?d.f.?d
+
+var _t = undefined;
+
+function qexpr(a) {
+  var _t = a.b;
+  
+  if (_t == undefined) {
+    return undefined;
+  }
+  
+  _t = _t.c();
+  
+  if (_t == undefined) {
+    return undefined;
+  }
+  
+  _t = _t.d.f;
+  
+  if (_t == undefined) {
+    return undefined;
+  }
+  
+  _t = _t.d;
+  
+  return _t;
+}
+
+#"""
+
+import hashlib, base64
 
 def transform_exisential_operators(node, typespace):
+  vset = set()
+  
+  def get_ud(n, hash=None):
+    if hash == None: 
+      hash = hashlib.sha1()
+    
+    bstr = bytes(str(n.get_line_str())+str(n.lexpos), "latin-1")
+    hash.update(bstr);
+    
+    if n.parent != None:
+      get_ud(n.parent)
+    
+    ret = base64.b64encode(hash.digest())
+    ret = str(ret, "latin-1")
+    
+    ret = ret.replace("=", "").replace("/", "").replace("=", "").replace("+", "").replace("-", "")
+    
+    return "q" + ret[:8] + "_" + str(n.lexpos)
+  
+  def visit(n):
+    #find distinct chain
+    if n.op != ".?": return
+    if n in vset: return
+    
+    vset.add(n);
+    id = get_ud(n);
+    
+    validops = [".", ".?"]
+    
+    #find head of chain
+    p = n
+    #print(p.get_line_str())
+    while p != None and type(p) == BinOpNode and type(p.parent) == BinOpNode: # and p.op in validops:
+      #vset.add(p[0])
+      #vset.add(p[1])
+      p = p.parent
+      vset.add(p)
+      #print(p.get_line_str())
+      #print(p.parent.get_line_str())
+    
+    slist = StatementList()
+    en = js_parse("_t = _t.$n;", [n[1]], start_node=AssignNode);
+    slist.add(en)
+    en = en[1]
+    
+    n2 = n.parent
+      
+    while n2 != p.parent and type(n2) == BinOpNode: # and n2.parent != p:
+      if n2.op != ".?":
+        #print(type(p))
+        enp = en.parent
+        en2 = BinOpNode(en, n2[1], n2.op)
+        enp.replace(en, en2)
+        en = en2
+      else:
+        slist.add(js_parse("if (_t == undefined) return undefined;"))
+        en = js_parse("_t = _t.$n;", [n2[1]], start_node=AssignNode);
+        slist.add(en)
+        
+      n2 = n2.parent
+    
+    slist.add(js_parse("return _t;"));
+    
+    fn = js_parse("""
+      function $s(obj) {
+        var _t = obj;
+        if (_t == undefined) return undefined;
+        
+        $n
+      }""", [id, slist], start_node=FunctionNode);
+    
+    print(fn.gen_js(1))
+    
+    #find body to put function in
+    p2 = p
+    lastp2 = p
+    while p2.parent != None and not isinstance(p2, FunctionNode):
+      lastp2 = p2
+      p2 = p2.parent
+    
+    if isinstance(p2, FunctionNode):
+      p2.insert(1, fn)
+    else:
+      p2.insert(p2.index(lastp2), fn)
+      
+    #"""
+    cn = FuncCallNode(id)
+    cn.add(ExprListNode([n[0]]))
+    p.parent.replace(p, cn)
+    #"""
+    
+  #traverse(node, BinOpNode, visit)
+  def dovisit(n):
+    for c in n:
+      dovisit(c)
+    
+    if type(n) == BinOpNode:
+      visit(n)
+  
+  dovisit(node)
+  flatten_statementlists(node, typespace)
+  
+  
+def transform_exisential_operators_old(node, typespace):
   tfuncmap = {}
   idfuncmap = {}
   
@@ -132,7 +268,7 @@ def transform_exisential_operators(node, typespace):
   
   def has_leaf(n):
     for c in n:
-      if type(c) == BinOpNode and c.op == "?.": return True
+      if type(c) == BinOpNode and c.op == ".?": return True
       if has_leaf(c): return True
       
     return False
@@ -145,12 +281,12 @@ def transform_exisential_operators(node, typespace):
       tag(c);
   
   def has_cond(n):
-    if type(n) == BinOpNode and n.op == "?.": return True
+    if type(n) == BinOpNode and n.op == ".?": return True
     
     n2 = n
-    while type(n2.parent) == BinOpNode and type(n2) == BinOpNode and n2.op in [".", "?."]:
+    while type(n2.parent) == BinOpNode and type(n2) == BinOpNode and n2.op in [".", ".?"]:
       n2 = n2.parent
-      if n2.op == "?.": return True
+      if n2.op == ".?": return True
       
     for c in n:
       if has_cond(c):
@@ -168,19 +304,19 @@ def transform_exisential_operators(node, typespace):
     if n in doneset: return
     doneset.add(n)
     
-    if type(n) == BinOpNode and n.op in [".", "?."]:
+    if type(n) == BinOpNode and n.op in [".", ".?"]:
       start_tag(n)
      
     for c in n:
       visit(c)
       
     if type(n) != BinOpNode: return
-    if n.op not in ["?.", "."]: return
+    if n.op not in [".?", "."]: return
     if n not in condset: return
     
     #find head of chain
     n2 = n
-    while n2.parent != None and type(n2.parent) == BinOpNode and n2.parent.op in ["?.", "."]:
+    while n2.parent != None and type(n2.parent) == BinOpNode and n2.parent.op in [".?", "."]:
       n2 = n2.parent
       
     t = ensure_tempvar(n2, "$_eop_t")
@@ -223,7 +359,7 @@ def transform_exisential_operators(node, typespace):
     if n in doneset: return
     doneset.add(n)
     
-    stop = has_leaf(n) #and (type(n) == BinOpNode and n.op == "?.")
+    stop = has_leaf(n) #and (type(n) == BinOpNode and n.op == ".?")
     
     for c in n:
       visit(c)
@@ -231,7 +367,7 @@ def transform_exisential_operators(node, typespace):
     if stop: return
     if type(n) != BinOpNode: return
     if type(n.parent) != BinOpNode: return
-    if n.op != "?.": return
+    if n.op != ".?": return
     
     #print(stop, n.get_line_str(), n[0].get_line_str(), n[1].get_line_str(), n.op if type(n) == BinOpNode else "")
     
@@ -246,7 +382,7 @@ def transform_exisential_operators(node, typespace):
     return
     n = n.parent
     lastn = n
-    while n != None and type(n) == BinOpNode and n.op in [".", "?."]:
+    while n != None and type(n) == BinOpNode and n.op in [".", ".?"]:
       doneset.add(n)
       
       tag(n)
@@ -275,6 +411,8 @@ def expand_harmony_class(typespace, cls):
   slist = StatementList()
   vars = [];
   cls_scope = {}
+  
+  constructor = None
   
   #properties
   for c in cls:
@@ -350,6 +488,7 @@ def expand_harmony_class(typespace, cls):
   
   def to_exprfunc(method):
     f = FunctionNode("(anonymous)", 0)
+    f.is_anonymous = True
     
     f.children = method.children
     for c in f.children:
@@ -378,8 +517,13 @@ def expand_harmony_class(typespace, cls):
     if p in sets:
       an = AssignNode(IdentNode("set"), to_exprfunc(sets[p]))
       params.add(an)
+    
+    an = AssignNode(IdentNode("configurable"), IdentNode("true"));
+    params.add(an);
+    
+    bn = BinOpNode(IdentNode(cls.name), IdentNode("prototype"), ".")
       
-    exprlist.add(IdentNode("this"))
+    exprlist.add(bn)
     exprlist.add(StrLitNode('"%s"'%prop))
     exprlist.add(params)
     
@@ -389,6 +533,7 @@ def expand_harmony_class(typespace, cls):
     f = FunctionNode(m.name)
     f.children = m.children
     f.name = "(anonymous)"
+    f.is_anonymous = True
     
     for c in f.children:
       c.parent = f
@@ -405,11 +550,6 @@ def expand_harmony_class(typespace, cls):
       f = fc
     
     return f
-    
-  for p in props:
-    n = gen_prop_define(p, gets, sets)
-    slist.prepend(n)
-    
 
   if found_con == False:
     #call parents hackishly
@@ -426,6 +566,7 @@ def expand_harmony_class(typespace, cls):
 
   node.add(params)
   node.add(slist)
+  constructor = node
   
   #add stuff outside of the constructor function
   slist = StatementList()
@@ -442,11 +583,27 @@ def expand_harmony_class(typespace, cls):
     #inherit(childcls, parentcls);
     fn = FuncCallNode(IdentNode("inherit_multiple"))
     fn.add(ExprListNode([IdentNode(cls.name), ps2]))
+
+    if glob.g_es6_modules:
+      fn[-1].add(IdentNode("_es6_module"))
+      fn[-1].add(StrLitNode("\""+cls.name+"\""))
+      fn = AssignNode(IdentNode(cls.name), fn);
+    
     slist.add(fn)
   else:
     fn = FuncCallNode(IdentNode("create_prototype"))
     fn.add(ExprListNode([IdentNode(cls.name)]))
+    
+    if glob.g_es6_modules:
+      fn[-1].add(IdentNode("_es6_module"))
+      fn[-1].add(StrLitNode("\""+cls.name+"\""))
+      fn = AssignNode(IdentNode(cls.name), fn);
+    
     slist.add(fn)
+    
+  for p in props:
+    n = gen_prop_define(p, gets, sets)
+    slist.add(n)
   
   #generate methods
   for m in cls:
@@ -455,6 +612,42 @@ def expand_harmony_class(typespace, cls):
     
     n = gen_method(cls, m)
     slist.add(n)
+  
+  #encase in an if block
+  #to prevent duplicate work during
+  #cyclic loads
+  """ eek! how to deal with closures?
+  if glob.g_es6_modules:
+    #first, turn constructor line into "var f = func f(){}" form,
+    #so strict mode won't complain
+    
+    p = constructor.parent
+    i = p.index(constructor)
+    
+    constructor.parent.remove(constructor)
+    
+    slist = StatementList()
+    slist.add(VarDeclNode(IdentNode("undefined"), local=True, name=cls.name));
+    
+    n = VarDeclNode(constructor, local=False, name=cls.name);
+    p.insert(i, n);
+    
+    n = BinOpNode(IdentNode("_es6_module"), IdentNode("already_processed"), ".");
+    n = BinOpNode(n, IdentNode(cls.name), ".")
+    n = BinOpNode(n, IdentNode("undefined"), "!=");
+    n = IfNode(n);
+    n.add(node);
+    ifnode = n;
+    
+    n = BinOpNode(IdentNode("_es6_module"), IdentNode("already_processed"), ".");
+    n = BinOpNode(n, IdentNode(cls.name), ".")
+    n = VarDeclNode(n, local=False, name=cls.name);
+    n = ElseNode(n)
+    ifnode.add(n)
+    
+    slist.add(ifnode);
+    node = slist
+  #"""
   
   return node
 
@@ -665,6 +858,7 @@ def expand_requirejs_class(typespace, cls):
   
   def to_exprfunc(method):
     f = FunctionNode("(anonymous)", 0)
+    f.is_anonymous = True
     
     f.children = method.children
     for c in f.children:
@@ -704,6 +898,7 @@ def expand_requirejs_class(typespace, cls):
     f = FunctionNode(m.name)
     f.children = m.children
     f.name = "(anonymous)"
+    f.is_anonymous = True
     
     for c in f.children:
       c.parent = f
@@ -741,6 +936,7 @@ def expand_requirejs_class(typespace, cls):
   node.add(params)
   node.add(slist)
   node.name = "(anonymous)"
+  node.is_anonymous = True
   
   an = AssignNode(BinOpNode("exports", cls.name, "."), node)
   vn = VarDeclNode(an, local=True)
@@ -766,7 +962,7 @@ def expand_requirejs_class(typespace, cls):
     fn.add(ExprListNode([IdentNode(cls.name), p, proto]))
     slist.add(AssignNode(BinOpNode(cls.name, "prototype", "."), fn))
   else:
-    fn = FuncCallNode(IdentNode("create_prototype"))
+    fn = FuncCallNode(IdentNode("util.init_prototype"))
     fn.add(ExprListNode([IdentNode(cls.name), proto]))
     slist.add(AssignNode(BinOpNode(cls.name, "prototype", "."), fn))
   
@@ -1000,7 +1196,7 @@ class RequireJSWriter (NodeVisit):
     
   def FunctionNode(self, node, scope, t, tlevel):
     self.o("function ")
-    if node.name != "(anonymous)":
+    if not node.is_anonymous:
       self.o(node.name)
     self.o("(")
     t(node[0], scope, tlevel)
@@ -1224,17 +1420,13 @@ def flatten_statementlists(node, typespace):
   return node  
 
 def kill_bad_globals(node, typespace):
-  def recurse(n, scope, global_scope, tlevel=0):
+  def recurse(n, scope, tlevel=0):
     def descend(n2, start=0):
       for c in n2.children[start:]:
-        recurse(c, scope, global_scope, tlevel)
+        recurse(c, scope, tlevel)
     
     if type(n) == FunctionNode:
-      if n.name != "(anonymous)":
-        scope = dict(scope)
-      else:
-        scope = dict(global_scope)
-      
+      scope = dict(scope)
       args = n.get_args()
       
       for i, a in enumerate(args):
@@ -1265,7 +1457,7 @@ def kill_bad_globals(node, typespace):
       descend(n);
   
   sc = {}
-  recurse(node, sc, sc, 0);
+  recurse(node, sc, 0);
 
   
 from js_cc import js_parse
@@ -1341,7 +1533,7 @@ def build_classes(nfiles):
   global typespace
   
   def func_visit(n):
-    if n.name == "(anonymous)": return
+    if n.is_anonymous: return
     if n.name in typespace.func_excludes: return
     
     def find_this(n2):
@@ -1375,7 +1567,7 @@ def build_classes(nfiles):
       n.arg_is[c.val] = i
   
   def exprfunc_visit(n):
-    if n.name != "(anonymous)": return
+    if not n.is_anonymous: return
     
     #figure out if we're a method function
     
@@ -2027,7 +2219,7 @@ def process_docstrings(result, typespace):
   def case1(node, dstr):
     #simple case; the node's parent is a statementlist
     if type(node.parent) != StatementList: return False
-    if node.name == "(anonymous)": return False
+    if node.is_anonymous: return False
     
     node.remove(dstr)
     n = BinOpNode(IdentNode(node.name), IdentNode(dprop), ".")
@@ -2141,8 +2333,14 @@ def process_docstrings(result, typespace):
 
 valid_randstr = "abcdefghijklmnopqrstuvwxyz"
 valid_randstr += valid_randstr.upper() + "0123456789_"
+_last_rs_time = time.time()
 def randstr(n):
-  seed(time.time())
+  global _last_rs_time
+  
+  if (time.time() - _last_rs_time > 0.25):
+    seed(time.time()*6)
+    _last_rs_time = time.time()
+    
   s = ""
   for i in range(n):
     s += valid_randstr[int(random()*len(valid_randstr)*0.99999)]
@@ -2208,7 +2406,7 @@ def process_static_vars(result, typespace):
       return #we're already a static global variable
     
     suffix = randstr(2)
-    if p.name == "(anonymous)":
+    if p.is_anonymous:
       suffix = gen_useful_funcname(p)
     else:
       #see if we're a nested function.  if so, build a chain of suffices.
@@ -2268,12 +2466,23 @@ def process_static_vars(result, typespace):
     #now find global scope, and insert
     lastp = node
     p = node.parent
-    while p.parent != None:
-      lastp = p
-      p = p.parent
+    
+    #find parent function first, then find surrounding closure or global scope
+    for si in range(2):
+      while p.parent != None and type(p) != FunctionNode:
+        lastp = p
+        p = p.parent
+        
+      if si == 0 and p.parent != None: 
+        lastp = p
+        p = p.parent
+      
+    pindex = p.index(lastp)
     
     node.parent.remove(node)
-    p.insert(p.index(lastp), node)
+    
+    p.insert(pindex, node)
+    
     node.modifiers.remove("static")
     node.modifiers.add("local")
     

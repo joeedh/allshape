@@ -1,0 +1,17 @@
+<NotepadPlus>
+    <Session activeView="0">
+        <mainView activeIndex="9">
+            <File firstVisibleLine="0" xOffset="0" scrollWidth="288" startPos="56" endPos="56" selMode="0" lang="Python" encoding="-1" filename="C:\dev\allshape\tools\extjs_cc\js_typespace.py" />
+            <File firstVisibleLine="100" xOffset="0" scrollWidth="900" startPos="3020" endPos="3020" selMode="0" lang="Python" encoding="-1" filename="C:\dev\allshape\tools\extjs_cc\js_process_ast.py" />
+            <File firstVisibleLine="0" xOffset="0" scrollWidth="639" startPos="0" endPos="0" selMode="0" lang="Python" encoding="-1" filename="C:\dev\allshape\tools\extjs_cc\js_preprocessor.py" />
+            <File firstVisibleLine="1131" xOffset="0" scrollWidth="1251" startPos="27310" endPos="27310" selMode="0" lang="Python" encoding="-1" filename="C:\dev\allshape\tools\extjs_cc\js_parse.py" />
+            <File firstVisibleLine="0" xOffset="0" scrollWidth="1" startPos="0" endPos="0" selMode="0" lang="Python" encoding="-1" filename="C:\dev\allshape\tools\extjs_cc\js_lex.py" />
+            <File firstVisibleLine="27" xOffset="0" scrollWidth="1206" startPos="1689" endPos="1689" selMode="0" lang="Python" encoding="-1" filename="C:\dev\allshape\tools\extjs_cc\js_global.py" />
+            <File firstVisibleLine="0" xOffset="0" scrollWidth="1" startPos="0" endPos="0" selMode="0" lang="Python" encoding="-1" filename="C:\dev\allshape\tools\extjs_cc\js_generators.py" />
+            <File firstVisibleLine="0" xOffset="0" scrollWidth="1" startPos="0" endPos="0" selMode="0" lang="Python" encoding="-1" filename="C:\dev\allshape\tools\extjs_cc\js_cc.py" />
+            <File firstVisibleLine="1969" xOffset="0" scrollWidth="522" startPos="46364" endPos="46364" selMode="0" lang="Python" encoding="-1" filename="C:\dev\allshape\tools\extjs_cc\js_ast.py" />
+            <File firstVisibleLine="0" xOffset="0" scrollWidth="657" startPos="80" endPos="80" selMode="0" lang="Javascript" encoding="-1" filename="C:\dev\allshape\tools\extjs_cc\tst.js" />
+        </mainView>
+        <subView activeIndex="0" />
+    </Session>
+</NotepadPlus>

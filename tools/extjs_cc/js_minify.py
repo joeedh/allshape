@@ -341,7 +341,8 @@ class MinOutVisit (NodeVisit):
     o = self.out
     
     o(node, "function")
-    if node.name != "(anonymous)":
+
+    if node.name != "" and node.name != "(anonymous)":
       o(node, " " + node.name + "(")
     else:
       o(node, "(")

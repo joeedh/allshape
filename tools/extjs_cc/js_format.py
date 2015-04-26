@@ -342,7 +342,7 @@ class ES6Formatter (NodeVisit):
     o = self.out
     
     o(node, "function")
-    if node.name != "(anonymous)":
+    if not node.is_anonymous:
       o(node, " " + node.name + "(")
     else:
       o(node, "(")

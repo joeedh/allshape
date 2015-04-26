@@ -224,7 +224,7 @@ TCC = getcfg("TCC", np("tools/extjs_cc/js_cc.py"), "path")
 print("using python executable \"" + PYBIN.strip() + "\"")
 
 #minified, concatenated build
-JFLAGS = "-dpr "
+JFLAGS = "-dpr --no-es6-modules"
 
 if aggregate_smaps:
   JFLAGS += " -nref"

@@ -2,9 +2,9 @@
 
 var default_job_interval = 1; //at least two miliseconds between runs
 
-function JobDestroyFunc(Joblet job);
-function JobStartFunc(Joblet job);
-function JobFinishFunc(Joblet job);
+//function JobDestroyFunc(Joblet job);
+//function JobStartFunc(Joblet job);
+//function JobFinishFunc(Joblet job);
 
 class ThreadIterator {  
   constructor(worker) {

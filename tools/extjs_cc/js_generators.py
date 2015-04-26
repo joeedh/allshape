@@ -100,11 +100,13 @@ def visit_generators(node):
   
   def _remove_this(n):
     if n.val != "this": return
+    
     if type(n.parent) != BinOpNode or n.parent.op != ".":
       #typespace.error("Can only reference members of 'this' in generators");
-      n.val = "this2"
+      n.val = "__gen_this2"
     else:
-      n.parent.parent.replace(n.parent, n.parent[1])
+      n.val = "__gen_this2"
+      #n.parent.parent.replace(n.parent, n.parent[1])
   
   def set_cur(n):
     if type(n) in [IfNode, WhileNode,
@@ -417,6 +419,7 @@ def visit_generators(node):
   
   def frames_transform(frames, node2):
     scope = frames.scope
+  
   node2 = FunctionNode(node.name, node.lineno)
   node2.add(ExprListNode([]))
   
@@ -563,6 +566,7 @@ def visit_generators(node):
     else:
       scopestr += "%s_%i : %s" % (k, scope[k], "undefined");
   scopestr += "}"
+  
   
   node.add(js_parse("this.scope = $s;", [scopestr], start_node=AssignNode))
   node.add(js_parse("this.ret = {done : false, value : undefined};", start_node=AssignNode))
@@ -944,6 +948,39 @@ def visit_generators(node):
   df[0].add(BreakNode())
   sn.add(df)
   
+  outernode = js_parse("""
+    function() {
+      var __gen_this2 = this;
+      function _generator_iter() {
+      }
+      return new _generator_iter();
+    }
+  """, start_node=FunctionNode);
+  
+  #add a self-referencing __iterator__ method
+  n = js_parse("""
+    this.__iterator__ = function() {
+      return this;
+    }
+  """);
+  
+  for c in n:
+    node.add(c);
+    
+  outernode.name = node.name;
+  if node.is_anonymous:
+    outernode.is_anonymous = True
+    
+  outernode.replace(outernode[0], node[0])
+  node.parent.replace(node, outernode);
+  node2 = outernode[2]
+  
+  cs = node[:]
+  for c in cs[1:]:
+    node2.add(c)
+    
+  #print(outernode, "\n\n\n", outernode[2])
+  
 def bleh():
   for frames in flatframes:
     fname = f_name(frames)
@@ -1007,6 +1044,7 @@ def bleh():
       n2 = js_parse("this.$s1 = 0;", [f_name(f)], start_node=AssignNode)
       n2.replace(n2[1], f.funcnode)
       f.funcnode.name = "(anonymous)"
+      f.funcnode.is_anonymous = True
       
       node2.add(n2) #f.funcnode)
         

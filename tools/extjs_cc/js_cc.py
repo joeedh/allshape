@@ -274,6 +274,8 @@ from js_process_ast import traverse, traverse_i, null_node, \
                            kill_bad_globals, expand_harmony_classes, \
                            transform_exisential_operators
 
+from js_module import module_transform
+
 from js_typed_classes import expand_typed_classes
 
 b64tab = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
@@ -709,6 +711,9 @@ def parse_intern_es6(data):
   
   if len(result) > 0 and type(result[0]) == StrLitNode and result[0].val == '"use strict"':
     glob.g_force_global_strict = True
+  elif len(result) > 0 and type(result[0]) == StrLitNode and result[0].val == '"not_a_module"':
+    glob.g_es6_modules = False
+    
   if glob.g_force_global_strict:
     kill_bad_globals(result, typespace)
   
@@ -775,18 +780,32 @@ def expand_mozilla_forloops_new(node, scope):
   
   itername = node[0].val
   objname = node[1].gen_js(0)
-  n2 = js_parse("""
-    var __iter_$s1 = __get_iter($s2);
-    var $s1;
-    while (1) {
-      var __ival_$s1 = __iter_$s1.next();
-      if (__ival_$s1.done) {
-        break;
+  if glob.g_log_forloops:
+    n2 = js_parse("""
+      var __iter_$s1 = __get_iter($s2, $s3, $s4, $s5);
+      var $s1;
+      while (1) {
+        var __ival_$s1 = __iter_$s1.next();
+        if (__ival_$s1.done) {
+          break;
+        }
+        
+        $s1 = __ival_$s1.value;
       }
-      
-      $s1 = __ival_$s1.value;
-    }
-  """, (itername, objname));
+    """, (itername, objname, "'"+node[0].file+"'", node[0].line, "'"+node.of_keyword+"'"));
+  else:
+    n2 = js_parse("""
+      var __iter_$s1 = __get_iter($s2);
+      var $s1;
+      while (1) {
+        var __ival_$s1 = __iter_$s1.next();
+        if (__ival_$s1.done) {
+          break;
+        }
+        
+        $s1 = __ival_$s1.value;
+      }
+    """, (itername, objname));
   
   def set_line(n, slist, line, lexpos):
     n.line = line
@@ -838,6 +857,9 @@ def parse_intern(data, create_logger=False, expand_loops=True, expand_generators
   if result != None:
     if len(result) > 0 and type(result[0]) == StrLitNode and result[0].val == '"use strict"':
       glob.g_force_global_strict = True
+    elif len(result) > 0 and type(result[0]) == StrLitNode and result[0].val == '"not_a_module"':
+      glob.g_es6_modules = False
+    
     
   if glob.g_force_global_strict:
     kill_bad_globals(result, typespace)
@@ -850,6 +872,9 @@ def parse_intern(data, create_logger=False, expand_loops=True, expand_generators
     file = open(glob.g_outfile+".manifest", "w")
     file.write(buf)
     file.close()
+    
+  if glob.g_es6_modules:
+    module_transform(result, typespace)
   
   if glob.g_require_js:
     expand_requirejs_classes(result, typespace);
