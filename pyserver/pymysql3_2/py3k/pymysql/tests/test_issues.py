@@ -109,10 +109,10 @@ KEY (`station`,`dh`,`echeance`)) ENGINE=MyISAM DEFAULT CHARSET=latin1;""")
     def test_issue_14(self):
         """ typo in converters.py """
         self.assertEqual('1', pymysql.converters.escape_item(1, "utf8"))
-        self.assertEqual('1', pymysql.converters.escape_item(1, "utf8"))
+        self.assertEqual('1', pymysql.converters.escape_item(1L, "utf8"))
 
         self.assertEqual('1', pymysql.converters.escape_object(1))
-        self.assertEqual('1', pymysql.converters.escape_object(1))
+        self.assertEqual('1', pymysql.converters.escape_object(1L))
 
     def test_issue_15(self):
         """ query should be expanded before perform character encoding """
@@ -120,9 +120,9 @@ KEY (`station`,`dh`,`echeance`)) ENGINE=MyISAM DEFAULT CHARSET=latin1;""")
         c = conn.cursor()
         c.execute("create table issue15 (t varchar(32))")
         try:
-            c.execute("insert into issue15 (t) values (%s)", ('\xe4\xf6\xfc',))
+            c.execute("insert into issue15 (t) values (%s)", (u'\xe4\xf6\xfc',))
             c.execute("select t from issue15")
-            self.assertEqual('\xe4\xf6\xfc', c.fetchone()[0])
+            self.assertEqual(u'\xe4\xf6\xfc', c.fetchone()[0])
         finally:
             c.execute("drop table issue15")
 
@@ -162,16 +162,16 @@ KEY (`station`,`dh`,`echeance`)) ENGINE=MyISAM DEFAULT CHARSET=latin1;""")
 def _uni(s, e):
     # hack for py3
     if sys.version_info[0] > 2:
-        return str(bytes(s, sys.getdefaultencoding()), e)
+        return unicode(bytes(s, sys.getdefaultencoding()), e)
     else:
-        return str(s, e)
+        return unicode(s, e)
 
 class TestNewIssues(base.PyMySQLTestCase):
     def test_issue_34(self):
         try:
             pymysql.connect(host="localhost", port=1237, user="root")
             self.fail()
-        except pymysql.OperationalError as e:
+        except pymysql.OperationalError, e:
             self.assertEqual(2003, e.args[0])
         except:
             self.fail()
@@ -191,11 +191,11 @@ class TestNewIssues(base.PyMySQLTestCase):
     def test_issue_35(self):
         conn = self.connections[0]
         c = conn.cursor()
-        print("sudo killall -9 mysqld within the next 10 seconds")
+        print "sudo killall -9 mysqld within the next 10 seconds"
         try:
             c.execute("select sleep(10)")
             self.fail()
-        except pymysql.OperationalError as e:
+        except pymysql.OperationalError, e:
             self.assertEqual(2013, e.args[0])
 
     def test_issue_36(self):
@@ -248,7 +248,7 @@ class TestNewIssues(base.PyMySQLTestCase):
         conn = self.connections[0]
         c = conn.cursor()
         big_sql = "select * from issue54 where "
-        big_sql += " and ".join("%d=%d" % (i,i) for i in range(0, 100000))
+        big_sql += " and ".join("%d=%d" % (i,i) for i in xrange(0, 100000))
 
         try:
             c.execute("create table issue54 (id integer primary key)")

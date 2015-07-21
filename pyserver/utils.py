@@ -3,6 +3,15 @@ import sys, datetime
 from logger import elog, mlog, alog
 from config import WITH_PY2
 
+#an important note: the keyrot/unrot functions are not
+#for security purposes, they're just for obfuscation.
+
+def _to_ascii(val):
+  if sys.version[0] == "2":
+    return str(val)
+  else:
+    return str(val, "latin-1")
+
 def bstr_py3(s):
   if type(s) == bytes: return s
   else: return bytes(str(s), "ascii")
@@ -31,6 +40,7 @@ limit_code_rev = {}
 c = 10
 def gen_code():
   global c
+  
   c += 1
   return c - 1
 
@@ -43,56 +53,51 @@ max_limit_code = c
 for k in limit_code:
   limit_code_rev[limit_code[k]] = k
 
-_sran_tab = [0.42858355099189227,0.5574386030715371,0.9436109711290556,
-0.11901816474442506,0.05494319267999703,0.4089598843412747,
-0.9617377622975879,0.6144736752713642,0.4779527665160106,
-0.5358937375859902,0.6392009453796094,0.24893232630444684,
-0.33278166078571036,0.23623349009987882,0.6007015401310062,
-0.3705022651967115,0.0225052050200355,0.35908220770197297,
-0.6762962413645864,0.7286584766550781,0.19885076794257972,
-0.6066651236611478,0.23594878250486895,0.9559806203614414,
-0.37878311003873877,0.14489505173573436,0.6853451367228348,
-0.778201767931336,0.9629591508405009,0.10159174495809686,
-0.9956652458055149,0.27241630290235785,0.4657146086929548,
-0.7459995799823305,0.30955785437169314,0.7594519036966647,
-0.9003876360971134,0.14415784566467216,0.13837285006138467,
-0.5708662986155526,0.04911823375362412,0.5182157396751097,
-0.24535476698939818,0.4755762294863617,0.6241760808125321,
-0.05480018253112229,0.8345698022607818,0.26287656274013016,
-0.1025239144443526]
+_rnd_table = [
+  2396599, 1798863, 2424653, 864425, 3411264, 
+  3454329, 2740820, 672041, 2183812, 1374757, 1048546, 
+  3996342, 4179799, 186880, 3607721, 2529926, 1600547, 
+  1189562, 2830964, 1916059, 2876667, 2775942, 557742, 
+  3220496, 4120476, 4065846, 2572439, 185639, 17008, 
+  561912, 3946789, 1270269, 1535702, 3767250, 1318517, 
+  2302563, 1828818, 272601, 2451727, 3540223, 656058, 
+  940763, 1731676, 154871, 2082874, 3430816, 2759352, 
+  2237558, 3586602, 627827, 2379121, 1569378, 2522015, 
+  473595, 3252686, 405188, 697769, 3386638, 3974855, 
+  1817076, 1736754, 1029609, 1152171, 2588906
+]
+_max_rnd = 4194240.0;
 
-class StupidRandom: #seed is optional
-  def __init__(self, seed):
-    if seed == None:
-      seed = 0
-  
-    self._seed = seed+1
-    self.i = 1
+class StupidRandom:
+  def __init__(self, seed=None):
+    self.i = 0;
+    self.j = 0;
+    self._seed = 0;
+    self.max = _max_rnd;
     
+    if seed != None:
+      self.seed(seed);
+  
   def seed(self, seed):
-    self._seed = seed+1
-    self.i = 1
-  
+    self._seed = int(seed)
+    self.i = self.j = 0 
+    
   def random(self):
-    global _sran_tab
-    tab = _sran_tab
+    i = self.i + self._seed*self.j;
     
-    i = self.i
-    
-    if (i < 0):
-      i = abs(i)-1
-    
-    i = max(i, 1)
-    
-    i1 = int(max(i, 0) + self._seed)
-    i2 = int(ceil(i/4 + self._seed))
-    r1 = sqrt(tab[i1%len(tab)]*tab[i2%len(tab)])
+    r1 = _rnd_table[(self.i+self._seed)%len(_rnd_table)]
+    r2 = _rnd_table[i%len(_rnd_table)]
     
     self.i += 1
+    self.j += 3
     
-    return r1
+    return (r1+r2) % self.max
+  
+  def frandom(self):
+    return self.next() / self.max
 
 _keyrot_rnd = StupidRandom(0)
+
 def key_rot(key):
   key = str(key).upper()
   s2 = ""
@@ -112,7 +117,7 @@ def key_rot(key):
       c = "."
     
     limitcode = limit_code[c]
-    r = floor(_keyrot_rnd.random()*24.0)
+    r = floor(_keyrot_rnd.random()%24)
     limitcode = (limitcode + r) % max_limit_code
     
     c = limit_code_rev[limitcode]
@@ -141,7 +146,7 @@ def key_unrot(key):
      c = "."
     
     limitcode = limit_code[c]
-    r = floor(_keyrot_rnd.random()*24.0)
+    r = floor(_keyrot_rnd.random()%24)
     limitcode = (limitcode + max_limit_code - r) % max_limit_code
     
     c = limit_code_rev[limitcode]

@@ -1,5 +1,5 @@
 from logger import elog, mlog, alog
-from mysql_db import mysql_connect, mysql_reconnect, get_qs, \
+from db_engine import mysql_connect, mysql_reconnect, get_qs, \
                      estr, valid_pass, SQLParamError, sql_selectall, \
                      sql_insertinto, do_param_error, sq
 import random, time, json
@@ -7,7 +7,8 @@ from utils import *
 from math import *
 import datetime
 from config import json_mimetype, WITH_PY2
-import pymysql
+from db_engine import *
+import db_engine
 
 permissions = {"MODELER" : 1, "DRIVE_READ": 2, "DRIVE_WRITE": 4}
 default_permission = permissions["MODELER"] | permissions["DRIVE_READ"] | permissions["DRIVE_WRITE"]
@@ -31,10 +32,10 @@ def gen_token(toktype, userid):
   if toktype not in toktypes:
     raise RuntimeError("Invalid token type " + str(toktype))
     
-  random.seed(time.time()*10000*random.random())
+  random.seed(time.time()*2.0*random.random())
   s = ""
   for i in range(32):
-    code = int(random.random()*max_limit_code*0.999999)
+    code = int(random.random()*max_limit_code*0.99999)
     s += limit_code_rev[code]
   
   """
@@ -209,13 +210,15 @@ class AuthAPI_RefreshToken:
       return
     
     alog("Fetching refresh token for user %s. . ." % user)
-		
-    if ret["password"] != password:
+    
+    passwd = ret["password"]
+    userid = ret["userid"]
+      
+    if passwd != password:
       alog("Invalid password for %s, got: '%s', pass: '%s'" % (user, password, ret["password"]))
       serv.send_error(401)
       return
     
-    userid = ret["userid"]
     tok = gen_token("R", userid)
     exprtime = datetime.datetime.now() + datetime.timedelta(days=12)
     
@@ -268,7 +271,9 @@ class AuthAPI_SessionToken:
       serv.send_error(401)
       return
     
-    if ret["expiration"] < datetime.datetime.now():
+    exprtime1 = ensure_datetime(ret["expiration"])
+    
+    if exprtime1 < datetime.datetime.now():
       alog("Expired token %s" % (token))
       serv.send_error(408)
       return
@@ -305,6 +310,10 @@ class AuthAPI_GetUserInfo:
   def do_GET(self, serv):
     qs = get_qs(serv.path)
     
+    #print("userinfo!")
+    
+    cur, con = mysql_connect()
+    
     if "accessToken" not in qs:
       elog("access token wasn't provided")
       serv.send_error(400)
@@ -318,12 +327,12 @@ class AuthAPI_GetUserInfo:
       elog("invalid access")
       serv.send_error(401)
       return
-      
-    cur, con = mysql_connect()
+    
     cur.execute("SELECT * FROM users WHERE userid="+estr(userid));
     ret = cur.fetchone();    
     
     body = json.dumps({"username": ret["username"],
+                       "userid": rot_userid(ret["userid"]),
                        "name_last": ret["name_last"],
                        "name_first": ret["name_first"],
                        "email": ret["email"],
@@ -339,22 +348,22 @@ def do_auth(tok):
   cur, con = mysql_connect()
   try:
     cur.execute("SELECT * FROM authtokens WHERE tokenid="+estr(tok))
-  except pymysql.err.Error:
+  except db_engine.DBError:
     cur, con = mysql_reconnect()
     cur.execute("SELECT * FROM authtokens WHERE tokenid="+estr(tok))
     
   ret = cur.fetchone()
-  
   if ret == None: 
-    elog("nonexistent access token");
+    elog("nonexistent access token " + str(tok));
     return None
-    
+      
   if ret["type"] != toktypes["A"]:
-    elog("invalid access token")
+    elog("invalid access token " + str(tok))
     return None
     
-  if ret["expiration"] < datetime.datetime.now():
-    elog("expired access token")
+  exprtime1 = ensure_datetime(ret["expiration"])
+  if exprtime1 < datetime.datetime.now():
+    elog("expired access token " + str(tok))
     return None
       
   return ret["userid"]

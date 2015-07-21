@@ -3,11 +3,11 @@ import struct
 import re
 
 try:
-    import io as StringIO
+    import cStringIO as StringIO
 except ImportError:
-    import io
+    import StringIO
 
-from .err import Warning, Error, InterfaceError, DataError, \
+from err import Warning, Error, InterfaceError, DataError, \
              DatabaseError, OperationalError, IntegrityError, InternalError, \
             NotSupportedError, ProgrammingError
 
@@ -92,14 +92,14 @@ class Cursor(object):
 
         # TODO: make sure that conn.escape is correct
 
-        if isinstance(query, str):
+        if isinstance(query, unicode):
             query = query.encode(charset)
 
         if args is not None:
             if isinstance(args, tuple) or isinstance(args, list):
                 escaped_args = tuple(conn.escape(arg) for arg in args)
             elif isinstance(args, dict):
-                escaped_args = dict((key, conn.escape(val)) for (key, val) in list(args.items()))
+                escaped_args = dict((key, conn.escape(val)) for (key, val) in args.items())
             else:
                 #If it's not a dictionary let's try escaping it anyways.
                 #Worst case it will throw a Value error
@@ -164,7 +164,7 @@ class Cursor(object):
         conn = self._get_db()
         for index, arg in enumerate(args):
             q = "SET @_%s_%d=%s" % (procname, index, conn.escape(arg))
-            if isinstance(q, str):
+            if isinstance(q, unicode):
                 q = q.encode(conn.charset)
             self._query(q)
             self.nextset()
@@ -172,7 +172,7 @@ class Cursor(object):
         q = "CALL %s(%s)" % (procname,
                              ','.join(['@_%s_%d' % (procname, i)
                                        for i in range(len(args))]))
-        if isinstance(q, str):
+        if isinstance(q, unicode):
             q = q.encode(conn.charset)
         self._query(q)
         self._executed = q
@@ -269,7 +269,7 @@ class DictCursor(Cursor):
         self._check_executed()
         if self._rows is None or self.rownumber >= len(self._rows):
             return None
-        result = dict(list(zip(self._fields, self._rows[self.rownumber])))
+        result = dict(zip(self._fields, self._rows[self.rownumber]))
         self.rownumber += 1
         return result
 
@@ -279,7 +279,7 @@ class DictCursor(Cursor):
         if self._rows is None:
             return None
         end = self.rownumber + (size or self.arraysize)
-        result = [ dict(list(zip(self._fields, r))) for r in self._rows[self.rownumber:end] ]
+        result = [ dict(zip(self._fields, r)) for r in self._rows[self.rownumber:end] ]
         self.rownumber = min(end, len(self._rows))
         return tuple(result)
 
@@ -289,9 +289,9 @@ class DictCursor(Cursor):
         if self._rows is None:
             return None
         if self.rownumber:
-            result = [ dict(list(zip(self._fields, r))) for r in self._rows[self.rownumber:] ]
+            result = [ dict(zip(self._fields, r)) for r in self._rows[self.rownumber:] ]
         else:
-            result = [ dict(list(zip(self._fields, r))) for r in self._rows ]
+            result = [ dict(zip(self._fields, r)) for r in self._rows ]
         self.rownumber = len(self._rows)
         return tuple(result)
 

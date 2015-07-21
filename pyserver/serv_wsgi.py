@@ -1,12 +1,12 @@
 from logger import elog, mlog, alog
 import os, sys, os.path, math, random, time, io, gc
-import shelve, imp, struct, ctypes, ply
+import shelve, imp, struct, ctypes
 import mimetypes
 from auth import AuthAPI_RefreshToken_WPHack, AuthAPI_OAuthStart, AuthAPI_GetUserInfo, AuthAPI_RefreshToken, AuthAPI_SessionToken
 from fileapi import FileAPI_DirList, FileAPI_GetMeta, FileAPI_UploadStart, FileAPI_UploadChunk, FileAPI_GetFile
 import config, json
 from config import *
-from mysql_db import mysql_close_connections
+from db_engine import mysql_close_connections
 
 import pymysql.err
 from api import api_handlers
@@ -133,6 +133,13 @@ class WSGIServerBridge:
   def do_request(self):
     if self.has_handler(self.path):
       self.exec_handler(self.path, self.method)
+    elif self.path == "/video.mp4":
+      file = open((doc_root+"/build/video.mp4").replace("/", os.path.sep), "rb");
+      body = file.read()
+      file.close()
+      
+      self.wfile.write(body)
+      self.gen_headers(self.method, len(body), "video/mp4")
     elif self.path == unit_path:
       file = open((doc_root+"/build/unit_test.html").replace("/", os.path.sep), "rb")
       

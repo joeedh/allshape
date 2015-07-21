@@ -694,6 +694,8 @@ function define_static(obj, name, val) {
 }
 
 function prior(thisproto, obj) {
+  return thisproto.prototype.prototype;
+  /*
   var proto = obj.constructor.prototype;
   
   while (proto.__prototypeid__ != thisproto.__prototypeid__) {
@@ -701,7 +703,7 @@ function prior(thisproto, obj) {
     proto = proto.prototype;
   }
   
-  return proto.prototype;
+  return proto.prototype;*/
 }
 EXPORT_FUNC(prior)
 

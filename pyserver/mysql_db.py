@@ -5,6 +5,8 @@ import os, sys, os.path, struct, traceback, gc, io, imp, re
 from config import *
 from utils import *
 
+DBError = mysql.err.Error
+
 import sys
 if not WITH_PY2:
   from urllib.parse import urlparse, parse_qs
@@ -40,16 +42,16 @@ mysql_con_slot_cur = 0;
 
 mysql_con = None
 
-def mysql_execute(cur, con, estr):
+def sql_execute(cur, con, estr):
   try:
     cur.execute(estr)
-  except pymysql.err.Error:
+  except mysql.err.Error:
     cur, con = mysql_reconnect()
     cur.execute(estr)
   
   return cur, con
   
-def mysql_reconnect():
+def sql_reconnect():
   global mysql_con
   
   print("reconnecting to mysql. . .");
@@ -60,7 +62,13 @@ def mysql_reconnect():
   
   return mysql_con.cursor(), mysql_con
 
-def mysql_close_connections():
+def get_last_rowid(cur):
+  cur.execute("SELECT LAST_INSERT_ID()")
+  ret = cur.fetchone()
+  
+  return ret["LAST_INSERT_ID()"]
+
+def sql_close_connections():
   global mysql_connections
   for con in mysql_connections:
     try:
@@ -69,7 +77,7 @@ def mysql_close_connections():
       pass
     
 mysql_connections = []
-def mysql_connect():
+def sql_connect():
   global mysql_connections
   
   #global mysql_con
@@ -81,7 +89,7 @@ def mysql_connect():
       mysql_con_local = mysql.connect(cursorclass=\
         mysql.cursors.DictCursor, host=db_host,\
         user=db_user, passwd=db_passwd, db=db_db)
-    except pymysql.err.OperationalError:
+    except mysql.err.OperationalError:
       return None, None
     
     mysql_connections.append(mysql_con_local);

@@ -14,15 +14,24 @@ def log(file, msg):
     
 prefix = config.doc_root+os.path.sep+"pyserver"+os.path.sep
 
-messages = open(prefix+"messages.log", "a")
-errors = open(prefix+"errors.log", "a")
-access = open(prefix+"access.log", "a")
+def getfile(path):
+  try:
+    return open(path, "a")
+  except:
+    return open(path, "w")
+
+messages = getfile(prefix+"messages.log")
+errors = getfile(prefix+"errors.log")
+access = getfile(prefix+"access.log")
 
 def mlog(msg):
+  print(msg)
   log(messages, msg)
 
 def elog(msg):
+  print(msg)
   log(errors, msg)
 
 def alog(msg):
+  print(msg)
   log(access, "%s: %s" % (config.client_ip, msg))
