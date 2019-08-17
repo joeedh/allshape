@@ -176,7 +176,12 @@ def js_parse(data, args=None, file="", flatten=True,
     i = 0
     ai = 0
     while i < len(data)-2:
-      if data[i] == "$" and safe_get(data, i-1) != "$":
+      if data[i] == "$":
+        if safe_get(data, i+1) == "$": #handle '$$'
+          data = data[:i] + data[i+1:]
+          i += 1
+          continue
+          
         i1 = i
         t = data[i+1]
         i += 2
@@ -271,12 +276,13 @@ from js_typespace import *
 from js_generators import *
 from js_process_ast import traverse, traverse_i, null_node, \
                            find_node, flatten_statementlists, \
-                           kill_bad_globals, expand_harmony_classes, \
+                           kill_bad_globals, expand_harmony_classes, create_class_list,\
                            transform_exisential_operators
 
 from js_module import module_transform
 
 from js_typed_classes import expand_typed_classes
+from js_let import process_let
 
 b64tab = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
 def b64chr(n):
@@ -414,6 +420,7 @@ def parse_smap(smap):
   
   smap["mappings"] = lines
   return smap
+
 
 def encode_smap(smap, lastocol=0, lastfile=0, lastoline=0):
   """
@@ -709,10 +716,14 @@ def parse_intern_es6(data):
    
   typespace = JSTypeSpace()
   
-  if len(result) > 0 and type(result[0]) == StrLitNode and result[0].val == '"use strict"':
-    glob.g_force_global_strict = True
-  elif len(result) > 0 and type(result[0]) == StrLitNode and result[0].val == '"not_a_module"':
-    glob.g_es6_modules = False
+  #handle some directives
+  for c in result:
+    if type(c) != StrLitNode: break
+    
+    if c.val[1:-1] == "use strict":
+      glob.g_force_global_strict = True
+    elif c.val[1:-1] == "not_a_module":
+      glob.g_es6_modules = False
     
   if glob.g_force_global_strict:
     kill_bad_globals(result, typespace)
@@ -735,96 +746,126 @@ def parse_intern_es6(data):
     print(buf)
   
   return buf, result
-
-def expand_mozilla_forloops_new(node, scope):
-  func = node.parent
-  while not null_node(func) and type(func) != FunctionNode: 
-    func = func.parent
-    
-  if not null_node(func):
-    if func.name in forloop_expansion_exclude: return
   
-  def prop_ident_change(node, oldid, newid):
-    if type(node) in [IdentNode, VarDeclNode] and node.val == oldid:
-      if type(node.parent) == BinOpNode and node.parent.op == ".":
-        if node != node.parent[1]:
-          node.val = newid
-      else:
-          node.val = newid
+def inside_generator(node):
+  p = node
+  while p.parent != None and not isinstance(p, FunctionNode):
+    p = p.parent
+  
+  found = [0]
+  def findyield(n):
+    found[0] = 1
+    
+  traverse(p, YieldNode, findyield)
+  
+  return found[0]
+  
+def expand_of_loops(result, typespace):
+  def expand_mozilla_forloops_new(node, scope):
+    use_in_iter = False
+    
+    if (node.of_keyword == "in"):
+      use_in_iter = True
       
-    for c in node.children:
-      if type(c) == FunctionNode:
-        continue
-      prop_ident_change(c, oldid, newid)
-  
-  #for-in-loops don't seem to behave like for-C-loops,
-  #the iteration variable is in it's own scope, and 
-  #doesn't seem to affect the parent scope.
-  val = node[0].val
-  di = 0
-  while node[0].val in scope:
-    node[0].val = "%s_%d" % (val, di)
-    di += 1
+      if glob.g_warn_for_in:
+        typespace.warning("Detected for-in usage", node);
+      
+      if not inside_generator(node):
+        return
+      
+    func = node.parent
+    while not null_node(func) and type(func) != FunctionNode: 
+      func = func.parent
+      
+    if not null_node(func):
+      if func.name in forloop_expansion_exclude: return
     
-    #print(node[0].val)
-  
-  if node[0].val != val:
-    scope[node[0].val] = node[0]
-    prop_ident_change(node.parent, val, node[0].val)
-  
-  slist = node.parent.children[1]
-  if type(slist) != StatementList:
-    s = StatementList()
-    s.add(slist)
-    slist = s
-  
-  itername = node[0].val
-  objname = node[1].gen_js(0)
-  if glob.g_log_forloops:
-    n2 = js_parse("""
-      var __iter_$s1 = __get_iter($s2, $s3, $s4, $s5);
-      var $s1;
-      while (1) {
-        var __ival_$s1 = __iter_$s1.next();
-        if (__ival_$s1.done) {
-          break;
-        }
+    def prop_ident_change(node, oldid, newid):
+      if type(node) in [IdentNode, VarDeclNode] and node.val == oldid:
+        if type(node.parent) == BinOpNode and node.parent.op == ".":
+          if node != node.parent[1]:
+            node.val = newid
+        else:
+            node.val = newid
         
-        $s1 = __ival_$s1.value;
-      }
-    """, (itername, objname, "'"+node[0].file+"'", node[0].line, "'"+node.of_keyword+"'"));
-  else:
-    n2 = js_parse("""
-      var __iter_$s1 = __get_iter($s2);
-      var $s1;
-      while (1) {
-        var __ival_$s1 = __iter_$s1.next();
-        if (__ival_$s1.done) {
-          break;
-        }
-        
-        $s1 = __ival_$s1.value;
-      }
-    """, (itername, objname));
-  
-  def set_line(n, slist, line, lexpos):
-    n.line = line
-    n.lexpos = lexpos
+      for c in node.children:
+        if type(c) == FunctionNode:
+          continue
+        prop_ident_change(c, oldid, newid)
     
-    for c in n.children:
-        set_line(c, slist, line, lexpos)
-  
-  #preserving line info is a bit tricky.
-  #slist goes through a js->gen_js->js cycle,
-  #so make sure we still have it (and its
-  #line/lexpos information).
-  
-  set_line(n2, slist, node.line, node.lexpos)
-  for c in slist:
-    n2[2][1].add(c)
-  
-  node.parent.parent.replace(node.parent, n2)
-  
+    #for-in-loops don't seem to behave like for-C-loops,
+    #the iteration variable is in it's own scope, and 
+    #doesn't seem to affect the parent scope.
+    val = node[0].val
+    di = 0
+    while node[0].val in scope:
+      node[0].val = "%s_%d" % (val, di)
+      di += 1
+      
+      #print(node[0].val)
+    
+    if node[0].val != val:
+      scope[node[0].val] = node[0]
+      prop_ident_change(node.parent, val, node[0].val)
+    
+    slist = node.parent.children[1]
+    if type(slist) != StatementList:
+      s = StatementList()
+      s.add(slist)
+      slist = s
+    
+    getiter = "__get_in_iter" if use_in_iter else "__get_iter"
+    
+    itername = node[0].val
+    objname = node[1].gen_js(0)
+    if glob.g_log_forloops:
+      n2 = js_parse("""
+        var __iter_$s1 = __get_iter($s2, $s3, $s4, $s5);
+        var $s1;
+        while (1) {
+          var __ival_$s1 = __iter_$s1.next();
+          if (__ival_$s1.done) {
+            break;
+          }
+          
+          $s1 = __ival_$s1.value;
+        }
+      """.replace("__get_iter", getiter), (itername, GETITER, objname, "'"+node[0].file+"'", node[0].line, "'"+node.of_keyword+"'"));
+    else:
+      n2 = js_parse("""
+        var __iter_$s1 = __get_iter($s2);
+        var $s1;
+        while (1) {
+          var __ival_$s1 = __iter_$s1.next();
+          if (__ival_$s1.done) {
+            break;
+          }
+          
+          $s1 = __ival_$s1.value;
+        }
+      """.replace("__get_iter", getiter), (itername, objname));
+    
+    def set_line(n, slist, line, lexpos):
+      n.line = line
+      n.lexpos = lexpos
+      
+      for c in n.children:
+          set_line(c, slist, line, lexpos)
+    
+    #preserving line info is a bit tricky.
+    #slist goes through a js->gen_js->js cycle,
+    #so make sure we still have it (and its
+    #line/lexpos information).
+    
+    set_line(n2, slist, node.line, node.lexpos)
+    for c in slist:
+      n2[2][1].add(c)
+    
+    node.parent.parent.replace(node.parent, n2)
+
+  #expand_of_loops lexical scope here    
+  traverse(result, ForInNode, expand_mozilla_forloops_new, use_scope=True)
+
 f_id = [0]
 def parse_intern(data, create_logger=False, expand_loops=True, expand_generators=True):
   glob.g_lines = data.split("\n")
@@ -854,12 +895,25 @@ def parse_intern(data, create_logger=False, expand_loops=True, expand_generators
     
   typespace = JSTypeSpace()
   
-  if result != None:
-    if len(result) > 0 and type(result[0]) == StrLitNode and result[0].val == '"use strict"':
-      glob.g_force_global_strict = True
-    elif len(result) > 0 and type(result[0]) == StrLitNode and result[0].val == '"not_a_module"':
-      glob.g_es6_modules = False
+  #handle some directives
+  for c in result:
+    if type(c) != StrLitNode: break
     
+    if c.val[1:-1] == "use strict":
+      glob.g_force_global_strict = True
+    elif c.val[1:-1] == "not_a_module":
+      glob.g_es6_modules = False
+      
+  if glob.g_profile_coverage:
+    from js_process_ast import coverage_profile
+    coverage_profile(result, typespace)
+    
+  if glob.g_compile_statics_only:
+    process_static_vars(result, typespace)
+    return result.gen_js(0), result
+    
+  if glob.g_enable_let:
+    process_let(result, typespace)
     
   if glob.g_force_global_strict:
     kill_bad_globals(result, typespace)
@@ -877,10 +931,12 @@ def parse_intern(data, create_logger=False, expand_loops=True, expand_generators
     module_transform(result, typespace)
   
   if glob.g_require_js:
-    expand_requirejs_classes(result, typespace);
+    expand_requirejs_classes(result, typespace)
+  elif glob.g_expand_classes:
+    expand_harmony_classes(result, typespace)
+    expand_typed_classes(result, typespace)
   else:
-    expand_harmony_classes(result, typespace);
-  expand_typed_classes(result, typespace)
+    create_class_list(result, typespace)
   
   if glob.g_clear_slashr:
     print("\n")
@@ -895,14 +951,29 @@ def parse_intern(data, create_logger=False, expand_loops=True, expand_generators
   f_id = [0]
   flatten_statementlists(result, typespace)
   
-  if expand_loops:
-    traverse(result, ForInNode, expand_mozilla_forloops_new, use_scope=True)
+  has_generators = [False]
+  def has_generator(n):
+    if not glob.g_expand_generators: return
+
+    if type(n) == YieldNode:
+      has_generators[0] = True
+    
+    for c in n:
+      has_generator(c)
+  
+  has_generator(result)
+  
+  if expand_loops or has_generators[0]:
+    expand_of_loops(result, typespace)
   
   #combine_try_nodes may have nested statementlists again, so better reflatten
   flatten_statementlists(result, typespace)
   
   if create_logger:
     traverse(result, FunctionNode, create_type_logger)
+  
+  #don't need to do this anymore, yay!
+  #process_arrow_function_this(result, typespace)
   
   if expand_generators:
     flatten_statementlists(result, typespace)
@@ -1072,9 +1143,11 @@ def add_newlines(data):
     
   return data2
   
-def parse(data, file=None, create_logger=False, expand_loops=True, expand_generators=True):
+def parse(data, file=None, create_logger=False, expand_loops=True, expand_generators=None):
     if file != None: glob.g_file = file
-    
+    if expand_generators is None:
+      expand_generators = glob.g_expand_generators
+      
     if glob.g_add_newlines:
       data = add_newlines(data)
       #print(data[1017297])

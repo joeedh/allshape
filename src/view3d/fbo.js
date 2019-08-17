@@ -30,7 +30,7 @@ class FrameBuffer {
     this.rbuf1 = this.rbuf2 = this.fbuf = undefined;
     
     if (this.textures != undefined) {
-      for (var t in this.textures) {
+      for (var t of this.textures) {
         gl.deleteTexture(t);
       }
     }
@@ -118,7 +118,7 @@ class FrameBuffer {
       gl.getExtension("WEBGL_depth_texture");
       
       if (this.textures != undefined) {
-        for (var t in this.textures) {
+        for (var t of this.textures) {
           gl.deleteTexture(t);
         }
       }

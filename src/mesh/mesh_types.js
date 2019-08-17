@@ -3,8 +3,6 @@
 #include "src/core/utildefine.js"
 
 class Element {
-  int type=0, eid=0, flag=0, index=0, sid=0;
-  
   constructor(set_sid=true) {
     this.gdata = new ElementData();
     
@@ -49,13 +47,8 @@ Element.STRUCT = """
 """
 
 class Vertex extends Element {
-  Vector3 co, no, td_sco, mapco;
-  Loop loop;
-  Array<Edge> edges;
-  int type;
-  
   constructor(Vector3 co, Vector3 no) {
-    Element.call(this);
+    super();
     
     this.type = MeshTypes.VERT;
     
@@ -97,7 +90,7 @@ class Vertex extends Element {
     
     pack_int(data, this.edges.length);
     
-    for (var e in this.edges) {
+    for (var e of this.edges) {
       pack_int(data, e.eid);
     }
     
@@ -124,7 +117,7 @@ class Vertex extends Element {
   recalc_normal(Boolean redo_face_normals=true) {
     this.no.zero();
     
-    for (var f in this.faces) {
+    for (var f of this.faces) {
       if (redo_face_normals)
         f.recalc_normal();
         
@@ -144,11 +137,8 @@ Vertex.STRUCT = STRUCT.inherit(Vertex, Element) + """
 """;
 
 class Edge extends Element {  
-  Vertex v1, v2;
-  Loop loop;
-  
   constructor(Vert v1, Vert v2) {
-    Element.call(this);
+    super();
     
     this.type = MeshTypes.EDGE;
     this.v1 = v1;
@@ -242,14 +232,9 @@ Edge.STRUCT = STRUCT.inherit(Edge, Element) + """
 """;
 
 class Loop extends Element {
-  Vertex v;
-  Edge e;
-  Face f;
-  LoopList list;
-  Loop next, prev, radial_next, radial_prev;
-  
   constructor(Vertex v, Edge e, Face f) {
-    Element.call(this, false);  
+    super(false);
+
     this.type = MeshTypes.LOOP;
     this.eid = 0;
     
@@ -307,10 +292,6 @@ Loop.STRUCT = """
 """
 
 class LoopIter {
-  ObjectMap ret;
-  LoopList list;
-  Loop startl, cur;
-  
   constructor(LoopList looplist) {
     this.ret = {done : false, value : undefined};
     this.list = looplist;
@@ -337,9 +318,6 @@ class LoopIter {
 }
 
 class LoopList {
-  Loop loop;
-  int length;
-  
   constructor(Loop loop) {
     this.loop = loop;
     this.length = 0;
@@ -353,17 +331,12 @@ var _static_cent = new Vector3();
 var _frn_n1 = new Vector3();
 
 class Face extends Element{
-  Iterator _liter, _eiter, _viter;
-  GArray<LoopList> looplists;
-  Vector3 no, center, mapcenter;
-  int totvert;
-  
   constructor(GArray< GArray<Loop> > looplists) {
     /*
     Note: copies looplists
     */
     
-    Element.call(this);
+    super();
     
     this._liter = undefined;
     this._eiter = undefined;
@@ -381,7 +354,7 @@ class Face extends Element{
     
     if (looplists != undefined) {
       for (var i=0; i<looplists.length; i++) {
-        for (var l in looplists[i]) {
+        for (var l of looplists[i]) {
           l.f = this;
           l.list = looplists[i];
           this.totvert++;
@@ -484,14 +457,14 @@ class Face extends Element{
     //pack_vec3(data, this.mapcenter);
 
     pack_int(data, this.looplists.length);
-    for (var lst in this.looplists) {
+    for (var lst of this.looplists) {
       var i = 0;
-      for (var l in lst) {
+      for (var l of lst) {
         i++;
       }
       
       pack_int(data, i);
-      for (var l in lst) {
+      for (var l of lst) {
         l.pack(data);
       }
     }
@@ -609,10 +582,6 @@ Face.STRUCT = STRUCT.inherit(Face, Element) + """
 """;
 
 class GeoArrayIter<T> {
-  ObjectMap ret;
-  GeoArray<T> arr;
-  int cur;
-  
   constructor(GeoArray arr) {
     this.ret = {done : false, value : undefined};
     this.cur = 0;
@@ -650,13 +619,8 @@ class GeoArrayIter<T> {
 }
 
 class AllTypesSelectIter extends TCanSafeIter {
-  ObjectMap ret;
-  Mesh mesh;
-  Iter iter;
-  int type;
-  
   constructor(mesh) {
-    TCanSafeIter.call(this);
+    super();
     
     this.ret = {done : false, value : undefined};
     this.type = MeshTypes.VERT;
@@ -713,17 +677,9 @@ class AllTypesSelectIter extends TCanSafeIter {
 }
 
 class GeoArray<T> extends ES5Iter {
-  Array arr;
-  EIDGen idgen;
-  ObjectMap<int,Element> global_eidmap;
-  ObjectMap<int,T> sidmap, eidmap;
-  T highlight;
-  GArray<T> freelist;
-  GeoArrayIter<T> iter;
-  ObjectMap<int,T> _selected;
-  int length, type, _totsel;
-  
   constructor(type, idgen, eidmap, sidmap) {
+    super();
+
     this.arr = new Array();
     this.length = 0;  
     this.idgen = idgen
@@ -842,7 +798,7 @@ class GeoArray<T> extends ES5Iter {
   index_update() {
     var i = 0;
     
-    for (var item in this) {
+    for (var item of this) {
       item.index = i++;
     }
   }
@@ -894,7 +850,7 @@ class MeshMaterialHandler {
 
 class DefaultMatHandler extends MeshMaterialHandler {
   constructor(gl, ctx) {
-    
+    super();
   }
   
   load_shader(Mesh mesh, DrawMats drawmats) {

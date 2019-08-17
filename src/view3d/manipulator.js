@@ -23,13 +23,6 @@ var _manip_cache = {};
 var _mh_idgen = 1;
 
 class ManipHandle {
-  Vector3 v1, v2;
-  Object id;
-  Matrix4 matrix;
-  Mesh mesh;
-  View3DHandler view3d;
-  int shape, _hid;
-  
   constructor(Vector3 v1, Vector3 v2, Object id, int shape, view3d, Array<float> clr) {
     this.id = id;
     this._hid = _mh_idgen++;
@@ -130,12 +123,6 @@ var _mh_idgen_2 = 1;
 var _mp_first = true;
 
 class Manipulator {
-  Array<Array<ManipHandle>> handles; //line grab points
-  Matrix4 matrix, projmat, _matrix;
-  Manipulator parent;
-  Object user_data;
-  int flag, recalc, _hid;
-  
   constructor(Array<Array<ManipHandle>> handles, on_click, on_tick) {
     this._hid = _mh_idgen_2++;
     this.handles = new GArray(handles);
@@ -164,7 +151,7 @@ class Manipulator {
   }
   
   gen_buffers(WebGLRenderingContext gl, view3d) {
-    for (var h in this.handles) {
+    for (var h of this.handles) {
       h.gen_buffers();
     }
   }
@@ -236,7 +223,7 @@ class Manipulator {
     view3d.transmat.push()
     view3d.transmat.multiply(this._matrix);
     
-    for (var h in this.handles) {
+    for (var h of this.handles) {
       h.on_draw(gl, view3d);
     }
     
@@ -265,8 +252,8 @@ class Manipulator {
     imat.invert();
     
     var v1 = new Vector3(), v2 = new Vector3(), n = new Vector3();
-    for (var h in this.handles) {
-      for (var l in h.lines) {
+    for (var h of this.handles) {
+      for (var l of h.lines) {
         v1.load(l[0]);
         v2.load(l[1]);
         
@@ -315,17 +302,13 @@ class Manipulator {
     //clear dead cache
     _manip_cache = {};
     
-    for (var h in this.handles) {
+    for (var h of this.handles) {
       h.on_gl_lost(new_gl);
     }
   }
 }
 
 class ManipulatorManager {
-  GArray stack = new GArray();
-  View3DHandler view3d;
-  Manipulator active;
-  
   constructor(view3d) {
     this.view3d = view3d;
   }

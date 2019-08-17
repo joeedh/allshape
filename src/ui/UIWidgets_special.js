@@ -2,7 +2,7 @@
 
 class UICollapseIcon extends UIButtonIcon {
   constructor(ctx, is_collapsed=false, user_callback = undefined) {
-    UIButtonIcon.call(this, ctx, "+", Icons.UI_COLLAPSE);
+    super(ctx, "+", Icons.UI_COLLAPSE);
     
     this._collapsed = 0;
     this.collapsed = is_collapsed;
@@ -46,7 +46,7 @@ class UICollapseIcon extends UIButtonIcon {
 
 class UIPanel extends RowFrame {
   constructor(Context ctx, String name="", String id=name, is_collapsed=false) {
-    RowFrame.call(this, ctx);
+    super(ctx);
     
     this.permid = id;
     this.stored_children = new GArray();
@@ -99,7 +99,7 @@ class UIPanel extends RowFrame {
   on_saved_uidata(Function descend) {
     prior(UIPanel, this).on_saved_uidata.call(this, descend);
     
-    for (var c in this.stored_children) {
+    for (var c of this.stored_children) {
       descend(c);
     }
   }
@@ -107,7 +107,7 @@ class UIPanel extends RowFrame {
   on_load_uidata(Function visit) {
     prior(UIPanel, this).on_load_uidata.call(this, visit);
     
-    for (var c in this.stored_children) {
+    for (var c of this.stored_children) {
       visit(c);
     }
   }
@@ -162,7 +162,7 @@ class UIPanel extends RowFrame {
     
     if (!is_collapsed) {
       if (this.stored_children.length > 0) {
-        for (var c in this.stored_children) {
+        for (var c of this.stored_children) {
           this.add(c);
         }
       
@@ -199,7 +199,7 @@ function get_editor_list() : GArray<Function> {
   
   if (ret == undefined) {
     ret = new GArray();
-    for (var cls in defined_classes) {
+    for (var cls of defined_classes) {
       if (subclass_of(cls, Area))
         ret.push(cls);
     }
@@ -214,7 +214,7 @@ function gen_editor_switcher(Context ctx, Area parent) {
   var menu = new UIMenu("", undefined);
   
   var i = 0;
-  for (var e in editors) {
+  for (var e of editors) {
     if (!e.debug_only || !RELEASE)
       menu.add_item(e.uiname, "", e);
     i++;
@@ -251,7 +251,7 @@ var _hue_field = [
 
 class UIColorField extends UIElement {
   constructor(ctx, callback=undefined) {
-    UIElement.call(this, ctx);
+    super(ctx);
     this.h = 0.0;
     this.s = 0.0;
     this.v = 1.0;
@@ -406,7 +406,7 @@ class UIColorField extends UIElement {
 
 class UIColorBox extends UIElement {
   constructor(ctx, color=undefined) {
-    UIElement.call(this, ctx);
+    super(ctx);
     
     if (color == undefined)
       this.color = [0, 0, 0, 1];
@@ -444,7 +444,7 @@ class UIColorBox extends UIElement {
 
 class UIColorPicker extends RowFrame {
   constructor(Context ctx, Array<float> color=undefined) {
-    RowFrame.call(this, ctx);
+    super(ctx);
     
     if (color == undefined) {
       this._color = [1, 0, 0, 1];
@@ -581,7 +581,7 @@ class UIColorPicker extends RowFrame {
 
 class UIBoxWColor extends ColumnFrame {
   constructor(ctx, path) {
-    ColumnFrame.call(this, ctx, path);
+    super(ctx, path);
     //this.data_path = path;
     //this.state |= UIFlags.USE_PATH;
     
@@ -591,7 +591,7 @@ class UIBoxWColor extends ColumnFrame {
       
       row.packflag |= PackFlags.NO_AUTO_SPACING|PackFlags.ALIGN_BOTTOM;
       var i = 1;
-      for (var c in row.children) {
+      for (var c of row.children) {
         if (c instanceof UINumBox) {
           c.slide_power = 2.0;
           c.slide_mul = 4.0;
@@ -610,11 +610,14 @@ class UIBoxWColor extends ColumnFrame {
 }
 
 class UIBoxColor extends RowFrame {
+  constructor() {
+    super();
+  }
 }
 
 class UIProgressBar extends UIElement {
   constructor(Context ctx, float value=0.0, float min=0.0, float max=1.0, int min_wid=200, int min_hgt=25) {
-    UIElement.call(this, ctx);
+    super(ctx);
     
     this.value = value;
     this.min = min;

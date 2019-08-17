@@ -37,7 +37,7 @@ class TransMeshType extends TransDataType {
     var mesh = ctx.mesh
     
     top._undo = {}
-    for (var v in mesh.verts.selected) {
+    for (var v of mesh.verts.selected) {
       top._undo[v.eid] = new Vector3(v.co);
     }
   }
@@ -58,7 +58,7 @@ class TransMeshType extends TransDataType {
       
       if (mesh.flag & MeshFlags.USE_MAP_CO) {
         v.flag |= Flags.DIRTY;
-        for (var l in v.loops) {
+        for (var l of v.loops) {
           l.e.flag |= Flags.DIRTY;
           l.f.flag |= Flags.DIRTY;        
         }
@@ -106,11 +106,11 @@ class TransMeshType extends TransDataType {
     
     var use_mapco = tdata.mesh.flag & MeshFlags.USE_MAP_CO;
     if (use_mapco) {
-      for (var v in tdata.mesh.verts) {
+      for (var v of tdata.mesh.verts) {
         bb.minmax(v.mapco);
       }
     } else {
-      for (var v in tdata.mesh.verts) {
+      for (var v of tdata.mesh.verts) {
         bb.minmax(v.co);
       }
     }
@@ -157,7 +157,7 @@ class TransObjectType {
     if (active != undefined) 
       active = ctx.datalib.get(active);
       
-    for (var ob in top.inputs.objects.data) {
+    for (var ob of top.inputs.objects.data) {
       if (ob == active)
         continue;
       
@@ -170,7 +170,7 @@ class TransObjectType {
     
     //store vectors in a flat array, this lets us avoid
     //one level of object caching
-    for (var ob in undo[0]) {
+    for (var ob of undo[0]) {
       undo[1].push(new Vector3(ob.loc));
       undo[1].push(new Vector3(ob.rot_euler));
       undo[1].push(new Vector3(ob.size));
@@ -208,27 +208,13 @@ class TransObjectType {
   }
   
   static update(TransData tdata, int i) {
-    for (var ob in tdata.objects) {
+    for (var ob of tdata.objects) {
       ob.recalc(RecalcFlags.TRANSFORM);
     }
   }
 }
 
 class TransData {
-  Matrix4 projmat, iprojmat, imat;
-  Array<float> start_mpos;
-  
-  Context ctx;
-  ASObject object;
-  GArray<ASObject> objects;
-  Mesh mesh;
-  
-  Vector3 center;
-  Vector3 scenter;
-  Vector3 min, max;
-  
-  int datamode, length;
-  
   //objlist is only valid for objectmode transforms
   constructor(Context ctx, TransformOp top, Object obj, Object objlist, int datamode) {
     if (obj == undefined) {
@@ -300,7 +286,7 @@ class TransData {
     var ssizes = this.startsizes = new GArray();
     
     var add_obj = true;
-    for (var ob in objlist) {
+    for (var ob of objlist) {
       if (ob instanceof DataRef)
         ob = ctx.datalib.get(ob);
       
@@ -339,7 +325,7 @@ class TransData {
     
     var center = this.center;
     var loc = new Vector3();
-    for (var ob in this.objects) {
+    for (var ob of this.objects) {
       console.log("ob", ob, this.objects, active_ob);
       ob.matrix.decompose(loc);
       center.add(loc);
@@ -367,7 +353,7 @@ class TransData {
     var i = 0;
     var scos = this.startcos;
     var is_static = false;
-    for (var v in this.mesh.verts.selected) {
+    for (var v of this.mesh.verts.selected) {
       v.td_sco.load(v.co);
       
       if ((v.flag & Flags.SELECT) == 0) continue;
@@ -376,7 +362,7 @@ class TransData {
       
       scos.push(new Vector3(v.co));
     
-      for (var l in v.loops) {
+      for (var l of v.loops) {
         faces.add(l.f);
         loops.add(l);
       }
@@ -392,7 +378,7 @@ class TransData {
   calc_aabb() {
     var mm = new MinMax(3);
     
-    for (var v in this.verts) {
+    for (var v of this.verts) {
       mm.minmax(v.co);
     }
     
@@ -408,7 +394,7 @@ var Array<Array<float>> axclrs = [xclr, yclr, zclr];
 
 class TransformOp extends ToolOp {
   constructor(String apiname, String uiname, int mode, String description, int icon) {
-    ToolOp.call(this, apiname, uiname, description, icon);
+    super(apiname, uiname, description, icon);
     
     if (mode & EditModes.GEOMETRY)
       this.datatype = TransMeshType;
@@ -484,7 +470,7 @@ class TransformOp extends ToolOp {
     var verts = td.verts;
     var mesh = ctx.mesh;
     
-    for (var l in td.loops) {
+    for (var l of td.loops) {
       l.v.flags |= Flags.DIRTY;
       l.flags |= Flags.DIRTY;
       l.e.flags |= Flags.DIRTY;
@@ -561,7 +547,7 @@ class TransformOp extends ToolOp {
       
       axis.v2 = new Vector3(mend);
       
-      for (var dl in this.axis_drawlines) {
+      for (var dl of this.axis_drawlines) {
         dl.clr = dl.oldclr;
       }
       
@@ -638,7 +624,7 @@ class TransformOp extends ToolOp {
     var ctx = this.modal_ctx;
     
     if (!this.selecting_axis) {
-      for (var dl in this.axis_drawlines) {
+      for (var dl of this.axis_drawlines) {
         if (dl != this.axis_line1 && dl != this.axis_line2)
           ctx.view3d.kill_drawline(dl);
         else
@@ -688,7 +674,7 @@ class TransformOp extends ToolOp {
     cent[2] = 0.0;
     this.axis_scent = cent;
     
-    for (var dl in this.axis_drawlines) {
+    for (var dl of this.axis_drawlines) {
       dl._v1 = new Vector3(dl.v1);
       dl._v2 = new Vector3(dl.v2);
       
@@ -740,7 +726,7 @@ class TransformOp extends ToolOp {
     
     this.datatype.finish(this.transdata);
     
-    for (var dl in this.axis_drawlines) {
+    for (var dl of this.axis_drawlines) {
       this.modal_ctx.view3d.kill_drawline(dl);
     }
     

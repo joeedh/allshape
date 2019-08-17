@@ -3,6 +3,12 @@ from js_global import glob
 from js_util_types import odict
 import sys, traceback, os, os.path
 
+def print2(*args):
+  s = ""
+  for a in args:
+    s += str(a) + " "
+  sys.stdout.write(s+"\n")
+  
 if 0: #glob.g_debug_print_calls:
   def theprint(arg, **args):
     args = [arg] + list(args)
@@ -46,7 +52,7 @@ if 0: #glob.g_debug_print_calls:
         
     sys.stdout.write(out2)
 else:
-  theprint = print
+  theprint = print2
 
 #def print(arg, **args):
 #  theprint(arg, **args)
@@ -76,9 +82,16 @@ class SourceMap:
   def out(self, node, str1):
     self.add_segment(node, str1)
     return str1
-    
-class Node:
+
+idgen = [1]
+
+class Node (object):
   def __init__(self):
+    global idgen 
+    
+    self._id = idgen[0]
+    idgen[0] += 1
+    
     self.children = []
     self.parent = None
     self.type = None #node type, don't touch this while parsing
@@ -182,9 +195,10 @@ class Node:
     n2.file = self.file
     n2.lexpos = self.lexpos
     n2.final_type = self.final_type
+    
     if hasattr(self, "template"):
       if self.template != None:
-        n2.template = n2.template.copy()
+        n2.template = self.template.copy()
       
   def copy(self):
     raise RuntimeError("Unimplemented copy function in type %s!"%str(type(self)))
@@ -304,6 +318,31 @@ class NumLitNode (ValueNode):
     self.copy_basic(n2)
     self.copy_children(n2)
     return n2
+
+class CommentNode (Node):
+  def __init__(self, comment=""):
+    super(CommentNode, self).__init__()
+    self.comment = comment
+  
+  def copy(self):
+    return CommentNode(self.comment)
+  
+  def gen_js(self, tlevel=0):
+    t1 = tab(tlevel)
+    t2 = tab(tlevel+1)
+    
+    if not "\n" in self.comment:
+      return "/*" + self.comment + "*/"
+    else:
+      ls = [l.replace("\r" ,"") for l in self.comment.split("\n")]
+      
+      s = "/*\n"
+      
+      for l in ls:
+        s += t2 + l + "\n"
+      s += t1 + "*/\n"
+      
+      return s
     
 class IdentNode (ValueNode):
   def __init__(self, ident, local=False):
@@ -403,8 +442,14 @@ class VarDeclNode(IdentNode):
       return ""
     
     s = ""
-    if self.local and type(self.parent) != VarDeclNode: s += "var "
-    elif "static" in self.modifiers and type(self.parent) != VarDeclNode: s += "static "
+    if "let" in self.modifiers and type(self.parent) != VarDeclNode: 
+      s += "let "
+    elif "const" in self.modifiers and type(self.parent) != VarDeclNode: 
+      s += "const "
+    elif self.local and type(self.parent) != VarDeclNode: 
+      s += "var "
+    elif "static" in self.modifiers and type(self.parent) != VarDeclNode: 
+      s += "static "
     s += str(self.val)
     
     s = self.s(s)
@@ -853,6 +898,8 @@ class ExprNode (Node):
     self.copy_basic(n2)
     self.copy_children(n2)
     
+    n2.add_parens = self.add_parens
+    
     return n2
       
   def gen_js(self, tlevel):
@@ -918,7 +965,15 @@ class ArrayLitNode (Node):
     
     s += self.s("]")
     return s
-    
+
+class RuntimeObjectKey (Node):
+  def __init__(self, expr):
+    super(RuntimeObjectKey, self).__init__()
+    self.add(expr)
+  
+  def gen_js(self, tlevel):
+    return "[" + self[0].gen_js(tlevel) + "]"
+
 class ObjLitNode (Node):
   def __init__(self):
     self.name = "anonymous"
@@ -938,7 +993,7 @@ class ObjLitNode (Node):
     for i, c in enumerate(self):
       if i > 0: 
         s += self.s(", ")
-        
+      
       s += c[0].gen_js(tlevel) + self.s(": ") + c[1].gen_js(tlevel)
       
     s += self.s("}")
@@ -999,6 +1054,24 @@ class VarRefNode (Node):
 
   def copy(self):
     n2 = VarRefNode(self[0])
+    self.copy_basic(n2)
+    self.copy_children(n2)
+    
+    return n2
+
+class PositiveNode(Node):
+  def __init__(self, expr):
+    super(PositiveNode, self).__init__()
+    self.add(expr)   
+    
+  def extra_str(self):
+    return ""
+  
+  def gen_js(self, tlevel):
+    return self.s("+") + self.children[0].gen_js(tlevel);
+
+  def copy(self):
+    n2 = PositiveNode(self[0])
     self.copy_basic(n2)
     self.copy_children(n2)
     
@@ -1218,6 +1291,13 @@ class TypedClassRef (Node):
     self.type = cls
     
 class FunctionNode (StatementList):
+  """
+  children:
+  
+  0   : parameters
+  1-X : function statements
+  
+  """
   def copy(self):
     n2 = FunctionNode(self.name, self.lineno)
     self.copy_basic(n2)
@@ -1232,6 +1312,7 @@ class FunctionNode (StatementList):
     n2.ret = self.ret
     n2.is_native = self.is_native
     n2.is_anonymous = self.is_anonymous
+    n2.is_arrow = self.is_arrow
     
     return n2
     
@@ -1239,11 +1320,14 @@ class FunctionNode (StatementList):
   #(and member; both have been replaced by node.line/node.lexpos)
   def __init__(self, name, lineno=0):
     super(FunctionNode, self).__init__()
+    
     self.name = name
     self.origname = name
-    self.is_anonymous = False
     
+    self.is_anonymous = False
+    self.is_arrow = False
     self.is_native = False
+    
     self.members = odict()
     self.functions = odict() #this is local nested functions, not class members
     self.ret = None
@@ -1296,17 +1380,96 @@ class FunctionNode (StatementList):
     node.parent = self[0]
     
     self.args[arg] = node
+
+  def gen_js_arrow(self, tlevel):
+    t = tab(tlevel-1)
+    t2 = tab(tlevel)
+        
     
-  def gen_js(self, tlevel):
     t = tab(tlevel-1)
     t2 = tab(tlevel)
     
-    if self.is_native: return ""
+    s = self.s("(")
     
-    if self.name != "" and self.name != "(anonymous)":
-      s = "function %s("%self.name
+    for i, c in enumerate(self.children[0].children):
+      if i > 0: 
+        s += self.s(", ")
+      
+      s += c.gen_js(tlevel)
+      
+    s += self.s(") => ")
+
+    add_block = len(self.children[1:]) < 2
+    if len(self.children) > 1:
+        rn = self.children[1];
+        if isinstance(rn, ReturnNode):
+            rn = rn[0]
+
+        while isinstance(rn, StatementList):
+            add_block = add_block or len(rn) > 1
+            if len(rn) > 0:
+                rn = rn[0]
+            else:
+                break
+
+        add_block = add_block or type(rn) in [IfNode, WhileNode, SwitchNode, ForCNode, ThrowNode]
+        add_block = add_block or type(rn) in [ForInNode, ForLoopNode, TryNode, ObjLitNode, DoWhileNode]
+
+    #XXX logic here doesn't always works, sometimes produces garbage results
+    add_block = True
+
+    if add_block:
+        s += self.s(t + " {" + ("\n" if len(self.children) > 1 else ""))
     else:
-      s = "function("
+        t2 = ""
+        
+    for c in self.children[1:]:
+      if not add_block and type(c) == ReturnNode:
+        c = c[0]
+        
+      if type(c) != StatementList:
+        cd = self.s(t2) + c.gen_js(tlevel+1 if add_block else 0)
+      else:
+        cd = c.gen_js(tlevel)
+
+      if not add_block:
+          while cd.endswith("\n") or cd.endswith(" ") or cd.endswith("\t") or cd.endswith(";"):
+            cd = cd[:-1]
+
+      #XXX if len(cd.strip()) == 0: continue
+      
+      if add_block and len(cd.strip()) > 0 and not cd.strip().endswith("}") and not cd.strip().endswith(";"):
+        cd += self.s(";")
+        
+      if add_block and not cd.endswith("\n"):
+        cd += self.s("\n")
+      s += cd
+      
+    if add_block:
+        s += self.s(t+"}")
+    
+    return s
+    
+  def gen_js(self, tlevel):
+    if self.is_native: return ""
+
+    if self.is_arrow:
+        return self.gen_js_arrow(tlevel)
+      
+    t = tab(tlevel-1)
+    t2 = tab(tlevel)
+    
+    s = "function"
+    
+    if not glob.g_expand_generators and self.is_generator:
+      s += "* "
+    else:
+      s += " "
+      
+    if self.name != "" and self.name != "(anonymous)":
+      s += "%s("%self.name
+    else:
+      s += "("
     
     s = self.s(s)
     
@@ -1411,7 +1574,7 @@ class DefaultCaseNode(CaseNode):
     super(DefaultCaseNode, self).__init__("default")
   
   def copy(self):
-    n2 = DefaultCaseNode("default")
+    n2 = DefaultCaseNode()
     self.copy_basic(n2)
     self.copy_children(n2)
     
@@ -1648,11 +1811,15 @@ class ForInNode(Node):
     n2 = ForInNode(self[0], self[1])
     self.copy_basic(n2)
     self.copy_children(n2)
+    n2.of_keyword = self.of_keyword
     
     return n2
     
   def gen_js(self, tlevel):
-    return self.children[0].gen_js(tlevel) + self.s(" in ") + self.children[1].gen_js(tlevel)\
+    s = self.children[0].gen_js(tlevel) + self.s(" "+self.of_keyword+" ") 
+    s += self.children[1].gen_js(tlevel)
+    
+    return s
     
   def extra_str(self):
     return ""
@@ -1966,7 +2133,12 @@ class MethodNode(FunctionNode):
     s = ""
     if self.is_static:
       s += "static "
-    s += self.s(self.name + "(")
+    
+    name = self.name
+    if type(name) != str:
+      name = name.gen_js(tlevel)
+      
+    s += self.s(name + "(")
     
     for i, c in enumerate(self[0]):
       if i > 0: s += c.s(", ")
@@ -1988,7 +2160,7 @@ class MethodGetter(MethodNode):
     self.add(ExprListNode([]))
     
   def gen_js(self, tlevel):
-    s = self.s("get " + self.name + "(")
+    s = self.s("get " + str(self.name) + "(")
     
     for i, c in enumerate(self[0]):
       if i > 0: s += c.s(", ")
@@ -2005,7 +2177,7 @@ class MethodSetter(MethodNode):
     MethodNode.__init__(self, name, is_static)
   
   def gen_js(self, tlevel):
-    s = self.s("set " + self.name + "(")
+    s = self.s("set " + str(self.name) + "(")
     
     for i, c in enumerate(self[0]):
       if i > 0: s += c.s(", ")
@@ -2125,11 +2297,18 @@ class ExportNode(Node):
     self.name = name
     self.bindname = name
     self.is_default = is_default
-    
+  
   def extra_str(self):
     if self.bindname != self.name:
       return self.name + " as " + self.bindname
     return self.name 
+  
+  #just pass through
+  def gen_js(self, tlevel=0):
+    ret = ""
+    for c in self.children:
+      ret += c.gen_js(tlevel)
+    return ret
     
 class ExportNameNode(Node):
   def __init__(self): #children is list of ExportIdents
@@ -2155,6 +2334,12 @@ class ImportNode(Node):
   def __init__(self):
     Node.__init__(self)
     self.add(StrLitNode(""))
+  
+  def gen_js(self, tlevel):
+    s = self.s("import ")
+    for c in self:
+      s += c.gen_js(tlevel)
+    return s
     
 class ImportDeclNode(Node):
   def __init__(self, name, bindname=None):
@@ -2173,7 +2358,7 @@ class ImportDeclNode(Node):
     return str(self.name) + " as " + str(self.bindname)
     
   def gen_js(self, tlevel):
-    return ""
+    return self.s("* as " + self.bindname + " from '" + self.name + "'")
     
   def copy(self):
     n2 = PreDec(self[0])

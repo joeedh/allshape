@@ -22,10 +22,10 @@ function inset_extrude(op, mesh, make_skirt) { //make_skirt=true
       }
   }
   
-  for (var f in fiter) {
-      for (var l in f.loops) {
+  for (var f of fiter) {
+      for (var l of f.loops) {
           var count = 0;
-          for (var l2 in l.e.loops) {
+          for (var l2 of l.e.loops) {
               if (fset.has(l2.f)) 
                  count++;
           }
@@ -42,16 +42,16 @@ function inset_extrude(op, mesh, make_skirt) { //make_skirt=true
   var vdel = new set()
   var edel = new set()
   var no = new Vector3()
-  for (var f in fset) {
+  for (var f of fset) {
       var vlists = new GArray()
       
       f.recalc_normal();
       no.add(f.no);
       
-      for (var list in f.looplists) {
+      for (var list of f.looplists) {
           var verts = new GArray()
           vlists.push(verts)
-          for (var l in list) {
+          for (var l of list) {
               if (vmap.has(l.v)) {
                   verts.push(vmap.get(l.v));
               } else {
@@ -75,7 +75,7 @@ function inset_extrude(op, mesh, make_skirt) { //make_skirt=true
       var ls = g_list(f.loops)
       var ei = 0;
       
-      for (var l2 in f2.loops) {
+      for (var l2 of f2.loops) {
           mesh.copy_loop_data(l2, ls[ei]);
           mesh.copy_edge_data(l2.e, ls[ei].e);
           
@@ -102,17 +102,17 @@ function inset_extrude(op, mesh, make_skirt) { //make_skirt=true
       mesh.kill_face(f);
   }    
   
-  for (var e in edel) {
+  for (var e of edel) {
       mesh.kill_edge(e);
   }
   
-  for (var v in vdel) {
+  for (var v of vdel) {
       mesh.kill_vert(v);
   }
   
   no.normalize();
   
-  for (var v in mesh.verts.selected) {
+  for (var v of mesh.verts.selected) {
     v.recalc_normal(true);
   }
   
@@ -131,7 +131,7 @@ function inset_make_holes(op, mesh) {
   var vdone = new set();
   var loops = new GArray();
   
-  for (var e in edges) {
+  for (var e of edges) {
     if (e.totface == 1) {
       vset.add(e.v1);
       vset.add(e.v2);
@@ -139,7 +139,7 @@ function inset_make_holes(op, mesh) {
   }
   
   function find_boundary(vset, verts, loops) {
-    for (var v1 in verts) {
+    for (var v1 of verts) {
       if (vdone.has(v1))
         continue;
       
@@ -148,7 +148,7 @@ function inset_make_holes(op, mesh) {
       var vloop = new GArray([v1]); //loops may be partial loops
       
       /*find correct winding direction to start with*/
-      for (var l in v1.loops) {
+      for (var l of v1.loops) {
         if (faces.has(l.f)) {
           var cure = l.e;
           vdone.add(v);
@@ -173,7 +173,7 @@ function inset_make_holes(op, mesh) {
         vdone.add(v);
         
         var totfound=0;
-        for (var e in v.edges) {
+        for (var e of v.edges) {
           var v2 = e.other_vert(v); 
           if (e != cure && !vdone.has(v2) && vset.has(v2)) {
             nv = v2;
@@ -188,7 +188,7 @@ function inset_make_holes(op, mesh) {
         }
         
         e2 = null;
-        for (var e in v.edges) {
+        for (var e of v.edges) {
           var v2 = e.other_vert(v); 
           
           if (e != cure && vset.has(v2) && v2 == v1) {
@@ -229,11 +229,11 @@ function inset_make_holes(op, mesh) {
   find_boundary(vset, verts, loops);
   //console.log("ll", loops.length);
   
-  for (var loop in loops) {
+  for (var loop of loops) {
     var outer_loop = new GArray()
     var looplists = new GArray([outer_loop, loop])
     
-    for (var v in loop) {
+    for (var v of loop) {
       outer_loop.push(vmap.get(v));
     }
     
@@ -243,7 +243,7 @@ function inset_make_holes(op, mesh) {
 
 class InsetRegionsOp extends MeshOp {
   constructor(Iterator faceiter=undefined) {
-    MeshOp.call(this, "inset_regions", "Inset", "Make a hole in faces", Icons.INSET_REGIONS);
+    super("inset_regions", "Inset", "Make a hole in faces", Icons.INSET_REGIONS);
     
     this.uiname = "Inset Regions"
     this.name = "inset_regions";
@@ -273,7 +273,7 @@ function vloop_normal(loop) {
     return new Vector3(0, 0, 1);
 
   var c = new Vector3();
-  for (var v in loop) {
+  for (var v of loop) {
     c.add(v.co);
   }
   c.mulScalar(1.0/loop.length);
@@ -325,7 +325,7 @@ function bridge_two_loops(mesh, vloop1, vloop2, killfset, cuts) {
     
   function eids(l) {
     var ret = [];
-    for (var v in l) {
+    for (var v of l) {
       ret.push(v.eid);
     }
     
@@ -364,7 +364,7 @@ function bridge_two_loops(mesh, vloop1, vloop2, killfset, cuts) {
   }
   
   if (kill_faces) {
-    for (var f in killfset) {
+    for (var f of killfset) {
       mesh.kill_face(f);
     }
   }
@@ -449,7 +449,7 @@ function bridge_two_loops(mesh, vloop1, vloop2, killfset, cuts) {
 
 class BridgeOp extends MeshOp {
   constructor(Iterator<Edge> edgeiter=undefined, Iterator<Face> faceiter=undefined) {
-    MeshOp.call(this, "bridge_edges", "Bridge Edges", "Bridge edge loops with faces", Icons.BRIDGE);
+    super("bridge_edges", "Bridge Edges", "Bridge edge loops with faces", Icons.BRIDGE);
     
     this.flag |= ToolFlags.USE_PARTIAL_UNDO;
     this.undo_expand_lvl = 3;
@@ -481,7 +481,7 @@ class BridgeOp extends MeshOp {
     var loops = new GArray();
     var cuts = this.inputs.cuts.data;
     
-    for (var e in eset) {
+    for (var e of eset) {
       if (visit.has(e))
         continue;
       
@@ -497,7 +497,7 @@ class BridgeOp extends MeshOp {
         var ov1 = v1;
         var olastv = lastv;
         
-        for (var e2 in v1.edges) {
+        for (var e2 of v1.edges) {
           if (eset.has(e2) && e2.other_vert(ov1) != olastv) {
             visit.add(e2);
             
@@ -532,8 +532,12 @@ class ExtrudePullOp extends WidgetToolOp, ToolMacro {
     var name = "ExtrudePullOp";
     var uiname = "Extrude"
 
-    WidgetToolOp.call(name, uiname, "extrude out geometry");
+    super(name, uiname, "extrude out geometry");
     ToolMacro.call(this, name, uiname, new GArray());
+
+    //WidgetToolOp.call(name, uiname, "extrude out geometry");
+    //ToolMacro.call(this, name, uiname, new GArray());
+
     this.icon = Icons.EXTRUDE;
     
     this.align_normal = true;

@@ -2,6 +2,7 @@ from js_global import *
 from js_ast import *
 from js_cc import js_parse
 from js_process_ast import *
+import sys
 
 def module_transform(node, typespace):
   flatten_statementlists(node, typespace);
@@ -17,11 +18,12 @@ def module_transform(node, typespace):
     return True
  
   def varvisit(n, startn):
+      return
       n2 = js_parse("""
         _es6_module.add_global('$s', $s);
       """, [n.val, n.val]);
       
-      startn.parent.insert(startn.parent.index(startn)+1, n2)
+      startn.parent.insert(startn.parent.index(startn)+1, n2);
       
       for n2 in n[2:]:
         varvisit(n2, startn);
@@ -29,27 +31,58 @@ def module_transform(node, typespace):
   def exportvisit(n):
     if not at_root(n):
       typespace.error("Export statements cannot be within functions or classes", n)
-      
+    
     pi = n.parent.index(n)
     n.parent.remove(n)
     
+    is_const = False
+    if type(n[0]) == VarDeclNode and "const" in n[0].modifiers:
+      is_const = True
+      print("const export!")
+      
     for n2 in n[:]:
       n.remove(n2)
       n.parent.insert(pi, n2)
       pi += 1
-    
+     
     if not n.is_default:
-      n2 = js_parse("""
-        $s = _es6_module.add_export('$s', $s);
-      """, [n.name, n.name, n.name]);
+      if not is_const:
+        n2 = js_parse("""
+          $s = _es6_module.add_export('$s', $s);
+        """, [n.name, n.name, n.name]);
+      else:
+        n2 = js_parse("""
+          _es6_module.add_export('$s', $s);
+        """, [n.name, n.name, n.name]);
+      
     else: 
       n2 = js_parse("""
         $s = _es6_module.set_default_export('$s', $s);
       """, [n.name, n.name, n.name]);
       
     n.parent.insert(pi, n2)
-    
+
+  def get_module_ident(name):
+    return name.replace(".", "_").replace("/", "_").replace(" ", "")
+
+  def exportfromvisit(n):
+    name = get_module_ident(n.name.val)
+
+    n2 = js_parse("""
+      import * as _$s1 from '$s2';
+      
+      for (let k in _$s1) {
+        _es6_module.add_export(k, _$s1[k], true);
+      }
+    """, [name, n.name.val])
+
+    n.parent.replace(n, n2)
   #print(node)
+
+  #ahem.  if I do this one first, I can use  import statements in it :)
+  #. . .also, how cool, it captures the dependencies, too
+
+  traverse(node, ExportFromNode, exportfromvisit, copy_children=True);
   traverse(node, ExportNode, exportvisit, copy_children=True);
   
   #fetch explicit global variables
@@ -91,12 +124,17 @@ def module_transform(node, typespace):
   #to maintain backward compatibility, add everything in module to
   #global namespace (for now).
   
-  if 0:
+  if glob.g_autoglobalize:
     for n in node[:]:
-      if type(n) in [ClassNode, FunctionNode]:
+      if type(n) in [ClassNode, FunctionNode, VarDeclNode]:
+        if type(n) == VarDeclNode:
+          nname = n.val
+        else:
+          nname = n.name
+          
         n2 = js_parse("""
           $s = _es6_module.add_global('$s', $s);
-        """, [n.name, n.name, n.name]);
+        """, [nname, nname, nname]);
         n.parent.insert(n.parent.index(n)+1, n2)
       elif type(n) == VarDeclNode:
         varvisit(n, n);
@@ -134,6 +172,15 @@ def module_transform(node, typespace):
   traverse(node, ImportNode, visit)
   flatten_statementlists(node, typespace)
   
+  def class_visit(n):
+    n2 = js_parse("""
+      _es6_module.add_class($s);
+    """, [n.name])
+    n.parent.insert(n.parent.index(n)+1, n2);
+    
+  traverse(node, ClassNode, class_visit)
+  flatten_statementlists(node, typespace)
+  
   deps = "["
   for i, d in enumerate(depends):
     if i > 0: 
@@ -149,8 +196,14 @@ def module_transform(node, typespace):
   
   safe_fname = "_" + fname.replace(" ", "_").replace(".", "_").replace("-", "_") + "_module";
   
+  path = os.path.abspath(glob.g_file);
+  path = path.replace(os.path.sep, "/");
+  
+  if ":" in path:
+    path = path[path.find(":")+1:]
+    
   header = "es6_module_define('"+fname+"', "+deps+", function " + safe_fname + "(_es6_module) {"
-  header += "});";
+  header += "}, '"+path+"');";
   
   #print(header)
   

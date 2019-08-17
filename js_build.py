@@ -76,8 +76,8 @@ def addslash(path):
   return path
   
 num_cores = getcfg("num_cores", 5, "int")
-do_minify = getcfg("do_minify", True, "bool")
-do_smaps = getcfg("do_smaps", True, "bool")
+do_minify = getcfg("do_minify", False, "bool")
+do_smaps = getcfg("do_smaps", False, "bool")
 do_smap_roots = getcfg("do_smap_roots", False, "bool")
 aggregate_smaps = getcfg("aggregate_smaps", do_smaps, "bool")
 
@@ -224,7 +224,7 @@ TCC = getcfg("TCC", np("tools/extjs_cc/js_cc.py"), "path")
 print("using python executable \"" + PYBIN.strip() + "\"")
 
 #minified, concatenated build
-JFLAGS = "-dpr --no-es6-modules"
+JFLAGS = "-dpr --no-es6-modules -Wfor"
 
 if aggregate_smaps:
   JFLAGS += " -nref"

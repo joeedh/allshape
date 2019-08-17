@@ -16,7 +16,7 @@ function _get_area_stack(cls) {
 //this should have been named ScreenEditor, ger
 class Area extends UIFrame {
   constructor(String type, String uiname, Context ctx, Array<float> pos, Array<float> size) {
-    UIFrame.call(this, ctx, undefined, undefined, pos, size);
+    super(ctx, undefined, undefined, pos, size);
     
     this.keymap = new KeyMap();
     
@@ -157,7 +157,7 @@ class Area extends UIFrame {
   
  //destroy GL data
   destroy() {
-    for (var c in this.children) {
+    for (var c of this.children) {
       if ("destroy" in c)
         c.destroy(g_app_state.gl);
     }
@@ -176,10 +176,10 @@ class Area extends UIFrame {
   }
   
   on_gl_lost(WebGLRenderingContext new_gl) {
-    for (var c in this.cols) {
+    for (var c of this.cols) {
       c.on_gl_lost();
     }
-    for (var c in this.rows) {
+    for (var c of this.rows) {
       c.on_gl_lost();
     }
     
@@ -188,10 +188,10 @@ class Area extends UIFrame {
   
   on_add(parent)
   {
-    for (var c in this.rows) {
+    for (var c of this.rows) {
       this.remove(c);
     }
-    for (var c in this.cols) {
+    for (var c of this.cols) {
       this.remove(c);
     }
     
@@ -225,18 +225,18 @@ class Area extends UIFrame {
     oldsize = this.size;
     this.size = newsize;
     
-    for (var c in this.rows) {
+    for (var c of this.rows) {
       if (c.pos[1] > 70)
         c.pos[1] = this.size[1] - Area.get_barhgt();
         
       c.size[0] = this.size[0];
     }
     
-    for (var c in this.cols) {
+    for (var c of this.cols) {
       c.size[1] = this.size[1]-Area.get_barhgt()*2;
     }
     
-    for (var c in this.children) {
+    for (var c of this.children) {
       if (this.canvas != undefined && c.canvas == undefined) 
         c.canvas = this.canvas;
       
@@ -315,7 +315,7 @@ Area.STRUCT = """
 
 class ScreenArea extends UIFrame {
   constructor(area, ctx, pos, size, add_area) {
-    UIFrame.call(this, ctx, undefined, undefined, pos, size);
+    super(ctx, undefined, undefined, pos, size);
     
     if (add_area == undefined)
       add_area = true;
@@ -333,8 +333,8 @@ class ScreenArea extends UIFrame {
   }
   
   destroy() {
-    for (var c in this.editors) {
-      c.destroy();
+    for (var k in this.editors) {
+      this.editors[k].destroy();
     }
   }
   
@@ -389,7 +389,7 @@ class ScreenArea extends UIFrame {
     var editarr = new GArray(ob.editors);
     
     var screens2 = {}
-    for (var scr in editarr) {
+    for (var scr of editarr) {
       if (scr.constructor.name == ob.area) {
         ob.area = scr;
       }
@@ -425,7 +425,7 @@ class ScreenArea extends UIFrame {
   {
     this.active = this.area;
     
-    for (var c in this.children) {
+    for (var c of this.children) {
       c.on_add(this);
     }
   }
@@ -465,7 +465,7 @@ class ScreenArea extends UIFrame {
     this.gl = gl;
     
     this.canvas.on_gl_lost(new_gl);
-    for (var c in this.children) {
+    for (var c of this.children) {
       c.on_gl_lost(new_gl);
     }
   }
@@ -521,7 +521,7 @@ class ScreenArea extends UIFrame {
     
     this.area.on_resize(this.area.size, oldsize);
     
-    for (var c in this.children) {
+    for (var c of this.children) {
       if (c != this.area)
         c.on_resize(newsize, oldsize);
     }
@@ -541,7 +541,7 @@ ScreenArea.STRUCT = """
 
 class SplitAreasTool extends ToolOp {
   constructor(screen) {
-    ToolOp.call(this, "area_split_tool", "Split Screen", "Split a screen editor");
+    super("area_split_tool", "Split Screen", "Split a screen editor");
 
     this.screen = screen;
     this.canvas = screen.canvas;
@@ -570,7 +570,7 @@ class SplitAreasTool extends ToolOp {
     
     var mpos = this.mpos;
     var active = undefined;
-    for (var c in this.screen.children) {
+    for (var c of this.screen.children) {
       if (!(c instanceof ScreenArea))
         continue;
       
@@ -706,7 +706,7 @@ class SplitAreasTool extends ToolOp {
 
 class CollapseAreasTool extends EventHandler {
   constructor(screen, border) {
-    EventHandler.call(this);
+    super();
     this.border = border;
     this.screen = screen;
     this.canvas = screen.canvas;
@@ -729,7 +729,7 @@ class CollapseAreasTool extends EventHandler {
     
     var mpos = this.mpos;
     var active = undefined;
-    for (var c in this.areas) {
+    for (var c of this.areas) {
       if (inrect_2d(mpos, c.pos, c.size)) {
         active = c;
         break;
@@ -761,7 +761,7 @@ class CollapseAreasTool extends EventHandler {
       return;
     
     var keep = undefined;
-    for (var area in this.areas) {
+    for (var area of this.areas) {
       if (area != this.active) {
         keep = area;
         break;
@@ -844,7 +844,7 @@ var BORDER_WIDTH=8
 var _screenborder_id_gen = 1;
 class ScreenBorder extends UIElement {
   constructor(area, borderindex) {
-    UIElement.call(this);
+    super();
     this.area = area;
     this.start_mpos = [0, 0];
     this.moving = false;
@@ -866,7 +866,7 @@ class ScreenBorder extends UIElement {
 
   movable_border() : Boolean {
     var count = 0;
-    for (var c in this.parent.children) {
+    for (var c of this.parent.children) {
       if (!(c instanceof ScreenArea))
         continue;
       
@@ -912,7 +912,7 @@ class ScreenBorder extends UIElement {
   build_mesh() {
     this.borders = new GArray();
     var i = 0;
-    for (var c in this.parent.children) {
+    for (var c of this.parent.children) {
       if (c instanceof ScreenBorder) {
         c.ci = i++;
         this.borders.push(c);
@@ -922,7 +922,7 @@ class ScreenBorder extends UIElement {
     var edges = {};
     var verts = {};
     var vert_edges = {};
-    for (var b in this.borders) {
+    for (var b of this.borders) {
       var ret = b.get_edge();
       var v1 = ret[0];
       var v2 = ret[1];
@@ -1026,7 +1026,7 @@ class ScreenBorder extends UIElement {
       var j=0;
       while (1) {
         var nv = null;
-        for (var eh in vert_edges[this.hash_vert(v)]) {
+        for (var eh of vert_edges[this.hash_vert(v)]) {
           if (eh == he) continue;
           var b = edges[eh][0];
           if ((b.size[0] > b.size[1]) == (this.size[0] > this.size[1])) {
@@ -1056,8 +1056,8 @@ class ScreenBorder extends UIElement {
       }
     }
     
-    for (var e in es) {
-      for (var b in e) {
+    for (var e of es) {
+      for (var b of e) {
         this.areas.add([b.area, b.bindex]);
       }
     }
@@ -1095,7 +1095,7 @@ class ScreenBorder extends UIElement {
     
     var delta = mpos[axis] - start[axis];
     
-    for (var p in areas) {
+    for (var p of areas) {
       var a = p[0];
       var oldsize = new Vector2(a.size);
       
@@ -1181,7 +1181,7 @@ class Screen extends UIFrame {
                 unused, int width, 
                 int height)
   {
-    UIFrame.call(this, undefined);
+    super();
     
     this.size = [width, height];
     this.pos = [0, 0];
@@ -1248,7 +1248,7 @@ class Screen extends UIFrame {
     
     ob.areas = new GArray(ob.areas);
     
-    for (var c in ob.areas) {
+    for (var c of ob.areas) {
       c.parent = ob;
     }
     
@@ -1258,7 +1258,7 @@ class Screen extends UIFrame {
   destroy() {
     this.canvas.destroy();
     
-    for (var c in this.children) {
+    for (var c of this.children) {
       if (c instanceof ScreenArea) {
         c.destroy();
       }
@@ -1337,7 +1337,7 @@ class Screen extends UIFrame {
       console.log("mmove", [e.x, e.y])
     
     this.mpos = [e.x, e.y];
-    for (var c in this.children) {
+    for (var c of this.children) {
       c.mpos = new Vector2([e.x-c.pos[0], e.y-c.pos[1]])
     }
     
@@ -1377,7 +1377,7 @@ class Screen extends UIFrame {
       console.log("mdown", [e.x, e.y], e.button)
     
     this.mpos = [e.x, e.y];  
-    for (var c in this.children) {
+    for (var c of this.children) {
       c.mpos = new Vector2([e.x-c.pos[0], e.y-c.pos[1]])
     }
     
@@ -1398,7 +1398,7 @@ class Screen extends UIFrame {
     if (DEBUG.mouse)
       console.log("mouseup", [e.x, e.y], e.button)
     this.mpos = [e.x, e.y];
-    for (var c in this.children) {
+    for (var c of this.children) {
       c.mpos = new Vector2([e.x-c.pos[0], e.y-c.pos[1]])
     }
     
@@ -1417,7 +1417,7 @@ class Screen extends UIFrame {
     this.handle_active_view3d();
     
     this.mpos = [e.x, e.y];
-    for (var c in this.children) {
+    for (var c of this.children) {
       c.mpos = new Vector2([e.x-c.pos[0], e.y-c.pos[1]])
     }
     
@@ -1450,7 +1450,7 @@ class Screen extends UIFrame {
     
     event = event2;
     
-    for (var item in this.modup_time_ms) {
+    for (var item of this.modup_time_ms) {
       if (item[2] == charmap["Shift"])
         event.shiftKey = true;
       if (item[2] == charmap["Alt"])
@@ -1525,7 +1525,7 @@ class Screen extends UIFrame {
     //deal with delayed modifier key events
     var mod_delay = 60;
     
-    for (var s in list(this.modup_time_ms)) {
+    for (var s of list(this.modup_time_ms)) {
       if (time_ms() - s[0] > mod_delay) {
         if (s[1].keyCode == charmap["Shift"]) {
           s[1].altKey = this.alt;
@@ -1575,7 +1575,7 @@ class Screen extends UIFrame {
     g_app_state.raster.push_scissor([0, 0], this.size);
 
    //draw editors
-    for (var c in this.children) {
+    for (var c of this.children) {
       //only call draw for screenarea children
       if (!(c instanceof ScreenArea)) continue;
      
@@ -1603,7 +1603,7 @@ class Screen extends UIFrame {
       this.on_tick();
       
       var ready = this.tick_timer.ready();
-      for (var c in this.children) {
+      for (var c of this.children) {
         if (c instanceof ScreenArea) {
           if (ready) c.on_tick();
           else c.area.on_tick()
@@ -1660,7 +1660,7 @@ class Screen extends UIFrame {
       g_app_state.session.validate_session();
     }
     
-    for (var c in this.children) {
+    for (var c of this.children) {
       this.draw_active = c;
       c.on_tick();
     }
@@ -1689,7 +1689,7 @@ class Screen extends UIFrame {
     if (oldsize[0] == 0.0 || oldsize[1] == 0.0)
       return;
     
-    for (var c in this.children) {
+    for (var c of this.children) {
       
       c.pos[0] *= ratio[0];
       c.pos[1] *= ratio[1];
@@ -1706,7 +1706,7 @@ class Screen extends UIFrame {
    
     this.snap_areas();
     
-    for (var c in this.children) {
+    for (var c of this.children) {
       //if (c instanceof ScreenArea && c.area instanceof View3DHandler)
       //  g_app_state.active_view3d = c.area;
       
@@ -1716,7 +1716,7 @@ class Screen extends UIFrame {
 
   snap_areas() {
     //first ensure all areas are within the screen bounds
-    for (var sa in this.children) {
+    for (var sa of this.children) {
       if (!(sa instanceof ScreenArea))
         continue;
       
@@ -1731,10 +1731,10 @@ class Screen extends UIFrame {
     for (var i=0; !found && i<128; i++) {
       var found = false;
       
-      for (var c1 in this.children) {
+      for (var c1 of this.children) {
         if (!(c1 instanceof ScreenArea))
           continue;
-        for (var c2 in this.children) {
+        for (var c2 of this.children) {
           if (!(c2 instanceof ScreenArea))
             continue;
           if (c1 == c2)
@@ -1842,7 +1842,7 @@ class Screen extends UIFrame {
     }
     
     if (view3d == undefined) {
-      for (var c in this.children) {
+      for (var c of this.children) {
         if (!(c instanceof ScreenArea))
           continue;
         
@@ -1881,13 +1881,13 @@ class Screen extends UIFrame {
   toJSON() {
     var scrareas = new GArray();
     
-    for (var c in this.children) {
+    for (var c of this.children) {
       if (c instanceof ScreenArea)
         scrareas.push(c);
     }
     
     var ret = {scrareas : [], size : [this.size[0], this.size[1]]}
-    for (var a in scrareas) {
+    for (var a of scrareas) {
       ret.scrareas.push(a.toJSON());
     }
     
@@ -1903,14 +1903,14 @@ class Screen extends UIFrame {
     //have got to decouple context from View3DHandler
     this.ctx = new Context();
     
-    for (var c in this.areas) {
+    for (var c of this.areas) {
       c.data_link(block, getblock, getblock_us);
     }
     
     var areas = this.areas;
     this.areas = new GArray()
     
-    for (var a in areas) {
+    for (var a of areas) {
       this.add(a);
     }
   }
@@ -1930,7 +1930,7 @@ function load_screen(Screen scr, json_obj)
   
   var obj = json_obj
   
-  for (var c in list(scr.children)) {
+  for (var c of list(scr.children)) {
     if (!(c instanceof ScreenBorder)) {
       console.log(c);
       scr.remove(c);
@@ -1983,7 +1983,7 @@ function gen_screen(WebGLRenderingContext gl, View3DHandler view3d, int width, i
 
 class HintPickerOpElement extends UIElement {
   constructor(ctx, HintPickerOp op) {
-    UIElement.call(this, ctx);
+    super(ctx);
     this.op = op;
   }
   
@@ -1996,7 +1996,7 @@ class HintPickerOpElement extends UIElement {
 
 class HintPickerOp extends ToolOp {
   constructor() {
-    ToolOp.call(this, "hint_picker", "Hint Picker", 
+    super("hint_picker", "Hint Picker",
                 "Helper tool to display tooltips on tablets", 
                 Icons.HELP_PICKER);
     
@@ -2025,14 +2025,14 @@ class HintPickerOp extends ToolOp {
       }
       
       mpos = [mpos[0]-e.pos[0], mpos[1]-e.pos[1]];
-      for (var c in e.children) {
+      for (var c of e.children) {
         if (inrect_2d(mpos, c.pos, c.size))
           return descend(c, mpos);
       }
     }
     
     var ret;
-    for (var c in g_app_state.screen.children) {
+    for (var c of g_app_state.screen.children) {
       if (!(c instanceof ScreenArea)) continue;
       if (!inrect_2d(mpos, c.pos, c.size)) continue;
       

@@ -30,7 +30,7 @@ class DagSocket {
   }
 
   find_node(DagNode node) {
-    for (var e in this.edges) {
+    for (var e of this.edges) {
       if (e.src.node == node || e.dst.node == node) {
         return e;
       }
@@ -48,7 +48,7 @@ class DagSocket {
   
   data_link(block, dag, getblock, getblock_us) {
     this.edges = new GArray(this.edges);
-    for (var e in this.edges) {
+    for (var e of this.edges) {
       e.data_link(block, dag, getblock, getblock_us);
     }
   }
@@ -157,11 +157,11 @@ class DagNodeData {
   
   set_owner(Object owner) {
     this.owner = owner;
-    for (var s in this.ins) {
+    for (var s of this.ins) {
       s.node = owner;
     }
     
-    for (var s in this.outs) {
+    for (var s of this.outs) {
       s.node = owner;
     }
   }
@@ -180,6 +180,7 @@ DagNodeData.STRUCT = """
 
 class DagNode extends DataBlock {
   constructor() {
+    super();
     this.dag_node = new DagNodeData(this);
   }
   
@@ -195,8 +196,8 @@ class DagNode extends DataBlock {
     function flush(n) {
       n.dag_node.flag |= DagFlags.DIRTY;
       
-      for (var o in n.dag_node.outs) {
-        for (var e in o) {
+      for (var o of n.dag_node.outs) {
+        for (var e of o) {
           var n2 = e.opposite(o).node;
           
           if (n2 != n) {
@@ -278,7 +279,7 @@ class Dag {
       for (var i=0; i<n.dag_node.ins.length; i++) {
         var s = n.dag_node.ins[i];
         
-        for (var e in n.dag_node.ins[i]) {
+        for (var e of n.dag_node.ins[i]) {
           var n2 = e.opposite(s).node;
           
           if (n2.dag_node.flag & DagFlags.SORTDIRTY) {
@@ -293,7 +294,7 @@ class Dag {
       for (var i=0; i<n.dag_node.outs.length; i++) {
         var s = n.dag_node.outs[i];
         
-        for (var e in n.dag_node.outs[i]) {
+        for (var e of n.dag_node.outs[i]) {
           var n2 = e.opposite(s).node;
           
           if (_i > 10) { //XXX make this bigger
@@ -331,7 +332,7 @@ class Dag {
       this.sort();
     }
     
-    for (var n in this.sortlist) {
+    for (var n of this.sortlist) {
       if (debug_dag)
         console.log("n.flag, n:", n.dag_node.flag, n);
       
@@ -372,11 +373,11 @@ class Dag {
     if (node.dag_node.id == -1)
       node.dag_node.id = this.idgen.gen_id();
     
-    for (var s in node.dag_node.ins) {
+    for (var s of node.dag_node.ins) {
       s.id = this.sock_idgen.gen_id();
     }
     
-    for (var s in node.dag_node.outs) {
+    for (var s of node.dag_node.outs) {
       s.id = this.sock_idgen.gen_id();
     }
     
@@ -388,11 +389,11 @@ class Dag {
   //
   remove(DagNode node) {
     //disconnect from all other nodes
-    for (var s in list(node.dag_node.ins)) {
+    for (var s of list(node.dag_node.ins)) {
       this.socket_clear(node, s, "i");
     }
     
-    for (var s in list(node.dag_node.outs)) {
+    for (var s of list(node.dag_node.outs)) {
       this.socket_clear(node, s, "o");
     }
     
@@ -418,7 +419,7 @@ class Dag {
   }
 
   socket_disconnect(s1, s2) {
-    for (var e in s1.edges) {
+    for (var e of s1.edges) {
       if (e.src == s1 && e.dst == s2) {
         if (e.killfunc != undefined)
           e.killfunc(e);
@@ -457,7 +458,7 @@ class Dag {
   //socktype must be one of ['i', 'o'], input/output
   socket_clear(node, sock, socktype) {
       
-    for (var e in sock.edges) {
+    for (var e of sock.edges) {
       if (e.killfunc != undefined)
         e.killfunc(e);
       
@@ -527,15 +528,15 @@ class Dag {
     
     this.nodes = nodes;
     
-    for (var node in nodes) {
+    for (var node of nodes) {
       var n = node.dag_node;
       
-      for (var s in n.ins) {  
+      for (var s of n.ins) {
         s.node = node;
         sockmap[s.id] = s;
       }
       
-      for (var s in n.outs) {
+      for (var s of n.outs) {
         s.node = node;
         sockmap[s.id] = s;
       }
@@ -565,18 +566,18 @@ class Dag {
       }
     }
     
-    for (var node in nodes) {
+    for (var node of nodes) {
       var n = node.dag_node;
       
-      for (var s in n.ins) {
-        for (var e in s.edges) {
+      for (var s of n.ins) {
+        for (var e of s.edges) {
           e.src = get_sock(s, e.src, true);
           e.dst = get_sock(s, e.dst);
         }
       }
       
-      for (var s in n.outs) {
-        for (var e in s.edges) {
+      for (var s of n.outs) {
+        for (var e of s.edges) {
           e.src = get_sock(s, e.src);
           e.dst = get_sock(s, e.dst);
         }
@@ -592,25 +593,25 @@ class Dag {
       }
     }
     
-    for (var node in nodes) {
+    for (var node of nodes) {
       var n = node.dag_node;
       //console.log(n)
       if (!(node instanceof DataBlock))
         n.owner = node;
       
-      for (var s in n.ins) {
+      for (var s of n.ins) {
         s.node = node;
         s.data_link(block, this, getblock, getblock_us);
       }
       
-      for (var s in n.outs) {
+      for (var s of n.outs) {
         s.node = node;
         s.data_link(block, this, getblock, getblock_us);
       }
     }
     
     function find_link(DagEdge e, DagSocket s) {
-      for (var e2 in s.edges) {
+      for (var e2 of s.edges) {
         if (e2.src == e.src && e2.dst == e.dst) return e2;
       }
       
@@ -618,7 +619,7 @@ class Dag {
     }
     
     function link_sock(s, type) {
-      for (var e in s.edges) {
+      for (var e of s.edges) {
         var target = type=="i" ? e.src : e.dst;
         var found=false;
         
@@ -636,13 +637,13 @@ class Dag {
       }
     }
     
-    for (var node in nodes) {
+    for (var node of nodes) {
       var n = node.dag_node;
-      for (var s in n.ins) {
+      for (var s of n.ins) {
         //link_sock(s, "i");
       }
       
-      for (var s in n.outs) {
+      for (var s of n.outs) {
         //link_sock(s, "o");
       }
     }

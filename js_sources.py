@@ -104,8 +104,8 @@ sources = [
 	"src/view3d/dialog.js",
 	"src/view3d/dialogs.js",
 	"src/view3d/FrameManager.js",
-  "src/node_editor/node_editor.js",
-  
+  #"src/node_editor/node_editor.js",
+
   "src/view3d/notifications.js",
 
 	"src/util/dag.js",

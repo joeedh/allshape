@@ -2,7 +2,7 @@
 
 class UIRadialMenuEntry extends UIElement {
   constructor(label, hotkey, pos, size) {
-    UIElement.call(this);
+    super();
 
     this.clicked = false;
     this.label = label
@@ -77,7 +77,7 @@ class UIRadialMenuEntry extends UIElement {
 
 class UIRadialMenu extends UIFrame {
   constructor(name, callback) {
-    UIFrame.call(this);
+    super();
     
     this.name = name
     this.callback = callback;
@@ -136,7 +136,7 @@ class UIRadialMenu extends UIFrame {
     var clen=0;
     var children = new GArray()
     
-    for (var c in this.children) {
+    for (var c of this.children) {
       if (c.constructor.name == UIRadialMenuEntry.name) {
         clen++;
         c.size = c.get_min_size(canvas, false);
@@ -147,7 +147,7 @@ class UIRadialMenu extends UIFrame {
     function pack(rad) {
       var f = -Math.PI/2;
       var df = (Math.PI*2)/(clen);
-      for (var c in children) {
+      for (var c of children) {
         c.pos[0] = rad + Math.cos(f)*rad - c.size[0]*0.5;
         c.pos[1] = rad + Math.sin(f)*rad - c.size[1]*0.5;
         
@@ -166,7 +166,7 @@ class UIRadialMenu extends UIFrame {
     var c_mm = new MinMax(2);
     
     pack(r1);
-    for (var c in children) {
+    for (var c of children) {
       c_mm.minmax_rect(c.pos, c.size)
       f += df;
     }
@@ -193,8 +193,8 @@ class UIRadialMenu extends UIFrame {
       
       pack(rmid);
       
-      for (var c1 in children) {
-        for (var c2 in children) {
+      for (var c1 of children) {
+        for (var c2 of children) {
           if (c1 == c2) continue;
           
           if (aabb_isect_2d(c1.pos, c1.size, c2.pos, c2.size)) {
@@ -225,13 +225,13 @@ class UIRadialMenu extends UIFrame {
       r_mm.reset();
       r_mm = new MinMax(1);
       c_mm = new MinMax(2);
-      for (var c in children) {
+      for (var c of children) {
         c_mm.minmax_rect(c.pos, c.size);
       }
       
       var cent = new Vector2(c_mm.max).add(c_mm.min).mulScalar(0.5);
       
-      for (var c in children) {
+      for (var c of children) {
         //find c.pos with origin in the center of the circle 
         var pos = [c.pos[0], c.pos[1]];
         
@@ -279,7 +279,7 @@ class UIRadialMenu extends UIFrame {
     
     this.cent = new Vector2([r, r])
     
-    for (var c in children) {
+    for (var c of children) {
       c.pos[0] += this.radius_max - this.radius
       c.pos[1] += this.radius_max - this.radius
     }
@@ -309,7 +309,7 @@ class UIRadialMenu extends UIFrame {
       }
     }
       
-    for (var c in this.children) {
+    for (var c of this.children) {
       if (c.constructor.name != "UIRadialMenuEntry") continue; //there may be other elements present
       
       c.callback = menu_callback;
@@ -319,7 +319,7 @@ class UIRadialMenu extends UIFrame {
       
     var maxcol = 0
     var hkey_line_pos = 0
-    for (var c in this.children) {
+    for (var c of this.children) {
       if (c.constructor.name != UIRadialMenuEntry.name) continue; //there may be other elements present
       
       var st = c.label + " " + c.hotkey;    
@@ -335,7 +335,7 @@ class UIRadialMenu extends UIFrame {
       maxwid = Math.max(this.minwidth, maxwid);
     
     //assign final text values
-    for (var c in this.children) {
+    for (var c of this.children) {
       if (c.constructor.name != UIRadialMenuEntry.name) continue; //there may be other elements present
 
       c.text = c.label
@@ -346,7 +346,7 @@ class UIRadialMenu extends UIFrame {
     this.calc_radius(canvas);
     
     var mm = new MinMax(2)
-    for (var c in this.children) {
+    for (var c of this.children) {
       if (c.constructor.name != UIRadialMenuEntry.name) continue; //there may be other elements present
       
       mm.minmax_rect(c.pos, c.size);
@@ -373,7 +373,7 @@ class UIRadialMenu extends UIFrame {
     off.zero();
     //this.cent.add(off);
     
-    for (var c in this.children) {
+    for (var c of this.children) {
       if (c.constructor.name != UIRadialMenuEntry.constructor.name)
         continue;
        
@@ -436,7 +436,7 @@ class UIRadialMenu extends UIFrame {
     }
     
     var children = []
-    for (var c in this.children) {
+    for (var c of this.children) {
       if (c.constructor.name == UIRadialMenuEntry.constructor.name)
         children.push(c);
     }
@@ -660,7 +660,7 @@ class UIRadialMenu extends UIFrame {
     if (!winding([0, 0], n1, ax))
       ang = -ang;
     
-    for (var c in this.children) {
+    for (var c of this.children) {
       if (c.constructor.name != UIRadialMenuEntry.name) continue;
       
       var a1 = Math.min(c.start_angle, c.end_angle);
@@ -811,7 +811,7 @@ class UIRadialMenu extends UIFrame {
     this.build_circle(canvas);
     
     var cent = this.cent; //this.size[0]*0.5, this.size[1]*0.5]
-    for (var c in this.children) {
+    for (var c of this.children) {
       if (c.constructor.name != UIRadialMenuEntry.name) continue;
       
       var lin1 = this.angle_line(c.start_angle, cent);
@@ -856,7 +856,7 @@ function is_menu_open(frame) {
     frame = frame.parent;
   }
   
-  for (var c in frame.children) {
+  for (var c of frame.children) {
     if (c.constructor.name == UIRadialMenu.constructor.name && !c.closed)
       return true;      
     if (c.constructor.name == UIMenu.constructor.name && !c.closed)

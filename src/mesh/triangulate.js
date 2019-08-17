@@ -35,7 +35,7 @@ function face_fill(f, looptris) {
   function axis_sort(lst, axis) {
       var l2 = new GArray();
       
-      for (var v in lst) {
+      for (var v of lst) {
         l2.push(new PSort(new Vector3(v.co), v, axis));
       }
       
@@ -58,9 +58,9 @@ function face_fill(f, looptris) {
     var verts = new GArray();
     var vset = new set();
     
-    for (var e in edges) {
+    for (var e of edges) {
       var count = 0;
-      for (var f in e.faces) { 
+      for (var f of e.faces) {
         if (f.index == -2) {
            count += 1;
         }
@@ -98,7 +98,7 @@ function face_fill(f, looptris) {
     f = m.make_face(new GArray([v1, v2, v3]), false); //true);
     tri_hash[hash] = f;
     
-    for (var e in f.edges) {
+    for (var e of f.edges) {
       edge_hash[e_hash(e.v1, e.v2)] = e;
     }
     
@@ -122,7 +122,7 @@ function face_fill(f, looptris) {
       if (f == undefined || f == null)
         return null;
         
-      for (var e in f.edges) {
+      for (var e of f.edges) {
         edges.add(e);
       }
       
@@ -200,7 +200,7 @@ function face_fill(f, looptris) {
       check_constrained = false;
     
       var i = 0;
-      for (var e in edges) { //.query(v1.co, v2.co)) {
+      for (var e of edges) { //.query(v1.co, v2.co)) {
         if (e.vert_in_edge(v1) && e.vert_in_edge(v2))
           continue;
       
@@ -214,7 +214,7 @@ function face_fill(f, looptris) {
       }
       
       if (tris != undefined) {
-        for (var t in tris) { //.query(v1.co, v2.co)) {
+        for (var t of tris) { //.query(v1.co, v2.co)) {
             var vs = list(t.verts);
             var t1 = vs[0]; var t2 = vs[1]; var t3 = vs[2];
             
@@ -230,7 +230,7 @@ function face_fill(f, looptris) {
   }
 
   function find_edge(v1, v2) {
-      for (var e in v1.edges) {
+      for (var e of v1.edges) {
         if (e.other_vert(v1) == v2)
               return e;
       }
@@ -240,7 +240,7 @@ function face_fill(f, looptris) {
 
   function scanfill_find_edge(v1, v2) {
     /*
-    for (var e1 in v1.edges) {
+    for (var e1 of v1.edges) {
       if (e1.other_vert(v1) == v2)
         return e1;
     }
@@ -257,9 +257,9 @@ function face_fill(f, looptris) {
   function isect_point_in_tris(v1, tris) {
     //console.log("returned tris: " + list(tris.query(v1.co, v1.co)).length + ", " + tris.length)
     
-    for (var t in tris) { //.query(v1.co, v1.co)) {
+    for (var t of tris) { //.query(v1.co, v1.co)) {
       var skip = false;
-      for (var v2 in t.verts) {
+      for (var v2 of t.verts) {
         if (v1 == v2) {
           skip = true;
           break;
@@ -295,13 +295,13 @@ function face_fill(f, looptris) {
       nt_max[i] = Math.max(nt_max[i], v3.co[i]);
     }
     
-    for (var t in tris) { //.query(nt_min, nt_max)) {
-      for (var v in t.verts) {
+    for (var t of tris) { //.query(nt_min, nt_max)) {
+      for (var v of t.verts) {
         vset.add(v);
       }
     }
     
-    for (var v in vset) {
+    for (var v of vset) {
       if (point_in_tri(v.co, v1.co, v2.co, v3.co))
         return true;
     }
@@ -311,7 +311,7 @@ function face_fill(f, looptris) {
 
   function isect_new_tri_old(v1, v2, v3, edges) {
       var l = [v1, v2, v3];
-      for (var e in edges) {
+      for (var e of edges) {
           if (!l.has(e.v1) && point_in_tri(e.v1.co, v1.co, v2.co, v3.co)) {
               return true;
           }
@@ -328,7 +328,7 @@ function face_fill(f, looptris) {
   function sf_elist(edges) {
     var ret = new GArray();
     
-    for (var e in edges) {
+    for (var e of edges) {
       if (e.index == -2)
         continue;
         
@@ -357,7 +357,7 @@ function face_fill(f, looptris) {
     var sum = 0.0;
     var first = undefined;
     
-    for (var e in vert.edges) {
+    for (var e of vert.edges) {
       n1.load(e.other_vert(vert).co).sub(vert.co).normalize();
       var ang = (n1.dot(ax));
       
@@ -477,8 +477,8 @@ function face_fill(f, looptris) {
       var minm = 0;
       
       for (var ii=0; ii<1; ii++) {
-      for (var m1 in matches) {
-          for (var m2 in matches) {
+      for (var m1 of matches) {
+          for (var m2 of matches) {
               for (var i=0; i<3; i++) {
                 var skip1 = false, skip2=false;
                 
@@ -528,7 +528,7 @@ function face_fill(f, looptris) {
              // */
           }
           
-          for (var m1 in matches) {
+          for (var m1 of matches) {
                   //ensure we aren't creating more than two faces around an edge
                   for (var i=0; i<3; i++) {
                     var e = scanfill_find_edge(m1[2][i], m1[2][(i+1)%3]);
@@ -544,7 +544,7 @@ function face_fill(f, looptris) {
               }    
           }
       }
-      for (var m1 in matches) {
+      for (var m1 of matches) {
         if (m1[3])
             ret.push(m1[2]);
       }
@@ -582,7 +582,7 @@ function face_fill(f, looptris) {
       var v1 = entry[0];
 
       vset.add(v1)
-      for (var e2 in v1.edges) {
+      for (var e2 of v1.edges) {
         var v2 = e2.other_vert(v1)
         if (!vset.has(v2)) {
           if (edges.has(e2)) {
@@ -596,8 +596,8 @@ function face_fill(f, looptris) {
     
     var es = new GArray([])
     
-    for (var v1 in vset2) { //new GArray([e.v1, e.v2])) {
-      for (var v2 in vset2) {
+    for (var v1 of vset2) { //new GArray([e.v1, e.v2])) {
+      for (var v2 of vset2) {
           if (v1 == v2) continue;
           //if (scanfill_find_edge(v1, v2) != null)
           //  continue;
@@ -619,7 +619,7 @@ function face_fill(f, looptris) {
 
   function test_edges(m, edges, esh, tsh) {
     var edges2 = new set()
-    for (var e in edges) {
+    for (var e of edges) {
       edges2.add(e);
       e.index = -1;
       esh.add(e);
@@ -630,7 +630,7 @@ function face_fill(f, looptris) {
     /*
     var edges2 = new set();
     
-    for (var e in edges) {
+    for (var e of edges) {
       var isec = isect_new_edge_and_tris(e.v1, e.v2, esh, tsh)
       if (isec != false) {
         var edges3 = new set(edges)
@@ -648,7 +648,7 @@ function face_fill(f, looptris) {
       }
     }
     
-    for (var e in edges2) {
+    for (var e of edges2) {
       esh.add(e);
     }
     
@@ -741,7 +741,7 @@ function face_fill(f, looptris) {
     var stack = new GArray();
     
     edge_hash = {}
-    for (var e in m.edges) {
+    for (var e of m.edges) {
       var k = e_hash(e.v1, e.v2);
       edge_hash[k] = e;
     }
@@ -848,10 +848,10 @@ function face_fill(f, looptris) {
       edges = stack[0][2];
     }
     
-    for (var e in edges) {
+    for (var e of edges) {
       var ts = find_tri(e, tsh);
         
-      for (var t in ts) {
+      for (var t of ts) {
         var v1 = t[0];
         var v2 = t[1];
         var v3 = t[2];
@@ -865,7 +865,7 @@ function face_fill(f, looptris) {
             tsh.add(f);                 
             tris.add(f);
             
-            for (var e2 in f.edges) {
+            for (var e2 of f.edges) {
                 e2.index = -1;
                 edges.add(e2);
                 
@@ -886,7 +886,7 @@ function face_fill(f, looptris) {
       
       if (depth==undefined || depth == 0) {
           edge_hash = {}
-          for (var e in m.edges) {
+          for (var e of m.edges) {
             var k = e_hash(e.v1, e.v2);
             edge_hash[k] = e;
           }
@@ -904,7 +904,7 @@ function face_fill(f, looptris) {
           var tsh = new set(); //new spatialhash(new GArray(), spacesize/30.0);
           
           /*
-          for (var loop in loops) {
+          for (var loop of loops) {
               for (var i=0; i<loop.length; i++) {
                   var v1 = loop[i];
                   var v2 = loop[(i+1) % loop.length];
@@ -1001,7 +1001,7 @@ function face_fill(f, looptris) {
       
       if (depth == 0) {/*
         var sortedges = new Array()
-        for (var e in edges) {
+        for (var e of edges) {
           sortedges.push(e);
         }
         function edge_val_sort(a, b) {
@@ -1018,10 +1018,10 @@ function face_fill(f, looptris) {
         for (var i=0; i<sortedges.length; i++) {
           var e = sortedges[i];*/
         
-        for (var e in edges) {
+        for (var e of edges) {
           var ts = find_tri(e, tsh);
             
-          for (var t in ts) {
+          for (var t of ts) {
             var v1 = t[0];
             var v2 = t[1];
             var v3 = t[2];
@@ -1035,7 +1035,7 @@ function face_fill(f, looptris) {
                 tsh.add(f);                 
                 tris.add(f);
                 
-                for (var e2 in f.edges) {
+                for (var e2 of f.edges) {
                     e2.index = -1;
                     edges.add(e2);
                     
@@ -1118,7 +1118,7 @@ function face_fill(f, looptris) {
           //console.log("start loop");
           
           var j = 0;
-          for (var e in edges) {
+          for (var e of edges) {
               var ret = test_flip(e, i==flip_max);
               
               if (!ret) continue;
@@ -1156,11 +1156,11 @@ function face_fill(f, looptris) {
               found_flip = true;
           }
           
-          for (var e in new obj_value_iter(delset)) {
+          for (var e of new obj_value_iter(delset)) {
             edges.remove(e);
           }
           
-          for (var e in new obj_value_iter(addset)) {
+          for (var e of new obj_value_iter(addset)) {
             edges.add(e);
           }
           
@@ -1179,10 +1179,10 @@ function face_fill(f, looptris) {
     for (var i=0; i<20; i++) {
       tag_hash = {}
 
-      for (var cehash in cedge_hash) {
+      for (var cehash of cedge_hash) {
         var ce = cedge_hash[cehash];
         
-        for (var e2 in edges) {
+        for (var e2 of edges) {
           if (cedge_hash[e_hash(e2.v1, e2.v2)] != undefined) continue;
           
           if (mesh_edge_isect(ce[0], ce[1], e2.v1, e2.v2)) {
@@ -1208,11 +1208,11 @@ function face_fill(f, looptris) {
       var cedges = new hashtable();
       var eloops = new GArray();
 
-      for (var e in edges) {
+      for (var e of edges) {
           e.index = -1;
       }
       
-      for (var loop in loops) {
+      for (var loop of loops) {
           var eloop = new GArray();
           eloops.push(eloop);
           
@@ -1277,7 +1277,7 @@ function face_fill(f, looptris) {
           
           if (colinear(v1.co, v2.co, v3.co)) continue;
           
-          for (var f in e.faces) {
+          for (var f of e.faces) {
               var vs = [v1, v2, other_tri_vert(e, f)]
                       
               if (tris.has(f) && wind == winding(vs[0].co, vs[1].co, vs[2].co)) {
@@ -1290,7 +1290,7 @@ function face_fill(f, looptris) {
               break;
       }
       
-      for (var t in tris)
+      for (var t of tris)
           t.index = -1;
       
       if (startt == null) {
@@ -1304,10 +1304,10 @@ function face_fill(f, looptris) {
           var t = stack.pop();
           t.index = -2;
           
-          for (var e in t.edges) {
+          for (var e of t.edges) {
               if (cedges.has(e)) continue;
               
-              for (var f in e.faces) {
+              for (var f of e.faces) {
                   if (!tset.has(f)) {
                       tset.add(f);
                       stack.push(f)
@@ -1316,7 +1316,7 @@ function face_fill(f, looptris) {
           }
       }
       
-      for (var t in new set(tris)) {
+      for (var t of new set(tris)) {
           if (t.index == -1) {
               tris.remove(t);
               
@@ -1330,7 +1330,7 @@ function face_fill(f, looptris) {
           }
       }
           
-      for (var e in list(edges)) {
+      for (var e of list(edges)) {
           if (e.totface == 0) {
             edges.remove(e);
             scanfill_kill_edge(m, e);
@@ -1346,15 +1346,15 @@ function face_fill(f, looptris) {
       var deltris = new set();
       
       var found = false;
-      for (var e1 in cedges) {
+      for (var e1 of cedges) {
         if (edone.has(e1)) continue;
         if (found) break;
         
-        for (var tri in tris) {        
+        for (var tri of tris) {
           var es = [];
           var not_es = [];
           
-          for (var e2 in tri.edges) {
+          for (var e2 of tri.edges) {
             var valid = true;
             
             if (e1.v1 == e2.v1 || e1.v1 == e2.v2 || e1.v2 == e2.v1 || e1.v2 == e2.v2) {
@@ -1399,7 +1399,7 @@ function face_fill(f, looptris) {
       
       var cc = 0;
       
-      for (var e1 in emap) {
+      for (var e1 of emap) {
         var value = emap.get(e1);
         
         var lastv = null;
@@ -1407,8 +1407,8 @@ function face_fill(f, looptris) {
         var not_es = value[1];
         var edone2 = new set();
         
-        for (var e in value[0]) {
-          for (var f in e.faces) {
+        for (var e of value[0]) {
+          for (var f of e.faces) {
             tris.remove(f);
           }
           
@@ -1433,7 +1433,7 @@ function face_fill(f, looptris) {
             //we need this variable to ensure we don't retrace the first loop.
             if (i ==0) lastv = v1;          
             
-            for (var e in v1.edges) {
+            for (var e of v1.edges) {
               if (!not_es.has(e)) continue;
               
               if (e != e2 && e.other_vert(v1) != lastv) {
@@ -1452,7 +1452,7 @@ function face_fill(f, looptris) {
               }
             }
             
-            for (var e in v1.edges) {
+            for (var e of v1.edges) {
               //if (not_es.has(e)) not_es.remove(e);
             }
             
@@ -1484,11 +1484,11 @@ function face_fill(f, looptris) {
             tris = tris.union(ret[0], tris);
             edges = edges.union(ret[1], edges);
             
-            for (var t in ret[0]) {
+            for (var t of ret[0]) {
               tris.add(t);
             }
             
-            for (var e in ret[1]) {
+            for (var e of ret[1]) {
               edges.add(e);
             }
           }
@@ -1502,14 +1502,14 @@ function face_fill(f, looptris) {
     var cedges = new set();
     
     //clear indices
-    for (var e in m.edges) {
+    for (var e of m.edges) {
         e.index = 0;
         if (e.totface < 2)
           e.index = -3;
     }
     
     //find and tag constrained edges
-    for (var loop in loops) {
+    for (var loop of loops) {
         for (var i=0; i<loop.length; i++) {
             var v1 = loop[i];
             var v2 = loop[(i+1) % loop.length];
@@ -1522,7 +1522,7 @@ function face_fill(f, looptris) {
     }
     
     //remove data in cedges from edges
-    for (var e in cedges) {
+    for (var e of cedges) {
         if (edges.has(e)) {
             edges.remove(e);
         }
@@ -1585,7 +1585,7 @@ function face_fill(f, looptris) {
     var mm = new MinMax(3);
     
     var totvert=0;
-    for (var v in f.verts) {
+    for (var v of f.verts) {
       mm.minmax(v.co);
       totvert++;
     }
@@ -1594,7 +1594,7 @@ function face_fill(f, looptris) {
     randsize.divScalar(Math.max(totvert*2.0, 100.0));
     randsize.max(Vector3.temp_xyz(0.02, 0.02, 0.02));
     
-    for (var v in f.verts) {
+    for (var v of f.verts) {
       var v2 = tmesh.make_vert(new Vector3(v.co), new Vector3(v.no));
       v2.flag = v.flag
       
@@ -1625,12 +1625,12 @@ function face_fill(f, looptris) {
     }
     
     var loops = new GArray();
-    for (var loop in f.looplists) {
+    for (var loop of f.looplists) {
       var loop2 = new GArray();
       loops.push(loop2);
       
       
-      for (var l in loop) {
+      for (var l of loop) {
         loop2.push(points[l.v.index]);
         ls.push(l);
       }
@@ -1654,7 +1654,7 @@ function face_fill(f, looptris) {
     ret = scanfill2(tmesh, loops, points);
     THREAD_YIELD
     
-    for (var lst in loops) {
+    for (var lst of loops) {
       for (var i=0; i<lst.length; i++) {
         var v1 = lst[i];
         var v2 = lst[(i+1)%lst.length];
@@ -1675,7 +1675,7 @@ function face_fill(f, looptris) {
     THREAD_YIELD
     
     var ls2 = [0, 0, 0];
-    for (var t1 in ret[0]) {
+    for (var t1 of ret[0]) {
       if (t1 == undefined || t1.type != MeshTypes.FACE) continue;
       
       var l = t1.looplists[0].loop;
@@ -1701,7 +1701,7 @@ function face_fill(f, looptris) {
     }
     
     /*
-    for (var e in ret[1]) {
+    for (var e of ret[1]) {
       if (e.eid == flip_max-6) {
         tmesh.kill_edge(e);
         console.log("found")
@@ -1710,7 +1710,7 @@ function face_fill(f, looptris) {
     // */
     
     /*
-    for (var f in tmesh.faces) {
+    for (var f of tmesh.faces) {
       if (f.eid == flip_max-6) {
         var verts = list(f.verts)
        // while ((f = tmesh.find_face(verts)) != null) {
@@ -1757,7 +1757,7 @@ function triangulate(m, f) {
     f2.flag |= Flags.DIRTY;
     
     var j = 0;
-    for (var l in f2.looplists[0]) {
+    for (var l of f2.looplists[0]) {
       m.copy_loop_data(l, ls[i*3+j]);
       
       if (ls[i*3+j].e.flag & Flags.SELECT)
@@ -1783,8 +1783,8 @@ function tris_to_quads(m, ts)
   
   var quads = new GArray();
   
-  for (var f in fset) {
-    for (var e in f.edges) {
+  for (var f of fset) {
+    for (var e of f.edges) {
       if (eset.has(e))
         continue;
       
@@ -1843,7 +1843,7 @@ function tris_to_quads(m, ts)
   quads.sort(sortcmp);
   var deledges = new set();
   
-  for (var q in quads) {
+  for (var q of quads) {
     if (deltris.has(q[1]) || deltris.has(q[2]))
       continue;
     
@@ -1856,8 +1856,8 @@ function tris_to_quads(m, ts)
     
     ret.push(f2);
     
-    for (var l in f2.looplists[0]) {
-      for (var l2 in l.e.loops) {
+    for (var l of f2.looplists[0]) {
+      for (var l2 of l.e.loops) {
         if (!fset.has(l2.f)) continue;
         
         if (l2.v != l.v)
@@ -1869,16 +1869,16 @@ function tris_to_quads(m, ts)
     }
   }
   
-  for (var t in fset) {
+  for (var t of fset) {
     if (!deltris.has(t))
       ret.push(t);
   }
   
-  for (var t in deltris) {
+  for (var t of deltris) {
     m.kill_face(t);
   };
   
-  for (var e in deledges) {
+  for (var e of deledges) {
     m.kill_edge(e);
   }
   

@@ -1312,11 +1312,13 @@ function __get_iter(obj)
     print_stack();
     throw new Error("Invalid iteration over undefined value")
   }
-  
-  if (obj.__proto__.hasOwnProperty("__iterator__") || obj.hasOwnProperty("__iterator__")) {
-    return obj.__iterator__();
+
+  if (obj[Symbol.iterator]) {
+  //if (obj.__proto__.hasOwnProperty("__iterator__") || obj.hasOwnProperty("__iterator__")) {
+    //return obj.__iterator__();
+    return obj[Symbol.iterator]();
   } else {
-    keys = []
+    keys = [];
     for (var k in obj) {
       keys.push(k)
     }

@@ -118,7 +118,7 @@ function get_v_loops(v, vlooplists) {
       vloops = vlooplists[v.eid];
     } else {
       vloops = new GArray();
-      for (var l in v.loops) {
+      for (var l of v.loops) {
         vloops.push(l);
       }
       vlooplists[v.eid.toString()] = vloops;
@@ -458,7 +458,7 @@ function gen_subsurf(in_mesh2) {
           }
       }
       
-      for (var e in list(in_mesh.edges)) {
+      for (var e of list(in_mesh.edges)) {
           if ((list(e.faces).length) != 1)
             continue;
           
@@ -472,7 +472,7 @@ function gen_subsurf(in_mesh2) {
       }
       
       var f = null;
-      for (var ed in edata) {
+      for (var ed of edata) {
           var e = ed[0]; var v1 = ed[1]; var v2 = ed[2]; var co_crn1 = ed[3];
           var co_crn2 = ed[4];
           
@@ -487,7 +487,7 @@ function gen_subsurf(in_mesh2) {
           
           if (do_crn1) {
               var v3 = null;
-              for (var e2 in e.v1.edges) {
+              for (var e2 of e.v1.edges) {
                   if (e.index != e2.index && e2.index != -1 && e2.index < edata.length) { 
                       if (e.v1 == e2.verts[0]) {
                           v3 = edata[e2.index][1];
@@ -505,7 +505,7 @@ function gen_subsurf(in_mesh2) {
           }
           if (do_crn2) {
               var v3 = null;
-              for (var e2 in e.v2.edges) {
+              for (var e2 of e.v2.edges) {
                   if (e.index != e2.index && e2.index != -1 && e2.index < edata.length) {
                       if (e.v2 == e2.verts[0]) {
                           v3 = edata[e2.index][1]
@@ -526,7 +526,7 @@ function gen_subsurf(in_mesh2) {
   //do_boundary_edges();
   
   var vlooplists = {};
-  for (var f in list(in_mesh.faces)) {
+  for (var f of list(in_mesh.faces)) {
       if (f.index >= 0) {
           var qpatch = match_quad(f, vlooplists);
           tess_patch(m, f, qpatch, steps);
@@ -554,22 +554,22 @@ function gpu_subsurf(gl, in_mesh2, steps, ss_mesh) {
     var c2 = new Vector3();
     
     if (ss_mesh != undefined) {
-      for (var f in in_mesh2.faces) {
+      for (var f of in_mesh2.faces) {
         f.index = f.flag & Flags.DIRTY;
       }
       
-      for (var f in in_mesh2.faces) {
+      for (var f of in_mesh2.faces) {
         if (f.index != Flags.DIRTY) continue;
         
-        for (var l in f.loops) {
-          for (var f2 in l.v.faces) {
+        for (var l of f.loops) {
+          for (var f2 of l.v.faces) {
             f2.flag |= Flags.DIRTY;
           }
         }
       }
       
       themesh = ss_mesh;
-      for (var f in ss_mesh.faces) {
+      for (var f of ss_mesh.faces) {
         f.flag = f.old_face.flag;
         f.index = f.old_face.flag & Flags.DIRTY;
         f.no.load(f.old_face.no);
@@ -582,7 +582,7 @@ function gpu_subsurf(gl, in_mesh2, steps, ss_mesh) {
           continue;
         }
         
-        for (var v in f.verts) {
+        for (var v of f.verts) {
           f.center.add(v.co);
           
           var v1 = v.old_v1;
@@ -591,7 +591,7 @@ function gpu_subsurf(gl, in_mesh2, steps, ss_mesh) {
             v.no.load(v1.no);
             var tot = 1.0;
             
-            for (var e in v1.edges) {
+            for (var e of v1.edges) {
               c1.load(v1.co);
               c1.add(e.other_vert(v1).co);
               c1.mulScalar(0.5);
@@ -623,7 +623,7 @@ function gpu_subsurf(gl, in_mesh2, steps, ss_mesh) {
             v.co.add(v2.co);
             
             tot = 3.0;
-            for (var f2 in e.faces) {
+            for (var f2 of e.faces) {
               v.co.add(f2.center);
               tot += 1.0
             }
@@ -643,26 +643,26 @@ function gpu_subsurf(gl, in_mesh2, steps, ss_mesh) {
     themesh.render = new render()
     themesh.api.recalc_normals();
 
-    for (var v in themesh.verts) {
+    for (var v of themesh.verts) {
       if (v.old_v1 != undefined)
         v.old_v1 = in_mesh2.verts.get(v.old_v1);
       if (v.old_v2 != undefined)
         v.old_v2 = in_mesh2.verts.get(v.old_v2);
     }
     
-    for (var f in themesh.faces) {
+    for (var f of themesh.faces) {
       f.old_edge = in_mesh2.edges.get(f.old_edge);
       //console.log(f.old_face);
       f.old_face = in_mesh2.faces.get(f.old_face);
       f.index = (f.old_face.flag & Flags.DIRTY);
     }
     
-    for (var f in themesh.faces) {
+    for (var f of themesh.faces) {
       if (f.index != Flags.DIRTY) 
         continue;
         
-      for (var l in f.loops) {
-        for (var f2 in l.e.faces) {
+      for (var l of f.loops) {
+        for (var f2 of l.e.faces) {
           f2.flag |= Flags.DIRTY;
         }
       }
@@ -685,7 +685,7 @@ function gpu_subsurf(gl, in_mesh2, steps, ss_mesh) {
   var vlooplists = {};
   var c = 0;
   var totmatch = 0;
-  for (var f in themesh.faces) {
+  for (var f of themesh.faces) {
       if (ss_mesh == undefined || (f.flag & Flags.DIRTY)) {
           var qpatch = match_quad(f, vlooplists);
           var ps = qpatch.points;
@@ -905,7 +905,7 @@ function subsurf_render(gl, view3d, ss_mesh, mesh, drawmats, draw_overlay,
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ss_mesh.render.indexbuf);
   
   var clr = (view3d.ctx.object.flag & SELECT) ? face_sel_color : face_unsel_color;
-  for (var f in ss_mesh.faces) {
+  for (var f of ss_mesh.faces) {
     if (draw_elements)
       clr = get_element_color(f.old_face, mesh.faces.highlight, true, true);
     
@@ -936,7 +936,7 @@ function subsurf_render(gl, view3d, ss_mesh, mesh, drawmats, draw_overlay,
     
     /*draw curved edges*/
     i = 0;
-    for (var f in ss_mesh.faces) {
+    for (var f of ss_mesh.faces) {
       if (f.old_edge == undefined) {
         var clr = [0.0, 0.0, 0.0, 1.0];
         continue;
@@ -1023,7 +1023,7 @@ function subsurf_selbuf_render(gl, ss_mesh, mesh, drawmats, typemask)
   var clr = new Array(4);
   
   if (typemask & MeshTypes.FACE) {
-    for (var f in ss_mesh.faces) {
+    for (var f of ss_mesh.faces) {
       pack_index(f.old_face.sid+1, clr, 0);
       
       gl.uniform4fv(program.uniformloc(gl, "face_color"), clr);
@@ -1044,7 +1044,7 @@ function subsurf_selbuf_render(gl, ss_mesh, mesh, drawmats, typemask)
   /*draw curved edges*/
   if (typemask & MeshTypes.EDGE) {
     i = 0;
-    for (var f in ss_mesh.faces) {
+    for (var f of ss_mesh.faces) {
       if (f.old_edge == undefined)
         continue;
       

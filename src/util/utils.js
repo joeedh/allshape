@@ -19,21 +19,21 @@ class CanIter {
 class ES5Iter { //bridge class for es5 forEach iterators
   forEach(cb, thisvar) {
     if (thisvar != undefined) {
-      for (var item in this) {
+      for (var item of this) {
         cb.call(thisvar, item);
       }
     } else {
-      for (var item in this) {
+      for (var item of this) {
         cb(item);
       }
     }
   }
 }
 
-var int debug_int_1 = 0;
+var debug_int_1 = 0;
 class GArray extends Array {
   constructor(Object input) {
-    Array<T>.call(this)
+    super();
 
     if (input != undefined) {
       for (var i=0; i<input.length; i++) {
@@ -96,7 +96,7 @@ class GArray extends Array {
    
     var ret = this[i];
     
-    for (var int i=idx; i<this.length-1; i++) {
+    for (var i=idx; i<this.length-1; i++) {
       this[i] = this[i+1];
     }
     
@@ -106,7 +106,7 @@ class GArray extends Array {
   }
   
   remove(T item, Boolean ignore_existence) { //ignore_existence defaults to false
-    var int idx = this.indexOf(item);
+    var idx = this.indexOf(item);
     
     if (ignore_existence == undefined)
       ignore_existence = false;
@@ -123,7 +123,7 @@ class GArray extends Array {
       return;
     }
     
-    for (var int i=idx; i<this.length-1; i++) {
+    for (var i=idx; i<this.length-1; i++) {
       this[i] = this[i+1];
     }
     
@@ -131,7 +131,7 @@ class GArray extends Array {
   }
 
   replace(T olditem, T newitem) { 
-    var int idx = this.indexOf(olditem);
+    var idx = this.indexOf(olditem);
     
     if (idx < 0 || idx == undefined) {
       console.trace("Yeek! Item " + olditem + " not in array");
@@ -216,7 +216,7 @@ function list<T>(Iterator<T> iter) : GArray<T> {
   var lst = new GArray<T>();
 
   var i = 0;
-  for (var item in iter) {
+  for (var item of iter) {
     lst.push(item);
     i++;
   }
@@ -247,7 +247,7 @@ function cached_list<T>(Iterator<T> iter) : GArray<T> {
   lst.reset();
   
   var i = 0;
-  for (var item in iter) {
+  for (var item of iter) {
     lst.push(item);
     i++;
   }
@@ -262,9 +262,9 @@ var Function g_list = list;
 
 class eid_list extends GArray {
   constructor(GeoArrayIter<Element> iter) {
-    GArray.call(this);
+    super()
 
-    for (var item in iter) {
+    for (var item of iter) {
       this.push([item.type, item.eid]);
     }
 
@@ -369,6 +369,8 @@ EXPORT_FUNC(SetIter)
 
 class set extends ES5Iter {
   constructor(Object input) {
+    super();
+
     this.items = {}
     this.length = 0;
     
@@ -378,7 +380,7 @@ class set extends ES5Iter {
           this.add(input[i]);
         }
       } else {
-        for (var item in input) {
+        for (var item of input) {
           this.add(item);
         }
       }
@@ -388,7 +390,7 @@ class set extends ES5Iter {
   pack(Array<byte> data) {
     pack_int(data, this.length);
     
-    for (var item in this) {
+    for (var item of this) {
       item.pack(data);
     }
   }
@@ -440,7 +442,7 @@ class set extends ES5Iter {
   union(set<T> b) : set {
     var newset = new set<T>(this);
     
-    for (var T item in b) {
+    for (var item of b) {
       newset.add(item);
     }
     
@@ -515,6 +517,8 @@ EXPORT_FUNC(HashKeyIter)
 
 class hashtable extends ES5Iter {
   constructor() {
+    super();
+
     this.items = {};
     this.keymap = {};
     this.length = 0;
@@ -546,7 +550,7 @@ class hashtable extends ES5Iter {
 
   values() : GArray<Object> {
     var ret = new GArray();
-    for (var k in this) {
+    for (var k of this) {
       ret.push(this.items[k]);
     }
     
@@ -573,7 +577,7 @@ class hashtable extends ES5Iter {
   union(hashtable b) : hashtable {
     var newhash = new hashtable(this)
     
-    for (var item in b) {
+    for (var item of b) {
       newhash.add(item, b.get[item])
     }
     
@@ -590,13 +594,13 @@ class hashtable extends ES5Iter {
 function validate_mesh_intern(m) {
   var eidmap = {};
   
-  for (var f in m.faces) {
+  for (var f of m.faces) {
     var lset = new set();
     var eset = new set();
     var vset = new set();
     
     
-    for (var v in f.verts) {
+    for (var v of f.verts) {
       if (vset.has(v)) {
         console.trace();
         console.log("Warning: found same vert multiple times in a face");
@@ -604,7 +608,7 @@ function validate_mesh_intern(m) {
       vset.add(v);
     }
     
-    for (var e in f.edges) {
+    for (var e of f.edges) {
       if (eset.has(e)) {
         console.trace();
         console.log("Warning: found same edge multiple times in a face");
@@ -613,8 +617,8 @@ function validate_mesh_intern(m) {
       eset.add(e);
     }
     
-    for (var loops in f.looplists) {
-      for (var l in loops) {
+    for (var loops of f.looplists) {
+      for (var l of loops) {
         var e = l.e;
         var v1 = l.v, v2 = l.next.v;
         if (!(v1 == e.v1 && v2 == e.v2) && !(v1 == e.v2 && v2 == e.v1)) {
@@ -633,7 +637,7 @@ function validate_mesh_intern(m) {
     }
   }
   
-  for (var v in m.verts) {
+  for (var v of m.verts) {
     if (v._gindex == -1) {
       console.trace();
       return false;
@@ -644,7 +648,7 @@ function validate_mesh_intern(m) {
       return false;
     }
     
-    for (var e in v.edges) {
+    for (var e of v.edges) {
       if (e._gindex == -1) {
         console.trace();
         return false;
@@ -656,7 +660,7 @@ function validate_mesh_intern(m) {
     }
   }
   
-  for (var e in m.edges) {
+  for (var e of m.edges) {
     if (e._gindex == -1) {
       console.trace();
       return false;
@@ -707,13 +711,13 @@ function validate_mesh_intern(m) {
     } while (l != e.loop);
   }
   
-  for (var v in m.verts) {
+  for (var v of m.verts) {
     eidmap[v.eid] = v;
   }
-  for (var e in m.edges) {
+  for (var e of m.edges) {
     eidmap[e.eid] = v;
   }
-  for (var f in m.faces) {
+  for (var f of m.faces) {
     eidmap[f.eid] = v;    
   }
   
@@ -745,7 +749,7 @@ function fix_object_mesh(Object ob) {
   var eidmap = {};
   var verts = [];
   var vset = new set();
-  for (var v in mesh.verts) {
+  for (var v of mesh.verts) {
     var v2 = mesh2.make_vert(v.co, v.no);
     mesh2.copy_vert_data(v2, v, true);
     verts.push(v2);
@@ -753,7 +757,7 @@ function fix_object_mesh(Object ob) {
   }
   
   var edges = [];
-  for (var e in mesh.edges) {
+  for (var e of mesh.edges) {
     var v1 = verts[e.v1.index], v2 = verts[e.v2.index];
     var e2 = mesh2.make_edge(v1, v2, false);
     
@@ -761,14 +765,14 @@ function fix_object_mesh(Object ob) {
     edges.push(e2);
   }
   
-  for (var f in mesh.faces) {
+  for (var f of mesh.faces) {
     var vlists = new GArray();
     var vset2 = new set();
     
-    for (var list in f.looplists) {
+    for (var list of f.looplists) {
       var vs = new GArray();
       
-      for (var l in list) {
+      for (var l of list) {
         
         if (vset.has(l.v) && !vset2.has(l.v)) {
           vs.push(verts[l.v.index]);
@@ -975,7 +979,7 @@ class Timer {
 }
 
 function other_tri_vert(e, f) {
-    for (var v in f.verts) {
+    for (var v of f.verts) {
         if (v != e.v1 && v != e.v2)
             return v;
     }
@@ -1077,7 +1081,8 @@ function is_obj_lit(obj) {
 
 class UnitTestError extends Error {
   constructor(msg) {
-    Error.call(this, msg);
+    super(msg);
+
     this.msg = msg;
   }
 }

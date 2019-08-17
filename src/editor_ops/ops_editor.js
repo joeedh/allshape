@@ -2,7 +2,7 @@
 
 class OpStackFrame extends RowFrame {
   constructor(Context ctx, Array<float> size) {
-    RowFrame.call(this, ctx);
+    super(ctx);
     
     this.pan_bounds = [[0, 0], [0, 0]];
     this.bad = false;
@@ -49,7 +49,7 @@ class OpStackFrame extends RowFrame {
       panel.add(toolframe);
     } else {
       var i = 0;
-      for (var t in tool.tools) {
+      for (var t of tool.tools) {
         var subpanel = this.gen_panel(t, path+".tools["+i+"]");
         
         var col = panel.col();
@@ -99,7 +99,7 @@ class OpStackFrame extends RowFrame {
     if (op instanceof ToolMacro) {
       ret = true;
       
-      for (var t in op.tools) {
+      for (var t of op.tools) {
         if (!this.is_selop(t)) {
           ret = false;
           break;
@@ -127,13 +127,13 @@ class OpStackFrame extends RowFrame {
     var filter_sel = this.parent.filter_sel;
     
     /*update tool panels*/
-    for (var tool in oplist) {
+    for (var tool of oplist) {
       if (filter_sel && this.is_selop(tool)) continue;
       //if (tool.undoflag & UndoFlags.UNDO_BARRIER) continue;
       //if (tool.flag & ToolFlags.HIDE_TITLE_IN_LAST_BUTTONS) continue;
       
       keepset.add(tool);
-      if (!pmap.has(tool)) {
+      if (!pan.has(tool)) {
         reflow = true;
       }
       
@@ -155,7 +155,7 @@ class OpStackFrame extends RowFrame {
     }
     
     /*remove any dead panels*/
-    for (var tool in pmap) {
+    for (var tool of pmap) {
       if (!keepset.has(tool)) {
         var panel = pmap.get(tool);
         this.remove(panel);
@@ -165,12 +165,12 @@ class OpStackFrame extends RowFrame {
     
     /*ensure panels are in correct order*/
     if (reflow) {
-      for (var k in pmap) {
+      for (var k of pmap) {
         var panel = pmap.get(k);
         this.remove(panel);
       }
       
-      for (var tool in oplist) {
+      for (var tool of oplist) {
         if (!pmap.has(tool))
           continue;
          
@@ -195,7 +195,7 @@ class OpStackFrame extends RowFrame {
 /******************* main area struct ********************************/
 class OpStackEditor extends Area {
   constructor(x, y, width, height) {
-    Area.call(this, OpStackEditor.name, OpStackEditor.uiname, new Context(), [x, y], [width, height]);
+    super(OpStackEditor.name, OpStackEditor.uiname, new Context(), [x, y], [width, height]);
     
     this.first_build = true;
     this.auto_load_uidata = false;

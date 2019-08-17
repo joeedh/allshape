@@ -6,11 +6,16 @@ glob_cmd_help_override = {
   "g_tried_semi" : "Internal semicolon flag, for handling EOF edge cases",
   "g_file" : "Input file",
   "g_line" : "Most recently parsed line",
+  "g_destroy_templates" : "Flatten template strings",
   "g_lexpos" : "Most recently parsed lexical position",
   "g_gen_log_code" : "Generate type logging code",
   "g_harmony_iterators" : "expansion of es6 harmony for-loops; Python's StopIteration style will be used instead.",
   "g_log_forloops" : "add extra data for logging for loops",
-  "g_es6_modules" : "generate ES6 modules"
+  "g_es6_modules" : "generate ES6 modules",
+  "g_warn_for_in" : "warn when for-in loops are used",
+  "g_autoglobalize" : "Make module locals (but not exports) global.  Useful during refactoring.",
+  "g_expand_classes" : "Fully transpile classes",
+  "g_expand_generators" : "Transpile generators"
 }
 glob_cmd_short_override = {}
 
@@ -20,6 +25,10 @@ glob_cmd_exclude = set(["g_comment_line", "g_comment", "g_comment_id", "g_lexer"
 glob_long_word_shorten = {"generators": "gens", "error": "err", "warnings": "warn", "production": "prod"}
 
 gcs = glob_cmd_short_override
+gcs["g_warn_for_in"] = "Wfor"
+gcs["g_expand_generators"] = "eg"
+gcs["g_expand_classes"] = "nec"
+gcs["g_destroy_templates"] = "dt"
 gcs["g_log_productions"] = "lp"
 gcs["g_preprocess_code"] = "npc"
 gcs["g_include_dirs"] = "I"
@@ -29,8 +38,9 @@ gcs["g_gen_smap_orig"] = "gsr"
 gcs["g_minify"] = "mn"
 gcs["g_add_srcmap_ref"] = "nref"
 gcs["g_expand_iterators"] = "nei"
-gcs["g_harmony_iterators"] = "nhi"
+#gcs["g_harmony_iterators"] = "nhi"
 gcs["g_refactor_mode"] = "rm"
+gcs["g_autoglobalize"] = "ag"
 gcs["g_refactor_classes"] = "rc"
 gcs["g_add_opt_initializers"] = "nao"
 gcs["g_do_docstrings"] = "ds"
@@ -44,6 +54,9 @@ gcs["g_validate_classes"] = "vc"
 gcs["g_require_js"] = "rj"
 gcs["g_es6_modules"] = "nm"
 gcs["g_log_forloops"] = "lf"
+gcs["g_enable_let"] = "lt"
+gcs["g_compile_statics_only"] = "sn"
+gcs["g_profile_coverage"] = "pc"
 
 def argv_to_argline():
   s = ""
@@ -216,6 +229,8 @@ class Glob(AbstractGlob):
     g_error = False
     g_smap_file = 0;
     g_line = 0
+    g_destroy_templates = False
+    g_warn_for_in = False
     g_log_productions = False
     g_production_debug = False
     g_print_stack = True
@@ -247,23 +262,29 @@ class Glob(AbstractGlob):
     g_combine_ifelse_nodes = False
     g_add_newlines = False
     g_force_global_strict = False
+    g_autoglobalize = False
     g_expand_iterators = True
-    g_harmony_iterators = True
+    #g_harmony_iterators = True
     g_refactor_mode = False
     g_refactor_classes = False
+    g_expand_classes = True
     g_add_opt_initializers = True
     g_replace_instanceof = True
     g_instanceof_func = "__instance_of"
     g_do_docstrings = False
     g_docstring_propname = "__doc__"
     g_enable_static_vars = True
-    g_write_manifest = True
+    g_write_manifest = False
     g_warn_types = False
+    g_profile_coverage = False
     g_debug_print_calls = False
     g_gen_es6 = False
     g_validate_classes = False
     g_require_js = False
     g_es6_modules = True
     g_log_forloops = False
+    g_enable_let = False
+    g_compile_statics_only = False
+    g_expand_generators = False
     
 glob = Glob()

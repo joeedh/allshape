@@ -137,7 +137,7 @@ class DataStruct {
     
     this._flag = 0;
     
-    for (var p in this.paths) {
+    for (var p of this.paths) {
       p.parent = this;
       this.pathmap[p.name] = p
       if (p.type == DataPathTypes.PROP) {
@@ -175,7 +175,7 @@ class DataStruct {
       p.flag |= flag;
       
       if (p instanceof DataStruct) {
-        for (var p2 in p.paths) {
+        for (var p2 of p.paths) {
           if (p2 instanceof DataStruct) {
             //hand off to substruct;
             //we don't want to double recurse
@@ -188,12 +188,12 @@ class DataStruct {
     }
     
     if (val &  DataFlags.NO_CACHE) {
-      for (var p in this.paths) {
+      for (var p of this.paths) {
         recurse(p, DataFlags.NO_CACHE);
       }
     }
     if (val &  DataFlags.RECALC_CACHE) {
-      for (var p in this.paths) {
+      for (var p of this.paths) {
         recurse(p, DataFlags.RECALC_CACHE);
       }
     }
@@ -209,7 +209,7 @@ class DataStruct {
   }
 
   replace(p, p2) {
-    for (var p2 in this.paths) {
+    for (var p2 of this.paths) {
       if (p2.name == p.name) {
         this.flag |= DataFlags.RECALC_CACHE;
         this.paths.remove(p2);
@@ -227,7 +227,7 @@ class DataStruct {
     reader(ret);
     
     ret.paths = new GArray(ret.paths);
-    for (var p in ret.paths) {
+    for (var p of ret.paths) {
       p.parent = ret;
     }
     
@@ -772,7 +772,7 @@ class DataAPI {
     return sret;
   }
   
-  eval(ctx, str) {
+  evaluate(ctx, str) {
     if (str in this.evalcache) {
       return this.evalcache[str](ctx);
     }
@@ -800,9 +800,9 @@ class DataAPI {
     if (ret[0].type == DataPathTypes.PROP) {
       if (ret[0].use_path) {
         var path = ret[1];
-        val = this.eval(ctx, path);
+        val = this.evaluate(ctx, path);
       } else {
-        val = this.eval(ctx, ret[2]);
+        val = this.evaluate(ctx, ret[2]);
         
         if (val instanceof DataPath)
           val = val.data;

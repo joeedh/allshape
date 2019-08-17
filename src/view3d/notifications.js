@@ -25,7 +25,7 @@ class Notification {
 
 class LabelNote extends Notification {
   constructor(String label, String description="", float life_ms=3000) {
-    Notification.call(this, "label", "Label", description);
+    super("label", "Label", description);
     
     this.life_ms = life_ms;
     this.last_ms = time_ms();
@@ -43,7 +43,7 @@ class LabelNote extends Notification {
 
 class ProgressNote extends Notification {
   constructor(String label, String id, String description="", Function callback=undefined, float progress=0.0) {
-    Notification.call(this, "progress", "Progress Bar", description);
+    super("progress", "Progress Bar", description);
     
     if (callback == undefined)
       callback = function() {};
@@ -211,7 +211,7 @@ class NotificationManager {
 
 class NoteContainer extends UIFrame {
   constructor(Context ctx, UIElement child, Notification note) {
-    UIFrame.call(this, ctx);
+    super(ctx);
     
     this.note = note;
     this.xbut = new UIButtonIcon(this.ctx, "", Icons.TINY_X);
@@ -267,7 +267,7 @@ class NoteContainer extends UIFrame {
 
 class NoteFrame extends ColumnFrame {
   constructor(Context ctx, NotificationManager notes) {
-    ColumnFrame.call(this, ctx);
+    super(ctx);
     this.notes = notes; //note manager
     
     this.packflag |= PackFlags.NO_AUTO_SPACING|PackFlags.INHERIT_HEIGHT;

@@ -2,7 +2,7 @@
 
 class TranslateOp extends TransformOp, WidgetToolOp {
   constructor(int mode, Object ob_active=undefined) {
-    TransformOp.call(this, "translate", "Translate", mode, "Move selection", Icons.TRANSLATE);
+    super("translate", "Translate", mode, "Move selection", Icons.TRANSLATE);
     
     this.transdata = null;
     this.is_modal = true;
@@ -26,7 +26,7 @@ class TranslateOp extends TransformOp, WidgetToolOp {
     var totsel = 0;
     
     if (this.inputs.datamode.data & EditModes.GEOMETRY) {
-      for (var v in ctx.mesh.verts) {
+      for (var v of ctx.mesh.verts) {
         if ((v.flag & Flags.SELECT) != 0)
           totsel++;
       }
@@ -256,7 +256,7 @@ TranslateOp.widget_align_normal = false;
 
 class RotateOp extends TransformOp {
   constructor(int mode) {
-    TransformOp.call(this, "rotate", "Rotate", mode, "Rotate selection", Icons.ROTATE);
+    super("rotate", "Rotate", mode, "Rotate selection", Icons.ROTATE);
     
     this.transdata = null;
     this.is_modal = true;
@@ -287,7 +287,7 @@ class RotateOp extends TransformOp {
   can_call(ctx) {
     var totsel = 0;
     
-    for (var v in ctx.mesh.verts) {
+    for (var v of ctx.mesh.verts) {
       if ((v.flag & Flags.SELECT) != 0)
         totsel++;
     }
@@ -473,7 +473,7 @@ class RotateOp extends TransformOp {
 
 class ScaleOp extends TransformOp {
   constructor(int mode) {
-    TransformOp.call(this, "scale", "Scale", mode, "Scale selection", Icons.SCALE);
+    super("scale", "Scale", mode, "Scale selection", Icons.SCALE);
     
     this.transdata = null;
     this.is_modal = true;
@@ -494,7 +494,7 @@ class ScaleOp extends TransformOp {
   can_call(ctx) {
     var totsel = 0;
     
-    for (var v in ctx.mesh.verts) {
+    for (var v of ctx.mesh.verts) {
       if ((v.flag & Flags.SELECT) != 0)
         totsel++;
     }

@@ -3,6 +3,8 @@
 class ObjectEditor extends View3DEditor {
   constructor(view3d=undefined) {
     var keymap = new KeyMap();
+
+    super("Object", EditModes.OBJECT, DataTypes.OBJECT, keymap);
     this.view3d = view3d;
     
     if (view3d != undefined)
@@ -10,7 +12,6 @@ class ObjectEditor extends View3DEditor {
     else
       this.ctx = undefined;
     
-    View3DEditor.call(this, "Object", EditModes.OBJECT, DataTypes.OBJECT, keymap);
     this.define_keymap()
   }
   

@@ -57,7 +57,7 @@ class OcNode {
       var ret = undefined;
       var t;
       
-      for (var c in this.children) {
+      for (var c of this.children) {
         if (aabb_ray_isect(co, dir, c.min, c.max)) {
           var ret2 = c.isect_ray(co, dir);
           if (ret2 == undefined) continue;
@@ -125,7 +125,7 @@ class OcNode {
     static tris = [0, 0, 0];
     
     tris[0] = v1, tris[1] = v2, tris[2] = v3;
-    for (var c in this.children) {
+    for (var c of this.children) {
       if (triBoxOverlap(c.cent, c.halfsize, tris)) {
         c.add_tri(v1, v2, v3, idx);
         return;
@@ -183,7 +183,7 @@ function build_octree(Mesh mesh) : Octree {
   var mm = new MinMax(3);
   var use_mapco = mesh.flag & MeshFlags.USE_MAP_CO;
   
-  for (var v in mesh.verts) {
+  for (var v of mesh.verts) {
     if (use_mapco)
       mm.minmax(v.mapco);
     else
@@ -224,7 +224,7 @@ function build_octree(Mesh mesh) : Octree {
 function build_octree_ss(Mesh mesh) : Octree {
   var mm = new MinMax(3);
 
-  for (var v in mesh.verts) {
+  for (var v of mesh.verts) {
     mm.minmax(v.co);
   }
   
@@ -242,7 +242,7 @@ function build_octree_ss(Mesh mesh) : Octree {
   max.add(cent);
   
   var octree = new OcTree(min, max);
-  for (var f in mesh.faces) {
+  for (var f of mesh.faces) {
     if (f.old_face == undefined) continue;
     var idx = f.old_face.eid;
     

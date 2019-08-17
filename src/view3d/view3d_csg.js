@@ -278,7 +278,7 @@ class CSGDraw {
     var view3d = this.view3d;
     var mat = new Matrix4(view3d.drawmats.cameramat);
     
-    for (var ob in sce.objects) {
+    for (var ob of sce.objects) {
       if (ob.csg && ob.csg_mode == CsgModes.SUBTRACT && ob.parent) {
         this.render_sub(gl, ob.parent, ob);
         return;

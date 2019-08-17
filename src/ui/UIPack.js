@@ -22,7 +22,7 @@ var PackFlags = {
 class UIPackFrame extends UIFrame {
   constructor(ctx, path_prefix)
   {
-    UIFrame.call(this, ctx);
+    super(ctx);
     
     this.mm = new MinMax(2);
     this._last_pack_recalc = 0;
@@ -127,7 +127,7 @@ class UIPackFrame extends UIFrame {
     
     if (this.state & UIFlags.HAS_PAN) {
       mm.reset();
-      for (var c in this.children) { 
+      for (var c of this.children) {
         arr[0] = c.pos[0]+c.size[0];
         arr[1] = c.pos[1]+c.size[1];
         mm.minmax(c.pos);
@@ -465,7 +465,7 @@ class UIPackFrame extends UIFrame {
       }
       this.parent.do_full_recalc();
       
-      for (var c in this.children) {
+      for (var c of this.children) {
         if (!(c instanceof UIFrame)) {
           c.recalc = 1;
         }
@@ -480,7 +480,7 @@ class UIPackFrame extends UIFrame {
 class RowFrame extends UIPackFrame {
   constructor(ctx, path_prefix, align)
   {
-    UIPackFrame.call(this, ctx, path_prefix);
+    super(ctx, path_prefix);
     this.packflag |= PackFlags.INHERIT_HEIGHT|align;
     this.pad = [4, 4];
   }
@@ -495,7 +495,7 @@ class RowFrame extends UIPackFrame {
     var maxwidth = 0;
     var tothgt = 0;
     
-    for (var c in this.children) {
+    for (var c of this.children) {
       var size;
       
       if (!(c.packflag & PackFlags.KEEP_SIZE))
@@ -598,7 +598,7 @@ class RowFrame extends UIPackFrame {
 class ColumnFrame extends UIPackFrame {
   constructor(ctx, path_prefix, align)
   {
-    UIPackFrame.call(this, ctx, path_prefix);
+    super(ctx, path_prefix);
     this.packflag |= PackFlags.INHERIT_WIDTH|align
     this.pad = [2, 2];
   }
@@ -613,7 +613,7 @@ class ColumnFrame extends UIPackFrame {
     var maxheight = 0;
     var totwid = 0;
     
-    for (var c in this.children) {
+    for (var c of this.children) {
       var size;
       if (!(c.packflag & PackFlags.KEEP_SIZE))
         size = c.cached_min_size(canvas, isvertical);
@@ -658,7 +658,7 @@ class ColumnFrame extends UIPackFrame {
     var sum=0;
     var max_wid = 0;
     var max_hgt = 0;
-    for (var c in this.children) {
+    for (var c of this.children) {
       var s;
       
       if (!(c.packflag & PackFlags.KEEP_SIZE))
@@ -701,7 +701,7 @@ class ColumnFrame extends UIPackFrame {
     
     var pad = this.pad[0];
     var finalwid = 0;
-    for (var c in this.children) {
+    for (var c of this.children) {
       var size;
       
       if (!(c.packflag & PackFlags.KEEP_SIZE))
@@ -741,7 +741,7 @@ class ColumnFrame extends UIPackFrame {
     }
     
     if ((this.packflag & PackFlags.ALIGN_CENTER) && finalwid < this.size[0]) {
-      for (var c in this.children) {
+      for (var c of this.children) {
         if (this.packflag & PackFlags.ALIGN_RIGHT)
           c.pos[0] -= Math.floor((this.size[0]-finalwid)*0.5);
         else
@@ -757,7 +757,7 @@ class ColumnFrame extends UIPackFrame {
 var _te = 0;
 class ToolOpFrame extends RowFrame {
   constructor(ctx, path) {
-    RowFrame.call(this, ctx, path);
+    super(ctx, path);
     this.rebuild = true;
     this.strct = undefined;
     this.ctx = ctx;
@@ -771,7 +771,7 @@ class ToolOpFrame extends RowFrame {
     if (strct == undefined) return;
     
     this.strct = strct;
-    for (var p in strct) {
+    for (var p of strct) {
       if (!(p.flag & PackFlags.UI_DATAPATH_IGNORE))
         this.prop(p.name, PackFlags.INHERIT_WIDTH);
     }

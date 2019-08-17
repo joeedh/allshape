@@ -3,7 +3,7 @@
 //multitouch
 class ViewRotateZoomPanOp extends ToolOp {
   constructor() {
-    ToolOp.call(this, "view3d_orbit", "Orbit");
+    super("view3d_orbit", "Orbit");
 
     this.undoflag = UndoFlags.IGNORE_UNDO;
 
@@ -244,7 +244,7 @@ class ViewRotateZoomPanOp extends ToolOp {
 
 class ViewRotateOp extends ToolOp {
   constructor() {
-    ToolOp.call(this, "view3d_orbit", "Orbit");
+    super("view3d_orbit", "Orbit");
 
     this.undoflag = UndoFlags.IGNORE_UNDO;
 
@@ -323,7 +323,7 @@ class ViewRotateOp extends ToolOp {
 
 class ViewPanOp extends ToolOp {
   constructor() {
-    ToolOp.call(this, "view3d_pan", "Pan");
+    super("view3d_pan", "Pan");
     
     this.undoflag = UndoFlags.IGNORE_UNDO;
     
@@ -347,7 +347,7 @@ class ViewPanOp extends ToolOp {
     this.center = new Vector3();
     
     var i = 0;
-    for (var v in ctx.mesh.verts) {
+    for (var v of ctx.mesh.verts) {
       if (isNaN(v.co[0]) || isNaN(v.co[1]) || isNaN(v.co[2]))
         continue;
       
@@ -435,7 +435,7 @@ function mprop_to_tprop(props, props2) {
     props2 = {}
   }
   
-  for (var k1 in Iterator(props)) {
+  for (var k1 of Iterator(props)) {
     var k = k1[0]
     var p = props[k];
     var p2;
@@ -489,7 +489,7 @@ function mprop_to_tprop(props, props2) {
 }
 
 function tprop_to_mprop(mprop, tprop) {
-  for (var k1 in Iterator(tprop)) {
+  for (var k1 of Iterator(tprop)) {
     var k = k1[0]
     var p = tprop[k];
     var p2 = mprop[k];
@@ -520,9 +520,9 @@ function tprop_to_mprop(mprop, tprop) {
 class MeshToolOp extends ToolOp {
   constructor(meshop) {
     if (meshop == undefined)
-      ToolOp.call(this);
+      super();
     else
-      ToolOp.call(this, meshop.name, meshop.uiname, meshop.description, meshop.icon);
+      super(meshop.name, meshop.uiname, meshop.description, meshop.icon);
     
     this.is_modal = false;
     
@@ -611,9 +611,10 @@ MeshToolOp.STRUCT = STRUCT.inherit(MeshToolOp, ToolOp) + """
 
 class ClickExtrude extends ExtrudeAllOp, ToolOp {
    constructor(ctx) {
+    //ExtrudeAllOp.call(this);
+    super();
     ToolOp.call(this);
-    ExtrudeAllOp.call(this);
-    
+
     this.name = "Click Extrude";
     this.is_modal = true;
     
@@ -628,7 +629,7 @@ class ClickExtrude extends ExtrudeAllOp, ToolOp {
     var totsel = 0;
     var mesh = ctx.mesh;
     
-    for (var v in mesh.verts) {
+    for (var v of mesh.verts) {
       if (v.flag & Flags.SELECT) {
         if (isNaN(v.co[0]) || isNaN(v.co[1]) || isNaN(v.co[2]))
             continue;
@@ -638,7 +639,7 @@ class ClickExtrude extends ExtrudeAllOp, ToolOp {
     }
     
     if (totsel == 0) {
-      for (var v in mesh.verts) {
+      for (var v of mesh.verts) {
         if (isNaN(v.co[0]) || isNaN(v.co[1]) || isNaN(v.co[2]))
           continue;
         cent.add(v.co);
@@ -738,7 +739,7 @@ class ClickExtrude extends ExtrudeAllOp, ToolOp {
     
     var mat = this.inputs.transform.data;
     
-    for (var v in mesh.verts) {
+    for (var v of mesh.verts) {
       if (!(v.flag & SELECT)) continue;
       
       v.co.multVecMatrix(mat);
@@ -783,7 +784,7 @@ class ClickExtrude extends ToolOp {
     
     mesh.ops.call_op(meshop);
     
-    for (var v in mesh.verts) {
+    for (var v of mesh.verts) {
       if (v.flag & Flags.SELECT) {
         if (isNaN(v.co[0]) || isNaN(v.co[1]) || isNaN(v.co[2]))
             continue;
@@ -793,7 +794,7 @@ class ClickExtrude extends ToolOp {
     }
     
     if (totsel == 0) {
-      for (var v in mesh.verts) {
+      for (var v of mesh.verts) {
         if (isNaN(v.co[0]) || isNaN(v.co[1]) || isNaN(v.co[2]))
           continue;
         cent.add(v.co);
@@ -880,7 +881,7 @@ class ClickExtrude extends ToolOp {
     mat.multiply(rmat);
     mat.translate(-cent[0], -cent[1], -cent[2]);
     
-    for (var v in mesh.verts) {
+    for (var v of mesh.verts) {
       if (v.flag & Flags.SELECT) {
         v.co.multVecMatrix(mat);
       }
@@ -909,7 +910,7 @@ class ClickExtrude extends ToolOp {
 
 class ToggleSubSurfOp extends ToolOp {
   constructor() {
-    ToolOp.call(this, "subsurf_toggle", "Toggle Subsurf");
+    super("subsurf_toggle", "Toggle Subsurf");
     
     this.undoflag = UndoFlags.IGNORE_UNDO;
     
@@ -939,7 +940,7 @@ class ToggleSubSurfOp extends ToolOp {
 
 class BasicFileDataOp extends ToolOp {
   constructor(String data) {
-    ToolOp.call(this, "basic_file_with_data", "internal op (with data)", "Root operator; creates a scene with a simple cube");
+    super("basic_file_with_data", "internal op (with data)", "Root operator; creates a scene with a simple cube");
     
     this.is_modal = false;
     this.undoflag = UndoFlags.IGNORE_UNDO|UndoFlags.IS_ROOT_OPERATOR|UndoFlags.UNDO_BARRIER;
@@ -965,7 +966,7 @@ class BasicFileDataOp extends ToolOp {
 
 class BasicFileOp extends ToolOp {
   constructor() {
-    ToolOp.call(this, "basic_file", "internal op", "Root operator; creates a scene with a simple cube");
+    super("basic_file", "internal op", "Root operator; creates a scene with a simple cube");
     
     this.is_modal = false;
     this.undoflag = UndoFlags.IS_ROOT_OPERATOR|UndoFlags.UNDO_BARRIER;

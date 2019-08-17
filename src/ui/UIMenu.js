@@ -2,7 +2,7 @@
 
 class UIMenuEntry extends UIElement{
   constructor(label, hotkey, pos, size) {
-    UIElement.call(this);
+    super();
     
     this.clicked = false;
     this.label = label
@@ -77,7 +77,7 @@ class UIMenuEntry extends UIElement{
 
 class UIMenu extends UIFrame {
   constructor(name, callback) {
-    UIFrame.call(this);
+    super();
     
     this.name = name
     this.callback = callback;
@@ -138,7 +138,7 @@ class UIMenu extends UIFrame {
       }
     }
       
-    for (var c in this.children) {
+    for (var c of this.children) {
       if (c.constructor.name != "UIMenuEntry") continue; //there may be other elements present
       
       c.callback = menu_callback;
@@ -151,7 +151,7 @@ class UIMenu extends UIFrame {
       
     var maxcol = 0
     var hkey_line_pos = 0
-    for (var c in this.children) {
+    for (var c of this.children) {
       if (c.constructor.name != "UIMenuEntry") continue; //there may be other elements present
       
       var st = c.label + "    " + c.hotkey;
@@ -169,7 +169,7 @@ class UIMenu extends UIFrame {
     this.size = [maxwid, y]
     
     y = 5
-    for (var c in this.children) {
+    for (var c of this.children) {
       if (c.constructor.name != "UIMenuEntry") continue; //there may be other elements present
       
       c.text = "    " + c.label

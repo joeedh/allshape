@@ -8,6 +8,7 @@
   work properly.*/
 class MeshIterAbstract extends ES5Iter {
   constructor() {
+    super();
     this.done = false; //done flag
   }
   
@@ -22,7 +23,7 @@ class MeshIterAbstract extends ES5Iter {
 
 class FaceVertIter extends MeshIterAbstract {
   constructor(Face data) {
-    MeshIterAbstract.call(this);
+    super();
     
     this.ret = {done : false, value : undefined};
     this.data = data
@@ -64,7 +65,7 @@ class FaceVertIter extends MeshIterAbstract {
 
 class FaceLoopIter extends MeshIterAbstract{
   constructor(Face data) {
-    MeshIterAbstract.call(this);
+    super();
     
     this.ret = {done : false, value : undefined};
     this.data = data
@@ -108,7 +109,8 @@ class FaceLoopIter extends MeshIterAbstract{
 
 class FaceEdgeIter extends MeshIterAbstract {
   constructor(Face data) {
-    MeshIterAbstract.call(this);
+    super();
+
     this.ret = {done : false, value : undefined};
     this.data = data
     this.curlist = 0;
@@ -150,7 +152,7 @@ class FaceEdgeIter extends MeshIterAbstract {
 
 class VertEdgeIter extends MeshIterAbstract {
   constructor(Vert data) {
-    MeshIterAbstract.call(this);
+    super();
     
     this.ret = {done : false, value : undefined};
     this.data = data
@@ -178,7 +180,7 @@ class VertEdgeIter extends MeshIterAbstract {
 
 class VertLoopIter extends MeshIterAbstract {
   constructor(Vert data) {
-    MeshIterAbstract.call(this);
+    super();
       
     this.ret = {done : false, value : undefined};
     this.data = data;
@@ -368,6 +370,8 @@ MeshIter.EDGE_VERTS = 12;
 
 class MeshIterate extends ES5Iter {
   constructor(type, data) {
+    super();
+
     this.type = type;
     this.data = data;
     this.flag = 0;
@@ -451,7 +455,7 @@ function recalc_normals_job_intern(Mesh m2, Boolean use_sco) //use_sco is option
   }
   
   i = 0;
-  for (var f in m2.faces) {
+  for (var f of m2.faces) {
     var n = null;
     
     //console.log("doing face", i, f != undefined ? f.__hash__() : undefined, ";");
@@ -468,12 +472,12 @@ function recalc_normals_job_intern(Mesh m2, Boolean use_sco) //use_sco is option
     
     f.recalc_normal();
     
-    for (var v in f.verts) {
+    for (var v of f.verts) {
       v.no.add(f.no);
     }
   }
   
-  for (var v in m2.verts) {
+  for (var v of m2.verts) {
     v.no.normalize();
   }
   
@@ -493,16 +497,16 @@ function MeshAPI(Mesh mesh) {
     var m = this.mesh;
     
     if (selmode == MeshTypes.VERT) {
-      for (var v in m.verts) {
-        for (var e in v.edges) {
+      for (var v of m.verts) {
+        for (var e of v.edges) {
           m.select(e, (v.flag & Flags.SELECT) && (e.other_vert(v).flag & Flags.SELECT));
         }
       }
       
-      for (var f in m.faces) {
+      for (var f of m.faces) {
         var totsel = 0;
         
-        for (var v in f.verts) {
+        for (var v of f.verts) {
           totsel += (v.flag & Flags.SELECT) != 0;
         }
         
@@ -510,9 +514,9 @@ function MeshAPI(Mesh mesh) {
       }
       
     } else if (selmode == MeshTypes.EDGE) {
-      for (var v in m.verts) {
+      for (var v of m.verts) {
         var found = false;
-        for (var e in v.edges) {
+        for (var e of v.edges) {
           if (e.flag & Flags.SELECT) {
             found = true;
             break;
@@ -522,11 +526,11 @@ function MeshAPI(Mesh mesh) {
         m.verts.select(v, found);
       }
       
-      for (var f in m.faces) {
+      for (var f of m.faces) {
         var totsel = 0;
         var tote = 0;
         
-        for (var e in f.edges) {
+        for (var e of f.edges) {
           totsel += e.flag & Flags.SELECT;
           tote++;
         }
@@ -534,19 +538,19 @@ function MeshAPI(Mesh mesh) {
         m.faces.select(f, totsel==tote);
       }
     } else {
-      for (var v in m.verts)
+      for (var v of m.verts)
         m.verts.select(v, false);
       
-      for (var e in m.edges)
+      for (var e of m.edges)
         m.edges.select(e, false);
       
-      for (var f in m.faces) {
+      for (var f of m.faces) {
         if (!(f.flag & Flags.SELECT))
           continue;
         
-        for (var v in f.verts)
+        for (var v of f.verts)
           m.verts.select(v, true);
-        for (var e in f.edges)
+        for (var e of f.edges)
           m.edges.select(e, true);
       }
     }
@@ -559,7 +563,7 @@ function MeshAPI(Mesh mesh) {
     var bb = m2.bb;
     bb.reset();
     
-    for (var v in m2.verts) {
+    for (var v of m2.verts) {
       if (use_mapco)
         m2.bb.minmax(v.mapco);
       else
@@ -569,7 +573,7 @@ function MeshAPI(Mesh mesh) {
     //bounded box of current selection
     bb = m2.sel_bb;
     bb.reset();
-    for (var v in m2.verts.selected) {
+    for (var v of m2.verts.selected) {
       if (use_mapco)
         bb.minmax(v.mapco);
       else
@@ -584,12 +588,12 @@ function MeshAPI(Mesh mesh) {
     //recalc bounding boxes
     this.recalc_bounds();
     
-    for (var v in m2.verts) {
+    for (var v of m2.verts) {
       var no = v.no;
       no[0] = no[1] = no[2] = 0.0;
     }
     
-    for (var f in m2.faces) {
+    for (var f of m2.faces) {
       f.recalc_normal();
       
       var fno = f.no;
@@ -607,7 +611,7 @@ function MeshAPI(Mesh mesh) {
       }
     }
     
-    for (var v in m2.verts) {
+    for (var v of m2.verts) {
       var n = v.no;
       VNORMALIZE(n);
     }
@@ -771,14 +775,14 @@ function MeshAPI(Mesh mesh) {
       return null;
     }
     
-    for (var l in v1.loops) {
+    for (var l of v1.loops) {
       if (l.f == f && l.v == v1) {
         l1 = l;
         break;
       }
     }
     
-    for (var l in v2.loops) {
+    for (var l of v2.loops) {
       if (l.f == f && l.v == v2) {
         l2 = l;
         break;
@@ -803,8 +807,8 @@ function MeshAPI(Mesh mesh) {
     co1.multVecMatrix(mat); co1[2] = 0.0;
     co2.multVecMatrix(mat); co2[2] = 0.0;
     
-    for (var list1 in f.looplists) {
-      for (var l in list1) {
+    for (var list1 of f.looplists) {
+      for (var l of list1) {
         if (c >= cos.length)
           cos.push(new Vector3());
         
@@ -820,7 +824,7 @@ function MeshAPI(Mesh mesh) {
     }
     
     var c = 0;
-    for (var list1 in f.looplists) {
+    for (var list1 of f.looplists) {
       var l = list1.loop;
       do {
         if (l.e.vert_in_edge(v1) || l.e.vert_in_edge(v2)) {
@@ -851,9 +855,9 @@ function MeshAPI(Mesh mesh) {
       var lco1, lco2;
       
       c = 0;
-      for (var list1 in f.looplists) {
+      for (var list1 of f.looplists) {
         i = 0;
-        for (var l in list1) {
+        for (var l of list1) {
           if (list1 === l1.list) {
             points.push(cos[c]);
             cent.add(cos[c]);
@@ -967,7 +971,7 @@ function MeshAPI(Mesh mesh) {
         var vlist2 = new GArray([verts2]);
         
         c = 0;
-        for (var l in f.looplists[0]) {
+        for (var l of f.looplists[0]) {
           c++;
         }
         
@@ -975,7 +979,7 @@ function MeshAPI(Mesh mesh) {
           var wind2 = 0;
           
           var totw = 0;
-          for (var l in f.looplists[i]) {
+          for (var l of f.looplists[i]) {
             var w = winding(lco1, cos[c], lco2);
             wind2 += w;
             totw++;
@@ -986,7 +990,7 @@ function MeshAPI(Mesh mesh) {
           //console.log(["yay", wind2, wind]);
           
           var vl = new GArray();
-          for (var l in f.looplists[i]) {
+          for (var l of f.looplists[i]) {
             vl.push(l.v);
           }
           
@@ -1028,7 +1032,7 @@ function MeshAPI(Mesh mesh) {
             var wind2 = 0;
             
             totw = 0;
-            for (var l in f.looplists[i]) {
+            for (var l of f.looplists[i]) {
               var w = op.winding(l1.v.co, l.v.co, l2.v.co);
               wind2 += w;
               totw++;
@@ -1038,7 +1042,7 @@ function MeshAPI(Mesh mesh) {
             //console.log(["yay", wind2, wind]);
             
             var vl = new GArray();
-            for (var l in f.looplists[i]) {
+            for (var l of f.looplists[i]) {
               vl.push(l.v);
             }
             
@@ -1077,7 +1081,7 @@ function MeshAPI(Mesh mesh) {
   this.reverse_winding = function(Face f) {
     var m = this.mesh;
     
-    for (var list in f.looplists) {
+    for (var list of f.looplists) {
       var l = list.loop, lnext;
       var last_e = l.prev.e;
       
@@ -1109,11 +1113,11 @@ function MeshAPI(Mesh mesh) {
     var shells = new GArray<GArray<Face>>();
     var fset = new set<Face>();
     
-    for (var f in m.faces) {
+    for (var f of m.faces) {
       f.index = 0;
     }
     
-    for (var f in m.faces) {
+    for (var f of m.faces) {
       if (f.index == 1) continue;
       
       f.index = 1;
@@ -1128,8 +1132,8 @@ function MeshAPI(Mesh mesh) {
         
         shell.push(f2);
         
-        for (var e in f2.edges) {
-          for (var f3 in e.faces) {
+        for (var e of f2.edges) {
+          for (var f3 of e.faces) {
             if (f3.index == 1) continue;
             
             f3.index = 1;
@@ -1139,10 +1143,10 @@ function MeshAPI(Mesh mesh) {
       }
     }
     
-    for (var shell in shells) {
+    for (var shell of shells) {
       var dis = -1;
       var startf = null;
-      for (var f in shell) {
+      for (var f of shell) {
         if (dis == -1 || f.center.dot(f.center) < dis) {
           dis = f.center.dot(f.center);
           startf = f;
@@ -1167,8 +1171,8 @@ function MeshAPI(Mesh mesh) {
         
         var flip_list = new set();
         
-        for (var list in f.looplists) {
-          for (var l in list) {
+        for (var list of f.looplists) {
+          for (var l of list) {
             var l2 = l.radial_next;
             
             while (l2 != l) {
@@ -1189,7 +1193,7 @@ function MeshAPI(Mesh mesh) {
           }
         }
         
-        for (var f2 in flip_list) {
+        for (var f2 of flip_list) {
           this.reverse_winding(f2);
         }
       }
@@ -1206,13 +1210,13 @@ function MeshAPI(Mesh mesh) {
     var holes = new GArray();
     var eset = new set();
     
-    for (var f in fset) {
-      for (var e in f.edges) {
+    for (var f of fset) {
+      for (var e of f.edges) {
         if (eset.has(e))
           continue;
         
         var tot=0, tot2=0;
-        for (var f2 in e.faces) {
+        for (var f2 of e.faces) {
           tot += fset.has(f2) != 0;
           tot2++;
         }
@@ -1224,7 +1228,7 @@ function MeshAPI(Mesh mesh) {
     }
     
     var visit = new set();
-    for (var e in eset) {
+    for (var e of eset) {
       if (visit.has(e))
         continue;
       
@@ -1241,7 +1245,7 @@ function MeshAPI(Mesh mesh) {
         tot=0;
         
         var e20 = e2;
-        for (var e3 in v2.edges) {
+        for (var e3 of v2.edges) {
           if (e3 == e20)
             continue;
             
@@ -1302,7 +1306,7 @@ function MeshAPI(Mesh mesh) {
     var v2 = loops[bound][1][1];
     var rev = false; //reverse winding boolean
     
-    for (var l in v1.loops) {
+    for (var l of v1.loops) {
       if (fset.has(l.f)) {
         if (l.v == v1 && l.next.v != v2) {
           rev = true;
@@ -1312,7 +1316,7 @@ function MeshAPI(Mesh mesh) {
         }
       }
     }
-    for (var l in v2.loops) {
+    for (var l of v2.loops) {
       if (fset.has(l.f)) {
         if (l.next.v == v2 && l.v != v1) {
           rev = true;
@@ -1331,12 +1335,12 @@ function MeshAPI(Mesh mesh) {
     var vset = new set();
     eset = new set();
     
-    for (var f in fset) {
-      for (var l in f.loops) {
+    for (var f of fset) {
+      for (var l of f.loops) {
         var tot1=0, tot2=0;
         
         var e = l.e;
-        for (var f2 in e.faces) {
+        for (var f2 of e.faces) {
           tot1 += fset.has(f2) != 0;
           tot2++;
         }
@@ -1346,7 +1350,7 @@ function MeshAPI(Mesh mesh) {
         
         var v = l.v;
         tot1 = tot2 = 0;
-        for (var l2 in v.loops) {
+        for (var l2 of v.loops) {
           tot1 += fset.has(l2.f) != 0;
           tot2++;
         }
@@ -1375,7 +1379,7 @@ function MeshAPI(Mesh mesh) {
     /*build new face flag*/
     var totsmooth=0, totsolid=0;
     
-    for (var f in fset) {
+    for (var f of fset) {
       if (f.flag & Flags.SELECT)
         mesh.faces.select(nf, true);
       
@@ -1389,13 +1393,13 @@ function MeshAPI(Mesh mesh) {
       nf.flag |= Flags.SHADE_SMOOTH;
     
     //delete old geometry
-    for (var f in fset) {
+    for (var f of fset) {
       mesh.kill_face(f);
     }
-    for (var e in eset) {
+    for (var e of eset) {
       mesh.kill_edge(e);
     }
-    for (var v in vset) {
+    for (var v of vset) {
       mesh.kill_vert(v);
     }
   }
@@ -1403,15 +1407,15 @@ function MeshAPI(Mesh mesh) {
   this.select_none = function() {
     var mesh = this.mesh;
     
-    for (var v in mesh.verts.selected) {
+    for (var v of mesh.verts.selected) {
       mesh.verts.select(v, false);
     }
     
-    for (var e in mesh.edges.selected) {
+    for (var e of mesh.edges.selected) {
       mesh.edges.select(e, false);
     }
     
-    for (var f in mesh.faces.selected) {
+    for (var f of mesh.faces.selected) {
       mesh.faces.select(f, false);
     }
   }
@@ -1430,7 +1434,7 @@ function MeshAPI(Mesh mesh) {
     eset = new set();
     vset = new set();
     
-    for (var e in geometry) {
+    for (var e of geometry) {
       if (e.type == MeshTypes.FACE) {
         fset.add(e);
       } else if (e.type == MeshTypes.EDGE) {
@@ -1448,23 +1452,23 @@ function MeshAPI(Mesh mesh) {
     var ei = 0;
     var fi = 0;
 
-    for (var v in vset) {
+    for (var v of vset) {
       verts.push(v);
       v.index = vi++;
     }
     
-    for (var e in eset) {
+    for (var e of eset) {
       edges.push(e);
       e.index = ei++;
     }
     
-    for (var f in fset) {
+    for (var f of fset) {
       faces.push(f);
       f.index = fi++;
       
-      //for (var v in f.verts) {
-      for (var loop in f.looplists) {
-        for (var l in loop) {
+      //for (var v of f.verts) {
+      for (var loop of f.looplists) {
+        for (var l of loop) {
           var v = l.v;
           
           if (!vset.has(v)) {
@@ -1476,7 +1480,7 @@ function MeshAPI(Mesh mesh) {
       }
       }
           
-      for (var e in f.edges) {
+      for (var e of f.edges) {
         if (!eset.has(e)) {
           edges.push(e);
           e.index = ei++;
@@ -1486,7 +1490,7 @@ function MeshAPI(Mesh mesh) {
       }
     }
     
-    for (var e in eset) {
+    for (var e of eset) {
       if (!vset.has(e.v1)) {
         e.v1.index = vi++;
         verts.push(e.v1);
@@ -1521,11 +1525,11 @@ function MeshAPI(Mesh mesh) {
       f = faces[i];
       var vlists = new GArray();
       
-      for (var loop in f.looplists) {
+      for (var loop of f.looplists) {
         var vs = new GArray();
         vlists.push(vs);
         vs.length = 0;
-        for (var l in loop) {
+        for (var l of loop) {
           vs.push(verts[l.v.index]);
         }
       }
@@ -1548,13 +1552,13 @@ function MeshAPI(Mesh mesh) {
     }
     
     if (deselect_old) {
-      for (var v in vset) {
+      for (var v of vset) {
         mesh.verts.select(v, false);
       }
-      for (var e in eset) {
+      for (var e of eset) {
         mesh.edges.select(e, false);
       }
-      for (var f in fset) {
+      for (var f of fset) {
         mesh.faces.select(f, false);
       }
     }

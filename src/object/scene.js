@@ -6,7 +6,7 @@ class Scene extends DataBlock {
       name = "Scene";
     
     //name is optional
-    DataBlock.call(this, DataTypes.SCENE, name);
+    super(DataTypes.SCENE, name);
     
     this.objects = new DBList();
     this.graph = new SceneGraph();
@@ -16,11 +16,11 @@ class Scene extends DataBlock {
     var sce = new Scene(this.name)
     sce.objects = new DBList();
     
-    for (var o in this.objects) {
+    for (var o of this.objects) {
       sce.objects.push(o);
     }
     
-    for (var o in this.objects.selected) {
+    for (var o of this.objects.selected) {
       sce.objects.select(o);
     }
     
@@ -102,7 +102,7 @@ class Scene extends DataBlock {
       this.graph = new Dag();
     }
     
-    for (var ob in this.objects) {
+    for (var ob of this.objects) {
       if (ob == undefined) {
         console.log("error in recover_dag_graph()");
         continue;
@@ -116,7 +116,7 @@ class Scene extends DataBlock {
       this.graph.add(ob);
     }
     
-    for (var ob in this.objects) {
+    for (var ob of this.objects) {
       if (ob.parent != undefined) {
         var parent = ob.parent;
         

@@ -2,7 +2,7 @@
 
 class CacheStack extends Array {
   constructor(itemlen) {
-    Array.call(this);
+    super();
     
     this.dellist = [];
     this.ilen = itemlen;

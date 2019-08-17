@@ -16,10 +16,6 @@ function hash_tri(v1, v2, v3) {
 }
 
 class _PSort {
-  Vector3 co;
-  Vertex v;
-  int axis;
-  
   constructor(co, v, axis) {
     this.co = co;
     this.v = v;
@@ -28,14 +24,6 @@ class _PSort {
 }
 
 class TessCDT {
-  Vector3 min = new Vector3();
-  Vector3 max = new Vector3();
-  QuadTree qtree;
-  ObjectMap edge_hash = {};
-  ObjectMap tri_hash = {};
-  ObjectMap cedge_hash = {}; //a key-only hash of constrained edges
-  int tri_counter = 0;
-  
   constructor() {
   }
 
@@ -117,9 +105,10 @@ class TessCDT {
       l2.push(sort);
     }
     
-    max_l2 = Math.max(l2.length, Math.min(max_l2, 50));
+    var max_l2 = Math.max(l2.length, Math.min(max_l2, 50));
     l2.sort(this.PSortCmp);
-    
+    var j;
+
     for (var i=start, j=0; i<end; i++, j++) {
       lst[i] = l2[j].v;
       
@@ -638,7 +627,7 @@ class TessCDT {
       
       if (sign == 1) loop2.reverse();
     
-      tri_counter = 0;
+      var tri_counter = 0;
       var ret = 0;
       
       ret = this.scanfill(tmesh, loops, points);

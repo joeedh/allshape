@@ -49,12 +49,12 @@
 #define QN_ROOT 0
 
 class QuadTree {
-  Float32Array qnodes = new Float32Array();
-  Float32Array data = new Float32Array();
-  Float32Array lines = new Float32Array();
+//  Float32Array qnodes = new Float32Array();
+//  Float32Array data = new Float32Array();
+//  Float32Array lines = new Float32Array();
   
-  int _qn_cur=0, _data_cur=0, _line_cur;
-  int totnodes=0;
+//  int _qn_cur=0, _data_cur=0, _line_cur;
+//  int totnodes=0;
   
   constructor() {
     

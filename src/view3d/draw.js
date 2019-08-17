@@ -25,7 +25,7 @@ function gen_tris(Mesh mesh) {
   
   var ls = new Array<Loop>();
   
-  for (var f in mesh.faces) {
+  for (var f of mesh.faces) {
     if (ls == undefined | ls.push == undefined) {
       console.trace();
       console.log("WARNING: Chrome array error!!", ls);
@@ -117,7 +117,7 @@ function gen_tris_job(Mesh mesh) {
   
   var fi = 0, fi2 = 0;
   
-  for (var f in mesh.faces) {
+  for (var f of mesh.faces) {
     yield;
     
     if (f.totvert == 3) {
@@ -142,7 +142,7 @@ function gen_tris_job(Mesh mesh) {
       /*
       var fillgen = face_fill_threads(f, ls);
       
-      for (var step in fillgen) {
+      for (var step of fillgen) {
         yield;
       }
       console.log("finished fillgen");
@@ -410,13 +410,13 @@ function gen_mesh_selbufs(gl, mesh)
   var vsels = new Array(mesh.verts.length*4);
   
   var i = 0;
-  for (var v in mesh.verts) {
+  for (var v of mesh.verts) {
     i = pack_index(v.sid+1, vsels, i);
   }
   
   var esels = new Array(mesh.edges.length*8);
   i = 0;
-  for (var e in mesh.edges) {
+  for (var e of mesh.edges) {
     i = pack_index(e.sid+1, esels, i);
     i = pack_index(e.sid+1, esels, i);
   }
@@ -483,7 +483,7 @@ function gen_mesh_render(WebGLRenderingContext ctx, Mesh mesh, ShaderProgram dra
     /*
     var i = 0;
     
-    for (var t in (new gen_tris_job(mesh))) {
+    for (var t of (new gen_tris_job(mesh))) {
       i += 1;
       if (i == 15000) {
         console.log("infitie loop in gen tris job");
@@ -509,7 +509,7 @@ function gen_mesh_render(WebGLRenderingContext ctx, Mesh mesh, ShaderProgram dra
       
       /*
       recalcflags |= MeshRecalcFlags.REGEN_NORS | MeshRecalcFlags.REGEN_COS | MeshRecalcFlags.REGEN_COLORS | MeshRecalcFlags.REGEN_TESS;
-      for (var iter in job) {
+      for (var iter of job) {
         i++;
         if (i > 10000) {
           console.log("infinite loop")
@@ -525,10 +525,10 @@ function gen_mesh_render(WebGLRenderingContext ctx, Mesh mesh, ShaderProgram dra
   
   var totloop = 0;
   
-  for (var f in mesh.faces) {
+  for (var f of mesh.faces) {
     f.flag &= ~Flags.DIRTY;
     
-    for (var list in f.looplists) {
+    for (var list of f.looplists) {
       totloop += list.length;
     }
   }
@@ -539,7 +539,7 @@ function gen_mesh_render(WebGLRenderingContext ctx, Mesh mesh, ShaderProgram dra
   var colors = new Array<float>();
   var no;
   
-  for (var v in mesh.verts) {
+  for (var v of mesh.verts) {
     no = v.no;
     
     v.flag &= ~Flags.DIRTY;
@@ -570,14 +570,14 @@ function gen_mesh_render(WebGLRenderingContext ctx, Mesh mesh, ShaderProgram dra
   var co;
   
   if (mesh.flag & MeshFlags.USE_MAP_CO) {
-    for (var v in mesh.verts) {
+    for (var v of mesh.verts) {
       co = v.mapco;
       verts.push(co[0]);
       verts.push(co[1]);
       verts.push(co[2]);
     }
   } else {
-    for (var v in mesh.verts) {
+    for (var v of mesh.verts) {
       co = v.co;
       verts.push(co[0]);
       verts.push(co[1]);
@@ -649,7 +649,7 @@ function gen_mesh_render(WebGLRenderingContext ctx, Mesh mesh, ShaderProgram dra
     
     //edges, for interpolating vertex selection
     var edgeidxs = new Array<short>();
-    for (var e in mesh.edges) {
+    for (var e of mesh.edges) {
       e.flag &= ~Flags.DIRTY;
       edgeidxs.push(e.v1.index);
       edgeidxs.push(e.v2.index);
@@ -665,7 +665,7 @@ function gen_mesh_render(WebGLRenderingContext ctx, Mesh mesh, ShaderProgram dra
   }*/
   
   var edgebuf = new Array<float>();
-  for (var e in mesh.edges) {
+  for (var e of mesh.edges) {
     for (i=0; i<3; i++) {
       edgebuf.push(e.v1.co[i]);
     }
@@ -677,7 +677,7 @@ function gen_mesh_render(WebGLRenderingContext ctx, Mesh mesh, ShaderProgram dra
   edgebuf = new Float32Array(edgebuf);
   
   var ecolorbuf = new Array<float>();
-  for (var e in mesh.edges) {
+  for (var e of mesh.edges) {
     if ((recalcflags & MeshRecalcFlags.REGEN_COLORS) != 0) {
       var color = get_element_color(e, mesh.edges.highlight);
       for (i=0; i<2; i++) {
@@ -776,7 +776,7 @@ function gen_mesh_render(WebGLRenderingContext ctx, Mesh mesh, ShaderProgram dra
   var faceverts = new Array<float>();
   var facecolors = new Array<float>();
   var center;
-  for (var f in mesh.faces) {
+  for (var f of mesh.faces) {
     if (mesh.flag & MeshFlags.USE_MAP_CO)
       center = f.mapcenter;
     else

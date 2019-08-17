@@ -70,7 +70,7 @@ class TutorialEvent {
 
 class TutKeyDown extends TutorialEvent {
   constructor(key, modifiers, handler="on_keydown") {
-    TutorialEvent.call(this, handler);
+    super(handler);
     
     this.key = key;
     this.modifiers = modifiers;
@@ -78,7 +78,7 @@ class TutKeyDown extends TutorialEvent {
 }
 class TutKeyUp extends TutKeyDown {
   constructor(key, modifiers) {
-    TutKeyDown.call(this, key, modifiers, "on_keyup");
+    super(key, modifiers, "on_keyup");
   }
 }
 
@@ -89,6 +89,8 @@ class HotSpot {
 
 class ManualHotSpot extends HotSpot {
   constructor(Array<Vector2> hotspot) {
+    super();
+
     this._rect = hotspot;
   }
   
@@ -99,6 +101,8 @@ class ManualHotSpot extends HotSpot {
 
 class UIPath extends HotSpot {
   constructor(path) {
+    super();
+
     this.path = path;
   }
   
@@ -151,20 +155,20 @@ class UIPath extends HotSpot {
 
 class TutMouse extends TutorialEvent {
   constructor(HotSpot hotspot, String handler) {
-    TutorialEvent.call(this, handler);
+    super(handler);
     this.hotspot = hotspot;
   }
 }
 
 class TutMouseDown extends TutMouse {
   constructor(HotSpot hotspot) {
-    TutMouse.call(this, hotspot, "on_mousedown");
+    super(hotspot, "on_mousedown");
   }
 }
 
 class TutMouseUp extends TutMouse {
   constructor(HotSpot hotspot) {
-    TutMouse.call(this, hotspot, "on_mouseup");
+    super(hotspot, "on_mouseup");
   }
 }
 
@@ -186,6 +190,8 @@ class TutorialPage {
 
 class TutorialHandler extends EventHandler {
   constructor(child) {
+    super();
+
     this.pages = new GArray() : Array<TutorialPage>;
     this.curp = 0;
     this.cure = 0;

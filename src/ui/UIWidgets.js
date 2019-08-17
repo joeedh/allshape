@@ -3,12 +3,8 @@
 #include "src/core/utildefine.js"
 
 class UIButtonAbstract extends UIHoverHint {
-  Boolean clicked, click_on_down, can_pan, modal_click, was_touch;
-  Array<float> start_mpos;
-  int text_size;
-  
   constructor(ctx, path=undefined, pos=undefined, size=undefined) {
-    UIHoverHint.call(this, ctx, path, pos, size);
+    super(ctx, path, pos, size);
     
     this.text_size = undefined; //use default
     this.can_pan = true;
@@ -95,7 +91,7 @@ class UIButton extends UIButtonAbstract {
               Array<float> size, String path=undefined, 
               Function callback=undefined, String hint=undefined) 
   {
-    UIButtonAbstract.call(this, ctx, path, pos, size);
+    super(ctx, path, pos, size);
     
     this.clicked = false;
     this.text = text;
@@ -185,7 +181,7 @@ class UIButtonIcon extends UIButton {
               Function callback=undefined, String hint=undefined,
               Boolean use_small_icon=false) 
   {
-    UIButton.call(this, ctx, text, pos, size, path, callback, hint);
+    super(ctx, text, pos, size, path, callback, hint);
     this.icon = icon;
     this.small_icon = use_small_icon;
     this.bgmode = "button";
@@ -288,7 +284,7 @@ class UIButtonIcon extends UIButton {
 
 class UIMenuButton extends UIButtonAbstract {
   constructor(ctx, menu, pos, size, path, description="") {//menu can be undefined, if path is defined
-    UIButtonAbstract.call(this, ctx, path);
+    super(ctx, path);
     
     this.menu = menu : UIMenu;
     
@@ -442,7 +438,7 @@ class UIMenuButton extends UIButtonAbstract {
       
       var size = CACHEARR2(canvas.textsize(this.text+"     ")[0], 26);
       
-      for (var c in this.menu.children) {
+      for (var c of this.menu.children) {
         var size2 = c.get_min_size(canvas, isvertical);
         size[0] = Math.max(size[0], size2[0])
         size[1] = Math.max(size[1], size2[1])
@@ -457,7 +453,7 @@ class UIMenuButton extends UIButtonAbstract {
 
 class UICheckBox extends UIHoverHint {
   constructor(ctx, text, pos, size, path, use_check=true) {
-    UIHoverHint.call(this, ctx, path);
+    super(ctx, path);
     
     this.draw_check = use_check;
     this.ctx = ctx;
@@ -593,7 +589,7 @@ class UICheckBox extends UIHoverHint {
 
 class UINumBox extends UIHoverHint {
   constructor(ctx, text, range=[0, 100], val=range[0], pos=[0,0], size=[1,1], path=undefined) {
-    UIHoverHint.call(this, ctx, path);
+    super(ctx, path);
     
     this.unit = undefined;
     this.clicked = false;
@@ -831,7 +827,7 @@ class UINumBox extends UIHoverHint {
 
 class UILabel extends UIElement {
   constructor(ctx, text, pos, size, path) {
-    UIElement.call(this, ctx, path);
+    super(ctx, path);
     
     this.start_mpos = new Vector2();
     this.prop = undefined;
@@ -993,7 +989,7 @@ class UILabel extends UIElement {
   to that one.*/
 class _HiddenMenuElement extends UIElement {
   constructor(Context ctx, UIMenuLabel src_menu_label, UIMenuLabel dst_menu_label) {
-    UIElement.call(this, ctx);
+    super(ctx);
     
     this.src_menu_label = src_menu_label;
     this.dst_menu_label = dst_menu_label
@@ -1021,7 +1017,7 @@ class _HiddenMenuElement extends UIElement {
 
 class UIMenuLabel extends UIElement {
   constructor(ctx, text, menu, gen_menu_func, pos, size) {
-    UIElement.call(this, ctx);
+    super(ctx);
     
     if (pos == undefined) pos = [0, 0];
     if (size == undefined) size = [0, 0];
@@ -1062,7 +1058,7 @@ class UIMenuLabel extends UIElement {
     to that one.*/
   add_hidden_elements(menu) {
     var es = new GArray();
-    for (var c in this.parent.children) {
+    for (var c of this.parent.children) {
       if (c == this || c.constructor.name != UIMenuLabel.name) continue;
       
       var e = new _HiddenMenuElement(this.ctx, this, c);
@@ -1075,16 +1071,16 @@ class UIMenuLabel extends UIElement {
     
     /*remove any existing hidden elements*/
     var del = new GArray();
-    for (var c in menu.children) {
+    for (var c of menu.children) {
       if (c.constructor.name == _HiddenMenuElement.name)
         del.push(c);
     }
     
-    for (var c in del) {
+    for (var c of del) {
       menu.children.remove(c);
     }
     
-    for (var c in es) {
+    for (var c of es) {
       menu.add(c);
     }
   }
@@ -1179,7 +1175,7 @@ class UIMenuLabel extends UIElement {
 
 class UIListBox extends ColumnFrame {
   constructor(ctx, pos, size, callback) {
-    ColumnFrame.call(this, ctx);
+    super(ctx);
     
     if (size != undefined && size[0]+size[1] != 0.0)
       this.size = size;
@@ -1236,7 +1232,7 @@ class UIListBox extends ColumnFrame {
       var act = map["active_entry"];
       var i = 0;
       
-      for (var c in this.listbox.children) {
+      for (var c of this.listbox.children) {
         if (c.text == act) {
           this._set_active(c);
           break;
@@ -1368,7 +1364,7 @@ class UIListEntry extends UILabel {
   //id can be any arbitrary object,
   //including non-stringable types.
   constructor(ctx, text, Object id) {
-    UILabel.call(this, ctx, text);
+    super(ctx, text);
     
     this.id = id;
   }
@@ -1392,7 +1388,7 @@ class UIListEntry extends UILabel {
 
 class ScrollButton extends UIElement {
   constructor(ctx, pos, size, icon, callback, do_repeat=true) {
-    UIElement.call(this, ctx);
+    super(ctx);
     
     this.repeat = do_repeat;
     
@@ -1475,7 +1471,7 @@ class ScrollButton extends UIElement {
 
 class UIVScroll extends UIFrame {
   constructor(ctx, range, pos=[0,0], size=[0,0], callback=undefined) {
-    UIFrame.call(this, ctx);
+    super(ctx);
     
     this.state |= UIFlags.NO_FRAME_CACHE;
     this.packflag |= PackFlags.INHERIT_HEIGHT;
@@ -1726,7 +1722,7 @@ class UIVScroll extends UIFrame {
 /*draws 16x16 "small" icons*/
 class UIIconCheck extends UIHoverHint {
   constructor(ctx, text, int icon, pos, size, path, use_check=true) {
-    UIHoverHint.call(this, ctx, path);
+    super(ctx, path);
     
     this.ctx = ctx;
     this.set = false;

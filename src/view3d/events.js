@@ -435,7 +435,7 @@ class KeyHandler {
 
 class KeyMap extends hashtable {
   constructor() {
-    hashtable.call(this);
+    super();
     
     this.op_map = new hashtable();
   }
@@ -491,6 +491,7 @@ class KeyHandlerCls {
 
 class ToolKeyHandler extends KeyHandlerCls {
   constructor(ToolOp tool) {
+    super();
     this.tool = tool;
   }
   
@@ -502,6 +503,7 @@ class ToolKeyHandler extends KeyHandlerCls {
 
 class FuncKeyHandler extends KeyHandlerCls {
   constructor(func) {
+    super();
     this.handle = func;
   }
 }
@@ -509,6 +511,7 @@ class FuncKeyHandler extends KeyHandlerCls {
 //helper class for implementing velocity pan
 class VelocityPan extends EventHandler {
   constructor() {
+    super();
     this.start_mpos = new Vector2();
     this.last_mpos = new Vector2();
     
@@ -758,7 +761,7 @@ class TouchEventManager {
     if (DEBUG.touch && this == touch_manager)
       console.log("touch cancel", event);
       
-    for (var e in this.queue) {
+    for (var e of this.queue) {
       for (var k in ts) {
         if (k in e.touches) {
           delete e.touches;
@@ -770,7 +773,7 @@ class TouchEventManager {
       }
     }
     
-    for (var e in dl) {
+    for (var e of dl) {
       var i = this.queue.indexOf(e);
       this.queue.remove(e);
       this.queue_ms.pop_i(i);
@@ -792,7 +795,7 @@ class TouchEventManager {
     }
     
     //pop events from queue before firing them
-    for (var e in dl) {
+    for (var e of dl) {
       var i = q.indexOf(e);
       
       q.remove(e);
@@ -800,7 +803,7 @@ class TouchEventManager {
     }
     
     //now, fire events
-    for (var e in dl) {
+    for (var e of dl) {
       e._good = true;
       g_app_state.was_touch = true;
       

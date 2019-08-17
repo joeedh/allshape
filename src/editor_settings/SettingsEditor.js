@@ -93,7 +93,7 @@ class SettingsEditor extends Area {
   }
   
   constructor(Context ctx, Array<float> pos, Array<float> size) {
-    Area.call(this, SettingsEditor.name, SettingsEditor.uiname, new Context(), pos, size);
+    super(SettingsEditor.name, SettingsEditor.uiname, new Context(), pos, size);
     
     this.mm = new MinMax(2);
     this.keymap = new KeyMap();
@@ -199,7 +199,7 @@ class SettingsEditor extends Area {
     
     this.mm.reset();
     var arr = [0, 0];
-    for (var c in this.children) {
+    for (var c of this.children) {
       this.mm.minmax(c.pos);
       arr[0] = c.pos[0]+c.size[0];
       arr[1] = c.pos[1]+c.size[1];

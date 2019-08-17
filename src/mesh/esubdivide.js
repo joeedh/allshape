@@ -12,7 +12,7 @@ var ES_FillFlags = {
 // algorithm; calling it "edge subdivide" may be a bit misleading.
 class ESubdivideOp extends MeshOp {
   constructor(Iterator edgeiter, int count) {
-    MeshOp.call(this, "esubd", "Edge Subdivide", "Smart Edge Subdivider", Icons.SPLIT_EDGES);
+    super("esubd", "Edge Subdivide", "Smart Edge Subdivider", Icons.SPLIT_EDGES);
     
     this.name = "EdgeSubdivide";
     this.uiname = "Split Edges"
@@ -56,7 +56,7 @@ function esubd_context(Mesh mesh, int count) {
   this.neset = new set<Edge>();
 }
 
-function subd_exec_type(mesh, f, verts, ectx);
+//function subd_exec_type(mesh, f, verts, ectx);
 
 function SubdPattern(Array<int> pat, Array<int> connect, subd_exec_type exec, int flag) { //exec is optional
   this.pat = new GArray<int>(pat);
@@ -360,7 +360,7 @@ function _edge_subdivide(Mesh mesh, Iterator edgeiter, int count, int fillmode)
 // algorithm; calling it "edge subdivide" may be a bit misleading.
 class QuadSubdOp extends MeshOp {
   constructor(Iterator faceiter, int count) {
-    MeshOp.call(this, "quad_subdivide", "Subdivide", "Subdivide selected faces\ninto quads", Icons.SUBDIVIDE);
+    super("quad_subdivide", "Subdivide", "Subdivide selected faces\ninto quads", Icons.SUBDIVIDE);
     
     //this.flag |= ToolFlags.USE_PARTIAL_UNDO;
     

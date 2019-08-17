@@ -19,7 +19,7 @@ var MPropTypes = {
 /*note: unlike ToolOps, MeshOps can call each other and recurse.*/
 class MeshOp extends ToolOpAbstract {
   constructor(String apiname, String uiname, String description, int icon=0) {
-    ToolOpAbstract.call(this, apiname, uiname, description, icon);
+    super(apiname, uiname, description, icon);
 
     this.flag = 0;
     this.undo_expand_lvl = 2; //for partial undo, how much to expand the partial mesh area
@@ -300,13 +300,13 @@ class MeshOpAPI {
   }
   
   call_op(op) {
-    for (var i in op.inputs) {
-      var input = op.inputs[i];
+    for (var k in op.inputs) {
+      var input = op.inputs[k];
       
       if (input.type == PropTypes.COLLECTION) {
         input.ctx = new ToolContext();
         
-        for (var e in input)  {
+        for (var e of input)  {
           e.flag |= Flags.DIRTY;
         }
       }
@@ -318,7 +318,7 @@ class MeshOpAPI {
 
 class RemoveDoublesOp extends MeshOp {
   constructor(vertiter) {
-    MeshOp.call(this, "remove_doubles", "Remove Doubles",  "Remove Duplicate Verts");
+    super("remove_doubles", "Remove Doubles",  "Remove Duplicate Verts");
   
     this.inputs = {
       radius: new FloatProperty(0.0005, "radius", "Radius", ""), 
@@ -345,12 +345,12 @@ class RemoveDoublesOp extends MeshOp {
     var shash = this.shash;
     var r = this.inputs.radius.data
     
-    for (var v in this.inputs.input_verts) {
+    for (var v of this.inputs.input_verts) {
       shash.add(v);
       v.flag &= ~Flags.TEMP;
     }
     
-    for (var v in this.inputs.input_verts) {
+    for (var v of this.inputs.input_verts) {
       if ((v.flag & Flags.TEMP) != 0) continue;
       v.flag |= Flags.TEMP;
       
@@ -364,7 +364,7 @@ class RemoveDoublesOp extends MeshOp {
       //var vlist = shash.query_radius(v.co, r);
       //console.log(vlist.length)
       
-      for (var v2 in this.inputs.input_verts) {
+      for (var v2 of this.inputs.input_verts) {
         if (v2.co.vectorDistance(v.co) > r) continue;
         
         if (v2 == v) continue;
@@ -377,7 +377,7 @@ class RemoveDoublesOp extends MeshOp {
       nv.no.normalize();
     }
     
-    for (var v in mesh.verts) {
+    for (var v of mesh.verts) {
       if ((v.flag & Flags.TEMP) != 0) continue;
       
       var nv = mesh2.make_vert(v.co, v.no);
@@ -387,7 +387,7 @@ class RemoveDoublesOp extends MeshOp {
     }
     
     /*only copy wire edges here*/
-    for (var e in mesh.edges) {
+    for (var e of mesh.edges) {
       if (e.v1.target == e.v2.target) continue;
       if (e.totface > 0) continue;
       
@@ -395,14 +395,14 @@ class RemoveDoublesOp extends MeshOp {
       mesh2.copy_vert_data(ne, e);
     }
     
-    for (var f in mesh.faces) {
+    for (var f of mesh.faces) {
       var vlists = new Array();
       
       for (var i=0; i<f.looplists.length; i++) {
         var verts = new Array();
         var list = f.looplists[i];
         
-        for (var l in list) {
+        for (var l of list) {
           if (verts.indexOf(l.v.target) == -1) {
             verts.push(l.v.target);
           }
@@ -427,7 +427,7 @@ class RemoveDoublesOp extends MeshOp {
 
 class SplitEdgeOp extends MeshOp {
   constructor(edgeiter) {
-    MeshOp.call(this, "split_edge", "Split Edge", "Split edges in two", Icons.SPLIT_EDGES);
+    super("split_edge", "Split Edge", "Split edges in two", Icons.SPLIT_EDGES);
   
     this.inputs = {
       radius: new FloatProperty(0.0005, "radius", "Radius", ""), 
@@ -441,7 +441,7 @@ class SplitEdgeOp extends MeshOp {
 
   exec(op, mesh) {
     var elist = list(this.inputs.input_edges);
-    for (var e in elist) {
+    for (var e of elist) {
       mesh.api.split_edge(e, 0.5);
     }
   }
@@ -449,7 +449,7 @@ class SplitEdgeOp extends MeshOp {
 
 class VertexConnectOp extends MeshOp {
   constructor (vertiter) {
-    MeshOp.call(this, "vertex_connect", "Connect", "Split faces between selected vertices");
+    super("vertex_connect", "Connect", "Split faces between selected vertices");
     
     this.uiname = "Vertex Connect"
     this.name = "VertConnect";
@@ -464,12 +464,12 @@ class VertexConnectOp extends MeshOp {
     var fdone = new set();
     var vset = new set();
     
-    for (var v in this.inputs.input_verts) {
+    for (var v of this.inputs.input_verts) {
         vset.add(v);
     }
     
-    for (var v in this.inputs.input_verts) {
-      for (var f in list(v.faces)) {
+    for (var v of this.inputs.input_verts) {
+      for (var f of list(v.faces)) {
         if (fdone.has(f))
           continue;
         
@@ -477,9 +477,9 @@ class VertexConnectOp extends MeshOp {
       }
     }
     
-    for (var f in fdone) {
+    for (var f of fdone) {
       var verts = new GArray();
-      for (var v in f.verts) {
+      for (var v of f.verts) {
         if (vset.has(v))
           verts.push(v);
       }
@@ -494,7 +494,7 @@ class VertexConnectOp extends MeshOp {
 
 class DissolveFacesOp extends MeshOp {
   constructor(faceiter) {
-    MeshOp.call(this, "dissolve_faces", "Dissolve", "Dissolve selected faces", Icons.DISSOLVE_FACES);
+    super("dissolve_faces", "Dissolve", "Dissolve selected faces", Icons.DISSOLVE_FACES);
     
     this.inputs = {
       faces: new CollectionProperty(undefined, [Face], "faces", "Faces", "")
@@ -510,7 +510,7 @@ class DissolveFacesOp extends MeshOp {
     var visit = new set();
     var cur = -1;
     
-    for (var f in fset) {
+    for (var f of fset) {
       if (visit.has(f)) continue;
       
       cur++;
@@ -523,8 +523,8 @@ class DissolveFacesOp extends MeshOp {
         visit.add(f2);
         shells[cur].push(f2);
         
-        for (var e in f2.edges) {
-          for (var f3 in e.faces) {
+        for (var e of f2.edges) {
+          for (var f3 of e.faces) {
             if (fset.has(f3) && !visit.has(f3)) {
               stack.push(f3);
               visit.add(f3);
@@ -534,7 +534,7 @@ class DissolveFacesOp extends MeshOp {
       }
     }
     
-    for (var s in shells) {
+    for (var s of shells) {
       mesh.api.join_faces(s);
     }
     
@@ -546,11 +546,11 @@ function vert_smooth(mesh, vertiter) {
   var cos = new GArray();
   
   var i = 0;
-  for (var v in vertiter) {
+  for (var v of vertiter) {
     var co = new Vector3(v.co);
     
     var j = 1;
-    for (var e in v.edges) {
+    for (var e of v.edges) {
       co.add(e.other_vert(v).co);
       j++;
     }
@@ -562,7 +562,7 @@ function vert_smooth(mesh, vertiter) {
   }
   
   i = 0
-  for (var v in vertiter) {
+  for (var v of vertiter) {
     v.co = cos[i];
     i++;
   }
@@ -570,7 +570,7 @@ function vert_smooth(mesh, vertiter) {
 
 class VertSmoothOp extends MeshOp {
   constructor(vertiter) {
-    MeshOp.call(this, "vertex_smooth", "Smooth Vertices", "Smoothes selected vertex positions", Icons.VERTEX_SMOOTH);
+    super("vertex_smooth", "Smooth Vertices", "Smoothes selected vertex positions", Icons.VERTEX_SMOOTH);
     
     this.flag |= ToolFlags.USE_PARTIAL_UNDO;
     
@@ -594,7 +594,7 @@ class VertSmoothOp extends MeshOp {
 
 class ExtrudeFacesOp extends MeshOp {
   constructor(faceiter) {
-    MeshOp.call(this, "extrude_faces", "Extrude Faces", "Extrude selected faces");
+    super("extrude_faces", "Extrude Faces", "Extrude selected faces");
     
     this.flag |= ToolFlags.USE_PARTIAL_UNDO;
 
@@ -625,10 +625,10 @@ class ExtrudeFacesOp extends MeshOp {
         }
     }
     
-    for (var f in fiter) {
-        for (var l in f.loops) {
+    for (var f of fiter) {
+        for (var l of f.loops) {
             var count = 0;
-            for (var l2 in l.e.loops) {
+            for (var l2 of l.e.loops) {
                 if (fset.has(l2.f)) 
                    count++;
             }
@@ -645,16 +645,16 @@ class ExtrudeFacesOp extends MeshOp {
     var vdel = new set()
     var edel = new set()
     var no = new Vector3()
-    for (var f in fset) {
+    for (var f of fset) {
         var vlists = new GArray()
         
         f.recalc_normal();
         no.add(f.no);
         
-        for (var list in f.looplists) {
+        for (var list of f.looplists) {
             var verts = new GArray()
             vlists.push(verts)
-            for (var l in list) {
+            for (var l of list) {
                 if (vmap.has(l.v)) {
                     verts.push(vmap.get(l.v));
                 } else {
@@ -675,7 +675,7 @@ class ExtrudeFacesOp extends MeshOp {
         var ls = g_list(f.loops)
         var ei = 0;
         
-        for (var l2 in f2.loops) {
+        for (var l2 of f2.loops) {
             mesh.copy_loop_data(l2, ls[ei]);
             mesh.copy_edge_data(l2.e, ls[ei].e);
             
@@ -698,11 +698,11 @@ class ExtrudeFacesOp extends MeshOp {
         mesh.kill_face(f);
     }    
     
-    for (var e in edel) {
+    for (var e of edel) {
         mesh.kill_edge(e);
     }
     
-    for (var v in vdel) {
+    for (var v of vdel) {
         mesh.kill_vert(v);
     }
     
@@ -717,7 +717,7 @@ class ExtrudeFacesOp extends MeshOp {
 
 class ExtrudeEdgesOp extends MeshOp {
   constructor(edgeiter) {
-    MeshOp.call(this, "extrude_edges", "Extrude Edges", "Extrude selected edges");
+    super("extrude_edges", "Extrude Edges", "Extrude selected edges");
     
     this.flag |= ToolFlags.USE_PARTIAL_UNDO;
 
@@ -750,12 +750,12 @@ class ExtrudeEdgesOp extends MeshOp {
         return vmap.get(v);
     }
     
-    for (var e in eiter) {
+    for (var e of eiter) {
       e.index = 0;
       eset.add(e);
     }
     
-    for (var e in eset) {
+    for (var e of eset) {
       if (e.index == -1)
         continue;
       
@@ -798,7 +798,7 @@ class ExtrudeEdgesOp extends MeshOp {
 
 class ExtrudeVertsOp extends MeshOp {
   constructor(vertiter) {
-    MeshOp.call(this, "extrude_verts", "Extrude Verts", "Extrude selected vertices");
+    super("extrude_verts", "Extrude Verts", "Extrude selected vertices");
     
     this.inputs = {
       input_verts: new CollectionProperty(undefined, [Vertex], "input_verts", "Vertices", ""),
@@ -817,11 +817,11 @@ class ExtrudeVertsOp extends MeshOp {
 
     var no = new Vector3();    
     
-    for (var v in viter) {
+    for (var v of viter) {
       v.index = 0;
     }    
     
-    for (var v in viter) {
+    for (var v of viter) {
       if (v.index == -1)
         continue;
         
@@ -835,7 +835,7 @@ class ExtrudeVertsOp extends MeshOp {
       
       /*only form a group normal for verts with faces*/
       var found = false;
-      for (var f in v.faces) {
+      for (var f of v.faces) {
         found = true;
         break;
       }
@@ -855,7 +855,7 @@ class ExtrudeVertsOp extends MeshOp {
 //extrudes vertices and edges as well as faces
 class ExtrudeAllOp extends MeshOp {
   constructor(elementiter) {
-    MeshOp.call(this, "extrude_all", "Extrude", "Extrude selected geometry", Icons.EXTRUDE);
+    super("extrude_all", "Extrude", "Extrude selected geometry", Icons.EXTRUDE);
     
     this.flag |= ToolFlags.USE_PARTIAL_UNDO;
     
@@ -876,7 +876,7 @@ class ExtrudeAllOp extends MeshOp {
     var eset = new set(), edges = new GArray();
     var fset = new set(), faces = new GArray();
     
-    for (var e in this.inputs.elements) {
+    for (var e of this.inputs.elements) {
       if (e.type == MeshTypes.VERT)  {
         vset.add(e);
       } else if (e.type == MeshTypes.EDGE) {
@@ -886,17 +886,17 @@ class ExtrudeAllOp extends MeshOp {
       }
     }
     
-    for (var e in this.inputs.elements) {
+    for (var e of this.inputs.elements) {
       if (e.type == MeshTypes.VERT) {
         var found = false;
-        for (var l in e.loops) {
+        for (var l of e.loops) {
           if (eset.has(l.e) || fset.has(l.f)) {
             found = true;
             break;
           }
         }
         
-        for (var e2 in e.edges) {
+        for (var e2 of e.edges) {
           if (eset.has(e2)) {
             found = true;
             break;
@@ -905,7 +905,7 @@ class ExtrudeAllOp extends MeshOp {
         
         if (!found) verts.push(e);          
       } else if (e.type == MeshTypes.EDGE) {
-        for (var l in e.loops) {
+        for (var l of e.loops) {
           var found = false;
           
           if (fset.has(l.f)) {
@@ -949,7 +949,7 @@ class ExtrudeAllOp extends MeshOp {
 //XXX need to add option to only consider selected faces
 class OutsideNormalsOp extends MeshOp {
   constructor(faceiter) {
-    MeshOp.call(this, "fix_normals", "Fix Normals", "Make face normals point outside the mesh");
+    super("fix_normals", "Fix Normals", "Make face normals point outside the mesh");
     
     this.inputs = {
       faces: new CollectionProperty(undefined, [Face], "faces", "Faces", ""),
@@ -966,7 +966,7 @@ class OutsideNormalsOp extends MeshOp {
 
 class FlipNormalsOp extends MeshOp {
   constructor(faceiter) {
-    MeshOp.call(this, "flip_normals", "Flip Normals", "Flip normals of selected faces", Icons.FLIP_NORMALS);
+    super("flip_normals", "Flip Normals", "Flip normals of selected faces", Icons.FLIP_NORMALS);
     
     this.inputs = {
       faces: new CollectionProperty(undefined, [Face], "faces", "Faces", ""),
@@ -976,7 +976,7 @@ class FlipNormalsOp extends MeshOp {
   }
 
   exec(op, mesh) {
-    for (var f in this.inputs.faces) {
+    for (var f of this.inputs.faces) {
       mesh.api.reverse_winding(f);
     }
     
@@ -986,7 +986,7 @@ class FlipNormalsOp extends MeshOp {
 
 class DeleteVertsOp extends MeshOp {
   constructor(vertiter) {
-    MeshOp.call(this, "delete_verts", "Delete Verts", "Delete selected vertices and connected edges/faces");
+    super("delete_verts", "Delete Verts", "Delete selected vertices and connected edges/faces");
     
     this.uiname = "Delete Vertices"
     this.name = "DeleteVertices";
@@ -1001,7 +1001,7 @@ class DeleteVertsOp extends MeshOp {
     var iter = this.inputs.verts.__iterator__();
     //this.inputs.verts.reset();
     var verts = list(this.inputs.verts);
-    for (var v in verts) {
+    for (var v of verts) {
       mesh.kill_vert(v);
     }
     
@@ -1011,7 +1011,7 @@ class DeleteVertsOp extends MeshOp {
 
 class DeleteEdgesOp extends MeshOp {
   constructor(vertiter) {
-    MeshOp.call(this, "delete_edges", "Delete Edges", "Delete selected edges and connected faces/vertices");
+    super("delete_edges", "Delete Edges", "Delete selected edges and connected faces/vertices");
     
     this.uiname = "Delete Edges"
     this.name = "DeleteEdges";
@@ -1026,7 +1026,7 @@ class DeleteEdgesOp extends MeshOp {
     var iter = this.inputs.edges.__iterator__();
     //this.inputs.edges.reset();
     var edges = list(this.inputs.edges);
-    for (var v in edges) {
+    for (var v of edges) {
       mesh.kill_edge(v);
     }
     
@@ -1036,7 +1036,7 @@ class DeleteEdgesOp extends MeshOp {
 
 class DeleteFacesOp extends MeshOp {
   constructor(vertiter) {
-    MeshOp.call(this, "delete_faces", "Only Faces", "Remove selected faces");
+    super("delete_faces", "Only Faces", "Remove selected faces");
     
     this.inputs = {
       faces: new CollectionProperty(undefined, [Face], "faces", "Faces", ""),
@@ -1049,7 +1049,7 @@ class DeleteFacesOp extends MeshOp {
     var iter = this.inputs.faces.__iterator__();
     //this.inputs.faces.reset();
     var faces = list(this.inputs.faces);
-    for (var v in faces) {
+    for (var v of faces) {
       mesh.kill_face(v);
     }
     
@@ -1059,7 +1059,7 @@ class DeleteFacesOp extends MeshOp {
 
 class DeleteFaceRegionOp extends MeshOp {
   constructor(vertiter) {
-    MeshOp.call(this, "delete_faces", "Delete Faces", "Delete faces and interior vertices/edges\n (but not exterior or border verts/edges)");
+    super("delete_faces", "Delete Faces", "Delete faces and interior vertices/edges\n (but not exterior or border verts/edges)");
     
     this.inputs = {
       faces: new CollectionProperty(undefined, [Face], "faces", "Faces", ""),
@@ -1076,16 +1076,16 @@ class DeleteFaceRegionOp extends MeshOp {
     var eset = new set();
     var vset = new set();
     
-    for (var f in this.inputs.faces) {
+    for (var f of this.inputs.faces) {
       fset.add(f);
     }
     
-    for (var f in this.inputs.faces) {
+    for (var f of this.inputs.faces) {
       var global_found = false;
       
-      for (var l in f.loops) {
+      for (var l of f.loops) {
         var found = false;
-        for (var l2 in l.v.loops) {
+        for (var l2 of l.v.loops) {
           if (!fset.has(l2.f)) {
             found = true;
             break;
@@ -1098,9 +1098,9 @@ class DeleteFaceRegionOp extends MeshOp {
         }
       }
       
-      for (var l in f.loops) {
+      for (var l of f.loops) {
         var found = false;
-        for (var l2 in l.e.loops) {
+        for (var l2 of l.e.loops) {
           if (!fset.has(l2.f)) {
             found = true;
             break;
@@ -1117,15 +1117,15 @@ class DeleteFaceRegionOp extends MeshOp {
         delfset.add(f);
     }
     
-    for (var v in vset) {
+    for (var v of vset) {
       mesh.kill_vert(v);
     }
     
-    for (var e in eset) {
+    for (var e of eset) {
       mesh.kill_edge(e);
     }
     
-    for (var f in delfset) {
+    for (var f of delfset) {
       mesh.kill_face(f);
     }
     
@@ -1136,7 +1136,7 @@ class DeleteFaceRegionOp extends MeshOp {
 
 class TriangulateOp extends MeshOp {
   constructor(faceiter) {
-    MeshOp.call(this, "triangulate", "Triangulate", "Turn selected faces into triangles", Icons.TRIANGULATE);
+    super("triangulate", "Triangulate", "Turn selected faces into triangles", Icons.TRIANGULATE);
     
     this.inputs = {
       faces: new CollectionProperty(undefined, [Face], "faces", "Faces", ""),
@@ -1148,7 +1148,7 @@ class TriangulateOp extends MeshOp {
   exec(op, mesh) {
     var faces = list(this.inputs.faces);
     
-    for (var f in faces) {
+    for (var f of faces) {
       var fset = triangulate(mesh, f);
       //tris_to_quads(mesh, fset);
     }
@@ -1159,7 +1159,7 @@ class TriangulateOp extends MeshOp {
 
 class Tri2QuadOp extends MeshOp {
   constructor(faceiter) {
-    MeshOp.call(this, "tris2quads", "Tris2Quads", "Turn selected triangles into quads", Icons.TRI2QUAD);
+    super("tris2quads", "Tris2Quads", "Turn selected triangles into quads", Icons.TRI2QUAD);
     
     this.uiname = "Tris2Quads"
     this.name = "tri2quad";
@@ -1173,7 +1173,7 @@ class Tri2QuadOp extends MeshOp {
   exec(op, mesh) {
     var fset = new set();
     
-    for (var f in this.inputs.faces) {
+    for (var f of this.inputs.faces) {
       if (f.totvert == 3)
         fset.add(f);
     }
@@ -1185,7 +1185,7 @@ class Tri2QuadOp extends MeshOp {
 
 class AddCubeOp extends MeshOp {
   constructor() {
-    MeshOp.call(this);
+    super();
     
     this.flag |= ToolFlags.USE_DEFAULT_INPUT;
     
@@ -1247,7 +1247,7 @@ class AddCubeOp extends MeshOp {
 
 class AddCircleOp extends MeshOp {
   constructor() {
-    MeshOp.call(this);
+    super();
     
     this.flag |= ToolFlags.USE_DEFAULT_INPUT;
     
@@ -1298,7 +1298,7 @@ class AddCircleOp extends MeshOp {
 
 class MeshDuplicateOp extends MeshOp {
   constructor(geometry) {
-    MeshOp.call(this, "duplicate", "Duplicate", "Duplicate selected geometry", Icons.DUPLICATE);
+    super("duplicate", "Duplicate", "Duplicate selected geometry", Icons.DUPLICATE);
     
     this.inputs = {
       geometry: new CollectionProperty(undefined, [Element], "geometry", "Geometry", ""),

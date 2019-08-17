@@ -13,7 +13,7 @@ var fdialog_exclude_chars = new set([
 
 class FileDialog extends PackedDialog {
   constructor(mode, ctx, callback) {
-    PackedDialog.call(this, FileDialogModes[mode], ctx, ctx.screen);
+    super(FileDialogModes[mode], ctx, ctx.screen);
     
     this.subframe.default_packflag |= PackFlags.INHERIT_WIDTH;
 
@@ -168,7 +168,7 @@ function download_file(path, on_finish, path_label=path, use_note=false,
 
 class FileOpenOp extends ToolOp {  
   constructor() {
-    ToolOp.call(this, "open_file", "Open");
+    super("open_file", "Open");
     
     this.is_modal = false;
     
@@ -222,7 +222,7 @@ class FileOpenOp extends ToolOp {
 
 class FileSaveAsOp extends ToolOp {
   constructor() {
-    ToolOp.call(this, "save_file_as", "Save As");
+    super("save_file_as", "Save As");
     
     this.is_modal = false;
     
@@ -281,7 +281,7 @@ class FileSaveAsOp extends ToolOp {
 
 class FileNewOp extends ToolOp {
   constructor() {
-    ToolOp.call(this, "new_file", "New");
+    super("new_file", "New");
 
     this.is_modal = false;
     
@@ -306,7 +306,7 @@ class FileNewOp extends ToolOp {
 
 class FileSaveOp extends ToolOp {
   constructor(Boolean do_progress=true) {
-    ToolOp.call(this, "save_file", "Save");
+    super("save_file", "Save");
 
     this.do_progress = true;
     this.is_modal = false;
@@ -385,7 +385,7 @@ function test_progress_dialog() {
 
 class ProgressDialog extends PackedDialog {
   constructor(Context ctx, String label, float val=0.0, float min=0.0, float max=1.0) {
-    PackedDialog.call(this, label, ctx, ctx.screen);
+    super(label, ctx, ctx.screen);
     
     this.pos = [0,0];
     this.closed = false;
@@ -434,7 +434,7 @@ class ProgressDialog extends PackedDialog {
 
 class LoginDialog extends PackedDialog {
   constructor(ctx) {
-    PackedDialog.call(this, "User Login", ctx, ctx.screen);
+    super("User Login", ctx, ctx.screen);
     
     this.pos = [0,0];
     this.closed = false;
@@ -542,7 +542,7 @@ function login_dialog(ctx)
 
 class FileSaveSTLOp extends ToolOp {
   constructor() {
-    ToolOp.call(this, "export_stl", "Export STL");
+    super("export_stl", "Export STL");
     
     this.is_modal = false;
     
@@ -615,7 +615,7 @@ class FileSaveSTLOp extends ToolOp {
 
 class FileSaveB64Op extends ToolOp {
   constructor() {
-    ToolOp.call(this, "export_al3_b64", "Export AL3-B64");
+    super("export_al3_b64", "Export AL3-B64");
     
     this.is_modal = false;
     

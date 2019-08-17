@@ -661,10 +661,6 @@ function send_mesh(Mesh mesh)
   //localStorage.mesh_bytes = data;
 }
 
-function NetJobFinish(job, owner);
-function NetJobError(job, owner, error);
-function NetJobStatus(job, owner, status) : NetStatus;
-
 function NetStatus() {
   this.progress = 0 : float;
   this.status_msg = "";

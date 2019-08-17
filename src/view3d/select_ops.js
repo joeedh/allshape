@@ -1,6 +1,6 @@
 class SelectOpAbstract extends ToolOp {
   constructor(String apiname, String uiname, String description, int icon) {
-    ToolOp.call(this, apiname, uiname, description, icon);
+    super(apiname, uiname, description, icon);
     
     this._undo_presel = undefined;
   }
@@ -13,17 +13,17 @@ class SelectOpAbstract extends ToolOp {
     var a3 = new Array(m.faces._totsel);
 
     var i = 0;
-    for (var v in m.verts.selected) {
+    for (var v of m.verts.selected) {
       a1[i++] = v.eid;
     }
     
     i = 0;
-    for (var e in m.edges.selected) {
+    for (var e of m.edges.selected) {
       a2[i++] = e.eid;
     }
     
     i = 0;
-    for (var f in m.faces.selected) {
+    for (var f of m.faces.selected) {
       a3[i++] = f.eid;
     }
     
@@ -34,15 +34,15 @@ class SelectOpAbstract extends ToolOp {
     var lst = this._undo_presel;
     var mesh = ctx.mesh;
     
-    for (var v in mesh.verts.selected) {
+    for (var v of mesh.verts.selected) {
       mesh.verts.select(v, false);
     }
     
-    for (var e in mesh.edges.selected) {
+    for (var e of mesh.edges.selected) {
       mesh.edges.select(e, false);
     }
     
-    for (var f in mesh.faces.selected) {
+    for (var f of mesh.faces.selected) {
       mesh.faces.select(f, false);
     }
     
@@ -67,7 +67,7 @@ class SelectOpAbstract extends ToolOp {
 
 class SelectOp extends SelectOpAbstract {
   constructor(mode) {
-    SelectOpAbstract.call(this, "mesh_select", "Select");
+    super("mesh_select", "Select");
     
     this.is_modal = false;
     this.flag = ToolFlags.HIDE_TITLE_IN_LAST_BUTTONS;
@@ -96,19 +96,19 @@ class SelectOp extends SelectOpAbstract {
     
     var mode = this.inputs.mode.data == "subtract"
     
-    for (var eid in this.inputs.eid_vs.data) {
+    for (var eid of this.inputs.eid_vs.data) {
       var v = verts.get(eid);
       
       mesh.verts.select(v, !mode);
     }
 
-    for (var eid in this.inputs.eid_es.data) {
+    for (var eid of this.inputs.eid_es.data) {
       var e = edges.get(eid);
 
       mesh.edges.select(e, !mode);
     }
 
-    for (var eid in this.inputs.eid_fs.data) {
+    for (var eid of this.inputs.eid_fs.data) {
       var f = faces.get(eid);
       
       mesh.faces.select(f, !mode);
@@ -124,7 +124,7 @@ class SelectOp extends SelectOpAbstract {
 
 class ToggleSelectAllOp extends SelectOpAbstract {
   constructor(mode) {
-    SelectOpAbstract.call(this, "mesh_toggle_select_all", "Toggle Sel", "Select All/None", Icons.SELECT_ALL);
+    super("mesh_toggle_select_all", "Toggle Sel", "Select All/None", Icons.SELECT_ALL);
     
     if (mode == undefined)
       mode = "auto";
@@ -158,7 +158,7 @@ class ToggleSelectAllOp extends SelectOpAbstract {
       lst = ctx.mesh.faces;
     
     if (this.inputs.mode.data == "auto") {
-      for (var v in lst) {
+      for (var v of lst) {
         if ((v.flag & Flags.SELECT) != 0) {
           mode = 1;
           break;
@@ -169,7 +169,7 @@ class ToggleSelectAllOp extends SelectOpAbstract {
     }
     
     var mesh = ctx.mesh;
-    for (var v in lst) {
+    for (var v of lst) {
       lst.select(v, !mode);
     }
     
@@ -180,7 +180,7 @@ class ToggleSelectAllOp extends SelectOpAbstract {
 
 class EdgeLoopOp extends SelectOpAbstract {
   constructor(mode="add") {
-    SelectOpAbstract.call(this, "mesh_eloop_select", "Loop Select", 
+    super("mesh_eloop_select", "Loop Select",
                           "Select edge loop", Icons.EDGE_LOOP_SEL);
     
     this.is_modal = false;
@@ -248,7 +248,7 @@ class EdgeLoopOp extends SelectOpAbstract {
   exec(ctx) {
     var flush = this.inputs.do_flush.data;
     
-    for (var e in this.inputs.eid_es.data) {
+    for (var e of this.inputs.eid_es.data) {
       e = ctx.mesh.edges.get(e);
       
       if (e != undefined)
@@ -265,7 +265,7 @@ class EdgeLoopOp extends SelectOpAbstract {
 
 class EdgeLoopOpModal extends EdgeLoopOp {
   constructor(mode="add") {
-    EdgeLoopOp.call(this, mode);
+    super(mode);
     
     this.inputs.single = new BoolProperty(false, "select_single", "Select Single", "Clear selection first");
     this.is_modal = true;
@@ -337,7 +337,7 @@ class EdgeLoopOpModal extends EdgeLoopOp {
 
 class FaceLoopOp extends SelectOpAbstract {
   constructor(String mode="add") {
-    SelectOpAbstract.call(this, "mesh_floop_select", "Face Loop", "Face Loop Select", Icons.FACE_LOOP_SEL);
+    super("mesh_floop_select", "Face Loop", "Face Loop Select", Icons.FACE_LOOP_SEL);
     
     this.is_modal = false;
     this.flag = ToolFlags.HIDE_TITLE_IN_LAST_BUTTONS;
@@ -362,12 +362,12 @@ class FaceLoopOp extends SelectOpAbstract {
     
     var ls = list(edge.loops);
     
-    for (var l in ls) {
+    for (var l of ls) {
       e = edge;
       do {
         mesh.faces.select(l.f, mode);
         if (flush) {
-          for (var v in l.f.verts) {
+          for (var v of l.f.verts) {
             mesh.verts.select(v);
           }
         }
@@ -389,7 +389,7 @@ class FaceLoopOp extends SelectOpAbstract {
   exec(ctx) {
     var flush = this.inputs.do_flush.data;
     
-    for (var e in this.inputs.eid_es.data) {
+    for (var e of this.inputs.eid_es.data) {
       e = ctx.mesh.edges.get(e);
       this.floop_select(ctx, e, flush);
     }
@@ -404,7 +404,7 @@ class FaceLoopOp extends SelectOpAbstract {
 
 class FaceLoopOpModal extends FaceLoopOp {
   constructor(String mode="add") {
-    FaceLoopOp.call(this, mode);
+    super(mode);
     
     this.inputs.single = new BoolProperty(false, "select_single", "Select Single", "Clear selection first");
     this.is_modal = true;
@@ -476,7 +476,7 @@ class FaceLoopOpModal extends FaceLoopOp {
 
 class CircleDraw extends UIElement {
   constructor(ctx, radius) {
-    UIElement.call(this, ctx);
+    super(ctx);
     
     this.radius = radius;
     this.set_radius(radius);
@@ -509,7 +509,7 @@ class CircleDraw extends UIElement {
 
 class CircleSelectOp extends SelectOpAbstract {
   constructor(selectmode=undefined) {
-    SelectOpAbstract.call(this, "mesh_circle_select", "Circle Select", " ", Icons.CIRCLE_SEL);
+    super("mesh_circle_select", "Circle Select", " ", Icons.CIRCLE_SEL);
     
     this.is_modal = true;
     this.flag = ToolFlags.HIDE_TITLE_IN_LAST_BUTTONS;
@@ -548,10 +548,10 @@ class CircleSelectOp extends SelectOpAbstract {
     prior(CircleSelectOp, this).end_modal.call(this);
     
     var arr1 = new GArray(), arr2 = new GArray();
-    for (var e in this.selset) {
+    for (var e of this.selset) {
       arr1.push(e.eid);
     }
-    for (var e in this.unselset) {
+    for (var e of this.unselset) {
       arr2.push(e.eid);
     }
     
@@ -590,7 +590,7 @@ class CircleSelectOp extends SelectOpAbstract {
     if (selmode & MeshTypes.VERT) {
       var co = new Vector3();
       
-      for (var v in mesh.verts) {
+      for (var v of mesh.verts) {
         if (use_mapco)
           co.load(v.mapco);
         else
@@ -611,7 +611,7 @@ class CircleSelectOp extends SelectOpAbstract {
       var co1 = new Vector3();
       var co2 = new Vector3();
       
-      for (var e in mesh.edges) {
+      for (var e of mesh.edges) {
         if (use_mapco) {
           co1.load(e.v1.mapco);
           co2.load(e.v2.mapco);
@@ -634,7 +634,7 @@ class CircleSelectOp extends SelectOpAbstract {
     
     if (selmode & MeshTypes.FACE) {
       var co = new Vector3();
-      for (var f in mesh.faces) {
+      for (var f of mesh.faces) {
         if (use_mapco)
           co.load(f.mapcenter);
         else
@@ -819,12 +819,12 @@ class CircleSelectOp extends SelectOpAbstract {
   exec(ctx) {
     var mesh = ctx.mesh;
     
-    for (var e in this.inputs.sel_eids.data) {
+    for (var e of this.inputs.sel_eids.data) {
       e = mesh.eidmap[e];
       mesh.select(e, true);
     }
     
-    for (var e in this.inputs.unsel_eids.data) {
+    for (var e of this.inputs.unsel_eids.data) {
       e = mesh.eidmap[e];
       mesh.select(e, false);
     }

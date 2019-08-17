@@ -4,7 +4,7 @@
 
 class UITextBox extends UIElement {
   constructor(ctx, text="", pos=undefined, size=undefined, path=undefined) {
-    UIElement.call(this, ctx, path);
+    super(ctx, path);
     
     this.on_end_edit = undefined;
     
@@ -279,7 +279,7 @@ class UITextBox extends UIElement {
         return e;
       
       if (e instanceof UIFrame) {
-        for (var c in e.children) {
+        for (var c of e.children) {
           var ret = find_textbox(c, exclude);
           if (ret != undefined)
             return ret;

@@ -74,7 +74,7 @@ var get_data_typemap = function() {
 
 class DataRef extends Array {
   constructor(block_or_id, lib=undefined) {
-    Array.call(this, 2);
+    super(2);
     this.length = 2;
     
     if (lib != undefined && lib instanceof DataLib)
@@ -138,14 +138,9 @@ DataRef.STRUCT = """
 """
 
 class DataRefListIter<T> extends ToolIter {
-  Array lst;
-  
-  DataLib datalib;
-  IterRet<T> ret;
-  Boolean init;
-  int i;
-  
   constructor(Array lst, Context ctx) {
+    super();
+
     this.lst = lst;
     this.i = 0;
     this.datalib = ctx.datalib;
@@ -178,12 +173,9 @@ class DataRefListIter<T> extends ToolIter {
 }
 
 class DataList<T> extends ES5Iter {
-  GArray<T> list;
-  ObjectMap<String,T> namemap;
-  int type;
-  T active;
-  
   constructor(int type) {
+    super();
+
     this.list = new GArray();
     this.namemap = {};
     this.type = type;
@@ -200,12 +192,6 @@ class DataList<T> extends ES5Iter {
 }
 
 class DataLib {
-  hashtable<int,DataList>  datalists;
-  ObjectMap<int,DataBlock> idmap;
-  EIDGen idgen;
-  
-  int id;
-  
   constructor() {
     this.id = 0;
     this.datalists = new hashtable();
@@ -214,9 +200,9 @@ class DataLib {
   }
     
   on_gl_lost(WebGLRenderingContext new_gl) {
-    for (var k in this.datalists) {
+    for (var k of this.datalists) {
       var l = this.datalists.get(k);
-      for (var block in l) {
+      for (var block of l) {
         block.on_gl_lost(new_gl);
       }
     }
@@ -258,7 +244,7 @@ class DataLib {
     
     //paranoid check
     if (RELEASE) {
-      for (var sce in this.scenes) {
+      for (var sce of this.scenes) {
         if (block in sce.objects) {
           sce.remove(block);
         }
@@ -403,9 +389,6 @@ class DataLib {
 }
 
 class UserRef {
-  String user, srcname;
-  Function rem_func;
-  
   constructor() {
     this.user = 0;
     this.rem_func = 0;
@@ -435,16 +418,7 @@ _DBCustomDataKeyVal.STRUCT = """
 
 var _db_hash_id = 1;
 class DataBlock {
-  String name;
-  DataLib lib_lib;
-  GArray lib_users;
-  
-  int flag, lib_type;
-  int lib_refs, lib_id;
-  int _hash_id;
-  
-  ObjLit custom_data;
-  
+
   constructor(int type, String name) {
     this.constructor.datablock_type = type;
     

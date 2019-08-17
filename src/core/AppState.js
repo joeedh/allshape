@@ -236,7 +236,7 @@ class AppState {
   destroy() { //destroy GL object references
     var gl = this.gl;
     
-    for (var m in this.datalib.meshes) {
+    for (var m of this.datalib.meshes) {
       m.render.destroy();
     }
     
@@ -301,7 +301,7 @@ class AppState {
     
     this.mesh = m2;
     
-    for (var c in this.screen.children) {
+    for (var c of this.screen.children) {
       if (c instanceof ScreenArea) {
         if (View3DHandler.name in c.editors)
           c.editors[View3DHandler.name].mesh = m2;
@@ -477,8 +477,8 @@ class AppState {
     }
     
     var data2 = [];
-    for (var lib in this.datalib.datalists.values()) {
-      for (var block in lib) {
+    for (var lib of this.datalib.datalists.values()) {
+      for (var block of lib) {
         data2 = [];
 
         istruct.write_object(data2, block);
@@ -591,7 +591,7 @@ class AppState {
     bheader(data, "SDEF", "SDEF") ;
     pack_string(data, buf);
     
-    for (var k in blocks) {
+    for (var k of blocks) {
       var data2 = []
       istruct.write_object(data2, blocks[k]);
 
@@ -637,11 +637,11 @@ class AppState {
     if (version <= 0.02) {
       //subsurf flag moved from view3d.editor to object
       console.log("---doing version 0.02->0.03 changes---");
-      for (var b in blocks) {
+      for (var b of blocks) {
         if (b.type != "SCRN") continue;
         
         var screen = b.data;
-        for (var scr in screen.areas) {
+        for (var scr of screen.areas) {
           console.log("-------->", scr);
           if (!(scr.area instanceof View3DHandler)) continue;
           console.log(scr.area.use_subsurf);
@@ -667,14 +667,14 @@ class AppState {
     
     if (version <= 0.03) {
       //rebuild scene graph from scratch
-      for (var sce in datalib.scenes) {
+      for (var sce of datalib.scenes) {
         sce.graph = undefined;
       }
     }
     
     console.log("VERSION FILE LOAD", version);
     if (version < 0.041) {
-      for (var sce in datalib.scenes) {
+      for (var sce of datalib.scenes) {
         //rebuild scene graph. . .
         sce.graph = undefined;
       }
@@ -686,7 +686,7 @@ class AppState {
       var stack = this.toolstack.undostack;
       
       //remove any existing, broken root operators
-      for (var tool in stack) {
+      for (var tool of stack) {
         if (tool.flag & UndoFlags.IS_ROOT_OPERATOR) {
           stack.remove(tool);
         }
@@ -778,7 +778,7 @@ class AppState {
         fstructs.parse_structs(bdata);
         
         //append any unrecognized dummy structs to istruct
-        for (var stt in fstructs.dummies) {
+        for (var stt of fstructs.dummies) {
           console.log(" - loading dummy class ", stt.name);
           
           //don't override if already in istruct
@@ -892,7 +892,7 @@ class AppState {
       this2.size = size;
       
       //stupid. . .
-      for (var sa in screen.areas) {
+      for (var sa of screen.areas) {
         //need to get rid of appstate.active_view3d
         if (sa.area instanceof View3DHandler) {
           this2.active_view3d = sa.area;
@@ -934,7 +934,7 @@ class AppState {
       p1.push(tool);
       p2.push(tool.saved_context);
       
-      for (var t in tool.tools) {
+      for (var t of tool.tools) {
         if (t instanceof ToolMacro)
           add_macro(p1, p2, t);
         
@@ -1156,7 +1156,7 @@ class AppState {
     if (screen != undefined) {
       this.active_view3d = undefined;
       
-      for (var sa in screen.areas) {
+      for (var sa of screen.areas) {
         //need to get rid of appstate.active_view3d
         if (sa.area instanceof View3DHandler) {
           this.active_view3d = sa.area;
@@ -1734,7 +1734,7 @@ class ToolStack {
     }
     
     if (tool instanceof ToolMacro) {
-      for (var t2 in tool.tools) {
+      for (var t2 of tool.tools) {
         this.set_tool_coll_flag(t2);
       }
     }

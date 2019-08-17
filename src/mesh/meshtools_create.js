@@ -12,9 +12,9 @@ function do_hull_points(set<Vertex> vset, Mesh mesh) {
   var sverts = new GArray();
   
   /*validate selection for this tool*/
-  for (var v in vset) {
+  for (var v of vset) {
     var totsel = 0;
-    for (var e in v.edges) {
+    for (var e of v.edges) {
       totsel += e.flag & Flags.SELECT;
     }
     
@@ -25,7 +25,7 @@ function do_hull_points(set<Vertex> vset, Mesh mesh) {
   
   var vset2 = new set();
   
-  for (var v in vset) {
+  for (var v of vset) {
     if (vset2.has(v))
       continue;
     
@@ -52,7 +52,7 @@ function do_hull_points(set<Vertex> vset, Mesh mesh) {
     do {
       var nv = null;
       
-      for (var e2 in v2.edges) {
+      for (var e2 of v2.edges) {
         if (e2 != e) {
           e = e2;
           nv = e.other_vert(v2);
@@ -87,7 +87,7 @@ function do_hull_points(set<Vertex> vset, Mesh mesh) {
       sv.verts.push(v2);
       
       var nv = null;      
-      for (var e2 in v2.edges) {
+      for (var e2 of v2.edges) {
         if (e2 != e) {
           e = e2;
           nv = e.other_vert(v2);
@@ -112,7 +112,7 @@ function do_hull_points(set<Vertex> vset, Mesh mesh) {
   var nv = new Vector3();
   var mm = new MinMax(3);
   
-  for (var v in vset) {
+  for (var v of vset) {
     mm.minmax(v.co);
   }
   
@@ -173,7 +173,7 @@ function do_hull_points(set<Vertex> vset, Mesh mesh) {
   cent.multVecMatrix(mat);
   mm.reset();
   
-  for (var v in vset) {
+  for (var v of vset) {
     co.load(v.co).multVecMatrix(mat);
     co[2] = 0.0;
     mm.minmax(co);
@@ -246,8 +246,8 @@ function do_hull_points(set<Vertex> vset, Mesh mesh) {
   sverts.sort(ESortCmp);
   
   var vs = new GArray();
-  for (var sv in sverts) {
-    for (var v in sv.verts) {
+  for (var sv of sverts) {
+    for (var v of sv.verts) {
       vs.push(v);
     }
   }
@@ -255,7 +255,7 @@ function do_hull_points(set<Vertex> vset, Mesh mesh) {
   var f = mesh.make_face(vs);
   
   mesh.faces.select(f, true);
-  for (var e in f.edges) {
+  for (var e of f.edges) {
     mesh.edges.select(e, true);
   }
   
@@ -268,7 +268,7 @@ function do_frame_dill(vset, mesh) {
 
 class ContextCreateOp extends MeshOp {
   constructor(vertiter) {
-    MeshOp.call(this, "context_create", "Create Face", "Create face from selection");
+    super("context_create", "Create Face", "Create face from selection");
     
     //this.flag |= ToolFlags.USE_PARTIAL_UNDO;
       

@@ -28,7 +28,7 @@ class GeoLayerType {
   
   interp(GArray<GeoLayerType> data, GArray<float> weights) {
     var i = 0;
-    for (var w in weights) {
+    for (var w of weights) {
       var d = data[i];
       //do something like w += d*w;
       i += 1;
@@ -63,7 +63,7 @@ class GeoLayerType {
 class UVLayerData extends GeoData {
   constructor(Vector2 uv) {
     static uvld_init = new Vector2([0.0, 0.0]);
-    GeoData.call(this);
+    super();
     
     if (uv == undefined)
       uv = uvld_init;
@@ -74,7 +74,7 @@ class UVLayerData extends GeoData {
 
 class UVLayer extends GeoLayerType {
   constructor(String name) {
-    GeoLayerType.call(this, LayerTypes.UV, name);
+    super(LayerTypes.UV, name);
   }
 
   create_data() {
@@ -135,7 +135,7 @@ class UVLayer extends GeoLayerType {
 
 class ElementData extends GArray {
   constructor() {
-    GArray.call(this);
+    super();
   }
 
   pack(Array<byte> data) {
@@ -204,7 +204,7 @@ class GeoDataLayout {
   numlayers(GeoLayerType type) {
     var i = 0;
     
-    for (var l in this.layout) {
+    for (var l of this.layout) {
       if (l.type == type) 
         i++;
     }
@@ -215,7 +215,7 @@ class GeoDataLayout {
   _get_layer_index_n(GeoLayerType type, int n) {
     var i = 0, j = 0;
     
-    for (var l in this.layers) {
+    for (var l of this.layers) {
       if (l.type == type) {
         if (i == n) return j;
         i++;
@@ -238,14 +238,14 @@ class GeoDataLayout {
       this.active_layers[type] = this.layout.length-1;
     }
     
-    for (var _e in elements) {
+    for (var _e of elements) {
       var Element e = _e;
       e.gdata.push(layer.create_new());
     }
   }
   
   _find_new_active(GeoLayerType type) {
-    for (var l in this.layers) {
+    for (var l of this.layers) {
       if (l.type == type) {
         this.active_layers[type] = l;
         return;
@@ -267,7 +267,7 @@ class GeoDataLayout {
     var li = lay.indexOf(layer);
     lay.splice(li, 1);
     
-    for (var _e in elements) {
+    for (var _e of elements) {
       var Edge e = _e;
       
       e.splice(li, 1);

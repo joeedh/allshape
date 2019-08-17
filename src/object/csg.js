@@ -2,7 +2,8 @@
 
 class CSGNode extends GArray {
   constructor(ASObject ob, CSGNode par=undefined) {
-    GArray.call(this);
+    super();
+
     this.ob = ob;
     this.parent = par;
     this.mode = ob.csg_mode;
@@ -23,7 +24,7 @@ class CSGNode extends GArray {
     
     if (this.length > 0) {
       s += " {\n";
-      for (var c in this) {
+      for (var c of this) {
         s += c.toString(depth+1);
       }
       s += t + "}\n";
@@ -59,7 +60,7 @@ class CSGTreeList {
   toString(ASObject ob) : String {
     s = "";
     s += "CSGTreeList {\n"
-    for (var n in this.trees) {
+    for (var n of this.trees) {
       s += n.toString(1);
     }
     s += "}\n";
@@ -113,7 +114,7 @@ class CSGTreeList {
     function recurse(node) {
       func(node);
       
-      for (var c in tree) {
+      for (var c of tree) {
         recurse(c);
       }
     }
@@ -134,7 +135,7 @@ function sort_csg(Scene scene) {
     
     var n = treelist.get(ob);
     
-    for (var e in s) {
+    for (var e of s) {
       var dst = e.opposite(s).node;
       console.log("yay", dst.parent == ob);
       
@@ -150,7 +151,7 @@ function sort_csg(Scene scene) {
   
   /*find roots*/
   var roots = new GArray()
-  for (var ob in scene.objects) {
+  for (var ob of scene.objects) {
     if (!ob.csg) continue;
     if (ob.parent == undefined || !ob.parent.csg)
       roots.push(ob);
@@ -158,7 +159,7 @@ function sort_csg(Scene scene) {
   
   /*build CSG graph from roots*/
   var ret = new CSGTreeList();
-  for (var ob in roots) {
+  for (var ob of roots) {
     var node = new CSGNode(ob);
     
     ret.add(node, true);

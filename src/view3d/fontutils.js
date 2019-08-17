@@ -41,7 +41,7 @@ class FontManager {
 
 default_font_color = new Float32Array([0.9, 0.8, 0.3, 1.0]);
 
-function FontAddCharFunc(Array<Array<float>> vrect, Array<Array<float>> trect);
+//function FontAddCharFunc(Array<Array<float>> vrect, Array<Array<float>> trect);
 
 var _st_vr = [0, 0, 0, 0];
 var _st_tr = [0, 0, 0, 0];

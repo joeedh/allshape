@@ -68,7 +68,7 @@ class UICanvas2_ {
       n.do_recalc();
       
       if (n instanceof UIFrame) {
-        for (var c in n.children) {
+        for (var c of n.children) {
           rec(c);
         }
       }

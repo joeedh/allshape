@@ -2,7 +2,7 @@
 
 class LoopCutOp extends ToolOp {
   constructor() {
-    ToolOp.call(this, "mesh_loopcut", "Loop Cut", "Splits a face loop", Icons.LOOP_CUT);
+    super("mesh_loopcut", "Loop Cut", "Splits a face loop", Icons.LOOP_CUT);
 
     this.drawlines = new GArray();
 
@@ -57,7 +57,7 @@ class LoopCutOp extends ToolOp {
   kill_drawlines() {
     var view3d = this.modal_ctx.view3d;
     
-    for (var dl in this.drawlines) {
+    for (var dl of this.drawlines) {
       view3d.kill_drawline(dl);
     }
     
@@ -78,7 +78,7 @@ class LoopCutOp extends ToolOp {
       return;
     
     var l=undefined;
-    for (var l2 in edge.loops) {
+    for (var l2 of edge.loops) {
       if (l2.f == fs[0]) {
         l = l2;
         break;
@@ -130,7 +130,7 @@ class LoopCutOp extends ToolOp {
         }
         
         var l=undefined;
-        for (var l2 in e.loops) {
+        for (var l2 of e.loops) {
           if (l2.f == f) {
             l = l2;
             break;
@@ -199,7 +199,7 @@ class LoopCutOp extends ToolOp {
     
     var eset = new set(edges);
     
-    for (var e in edges) {
+    for (var e of edges) {
       var dc = 1.0 / (cuts+1);
       var c = dc;
       for (var j=0; j<cuts; j++) {
@@ -219,11 +219,11 @@ class LoopCutOp extends ToolOp {
         c += dc;
         
         var k = 0;
-        for (var f in e.faces) {
+        for (var f of e.faces) {
           if (f.totvert == 3) {
             var found = false;
             
-            for (var e2 in f.edges) {
+            for (var e2 of f.edges) {
               if (e2 != e && eset.has(e2)) {
                 found = true;
                 break;
@@ -320,7 +320,7 @@ class LoopCutOp extends ToolOp {
     var undoset = new set();
     var ops = new GArray();
    
-    for (var e in this.inputs.start_edges.data) {
+    for (var e of this.inputs.start_edges.data) {
       e = mesh.eidmap[e];
       
       if (e == undefined)
@@ -329,11 +329,11 @@ class LoopCutOp extends ToolOp {
       var ret = this.find_loop(ctx, e);
       var edges = new set(ret[0]);
       
-      for (var e in edges) {
+      for (var e of edges) {
         undoset.add(e);
         undoset.add(e.v1);
         undoset.add(e.v2);
-        for (var l in e.loops) {
+        for (var l of e.loops) {
           undoset.add(l.v);
           undoset.add(l.f);
           undoset.add(l.e);
@@ -347,7 +347,7 @@ class LoopCutOp extends ToolOp {
     
     this._partial = mesh.gen_partial(undoset, 4);
 
-    for (var op in ops) {
+    for (var op of ops) {
       mesh.ops.call_op(op);
     }
     

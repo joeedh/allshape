@@ -22,6 +22,8 @@ var Matrix4UI = Matrix4
 
 class Matrix4UI extends Matrix4 {
   constructor(loc, rot=undefined, size=undefined) {
+    super();
+
     if (loc instanceof Matrix4) {
       this.load(loc);
       return;
@@ -754,7 +756,7 @@ function minmax_verts(verts) {
   var min = new Vector3([1e12, 1e12, 1e12]);
   var max = new Vector3([-1e12, -1e12, -1e12]);
   
-  for (var v in verts) {
+  for (var v of verts) {
     for (var i=0; i<3; i++) {
       min[i] = Math.min(min[i], v.co[i]);
       max[i] = Math.max(max[i], v.co[i]);
@@ -926,7 +928,7 @@ function spatialhash(init, cellsize) { //=new GArray(), cellsize=0.25)
             var bset = this.hashlookup(x, y, z, false);
 
             if (bset != null) {
-              for (var r in new obj_value_iter(bset)) {
+              for (var r of new obj_value_iter(bset)) {
                  ret.add(r);
               }
             }
@@ -941,11 +943,11 @@ function spatialhash(init, cellsize) { //=new GArray(), cellsize=0.25)
       var newh = new spatialhash();
       newh.cellsize = Math.min(this.cellsize, b.cellsize);
       
-      for (var item in this) {
+      for (var item of this) {
           newh.add(item)
       }
       
-      for (var item in b) {
+      for (var item of b) {
           newh.add(item)
       }
       
@@ -957,7 +959,7 @@ function spatialhash(init, cellsize) { //=new GArray(), cellsize=0.25)
   }
 
   if (init != undefined) {
-    for (var item in init) {
+    for (var item of init) {
       this.add(item);
     }
   }
@@ -1157,12 +1159,12 @@ function mesh_find_tangent(mesh, viewvec, offvec, projmat, verts) //verts is opt
   var vset = new set();
   var eset = new set();
   
-  for (var v in verts) {
+  for (var v of verts) {
     vset.add(v);
   }
   
-  for (var v in vset) {
-    for (var e in v.edges) {
+  for (var v of vset) {
+    for (var e of v.edges) {
       if (vset.has(e.other_vert(v))) {
         eset.add(e);
       }
@@ -1178,7 +1180,7 @@ function mesh_find_tangent(mesh, viewvec, offvec, projmat, verts) //verts is opt
   var tan = new Vector3();
   var co2 = new Vector3();
   
-  for (var e in eset) {
+  for (var e of eset) {
     evec.load(e.v1.co).multVecMatrix(projmat);
     co2.load(e.v2.co).multVecMatrix(projmat);
     evec.sub(co2);
@@ -1301,8 +1303,8 @@ var test_vpool = new WrapperVecPool();
 
 class WVector3 extends Vector3 {
   constructor(view, arg=undefined) {
+    super(arg);
     this.view = view;
-    Vector3.call(this, arg);
   }
   
   get 0() {

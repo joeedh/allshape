@@ -958,6 +958,7 @@ var _temp_xyz_cur = 0;
 //
 class Vector3 extends Array {
   constructor(Array<float> vec) {
+    super();
     static init = [0, 0, 0];
     
     if (init == undefined)
@@ -1646,7 +1647,7 @@ function Color(Array<float> color) {
 class Vector4 extends Array {
   constructor(float x, float y, float z, float w)
   {
-    Array.call(this, 4);
+    super(4);
     this.length = 4;
     this.load(x,y,z,w);
   }
@@ -1836,7 +1837,7 @@ class Quat extends Vector4 {
       vec = x;
     }
     
-    Vector4.call(this, vec);
+    super(vec);
   }
 
   load(x,y,z,w)

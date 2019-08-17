@@ -404,253 +404,6 @@ def transform_exisential_operators_old(node, typespace):
   print("--starting")
   visit(node)
 
-def expand_harmony_class(typespace, cls):
-  node = FunctionNode(cls.name, 0)  
-  
-  params = ExprListNode([])
-  slist = StatementList()
-  vars = [];
-  cls_scope = {}
-  
-  constructor = None
-  
-  #properties
-  for c in cls:
-    if type(c) == VarDeclNode:
-      cls_scope[c.val] = c;
-      cs = c[2:]
-      c.children = c.children[:2]
-      
-      vars.append(c)
-      for c2 in cs:
-        cls_scope[c2.val] = c2;
-        vars.append(c2)
-  
-  methods = []
-  for c in cls:
-    if type(c) in [MethodNode, MethodGetter, MethodSetter]:
-      if c.name != "constructor":
-        cls_scope[c.name] = c
-      methods.append(c)
-  
-  if glob.g_validate_classes:
-    validate_class_this_refs(typespace, cls, cls_scope)
-  
-  #find constructor method
-  found_con = False
-  for m in methods:
-    if m.name == "constructor":
-      if found_con: raise SyntaxError("Cannot have multiple constructor methods")
-      if type(m) != MethodNode: raise SyntaxError("Constructors cannot be get/setters")
-      
-      found_con = True
-      
-      params = m[0]
-      slist = m[1]
-  
-  parent = cls.parents[0] if len(cls.parents) != 0 else None
-  
-  if found_con == False:
-    #build a default constructor
-    m = MethodNode("constructor")
-    print("generating default constructor...");
-    
-    params = ExprListNode([])
-    slist = StatementList()
-    
-    m.add(params)
-    m.add(slist)
-  
-  vars.reverse();
-  for c in vars:
-    val = c[0]
-    if type(val) == ExprNode and len(val) == 0:
-      #val = IdentNode("undefined");
-      continue;
-      
-    a = AssignNode(BinOpNode("this", c.val, "."), val)
-    slist.prepend(a)
-  
-  #do getters/setters
-  gets = {}
-  sets = {}
-  props = set()
-  
-  for m in methods:
-    if m.name == "constructor": continue
-    if type(m) == MethodGetter:
-      gets[m.name] = m
-      props.add(m.name)
-      
-    if type(m) == MethodSetter:
-      sets[m.name] = m
-      props.add(m.name)
-  
-  def to_exprfunc(method):
-    f = FunctionNode("(anonymous)", 0)
-    f.is_anonymous = True
-    
-    f.children = method.children
-    for c in f.children:
-      c.parent = f
-    
-    f.type = method.type
-    
-    f.line = method.line
-    f.lexpos = method.lexpos
-    
-    return f
-    
-  def gen_prop_define(prop, gets, sets, flags=[]):
-    #since this is called from *within* the parser, we
-    #can't use js_parse().  bleh!
-    name_expr = BinOpNode(IdentNode("Object"), IdentNode("defineProperty"), ".");
-    fcall = FuncCallNode(name_expr)
-    
-    exprlist = ExprListNode([])
-    fcall.add(exprlist)
-    
-    params = ObjLitNode()
-    if p in gets:
-      an = AssignNode(IdentNode("get"), to_exprfunc(gets[p]))
-      params.add(an)
-    if p in sets:
-      an = AssignNode(IdentNode("set"), to_exprfunc(sets[p]))
-      params.add(an)
-    
-    an = AssignNode(IdentNode("configurable"), IdentNode("true"));
-    params.add(an);
-    
-    bn = BinOpNode(IdentNode(cls.name), IdentNode("prototype"), ".")
-      
-    exprlist.add(bn)
-    exprlist.add(StrLitNode('"%s"'%prop))
-    exprlist.add(params)
-    
-    return fcall;
-  
-  def gen_method(cls, m):
-    f = FunctionNode(m.name)
-    f.children = m.children
-    f.name = "(anonymous)"
-    f.is_anonymous = True
-    
-    for c in f.children:
-      c.parent = f
-    
-    if not m.is_static:
-      bn = BinOpNode(IdentNode(cls.name), IdentNode("prototype"), ".")
-      bn = BinOpNode(bn, IdentNode(m.name), ".")
-      an = AssignNode(bn, f)
-      f = an
-    else:
-      pn = ExprListNode([IdentNode(cls.name), StrLitNode('"'+m.name+'"'), f])
-      fc = FuncCallNode(IdentNode("define_static"))
-      fc.add(pn)
-      f = fc
-    
-    return f
-
-  if found_con == False:
-    #call parents hackishly
-    lst = list(cls.parents)
-    lst.reverse()
-    for p in lst:
-      if type(p) == str: p = IdentNode(p)
-      
-      bn = BinOpNode(p, "apply", ".")
-      args = ExprListNode([IdentNode("this"), IdentNode("arguments")])
-      fn = FuncCallNode(bn)
-      fn.add(args)
-      slist.prepend(fn)
-
-  node.add(params)
-  node.add(slist)
-  constructor = node
-  
-  #add stuff outside of the constructor function
-  slist = StatementList()
-  slist.add(node)
-  node = slist
-  
-  if len(cls.parents) != 0:
-    ps = cls.parents
-    ps2 = []
-    for p in ps:
-      ps2.append(p)
-    ps2 = ArrayLitNode(ExprListNode(ps2))
-    
-    #inherit(childcls, parentcls);
-    fn = FuncCallNode(IdentNode("inherit_multiple"))
-    fn.add(ExprListNode([IdentNode(cls.name), ps2]))
-
-    if glob.g_es6_modules:
-      fn[-1].add(IdentNode("_es6_module"))
-      fn[-1].add(StrLitNode("\""+cls.name+"\""))
-      fn = AssignNode(IdentNode(cls.name), fn);
-    
-    slist.add(fn)
-  else:
-    fn = FuncCallNode(IdentNode("create_prototype"))
-    fn.add(ExprListNode([IdentNode(cls.name)]))
-    
-    if glob.g_es6_modules:
-      fn[-1].add(IdentNode("_es6_module"))
-      fn[-1].add(StrLitNode("\""+cls.name+"\""))
-      fn = AssignNode(IdentNode(cls.name), fn);
-    
-    slist.add(fn)
-    
-  for p in props:
-    n = gen_prop_define(p, gets, sets)
-    slist.add(n)
-  
-  #generate methods
-  for m in cls:
-    if type(m) != MethodNode: continue
-    if m.name == "constructor": continue
-    
-    n = gen_method(cls, m)
-    slist.add(n)
-  
-  #encase in an if block
-  #to prevent duplicate work during
-  #cyclic loads
-  """ eek! how to deal with closures?
-  if glob.g_es6_modules:
-    #first, turn constructor line into "var f = func f(){}" form,
-    #so strict mode won't complain
-    
-    p = constructor.parent
-    i = p.index(constructor)
-    
-    constructor.parent.remove(constructor)
-    
-    slist = StatementList()
-    slist.add(VarDeclNode(IdentNode("undefined"), local=True, name=cls.name));
-    
-    n = VarDeclNode(constructor, local=False, name=cls.name);
-    p.insert(i, n);
-    
-    n = BinOpNode(IdentNode("_es6_module"), IdentNode("already_processed"), ".");
-    n = BinOpNode(n, IdentNode(cls.name), ".")
-    n = BinOpNode(n, IdentNode("undefined"), "!=");
-    n = IfNode(n);
-    n.add(node);
-    ifnode = n;
-    
-    n = BinOpNode(IdentNode("_es6_module"), IdentNode("already_processed"), ".");
-    n = BinOpNode(n, IdentNode(cls.name), ".")
-    n = VarDeclNode(n, local=False, name=cls.name);
-    n = ElseNode(n)
-    ifnode.add(n)
-    
-    slist.add(ifnode);
-    node = slist
-  #"""
-  
-  return node
-
 def gen_manifest_file(result, typespace):
   
   """this bit of code clears all type info.
@@ -766,15 +519,327 @@ def gen_manifest_file(result, typespace):
   s += "\n"
   #traverse(result, ClassNode, visit_cls)
   return s
-def expand_harmony_classes(result, typespace):
-    def visit(n):
-      n.parent.replace(n, expand_harmony_class(typespace, n))
-    traverse(result, ClassNode, visit)
-    flatten_statementlists(result, typespace)
+  
+_the_typespace = None
+  
+def expand_harmony_class(result, cls):
+  global _the_typespace
+  
+  arglist = ExprListNode([])
+  
+  methodlist = ArrayLitNode(ExprListNode([]))
+  
+  arglist.add(StrLitNode('"'+cls.name+'"'))
+  if len(cls.parents) > 0:
+    arglist.add(cls.parents[0])
+  arglist.add(methodlist)
+      
+  #find constructor method
+  found_con = False
+  methods = []
+  
+  con = None
+  for m in cls:
+    if type(m) not in [MethodNode, MethodGetter, MethodSetter]:
+      continue
+      
+    if m.name == "constructor":
+      found_con = True
+      con = m
+      
+    methods.append(m)
+  
+  if not found_con:
+    #create a default constructor
+    if len(cls.parents) > 0:
+      slist = js_parse("""
+        $s.apply(this, arguments);
+      """, [cls.parents[0].gen_js(0)])
+    else:
+      slist = StatementList()
+    
+    con = MethodNode("constructor", False);
+    con.add(ExprListNode([]))
+    con.add(slist)
+    methods.append(con)
+    
+  cls_scope = {}
+  for m in methods:
+    if type(m) in [MethodNode, MethodGetter, MethodSetter]:
+      if m.name != "constructor":
+        cls_scope[m.name] = m
+      
+      if m.name == "eval":
+        _the_typespace.error("Class methods can't be named eval", m);
+        
+      callnode = None
+      
+      if type(m.name) != str:
+        if type(m.name) == BinOpNode:
+          name = m.name[1]
+          
+          if type(name) == IdentNode:
+            name = name.val
+            
+          if type(name) == str:
+            fnode = FunctionNode(name)
+          else:
+            fnode = FunctionNode("(anonymous)")
+            fnode.is_anonymous = True
+        else:
+          fnode = FunctionNode("(anonymous)")
+          fnode.is_anonymous = True
+          
+        callnode = FuncCallNode(BinOpNode("_ESClass", "symbol", "."))
+        
+        name = m.name
+        if type(name) in (int, float):
+          name = NumLitNode(name)
+        
+        callnode.add(ExprListNode([name, fnode]))
+      else:
+        fnode = FunctionNode(m.name if m.name != "constructor" else cls.name)
+        fnode[:] = []
+        
+      for c in m:
+        fnode.add(c.copy())
+      
+      if callnode != None:
+        fnode = callnode
+        
+      if type(m) == MethodGetter:
+        callnode = FuncCallNode(BinOpNode("_ESClass", "get", "."))
+        callnode.add(fnode)
+        fnode = callnode
+      if type(m) == MethodSetter:
+        callnode = FuncCallNode(BinOpNode("_ESClass", "set", "."))
+        callnode.add(fnode)
+        fnode = callnode
+      if m.is_static:
+        callnode = FuncCallNode(BinOpNode("_ESClass", "static", "."))
+        callnode.add(fnode)
+        fnode = callnode
+      
+      methodlist[0].add(fnode)
 
+  con = None
+  found_con = False
+  
+  for m in methods:
+    if m.name == "constructor":
+      if found_con: raise SyntaxError("Cannot have multiple constructor methods")
+      if type(m) != MethodNode: raise SyntaxError("Constructors cannot be get/setters")
+      
+      found_con = True
+      con = m
+      
+  parent = cls.parents[0] if len(cls.parents) != 0 else None
+  
+  n = FuncCallNode("_ESClass")
+  n.add(arglist)
+  n2 = VarDeclNode(n, local=True, name=cls.name);
+  
+  return n2
+
+def expand_harmony_classes(result, typespace):
+  global _the_typespace
+  _the_typespace = typespace
+
+  check_constructor_return(result, typespace)
+  expand_harmony_super(result, typespace)
+
+  def visit(n):
+    n.parent.replace(n, expand_harmony_class(typespace, n))
+    
+  traverse(result, ClassNode, visit)
+  flatten_statementlists(result, typespace)
+
+
+def check_constructor_return(result, typespace):
+  def check_constructor(n):
+    flatten_statementlists(n, typespace);
+    
+    def visit4(n2):
+      if isinstance(n2, ReturnNode): #type(n2) == ReturnNode:
+        typespace.warning("Detected return in a constructor", n2);
+      else:
+        for n3 in n2:
+          if not isinstance(n3, FunctionNode):
+            visit4(n3)
+      
+      
+    visit4(n)
+    
+  def visit(n):
+    for n2 in n:
+      if type(n2) == MethodNode and n2.name == "constructor":
+        check_constructor(n2)
+        
+  traverse(result, ClassNode, visit)
+  
+def check_constructor_super(result, typespace):
+  def check_constructor(n):
+    flatten_statementlists(n, typespace);
+    
+    #I hate how python does closures
+    has_super = [False]
+    
+    def visit2(n2):
+      if not has_super[0] and type(n2[0]) == BinOpNode and type(n2[0][0]) == IdentNode and n2[0][0].val == "this":
+        typespace.error("Can't assign to this before calling super() in constructor", n2)
+    
+    #note that we allow super inside of control blocks,
+    #we don't check if all branches leads to its invocation
+    def visit3(n2):
+      if n2[0].gen_js(0).strip() == "super":
+        has_super[0] = True
+        
+        if n2.parent != n[1]:
+          #sys.stderr.write(repr(n2.parent) + "\n" + repr(n2.parent.get_line_str()) + "\n")
+          typespace.warning("Super inside a control block", n2)
+    
+    
+    for n2 in n[1]:
+      traverse(n2, FuncCallNode, visit3)      
+      traverse(n2, AssignNode, visit2)
+      
+      
+  def visit(n):
+    if n.parents is None or len(n.parents) == 0:
+      return
+    
+    for n2 in n:
+      if type(n2) == MethodNode and n2.name == "constructor":
+        check_constructor(n2)
+        
+  traverse(result, ClassNode, visit)
+
+def add_class_list(typespace, n):
+    n2 = js_parse("_ESClass.register($s)", n.name)
+    
+    return n2
+
+def create_class_list(result, typespace):
+  check_constructor_super(result, typespace)
+  check_constructor_return(result, typespace)
+  
+  global _the_typespace
+  _the_typespace = typespace
+
+  def visit(n):
+    n.parent.insert(n.parent.index(n)+1, add_class_list(typespace, n))
+    
+  traverse(result, ClassNode, visit)
+  flatten_statementlists(result, typespace)
+ 
+def expand_harmony_super(result, typespace):
+  check_constructor_super(result, typespace)
+  
+  global _the_typespace
+  
+  _the_typespace = typespace
+  
+  flatten_statementlists(result, typespace)
+  
+  def repl_super(cls, method, base, gets, sets, methods):
+    def static_visit(n):
+      if n.val != "super":
+        return
+      #print("found static super!", base.val)
+      
+      if isinstance(n.parent, FuncCallNode):
+        n.parent[1].prepend("this")
+        n.parent.replace(n, BinOpNode(base.copy(), "call", "."))
+      elif isinstance(n.parent, BinOpNode) and n.parent.op == "." and isinstance(n.parent[1], FuncCallNode):
+        n3 = n.parent[1].copy()
+        n3[1].prepend("this")
+        n4 = BinOpNode(n3[0], "call", ".")
+        n3.replace(n3[0], n4)
+        
+        #if type(base) == BinOpNode:
+        #  n2 = js_parse("$n", [base, n3], start_node=BinOpNode)
+        #else:
+        #  n2 = js_parse("$s", [base.val, n3], start_node=BinOpNode)
+        
+        n2 = base.copy()
+        n.parent.replace(n, n2)
+        n.parent.replace(n.parent[1], n3)
+      else:
+        n.parent.replace(n, base.copy())
+        
+    def visit(n):
+      if n.val != "super":
+        return
+      #print("found super!", base.val)
+      
+      if isinstance(n.parent, FuncCallNode):
+        n.parent[1].prepend("this")
+        n.parent.replace(n, BinOpNode(base.copy(), "call", "."))
+      elif isinstance(n.parent, BinOpNode) and n.parent.op == "." and isinstance(n.parent[1], FuncCallNode):
+        n3 = n.parent[1].copy()
+        n3[1].prepend("this")
+        n4 = BinOpNode(n3[0], "call", ".")
+        n3.replace(n3[0], n4)
+        
+        if type(base) == BinOpNode:
+          n2 = js_parse("$n.prototype", [base, n3], start_node=BinOpNode)
+        else:
+          n2 = js_parse("$s.prototype", [base.val, n3], start_node=BinOpNode)
+          
+        n.parent.replace(n, n2)
+        n.parent.replace(n.parent[1], n3)
+      elif isinstance(n.parent, BinOpNode) and n.parent.op == "." and isinstance(n.parent[1], IdentNode):
+        typespace.warning("Super property access!", n);
+        
+        n2 = js_parse("__bind_super_prop(this, $s, $s, '$s')", [cls.name, base.val, n.parent[1].val], start_node=FuncCallNode)
+        
+        n.parent.parent.replace(n.parent, n2)
+    
+    if method.is_static:
+      traverse(method, IdentNode, static_visit);
+    else:
+      traverse(method, IdentNode, visit);
+
+  def visit(node):
+    def has_super(node):
+      if type(node) == IdentNode and node.val == "super": 
+        return True
+        
+      ret = False
+      for c in node:
+        ret = ret or has_super(c)
+      return ret
+  
+    if not has_super(node):
+      return
+      
+    gets = {}
+    sets = {}
+    methods = {}
+    
+    for c in node:
+      if isinstance(c, MethodGetter):
+        gets[c.name] = c
+      elif isinstance(c, MethodSetter):
+        sets[c.name] = c
+      elif isinstance(c, MethodNode):
+        methods[c.name] = c 
+        
+    if 0: #len(node.parents) > 1:
+      typespace.error("Super not allowed in classes with multiple inheritance", node)
+    elif len(node.parents) == 0:
+      print("----------------->", has_super(node), node.get_line_str())
+      typespace.error("Class " + str(node.name) + " has no parent", node)
+    
+    for c in node:
+      repl_super(node, c, node.parents[0], gets, sets, methods)
+  
+  traverse(result, ClassNode, visit)
+  flatten_statementlists(result, typespace)
+  
 def expand_requirejs_class(typespace, cls):
   node = FunctionNode(cls.name, 0)  
-  
+    
   params = ExprListNode([])
   slist = StatementList()
   vars = [];
@@ -870,10 +935,10 @@ def expand_requirejs_class(typespace, cls):
     f.lexpos = method.lexpos
     
     return f
-    
+  
   def gen_prop_define(prop, gets, sets, flags=[]):
     #since this is called from *within* the parser, we
-    #can't use js_parse().  bleh!
+    #can't use js_parse().
     name_expr = BinOpNode(IdentNode("Object"), IdentNode("defineProperty"), ".");
     fcall = FuncCallNode(name_expr)
     
@@ -881,10 +946,10 @@ def expand_requirejs_class(typespace, cls):
     fcall.add(exprlist)
     
     params = ObjLitNode()
-    if p in gets:
+    if prop in gets:
       an = AssignNode(IdentNode("get"), to_exprfunc(gets[p]))
       params.add(an)
-    if p in sets:
+    if prop in sets:
       an = AssignNode(IdentNode("set"), to_exprfunc(sets[p]))
       params.add(an)
       
@@ -1438,11 +1503,14 @@ def kill_bad_globals(node, typespace):
       descend(n)
     elif type(n) == VarDeclNode:
       scope[n.val] = n;
+
       descend(n[0])
       
       if len(n) > 2:
         descend(n, 2);
     elif type(n) == AssignNode:
+      #deal with ambiguous grammar with expression lists
+      
       if type(n.parent) == ObjLitNode:
         descend(n)
         return
@@ -1450,8 +1518,13 @@ def kill_bad_globals(node, typespace):
       #if n[0].gen_js(0).replace(";", "").strip() == "mode":
       #  raise "sd"
       if type(n[0]) in [IdentNode, VarDeclNode] and n[0].val not in scope:
+        ok = n.parent is not None and n.parent.parent is not None and n.parent.parent.parent is not None
+        ok = ok and (type(n.parent) == ExprListNode and type(n.parent.parent) == BinOpNode and type(n.parent.parent.parent) == VarDeclNode)
         print(scope.keys())
-        typespace.error("Undeclared global %s"%n[0].val, n[0])      
+        
+        if not ok:
+          typespace.error("Undeclared global %s"%n[0].val, n[0])      
+          
       descend(n);
     else:
       descend(n);
@@ -1491,8 +1564,10 @@ def add_func_opt_code(result, typespace):
       else:
         is_opt = p[0].gen_js(0).strip() != "";
       
-      if not is_opt and was_opt:
-        typespace.error("Cannot have required parameter after an optional one", node)
+      #XXX okay, strange, browsers allow this, I thought spec didn't?
+      #unless that was removed in final draft. . .
+      #if not is_opt and was_opt:
+      #  typespace.error("Cannot have required parameter after an optional one", node)
         
       name = p.val
       if is_opt: 
@@ -2380,8 +2455,19 @@ def gen_useful_funcname(p2):
   return suffix
   
 def process_static_vars(result, typespace):
+
+  #if inside a class, returns class node
+  def inside_class(n):
+    if type(n) == ClassNode or (type(n) == FuncCallNode and n[0].gen_js(0) == "_ESClass"):
+      return n
+    
+    if n.parent != None:
+      return inside_class(n.parent)
+    return False
+    
   def visit(node):
     if "static" not in node.modifiers: return
+    inclass = inside_class(node)
     
     #make sure we aren't carrying any child vardecl nodes
     #(e.g var a, b, c, d) with us.
@@ -2399,7 +2485,7 @@ def process_static_vars(result, typespace):
     
     #we need to extract a useful name for the static
     p = node.parent
-    while p != None and type(p) != FunctionNode:
+    while p != None and not isinstance(p, FunctionNode):
       p = p.parent
     
     if p == None:
@@ -2413,7 +2499,7 @@ def process_static_vars(result, typespace):
       suffix = p.name
       p2 = p.parent
       while p2 != None:
-        if type(p2) == FunctionNode:
+        if isinstance(p2, FunctionNode):
           suffix = gen_useful_funcname(p2) + "_" + suffix
         p2 = p2.parent
 
@@ -2457,7 +2543,7 @@ def process_static_vars(result, typespace):
     
     #find parent scope
     p = node.parent
-    while p != None and type(p) != FunctionNode:
+    while p != None and not isinstance(p, FunctionNode):
       p = p.parent
     
     replace_var(p, scope)
@@ -2469,7 +2555,7 @@ def process_static_vars(result, typespace):
     
     #find parent function first, then find surrounding closure or global scope
     for si in range(2):
-      while p.parent != None and type(p) != FunctionNode:
+      while p.parent != None and not isinstance(p, FunctionNode):
         lastp = p
         p = p.parent
         
@@ -2478,14 +2564,29 @@ def process_static_vars(result, typespace):
         p = p.parent
       
     pindex = p.index(lastp)
-    
     node.parent.remove(node)
     
+    if inclass:
+      #add declaration
+      decl = VarDeclNode(ExprNode([]), local=True, name=node.val)
+      p.insert(pindex, decl)
+      
+      while inclass.parent != None and inclass.parent != p:
+        inclass = inclass.parent
+        
+      if inclass.parent == None:
+        pindex += 2
+      else:
+        pindex = p.index(inclass) + 1
+      
+      while pindex < len(p) and hasattr(p[pindex], "_was_static") and getattr(p[pindex], "_was_static"):
+        pindex += 1
+      
+    node._was_static = True
     p.insert(pindex, node)
     
     node.modifiers.remove("static")
     node.modifiers.add("local")
-    
          
   traverse(result, VarDeclNode, visit);
 
@@ -2505,4 +2606,101 @@ for k in js_ast.__dict__:
   except TypeError:
     continue
   node_types.add(k)
+ 
+def process_arrow_function_this(result, typespace):
+  idgen = [1];
+  doneset = set()
   
+  hash = glob.g_file
+  import hashlib
+  hash = hashlib.sha1(bytes(hash, "utf8")).digest()
+  import base64
+  hash = str(base64.b64encode(hash), "latin-1")
+  hash = hash.replace("+", "_").replace("/", "_").replace("=", "_").replace(".", "_").replace("-", "_")
+  hash = hash.replace("&", "_")
+  
+  hash = hash[:4]
+  
+  def replace_this(n, name):
+    if type(n) == IdentNode and n.val == 'this':
+      n.val = name
+    else:
+      for c in n.children:
+        if isinstance(c, FunctionNode):
+          continue
+        replace_this(c, name)
+        
+  def visit(node):
+    if not node.is_arrow: return
+    if node.parent == None: return
+    if node._id in doneset: return
+    
+    doneset.add(node._id)
+    
+    p = node.parent
+    pi = p.index(node)
+    
+    while p is not None and not isinstance(p, StatementList) \
+          and not isinstance(p, FunctionNode):
+      if p is not None:
+        pi = p.parent.index(p)
+      p = p.parent
+   
+    if p is None:
+      #impossible
+      typespace.error("Impossible, no outer statementlist.  That's can't happen", node)
+    
+    name = "$_" + hash + "awthis_" + str(idgen[0])
+    idgen[0] += 1
+    
+    namenode = VarDeclNode('this', name=name, local=True)
+    p.insert(pi, namenode)
+    
+    replace_this(node, name)
+    
+  traverse(result, FunctionNode, visit)
+  
+def coverage_profile(result, typespace):
+  typeset = set([VarDeclNode, ExportNode, TryNode, CatchNode, 
+                 ClassNode, FunctionNode, IfNode, ElseNode,
+                 ForInNode, ForLoopNode, DoWhileNode, WhileNode,
+                 SwitchNode, CaseNode, DefaultCaseNode, FinallyNode])
+  
+  proflines = []
+  
+  for c in result:
+    if type(c) != StrLitNode: break
+    if c.val[1:-1] == "not_covered_prof":
+      return
+    
+  def visit(node):
+    if type(node) == StatementList:
+      cs = node[:]
+    else:
+      cs = node[1:]
+    
+    #go through statements
+    for st in cs:
+      if type(st) in typeset:
+        continue;
+        
+      node.insert(node.index(st), js_parse("""
+        $$cov_prof("$s", $s);
+      """, [glob.g_file, st.line], start_node=FuncCallNode))
+      
+      proflines.append([glob.g_file, st.line])
+      
+  traverse(result, StatementList, visit)
+  traverse(result, FunctionNode, visit)
+  traverse(result, MethodNode, visit)
+  traverse(result, MethodGetter, visit)
+  traverse(result, MethodSetter, visit)
+  
+  #for t in typeset:
+  #  traverse(result, t, visit)
+  
+  for pl in proflines:
+    result.add(js_parse("""
+        $$cov_reg("$s", $s);
+      """, pl, start_node=FuncCallNode))
+      

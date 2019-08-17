@@ -69,8 +69,9 @@ class ASObject extends DagNode {
       name = "Object";
     
     DataBlock.call(this, DataTypes.OBJECT, name);
-    DagNode.call(this);
-    
+    //DagNode.call(this);
+    super();
+
     //override DagNode's __hash__
     this.__hash__ = DataBlock.prototype.__hash__;
     
@@ -300,7 +301,7 @@ class ASObject extends DagNode {
       mat.multiply(this.parent.matrix);
     }
     
-    for (var ms in this.dag_node.inmap["multipliers"].edges) {
+    for (var ms of this.dag_node.inmap["multipliers"].edges) {
       var mat2 = ms.src.get_data();
       mat.multiply(mat2);
     }

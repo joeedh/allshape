@@ -24,6 +24,8 @@ BoxColor.STRUCT = """
 
 class BoxColor4 extends BoxColor {
   constructor(Array<Array<float>> colors) {
+    super();
+
     var clrs = this.colors = [[], [], [], []];
     
     if (colors == undefined) return;
@@ -51,6 +53,8 @@ BoxColor4.STRUCT = """
 //weighted box color
 class BoxWColor extends BoxColor {
   constructor(Array<float> color, Array<float> weights) {
+    super();
+
     if (color == undefined || weights == undefined)
       return;
       
@@ -119,13 +123,13 @@ class ColorTheme {
   patch(ColorTheme newtheme) {
     var ks = new set(newtheme.colors.keys()).union(newtheme.boxcolors.keys());
     
-    for (var k in this.colors) {
+    for (var k of this.colors) {
       if (!ks.has(k)) {
         newtheme.colors.set(k, this.colors.get(k));
       }
     }
     
-    for (var k in this.boxcolors) {
+    for (var k of this.boxcolors) {
       if (!ks.has(k)) {
         newtheme.boxcolors.set(k, this.boxcolors.get(k));
       }
@@ -169,7 +173,7 @@ class ColorTheme {
     //used to communicate with the data api
     this.flat_colors = new GArray();
     
-    for (var k in this.colors) {
+    for (var k of this.colors) {
       var c1 = this.colors.get(k), c2 = [0, 0, 0, 0];
       
       for (var i=0; i<4; i++) {
@@ -179,7 +183,7 @@ class ColorTheme {
       this.flat_colors.push([k, c1]);
     }
     
-    for (var k in this.boxcolors) {
+    for (var k of this.boxcolors) {
       ret[k] = this.boxcolors.get(k).colors;
       this.flat_colors.push([k, this.boxcolors.get(k)]);
     }

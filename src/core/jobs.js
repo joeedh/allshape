@@ -169,7 +169,7 @@ class JobManager {
     
     var q_job, q_i=1000000;
     
-    for (var job2 in this.jobmap_types.get(type)) {
+    for (var job2 of this.jobmap_types.get(type)) {
       if (job2.queued) {
         var i = this.queue.indexOf(job2);
         if (i < q_i) {
@@ -194,7 +194,7 @@ class JobManager {
       
     var jobs = g_list(this.jobmap_owners.get(owner));
     
-    for (var job in jobs) {
+    for (var job of jobs) {
       this.remove_job(job);
     }
     
@@ -209,7 +209,7 @@ class JobManager {
       
     var jobs = g_list(jobmap_types.get(type));
     
-    for (var job in jobs) {
+    for (var job of jobs) {
       this.remove_job(job);
     }
     
@@ -234,7 +234,7 @@ class JobManager {
       var lst = this.jobmap_types.get(type);
       var found_queued = false;
       
-      for (var job2 in g_list(lst)) {
+      for (var job2 of g_list(lst)) {
         if (job2.queued) {
           this.remove_job(job2);
           found_queued = true;
@@ -269,7 +269,7 @@ class JobManager {
       if (this.jobs.length == 0)
         break;
         
-      for (var job in this.jobs) {
+      for (var job of this.jobs) {
         if (job.queued) continue;
         
         var ms = time_ms();

@@ -2,7 +2,7 @@
 
 class ObjectDuplicateOp extends ToolOp {
   constructor(obs) {
-    ToolOp.call(this, "object_duplicate", "Object Duplicate", "Duplicate selected objects");
+    super("object_duplicate", "Object Duplicate", "Duplicate selected objects");
     
     this.is_modal = false;
     
@@ -29,7 +29,7 @@ class ObjectDuplicateOp extends ToolOp {
     var scene = ctx.scene;
     var active = undefined;
     
-    for (var ob in this.inputs.objects.data) {
+    for (var ob of this.inputs.objects.data) {
       console.log(ob);
       var ob2 = ob.copy();
       ob2.data = ob2.data.copy();
@@ -42,11 +42,11 @@ class ObjectDuplicateOp extends ToolOp {
         scene.set_active(ob2);
     }
     
-    for (var ob in list(this.inputs.objects.data)) {
+    for (var ob of list(this.inputs.objects.data)) {
       scene.objects.select(ob, false);
     }
     
-    for (var ob in obs) {
+    for (var ob of obs) {
       scene.objects.select(ob);
     }
   }
@@ -54,7 +54,7 @@ class ObjectDuplicateOp extends ToolOp {
 
 class SelectObjAbstract extends ToolOp {
   constructor(String apiname, String uiname) {
-    ToolOp.call(this, apiname, uiname);
+    super(apiname, uiname);
     this._undo_presel = new GArray();
     this._undo_active = undefined;
   }
@@ -62,7 +62,7 @@ class SelectObjAbstract extends ToolOp {
   undo_pre(ctx) {
     var sce = ctx.scene;
     
-    for (var ob in sce.objects.selected) {
+    for (var ob of sce.objects.selected) {
       this._undo_presel.push(new DataRef(ob));
     }
     
@@ -85,7 +85,7 @@ class SelectObjAbstract extends ToolOp {
 
 class SelectObjectOp extends SelectObjAbstract {
   constructor(mode, set_active=true) {
-    SelectObjAbstract.call(this, "select", "Select");
+    super("select", "Select");
     
     this.is_modal = false;
     this.flag = ToolFlags.HIDE_TITLE_IN_LAST_BUTTONS;
@@ -114,13 +114,13 @@ class SelectObjectOp extends SelectObjAbstract {
       console.log("set mode");
       sce.objects.clear_select();
       
-      for (var ob in this.inputs.objects.data) {
+      for (var ob of this.inputs.objects.data) {
         console.log("selecting ob " + ob.lib_id);
         sce.objects.select(ob, true);
       }
     } else {
       var mode2 = (mode == "add" ? true : false);
-      for (var ob in this.inputs.objects.data) {
+      for (var ob of this.inputs.objects.data) {
         sce.objects.select(ob, mode2);
       }
     }
@@ -143,7 +143,7 @@ class SelectObjectOp extends SelectObjAbstract {
 
 class ToggleSelectObjOp extends SelectObjAbstract {
   constructor(mode="auto") {
-    SelectObjAbstract.call(this, "select_all", "Select All");
+    super("select_all", "Select All");
     
     this.is_modal = false;
     this.flag = ToolFlags.HIDE_TITLE_IN_LAST_BUTTONS;
@@ -173,7 +173,7 @@ class ToggleSelectObjOp extends SelectObjAbstract {
     if (mode == "deselect") {
       sce.objects.clear_select();
     } else {
-      for (var ob in sce.objects) {
+      for (var ob of sce.objects) {
         sce.objects.select(ob);
       }
     }
@@ -182,7 +182,7 @@ class ToggleSelectObjOp extends SelectObjAbstract {
 
 class ObjectParentOp extends ToolOp {
   constructor() {
-    ToolOp.call(this, "set_parent", "Set Parent");
+    super("set_parent", "Set Parent");
     
     this.is_modal = false;
     
@@ -222,7 +222,7 @@ class ObjectParentOp extends ToolOp {
     var scene = ctx.scene;
     
     var i = 0;
-    for (var ob2 in this.inputs.objects) {
+    for (var ob2 of this.inputs.objects) {
       if (i == 10) break;
       console.log("setting parent " + ob.lib_id + " for " + ob2.lib_id)
       console.log(ob2.parent);
@@ -248,7 +248,7 @@ class ObjectParentOp extends ToolOp {
 //for undo
 class ObjectDeleteOp extends ToolOp {
   constructor() {
-    ToolOp.call(this, "object_delete", "Delete Object");
+    super("object_delete", "Delete Object");
     
     this.is_modal = false;
     
@@ -278,7 +278,7 @@ class ObjectDeleteOp extends ToolOp {
     }
     
     console.log(list(this.inputs.objects.data));
-    for (var ob in this.inputs.objects.data) {
+    for (var ob of this.inputs.objects.data) {
       console.log("destroying ob ", ob.lib_id);
       ctx.datalib.kill_datablock(ob);
     }

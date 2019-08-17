@@ -4,7 +4,7 @@
 class Matrix4Socket extends DagSocket {
   constructor(name, owner, field, flag) {
     //flag is optional
-    DagSocket.call(this, name, owner, flag);
+    super(name, owner, flag);
     
     this.matrix = new Matrix4();
     this.field = field;
@@ -31,7 +31,7 @@ Matrix4Socket.STRUCT = STRUCT.inherit(Matrix4Socket, DagSocket) + """
 
 class DepSocket extends DagSocket {
   constructor(name, owner, flag) {
-    DagSocket.call(this, name, owner, flag);
+    super(name, owner, flag);
   }
   
   static fromSTRUCT(reader) {

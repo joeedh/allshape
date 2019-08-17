@@ -69,8 +69,8 @@ var copy_object_deep = _cache_copy_object;
 var _cache_id_gen = 1;
 class CacheCycle extends GArray {
   constructor(obj, tot) {
-    Array.call(this, tot);
-    
+    super(tot);
+
     for (var i=0; i<tot; i++) {
       this[i] = _cache_copy_object(obj);
       this[i]._cache_id = _cache_id_gen++;

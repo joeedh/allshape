@@ -58,7 +58,7 @@ class DBDataIter {
 
 class DataBlockData extends DBDataMember {
   constructor(name) {
-    DBDataMember.call(DBMemberTypes.DBDATA, name);
+    super(DBMemberTypes.DBDATA, name);
     this.members = {};
   }
   

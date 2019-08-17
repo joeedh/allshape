@@ -3,7 +3,7 @@ DialogFlags = {MODAL : 1, END_ON_ESCAPE : 2, DEFAULT: 2};
 class _TitleBar extends UIElement {
   constructor(Context ctx)
   {
-    UIElement.call(this, ctx);
+    super(ctx);
     this.text = ""
     this.moving = false;
     this.start_mpos = [0, 0];
@@ -38,7 +38,7 @@ class _TitleBar extends UIElement {
 
 class Dialog extends UIFrame {
   constructor(title, ctx, screen, flag) {
-    UIFrame.call(this, ctx, screen.canvas);
+    super(ctx, screen.canvas);
     
     this.title = title;
     this.screen = screen;
@@ -208,7 +208,7 @@ class Dialog extends UIFrame {
 
 class PackedDialog extends Dialog {
   constructor(title, ctx, screen, flag) {
-    Dialog.call(this, title, ctx, screen, flag);
+    super(title, ctx, screen, flag);
     this.remove(this.subframe);
     
     this.subframe = new RowFrame(ctx, undefined, PackFlags.ALIGN_BOTTOM|PackFlags.ALIGN_CENTER);
@@ -230,7 +230,7 @@ class OkayDialog extends PackedDialog {
     var ctx = new Context();
     var screen = g_app_state.screen;
     var flag = 0;
-    PackedDialog.call(this, "Okay?", ctx, screen, flag);
+    super("Okay?", ctx, screen, flag);
     
     this.callback = callback;
     
@@ -252,7 +252,7 @@ class ErrorDialog extends PackedDialog {
     var ctx = new Context();
     var screen = g_app_state.screen;
     var flag = 0;
-    PackedDialog.call(this, "Error: ", ctx, screen, flag);
+    super("Error: ", ctx, screen, flag);
     
     this.callback = callback;
     

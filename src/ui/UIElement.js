@@ -56,24 +56,8 @@ function inrect_2d_button(Array<float> p, Array<float> pos, Array<float> size) :
 }
 
 class UIElement extends EventHandler {
-  Boolean defunt;
-  String description;
-  Array<float> abspos, _minsize, pos, size;
-  Array<float> dirty, last_dirty;
-  String _h12;
-  String data_path;
-  Context ctx;
-  UIElement parent;
-  Timer status_timer = undefined;
-  UICanvas canvas;
-  
-  int _uiel_id, flash_timer_len, flash_ival, last_flash;
-  int recalc, recalc_minsize;
-  int state;
-  int packflag;
-  
   constructor(ctx, path=undefined, pos=undefined, size=undefined) {
-    EventHandler.call(this)
+    super();
     
     this.defunct = false;
     
@@ -475,7 +459,7 @@ class UIElement extends EventHandler {
 
 class UIHoverBox extends UIElement {
   constructor(Context ctx, String text, Boolean is_modal, Array<float> pos, Array<float> size) {
-    UIElement.call(this, ctx, undefined, pos, size);
+    super(ctx, undefined, pos, size);
     
     this.is_modal = is_modal;
     this.text = text;
@@ -542,8 +526,8 @@ class UIHoverBox extends UIElement {
 class UIHoverHint extends UIElement {
   constructor(Context ctx, String path=undefined, Array<float> pos=undefined, Array<float> size=undefined) {
     global ui_hover_time;
-    
-    UIElement.call(this, ctx, path, pos, size);
+
+    super(ctx, path, pos, size);
     
     this.start_time = 0;
     this.hover_time = ui_hover_time;

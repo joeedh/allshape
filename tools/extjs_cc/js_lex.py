@@ -6,6 +6,7 @@ import ply.yacc as yacc
 import ply.lex as lex
 from ply.lex import TOKEN
 # List of token names.   This is always required
+from js_parse_arrowfuncs import lex_arrow
 
 from js_regexpr_parse import parser as rparser
 from types import BuiltinMethodType as PyMethodType, BuiltinFunctionType as PyFunctionType
@@ -14,12 +15,12 @@ class StringLit (str):
   pass
 
 res = [
-'if', 'then', 'else', 'while', 'do', 'function', 
-'var', 'in', 'of', 'for', 'new', "return", "continue", "break",
+'if', 'else', 'while', 'do', 'function', 
+'var', 'let', 'in', 'of', 'for', 'new', "return", "continue", "break",
 'throw', 'try', 'catch', 'delete', 'typeof', 'instanceof',
 'with', 'switch', 'case', 'default', 'yield',
-'float', 'int', 'const', 'short', 'double', 'char',
-'unsigned', 'signed', 'variable', 'template', 'byte',
+'const', 'short', 'double', 'char',
+'signed', 'variable', 'template', 'byte',
 'global', 'inferred', 'native', 'class', 'extends',
 'static', 'typed', 'finally', 'get', 'set', 'import', 'export', 'from'
 ]
@@ -62,6 +63,7 @@ tokens = (
    'INC',
    'DEC',
    'GTHAN',
+   "EXPONENT",
    'LTHAN',
    'EQUAL',
    'MOD',
@@ -113,6 +115,7 @@ tokens = (
    "ASSIGNDIVIDE", 
    "ASSIGNTIMES",
    "ASSIGNBOR",
+   "ASSIGNMOD",
    "ASSIGNBAND",
    "ASSIGNBXOR",
    "VAR_TYPE_PREC",
@@ -126,13 +129,29 @@ tokens = (
    "EQUAL_STRICT",
    "TLTHAN",
    "TGTHAN",
+   "ARROW",
+#   "ARROW_LB",
+#   "RP_ARROW",
+#   "RP_ARROW_LB",
+   "ARROW_PRE",
+   
+   "TRIPLEDOT",
+   "TEMPLATE_STR",
+   "ARROWPARENS",
 ) + tuple(reserved_lst)
 
 # Regular expression rules for simple tokens
+t_TRIPLEDOT = r'\.\.\.'
+t_ARROW = r'\=\>'
+#t_ARROW_LB = r'\=\>[ \r\n\t]*\{'
+#t_RP_ARROW = r'\)[ \r\n\t]*\=\>'
+#t_RP_ARROW_LB = r'\)[ \r\n\t]*\=\>[ \r\n\t]*\{'
+
 t_ASSIGNPLUS = r'\+='
 t_ASSIGNMINUS = r'-='
 t_ASSIGNDIVIDE = r'/='
 t_ASSIGNTIMES = r'\*='
+t_ASSIGNMOD = r'\%\='
 t_ASSIGNBOR = r'\|='
 t_ASSIGNBAND = r'\&='
 t_ASSIGNBXOR = r'\^='
@@ -163,9 +182,28 @@ t_DEC = r'--'
 t_PLUS    = r'\+'
 t_MINUS   = r'-'
 t_TIMES   = r'\*'
+t_EXPONENT = r'\*\*'
 t_DIVIDE  = r'/'
 t_MOD     = r'%'
-t_LPAREN  = r'\('
+
+#lex_arrow(lexdata, lexpos, lookahead_limit=256):
+def t_LPAREN(t):
+  r'\('
+  
+  #detect presence of LexWithPrev
+  if hasattr(t.lexer, "lexer"):
+    lexdata = t.lexer.lexer.lexdata
+  else:
+    lexdata = t.lexer.lexdata
+    
+  lexpos = t.lexpos
+  arrowi = lex_arrow(lexdata, lexpos)
+  if arrowi >= 0:
+    #print("found an arrow func!")
+    t.type = "ARROW_PRE"
+    
+  return t
+  
 t_RPAREN  = r'\)'
 t_LBRACKET = r'\{'
 t_RBRACKET = r'\}'
@@ -412,20 +450,36 @@ def gen_re():
       s += ")"
       return s
     
-    pats = (
-      g(" ", 0),
-      g(" ", 1),
-      g(" ", 2),
-      g(" ", 3),
-      g(" ", 4),
-      g(" ", 5),
-      g(" ", 6),
-      g(r"\t", 1),
-      g(r"\t", 2),
-      g(r"\t", 3),
-      g(r"\t", 4),
-      g(r"\t", 5),
-    )
+    """
+      g("   ", 3),
+      g(" ", 7),
+      g("    ", 2),
+      g("   ", 3),
+      g("     ", 2),
+      g(" ", 11),
+      g("    ", 3),
+      g(" ", 13),
+      g("       ", 2),
+      g("     ", 3),
+      g("    ", 4),
+      g(" ", 17),
+      g("   ", 6),
+      g(" ", 19),
+      g("     ", 4),    #20
+      g("       ", 3),  #21
+      g("           ", 2), #22
+      g(" ", 23),
+      g("    ", 6),
+      g("     ", 5),
+      g("             ", 2), #26
+
+    #"""
+    
+    pats = [];
+    for i in range(31):
+      pats.append(g(" \t\n\r", i))
+      
+    pats = tuple(pats)
     
     pat = ""
     for i, p in enumerate(pats):
@@ -461,6 +515,13 @@ t_REGEXPR = gen_re() #r'(((?<!\\)|(?<=\\\\))/)(([^\n\r\*\\/\[]|(((?<!\\)|(?<=\\\
 #t_STRINGLIT = r'".*"'
 strlit_val = StringLit("")
 start_q = 0
+
+def t_TEMPLATE_STR(t):
+    r'`';
+    
+    global strlit_val;
+    t.lexer.push_state("mlstr");
+    strlit_val = StringLit("")
 
 t_mlstr_ignore = ''
 
@@ -505,23 +566,30 @@ def ml_escape(s):
   return s2
       
 def t_mlstr_MLSTRLIT(t):
-  r'"""' #(""")|(\\""")';
-  
-  global strlit_val;
-  
-  if ("\\" in t.value):
-    strlit_val = StringLit(strlit_val + t.value);
-    return
-    
-  str = StringLit(ml_escape(strlit_val))
-  #str = StringLit(str)
-  
-  t.strval = t.value;
-  t.value = StringLit('"' + str + '"');
-  t.type = "STRINGLIT"
+    r'"""|\`' #(""")|(\\""")';
 
-  t.lexer.pop_state();
-  return t;
+    global strlit_val;
+
+    if ("\\" in t.value):
+        strlit_val = StringLit(strlit_val + t.value);
+        return
+
+    if glob.g_destroy_templates:
+        strlit_val = ml_escape(strlit_val)
+        
+    str = StringLit(strlit_val)
+    #str = StringLit(str)
+
+    t.strval = t.value;
+    if glob.g_destroy_templates:
+        t.value = StringLit('"' + str + '"');
+    else:
+        t.value = StringLit('`' + str + '`');
+    
+    t.type = "STRINGLIT"
+
+    t.lexer.pop_state();
+    return t;
 
 def t_mlstr_ALL(t):
   r'(.|[\n\r\v])'

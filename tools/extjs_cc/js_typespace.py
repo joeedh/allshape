@@ -192,7 +192,8 @@ class JSTypeSpace:
       pass #traceback.print_stack()
     
     sys.stderr.write("\n%s:(%s): error: %s\n"%(srcnode.file, srcnode.line+1, msg))
-    sys.stderr.write(" " + glob.g_lines[srcnode.line] + "\n")
+    if srcnode.line >= 0 and srcnode.line < len(glob.g_lines):
+      sys.stderr.write(" " + glob.g_lines[srcnode.line] + "\n")
     
     raise JSError("%s:(%s): error: %s\n"%(srcnode.file, srcnode.line+1, msg))
   

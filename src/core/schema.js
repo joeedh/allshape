@@ -1344,8 +1344,8 @@ class StaticString extends String {
   constructor(s, maxlength) {
     if (s.length > maxlength)
       s = s.slice(0, maxlength);
-      
-    String.call(this, s);
+
+    super(s);
   }
 }
 
@@ -1363,7 +1363,7 @@ var _basic_types = {
 
 class SchemaError extends Error {
   constructor(msg) {
-    Error.call(this, msg);
+    super(msg);
     this.msg = msg;
   }
 }

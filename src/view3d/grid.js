@@ -211,7 +211,7 @@ class ViewGrid {
   }
   
   destroy(gl) {
-    for (var b in this.buffers) {
+    for (var b of this.buffers) {
       b.destroy(gl);
     }
     
@@ -226,7 +226,7 @@ class ViewGrid {
       this.shader = new ShaderProgram(gl, grid_vshader, grid_fshader, ["vPosition", "vColor"]);
     }
     
-    for (var buf in this.buffers) {
+    for (var buf of this.buffers) {
       buf.destroy(gl);
     }
     this.buffers = new GArray();

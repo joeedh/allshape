@@ -182,7 +182,7 @@ class DataRefProperty extends ToolProperty {
   //allowed_types can be either a datablock type,
   //or a set of allowed datablock types.
   constructor(DataBlock value, set<int> allowed_types, apiname, uiname, description, flag) {
-    ToolProperty.call(this, PropTypes.DATAREF, apiname, uiname, description, flag);
+    super(PropTypes.DATAREF, apiname, uiname, description, flag);
     
     if (allowed_types == undefined)
       allowed_types = new set();
@@ -248,7 +248,7 @@ class RefListProperty extends ToolProperty {
   //allowed_types can be either a datablock integer type id,
   //or a set of allowed datablock integer types.
   constructor(Array<DataBlock> value, set<int> allowed_types, apiname, uiname, description, flag) {
-    ToolProperty.call(this, PropTypes.DATAREFLIST, apiname, uiname, description, flag);
+    super(PropTypes.DATAREFLIST, apiname, uiname, description, flag);
     
     if (allowed_types == undefined)
       allowed_types = [];
@@ -314,7 +314,7 @@ class FlagProperty extends ToolProperty {
   constructor(value, maskmap, uinames, apiname, uiname, 
               description, range, uirange, flag) 
   {
-    ToolProperty.call(this, PropTypes.FLAG, apiname, uiname, description, flag);
+    super(PropTypes.FLAG, apiname, uiname, description, flag);
     
     //detect if we were called by fromSTRUCT
     if (value == undefined && maskmap == undefined) {
@@ -417,7 +417,7 @@ FlagProperty.STRUCT = STRUCT.inherit(FlagProperty, ToolProperty) + """
 
 class FloatProperty extends ToolProperty {
   constructor(i, apiname, uiname, description, range, uirange, flag) {//range, uirange, flag are optional
-    ToolProperty.call(this, PropTypes.FLOAT, apiname, uiname, description, flag);
+    super(PropTypes.FLOAT, apiname, uiname, description, flag);
     
     if (uirange == undefined) {
       uirange = range;
@@ -446,7 +446,7 @@ class IntProperty extends ToolProperty {
   constructor (i, apiname, uiname, description, 
                range, uirange, flag) 
   {
-    ToolProperty.call(this, PropTypes.INT, apiname, uiname, description, flag);
+    super(PropTypes.INT, apiname, uiname, description, flag);
     
     if (uirange == undefined) {
       uirange = range;
@@ -476,7 +476,7 @@ IntProperty.STRUCT = STRUCT.inherit(IntProperty, ToolProperty) + """
 
 class BoolProperty extends ToolProperty {
   constructor(bool, apiname, uiname, description, flag) {
-    ToolProperty.call(this, PropTypes.BOOL, apiname, uiname, description, flag);
+    super(PropTypes.BOOL, apiname, uiname, description, flag);
     this.data = bool ? true : false;
   }
   
@@ -503,8 +503,8 @@ class StringProperty extends ToolProperty {
   constructor(string, apiname, uiname, description, flag) {
     if (string == undefined)
       string = "";
-    
-    ToolProperty.call(this, PropTypes.STRING, apiname, uiname, description, flag);
+
+    super(PropTypes.STRING, apiname, uiname, description, flag);
     this.data = string;
   }
    
@@ -525,7 +525,7 @@ StringProperty.STRUCT = STRUCT.inherit(StringProperty, ToolProperty) + """
 
 class TransformProperty extends ToolProperty {
   constructor(value, apiname, uiname, description, flag) {
-    ToolProperty.call(this, PropTypes.TRANSFORM, apiname, uiname, description, flag)
+    super(PropTypes.TRANSFORM, apiname, uiname, description, flag)
     
     if (value != undefined) 
       ToolProperty.prototype.set_data.call(this, new Matrix4UI(value));
@@ -551,8 +551,8 @@ class EnumProperty extends ToolProperty {
   constructor(string, valid_values, apiname, 
               uiname, description, flag) 
   {
-  
-    ToolProperty.call(this, PropTypes.ENUM, apiname, uiname, description, flag);
+
+    super(PropTypes.ENUM, apiname, uiname, description, flag);
     
     this.values = {}
     this.keys = {};
@@ -654,7 +654,7 @@ EnumProperty.STRUCT = STRUCT.inherit(EnumProperty, ToolProperty) + """
 
 class Vec3Property extends ToolProperty {
   constructor(vec3, apiname, uiname, description, flag) {
-    ToolProperty.call(this, PropTypes.VEC3, apiname, uiname, description, flag);
+    super(PropTypes.VEC3, apiname, uiname, description, flag);
     
     this.unit = "default";
     this.range = [undefined, undefined]
@@ -676,7 +676,7 @@ Vec3Property.STRUCT = STRUCT.inherit(Vec3Property, ToolProperty) + """
 
 class ElementBufProperty extends ToolProperty {
   constructor(elements, apiname, uiname, description, flag) {
-    ToolProperty.call(this, PropTypes.ELEMENTS, apiname, uiname, description, flag);
+    super(PropTypes.ELEMENTS, apiname, uiname, description, flag);
 
     this.data = new GArray(elements);
   }
@@ -703,7 +703,7 @@ ElementBufProperty.STRUCT = STRUCT.inherit(ElementBufProperty, ToolProperty) + "
 
 class Vec4Property extends ToolProperty {
   constructor(vec4, apiname, uiname, description, flag) {
-    ToolProperty.call(this, PropTypes.VEC4, apiname, uiname, description, flag);
+    super(PropTypes.VEC4, apiname, uiname, description, flag);
     
     this.subtype == PropTypes.VEC4;
     this.unit = "default";
@@ -737,6 +737,8 @@ Vec4Property.STRUCT = STRUCT.inherit(Vec4Property, ToolProperty) + """
 
 class type_filter_iter extends ToolIter {
   constructor(iter, Array typefilter, ctx) {
+    super();
+
     this.types = typefilter;
     this.iter = iter;
     this._ctx = ctx;
@@ -782,7 +784,7 @@ class type_filter_iter extends ToolIter {
 
 class CollectionProperty extends ToolProperty {
   constructor(data, Array<Function> filter_types, apiname, uiname, description, flag) {
-    ToolProperty.call(this, PropTypes.COLLECTION, apiname, uiname, description, flag);
+    super(PropTypes.COLLECTION, apiname, uiname, description, flag);
     
     this.flag |= TPropFlags.COLL_LOOSE_TYPE;
     

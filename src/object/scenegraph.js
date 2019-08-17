@@ -1,6 +1,6 @@
 class SceneGraph extends Dag {
   constructor() {
-    Dag.call(this);
+    super();
   }
 };
 

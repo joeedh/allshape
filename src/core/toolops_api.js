@@ -156,24 +156,12 @@ PropPair.STRUCT = """
 """;
 
 class ToolOp extends EventHandler, ToolOpAbstract {
-  String name, uiname, description;
-  ToolOp parent;
-  Context modal_ctx;
-  ToolContext modal_tctx;
-  ObjectMap<String, ToolProperty> inputs;
-  ObjectMap<String, ToolProperty> outputs;
-  GArray widgets;
-  KeyHandler keyhandler;
-  Boolean is_modal, modal_running;
-  Function on_modal_end, _widget_on_tick;
-  int flag, icon, undoflag;
-  
-  constructor(String apiname="(undefined)", 
-              String uiname="(undefined)", 
-              String description=undefined,
-              int icon=-1) 
+  constructor(apiname="(undefined)",
+              uiname="(undefined)",
+              description=undefined,
+              icon=-1)
   {
-    ToolOpAbstract.call(this, apiname, uiname, description, icon);
+    super(apiname, uiname, description, icon);
     EventHandler.call(this);
     
     this.name = apiname;
@@ -186,8 +174,8 @@ class ToolOp extends EventHandler, ToolOpAbstract {
     this.modal_ctx = null;
     this.flag = 0;
     
-    this.inputs = { }
-    this.outputs = { }
+    this.inputs = { };
+    this.outputs = { };
     
     this.keyhandler = undefined;
     this.parent = undefined; //parent macro
@@ -197,7 +185,7 @@ class ToolOp extends EventHandler, ToolOpAbstract {
     
     this._widget_on_tick = undefined;
   }
-  
+
   /*creates 3d widgets, that either
      a), create a new toolop of this type
           whenever they are clicked, or
@@ -347,7 +335,7 @@ ToolOp.STRUCT = """
 class ToolMacro extends ToolOp {
   constructor (String name, String uiname, Array<ToolOp> tools=undefined) 
     {
-    ToolOp.call(this, name, uiname);
+    super(name, uiname);
     
     this.cur_modal = 0;
     this._chained_on_modal_end = false;
@@ -564,7 +552,7 @@ ToolMacro.STRUCT = STRUCT.inherit(ToolMacro, ToolOp) + """
   in ToolContext, u.e. object, scene, and mesh.*/
 class DataPathOp extends ToolOp {
   constructor(String path="", use_simple_undo=false) {
-    ToolOpAbstract.call(this, "DataPathOp", "DataPath", "DataPath Value Set");
+    super("DataPathOp", "DataPath", "DataPath Value Set");
     
     this.use_simple_undo = use_simple_undo;
     this.is_modal = false;

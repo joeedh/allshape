@@ -379,7 +379,7 @@ function gen_path_maps(strct, obj, path1, path2) {//path is private, optional
   if (path1 != "")
     obj[path1] = strct;
   
-  for (var p in strct.paths) {
+  for (var p of strct.paths) {
     if (!(p.data instanceof DataStruct)) {
       if (p.use_path) {
         obj[path1+"."+p.path] = "r = " + path2+"."+p.path+"; obj["+path1+"].pathmap["+p.path+"]"

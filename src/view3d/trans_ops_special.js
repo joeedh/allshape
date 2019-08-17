@@ -55,7 +55,7 @@ function inset_loop(loop, ispartial, no, fac)
 
 class InsetOp extends TransformOp {
   constructor() {
-    TransformOp.call(this, EditModes.GEOMETRY);
+    super(EditModes.GEOMETRY);
     
     this.uiname = "Inset"
     this.name = "inset"
@@ -83,7 +83,7 @@ class InsetOp extends TransformOp {
   can_call(ctx) {
     var totsel = 0;
     
-    for (var e in ctx.mesh.edges) {
+    for (var e of ctx.mesh.edges) {
       if ((e.flag & Flags.SELECT) != 0)
         totsel++;
     }
@@ -121,7 +121,7 @@ class InsetOp extends TransformOp {
     var vset = new set(td.verts);
     
     //note: the ends of the loops may or may not be connected
-    for (var v1 in td.verts) {
+    for (var v1 of td.verts) {
       if (vdone.has(v1))
         continue;
       
@@ -137,7 +137,7 @@ class InsetOp extends TransformOp {
         
         if (cure != null && cure.loop != null) {
           var found = false;
-          for (var l in cure.loops) {
+          for (var l of cure.loops) {
             if (l.f.flag & Flags.SELECT) {
               found = true;
               no.add(l.f.no);
@@ -153,7 +153,7 @@ class InsetOp extends TransformOp {
         
         var totfound=0;
         e2 = null;
-        for (var e in v.edges) {
+        for (var e of v.edges) {
           var v2 = e.other_vert(v); 
           if (e != cure && vset.has(v2) && v2 == v1) {
             is_closed = true;
@@ -307,7 +307,7 @@ class InsetOp extends TransformOp {
       verts[i].co.load(startcos[i]);
     }
     
-    for (var l in this._loops) {
+    for (var l of this._loops) {
       var loop = l[0];
       var is_partial = l[1];
       var no = l[2];

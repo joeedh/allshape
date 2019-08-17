@@ -12,14 +12,14 @@ var MeshEvents = {
 
 class TopoError extends Error {
   constructor(String msg) {
-    Error.call(this, msg);
+    super(msg);
   }
 }
 
 //#$(var).number
 function CountIter(Iterator iter) {
   var i = 0;
-  for (var item in iter) {
+  for (var item of iter) {
     i++;
   }
   
@@ -29,7 +29,7 @@ function CountIter(Iterator iter) {
 var _mesh_id_gen = 0; //internal use only
 class Mesh extends DataBlock {
   constructor() {
-    DataBlock.call(this, DataTypes.MESH, "Mesh");
+    super(DataTypes.MESH, "Mesh");
     
     this.ops = new MeshOpAPI(this);
     
@@ -130,8 +130,8 @@ class Mesh extends DataBlock {
     for (var i=0; i<flen; i++) {
       var f = faces[i];
       
-      for (var list in f.looplists) {
-        for (var l in list) {
+      for (var list of f.looplists) {
+        for (var l of list) {
           loops[l.eid] = l;
         }
       }
@@ -161,8 +161,8 @@ class Mesh extends DataBlock {
     for (var i=0; i<flen; i++) {
       var f = faces[i];
       
-      for (var list in f.looplists) {
-        for (var l in list) {
+      for (var list of f.looplists) {
+        for (var l of list) {
           l.v = eidmap[l.v];
           l.e = eidmap[l.e];
           l.f = f;
@@ -246,12 +246,12 @@ class Mesh extends DataBlock {
     var fset = new set();
     
     var test_vset = new set();
-    for (var e in geom) {
+    for (var e of geom) {
       if (e.type == MeshTypes.VERT) {
         vset.add(e);
         
-        for (var e2 in e.edges) {
-          for (var l in e2.loops) {
+        for (var e2 of e.edges) {
+          for (var l of e2.loops) {
             eset.add(l.e);
             fset.add(l.f);
           }
@@ -262,9 +262,9 @@ class Mesh extends DataBlock {
         test_vset.add(e.v1);
         test_vset.add(e.v2);
         
-        for (var f in e.faces) {
+        for (var f of e.faces) {
           if (!fset.has(f)) {
-            for (var v in f.verts) {
+            for (var v of f.verts) {
               test_vset.add(v);
             }  
           }
@@ -274,7 +274,7 @@ class Mesh extends DataBlock {
         fset.add(e);
         
         var Face f = e;
-        for (var v in f.verts) {
+        for (var v of f.verts) {
           test_vset.add(v);
         }
       } else {
@@ -282,10 +282,10 @@ class Mesh extends DataBlock {
       }
     }
     
-    for (var f in fset) {
-      for (var e in f.edges) {
+    for (var f of fset) {
+      for (var e of f.edges) {
         var found = false;
-        for (var f2 in e.faces) {
+        for (var f2 of e.faces) {
           if (!fset.has(f2)) {
             found = true;
             break;
@@ -302,12 +302,12 @@ class Mesh extends DataBlock {
       }
     }
     
-    for (var v in test_vset) {
+    for (var v of test_vset) {
       if (vset.has(v)) 
         continue;
       
       var i=0, c=0;
-      for (var e in v.edges) {
+      for (var e of v.edges) {
         c += eset.has(e) ? 1 : 0;
         i++;
       }
@@ -319,13 +319,13 @@ class Mesh extends DataBlock {
         
     for (var i=0; i<expandlvl; i++) {
       var vset2 = new set();
-      for (var v in vset) {
-        for (var e in v.edges) {
-          for (var l in e.loops) {
+      for (var v of vset) {
+        for (var e of v.edges) {
+          for (var l of e.loops) {
             vset2.add(l.v);
             eset.add(l.e);
             fset.add(l.f);
-            for (var l2 in l.f.loops) {
+            for (var l2 of l.f.loops) {
               vset2.add(l2.v);
               eset.add(l2.e);
             }
@@ -333,7 +333,7 @@ class Mesh extends DataBlock {
         }
       }
       
-      for (var v in vset2) {
+      for (var v of vset2) {
         vset.add(v);
       }
     }
@@ -342,9 +342,9 @@ class Mesh extends DataBlock {
     //where loop.v == v; thus, to reliably get all
     //edges and faces around a vert we have
     //to iterate v.edges and e.loops manually.
-    for (var v in vset) {
-      for (var e in v.edges) {
-        for (var l in v.loops) {
+    for (var v of vset) {
+      for (var e of v.edges) {
+        for (var l of v.loops) {
           eset.add(l.e);
           fset.add(l.f);
         }
@@ -355,17 +355,17 @@ class Mesh extends DataBlock {
     var data = []
     
     pack_int(data, vset.length);
-    for (var v in vset) {
+    for (var v of vset) {
       v.pack(data);
     }
     
     pack_int(data, eset.length);
-    for (var e in eset) {
+    for (var e of eset) {
       e.pack(data);
     }
     
     pack_int(data, fset.length);
-    for (var f in fset) {
+    for (var f of fset) {
       f.pack(data);
     }
     
@@ -399,7 +399,7 @@ class Mesh extends DataBlock {
   }  
 
   load_partial(part) {
-    for (var f in part.f_eids) {
+    for (var f of part.f_eids) {
       f = this.faces.get(f);
       if (f == undefined)
         continue;
@@ -411,7 +411,7 @@ class Mesh extends DataBlock {
       
       this.kill_face(f);
     }
-    for (var e in part.e_eids) {
+    for (var e of part.e_eids) {
       e = this.edges.get(e);
       if (e == undefined)
         continue;
@@ -424,7 +424,7 @@ class Mesh extends DataBlock {
       this.kill_edge(e);
     }
     
-    for (var v in part.v_eids) {
+    for (var v of part.v_eids) {
       v = this.verts.get(v);
       if (v == undefined)
         continue;
@@ -490,8 +490,8 @@ class Mesh extends DataBlock {
       
       faces.push(f);
       
-      for (var list in f.looplists) {
-        for (var l in list) {
+      for (var list of f.looplists) {
+        for (var l of list) {
           l.list = list;
           l.f = f;
           loops[l.eid] = l;
@@ -503,32 +503,32 @@ class Mesh extends DataBlock {
     
     //we add verts/edges/faces eid's here, to ensure
     //this.idgen ends up in the correct state
-    for (var v in verts) {
+    for (var v of verts) {
       this.verts.push(v, false);
     }
     
-    for (var e in edges) {
+    for (var e of edges) {
       this.edges.push(e, false);
     }
     
     var i = 0;
-    for (var f in faces) {
+    for (var f of faces) {
       this.faces.push(f, false);
     }
     
     //add existing loops to loops set
-    for (var f in this.faces) {
-      for (var list in f.looplists) {
-        for (var l in list) {
+    for (var f of this.faces) {
+      for (var list of f.looplists) {
+        for (var l of list) {
           loops[l.eid] = l;
         }
       }
     }
     
     var c = 0;
-    for (var f in faces) {
-      for (var list in f.looplists) {
-        for (var l in list) {
+    for (var f of faces) {
+      for (var list of f.looplists) {
+        for (var l of list) {
           l.e = eidmap[l.e];
           l.v = eidmap[l.v];
           
@@ -538,7 +538,7 @@ class Mesh extends DataBlock {
       }
     }
     
-    for (var e in edges) {
+    for (var e of edges) {
       e.v1 = eidmap[e.v1];
       e.v2 = eidmap[e.v2];
       
@@ -553,7 +553,7 @@ class Mesh extends DataBlock {
       //  e.loop = loops[e.loop];
     }
     
-    for (var v in verts) {
+    for (var v of verts) {
       var elen = v.edges.length;
       
       for (var i=0; i<elen; i++) {
@@ -566,9 +566,9 @@ class Mesh extends DataBlock {
       //  v.loop = loops[v.loop];      
     }
     
-    for (var f in faces) {
-      for (var list in f.looplists) {
-        for (var l in list) {
+    for (var f of faces) {
+      for (var list of f.looplists) {
+        for (var l of list) {
           if (l.e == undefined) {
             console.log("Warning: corrupted loop", l, "in load_partial.  Attempting to correct.");
             l.e = this.make_edge(l.v, l.next.v);
@@ -592,7 +592,7 @@ class Mesh extends DataBlock {
   }
 
   do_callbacks(event) {
-    for (var k in this.event_users) {
+    for (var k of this.event_users) {
       var func = this.event_users.get(k);
       
       if (func == undefined) {
@@ -607,7 +607,7 @@ class Mesh extends DataBlock {
 
   regen_render() {
     this.render.recalc |= MeshRecalcFlags.REGEN_NORS | MeshRecalcFlags.REGEN_TESS | MeshRecalcFlags.REGEN_COS | MeshRecalcFlags.REGEN_COLORS;
-    for (var f in this.faces) {
+    for (var f of this.faces) {
       f.flag |= Flags.DIRTY;
     }
     
@@ -634,23 +634,23 @@ class Mesh extends DataBlock {
     
     var verts = new GArray()
     
-    for (var v in this.verts) {
+    for (var v of this.verts) {
       var v2 = m2.make_vert(v.co, v.no);
       m2.copy_vert_data(v2, v, true);
       verts.push(v2);
     }
     
-    for (var e in this.edges) {
+    for (var e of this.edges) {
       var e2 = m2.make_edge(verts[e.v1.index], verts[e.v2.index], false);
       m2.copy_edge_data(e2, e, true);
     }
     
-    for (var f in this.faces) {
+    for (var f of this.faces) {
       var vlists = new GArray();
       
-      for (var list in f.looplists) {
+      for (var list of f.looplists) {
         var loop = new GArray();
-        for (var l in list) {
+        for (var l of list) {
           loop.push(verts[l.v.index])
         }
         vlists.push(loop);
@@ -665,17 +665,17 @@ class Mesh extends DataBlock {
 
   pack(Array<byte> data, StructPackFunc dopack) {
     pack_int(data, this.verts.length);
-    for (var v in this.verts) {
+    for (var v of this.verts) {
       v.pack(data);
     }
     
     pack_int(data, this.edges.length);
-    for (var e in this.edges) {
+    for (var e of this.edges) {
       e.pack(data);
     }
     
     pack_int(data, this.faces.length);
-    for (var f in this.faces) {
+    for (var f of this.faces) {
       f.pack(data);
     }
   }
@@ -711,8 +711,8 @@ class Mesh extends DataBlock {
       var f = new Face([]);
       f.unpack(data, uctx);
       
-      for (var lst in f.looplists) {
-        for (var l in lst) {
+      for (var lst of f.looplists) {
+        for (var l of lst) {
           l.v = eidmap[l.v];
           l.e = eidmap[l.e];
           l.f = f;
@@ -725,7 +725,7 @@ class Mesh extends DataBlock {
     }
     
     /*relink loops*/
-    for (var v in this.verts) {
+    for (var v of this.verts) {
       for (var i=0; i<v.edges.length; i++) {
         v.edges[i] = eidmap[v.edges[i]]
       }
@@ -736,16 +736,16 @@ class Mesh extends DataBlock {
         v.loop = null;
     }
     
-    for (var e in this.edges) {
+    for (var e of this.edges) {
       if (e.loop != -1)
         e.loop = loops[e.loop];
       else
         e.loop = null;
     }
     
-    for (var f in this.faces) {
-      for (var lst in f.looplists) {
-        for (var l in lst) {
+    for (var f of this.faces) {
+      for (var lst of f.looplists) {
+        for (var l of lst) {
           l.radial_next = loops[l.radial_next];
           l.radial_prev = loops[l.radial_prev];
         }
@@ -776,7 +776,7 @@ class Mesh extends DataBlock {
   }
 
   find_edge(Vert v1, Vert v2) : Edge {
-    for (var e in v1.edges) {
+    for (var e of v1.edges) {
       if (e.vert_in_edge(v2)) {
         if (!e.vert_in_edge(v1)) {
           console.trace();
@@ -882,7 +882,7 @@ class Mesh extends DataBlock {
       if (l2.f == l.f) { //find loop in another edge
         l.v.loop = null;
         
-        for (var e2 in l.v.edges) {
+        for (var e2 of l.v.edges) {
           if (e2 != l.e && e2.loop != null && e2.loop.f != l.f) {
             l.v.loop = e2.loop;
             break;
@@ -938,7 +938,7 @@ class Mesh extends DataBlock {
   find_face(Array<Vert> verts) : Face {
     var v1 = verts[0];
     
-    for (var f in v1.faces) {
+    for (var f of v1.faces) {
       if (f.totvert != verts.length) continue;
 
       var vset = new set(list(f.verts));
@@ -1111,15 +1111,15 @@ class Mesh extends DataBlock {
   }
 
   kill_all() {
-    for (var v in this.verts) {
+    for (var v of this.verts) {
       this.kill_vert(v);
     }
     
-    for (var e in this.edges) {
+    for (var e of this.edges) {
       this.kill_edge(e);
     }
     
-    for (var f in this.faces) {
+    for (var f of this.faces) {
       this.kill_face(f);
     }
     
@@ -1146,7 +1146,7 @@ class Mesh extends DataBlock {
 
     var killedges = list(v.edges);
     
-    for (var e in killedges) {
+    for (var e of killedges) {
       this.kill_edge(e);
     }
     
@@ -1167,8 +1167,8 @@ class Mesh extends DataBlock {
     }
     
     /*var killfaces = new GArray(); //list(e.faces);
-    for (var f in this.faces) {
-      for (var e2 in f.edges) {
+    for (var f of this.faces) {
+      for (var e2 of f.edges) {
         if (e2 == e) {
           killfaces.push(f);
         }
@@ -1177,7 +1177,7 @@ class Mesh extends DataBlock {
     // */
     
     var killfaces = list(e.faces);
-    for (var f in killfaces) {
+    for (var f of killfaces) {
       this.kill_face(f);
     }
     
@@ -1198,8 +1198,8 @@ class Mesh extends DataBlock {
       return;
     }
     
-    for (var looplist in f.looplists) {
-      for (var l in looplist) {
+    for (var looplist of f.looplists) {
+      for (var l of looplist) {
         this._radial_loop_remove(l.e, l);
       }
     }

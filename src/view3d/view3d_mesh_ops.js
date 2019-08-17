@@ -3,7 +3,7 @@
 class MeshEditor extends View3DEditor {
   constructor(view3d) {
     var keymap = new KeyMap();
-    View3DEditor.call(this, "Geometry", EditModes.GEOMETRY, DataTypes.MESH, keymap);
+    super("Geometry", EditModes.GEOMETRY, DataTypes.MESH, keymap);
     
     this.selectmode = MeshTypes.VERT;
     this.last_selectmode = 0;

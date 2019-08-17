@@ -13,7 +13,7 @@ class _UITab {
 
 class UITabBar extends UIElement {
   constructor(Context ctx, char mode="v", Function callback=undefined) {
-    UIElement.call(this, ctx);
+    super(ctx);
     
     this.highlight = undefined;
     this.active = undefined;
@@ -40,7 +40,7 @@ class UITabBar extends UIElement {
     var tpad = this.triwid*2.0;
     var twid = tpad;
     
-    for (var c in this.tabs) {
+    for (var c of this.tabs) {
       var sz = canvas.textsize(c.text);
       
       twid += sz[0] + tpad*2.0;
@@ -76,7 +76,7 @@ class UITabBar extends UIElement {
     if (y1 < 5) y1 = 0;
     if (y2 >= this.size[1]-5) y2 = this.size[1]-1;
     
-    for (var t in this.tabs) {
+    for (var t of this.tabs) {
       if (t.tbound == undefined) {
         t.tbound = canvas.textsize(t.text);
         t.tbound = [t.tbound[0], t.tbound[1]];
@@ -150,7 +150,7 @@ class UITabBar extends UIElement {
   find_active(Array<float> mpos) {
     var tab = undefined;
     
-    for (var t in this.tabs) {
+    for (var t of this.tabs) {
       if (inrect_2d(mpos, t.pos, t.size)) {
         tab = t;
         break;
@@ -171,7 +171,7 @@ class UITabBar extends UIElement {
 //strips
 class UITabPanel extends UIFrame {
   constructor(Context ctx, Array<float> size=undefined, char mode="v", Boolean flip=false) {
-    UIFrame.call(this, ctx);
+    super(ctx);
     
     this.flip = flip;
     if (flip)
@@ -221,7 +221,7 @@ class UITabPanel extends UIFrame {
   on_saved_uidata(Function visit) {
     prior(UITabPanel, this).on_saved_uidata.call(this, visit);
     
-    for (var t in this.tabstrip.tabs) {
+    for (var t of this.tabstrip.tabs) {
       visit(t.id);
     }
   }
@@ -229,7 +229,7 @@ class UITabPanel extends UIFrame {
   on_load_uidata(Function visit) {
     prior(UITabPanel, this).on_load_uidata.call(this, visit);
     
-    for (var t in this.tabstrip.tabs) {
+    for (var t of this.tabstrip.tabs) {
       visit(t.id);
     }
   }
@@ -256,7 +256,7 @@ class UITabPanel extends UIFrame {
   get_uhash() {
     var s = prior(UITabPanel, this).get_uhash.call(this);
     
-    for (var t in this.tabstrip.tabs) {
+    for (var t of this.tabstrip.tabs) {
       s += t.text;
     }
     
@@ -288,7 +288,7 @@ class UITabPanel extends UIFrame {
   tab_callback(String text, Object id) {
     var content = this.content;
     
-    for (var c in list(content.children)) {
+    for (var c of list(content.children)) {
       content.remove(c);
       
       /*prevent UIFrame.remove from setting 

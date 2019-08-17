@@ -95,6 +95,8 @@ class View3DHandler extends Area {
                        DrawMats drawmats, int x, int y, int width, 
                        int height, int znear=0.75, int zfar = 200.0) 
   {
+    super(View3DHandler.name, "3D Viewport", new Context(), [x, y], [width, height]);
+
     static int v3d_id = 0;
     
     this.drawmats = drawmats;
@@ -171,9 +173,7 @@ class View3DHandler extends Area {
     this.drawlines = new GArray<drawline>();
     
     this.line_2d_shader = new ShaderProgram(gl, "2d_line_vshader", "2d_line_fshader", ["vPosition", "vUV", "vColor"]);
-    
-    Area.call(this, View3DHandler.name, "3D Viewport", new Context(), [x, y], [width, height]);
-    
+
     this.keymap = new KeyMap()
     this.define_keymap();
     this._id = v3d_id++;
@@ -367,7 +367,7 @@ class View3DHandler extends Area {
     this.ctx = new Context();
     this.ctx.mesh = this.mesh;
     
-    for (var e in this.editors) {
+    for (var e of this.editors) {
       e.view3d = this;
       e.mesh = this.mesh;
       e.ctx = this.ctx;
@@ -387,7 +387,7 @@ class View3DHandler extends Area {
     this.line_2d_shader = new ShaderProgram(gl, "2d_line_vshader", "2d_line_fshader", ["vPosition", "vUV", "vColor"]);
     this.csg_render = undefined;
     
-    for (var e in this.editors) {
+    for (var e of this.editors) {
       e.on_gl_lost(new_gl);
     }
     
@@ -508,7 +508,7 @@ class View3DHandler extends Area {
     gl.disable(gl.BLEND); 
     
     var sce = this.ctx.scene;
-    for (var ob in sce.objects) {
+    for (var ob of sce.objects) {
       if (ob.sid == -1)
         ob.sid = ibuf_idgen.idgen();
       
@@ -561,7 +561,7 @@ class View3DHandler extends Area {
       gl.disable(gl.BLEND); 
       
       var sce = this.ctx.scene;
-      for (var ob in sce.objects) {
+      for (var ob of sce.objects) {
         if (ob.sid == -1)
           ob.sid = ibuf_idgen.idgen();
         
@@ -762,7 +762,7 @@ class View3DHandler extends Area {
     var uvs = []
     var verts = []
     var colors = []
-    for (var dl in this.drawlines) {
+    for (var dl of this.drawlines) {
       for (var i=0; i<4; i++)
         colors.push(dl.clr[i]);
       for (var i=0; i<4; i++)
@@ -865,7 +865,7 @@ class View3DHandler extends Area {
   do_addon_draw(gl, ob) {
     var skip_draw = false;
     
-    for (var addon in loaded_addons) {
+    for (var addon of loaded_addons) {
       try {
         if (addon.on_object_draw(gl, ob, this, this.ctx))
           skip_draw = true;
@@ -926,7 +926,7 @@ class View3DHandler extends Area {
     gl.enable(gl.DEPTH_TEST);
     //this.grid.on_draw(gl, this.drawmats, this.zoomfac);
     
-    for (var ob in objects) {
+    for (var ob of objects) {
       if (ob.csg && ob != ctx.object) {
         this.ensure_csg(true);
         continue;
@@ -1082,7 +1082,7 @@ class View3DHandler extends Area {
           times.push(time_ms()-start_ms);
         }
         
-        for (var t in times) {
+        for (var t of times) {
           console.log(t);
         }
         */
@@ -1186,18 +1186,18 @@ class View3DHandler extends Area {
 
   on_resize(Array<int> newsize, Array<int> oldsize)
   {
-    for (var c in this.rows) {
+    for (var c of this.rows) {
       if (c.pos[1] > 70)
         c.pos[1] = this.size[1] - Area.get_barhgt();
         
       c.size[0] = this.size[0];
     }
     
-    for (var c in this.cols) {
+    for (var c of this.cols) {
       c.size[1] = this.size[1]-Area.get_barhgt()*2;
     }
     
-    for (var c in this.children) {
+    for (var c of this.children) {
       if (this.canvas != undefined) 
         c.canvas = this.canvas;
       
@@ -1231,7 +1231,7 @@ class View3DHandler extends Area {
     
     cpy.editors = new GArray();
     cpy.editor = undefined;
-    for (var e in this.editors) {
+    for (var e of this.editors) {
       var e2 = e.editor_duplicate(cpy);
       
       cpy.editors.push(e2);
@@ -1299,7 +1299,7 @@ class View3DHandler extends Area {
     if (this.canvas != undefined)
       this.canvas.reset();
     
-    for (var e in this.editors) {
+    for (var e of this.editors) {
       e.canvas = this.canvas;
     }
     
@@ -1373,7 +1373,7 @@ class View3DHandler extends Area {
     }
     
     var editor = undefined;
-    for (var e in this.editors) {
+    for (var e of this.editors) {
       if (e instanceof editortype) {
         editor = e;
         break;
@@ -1390,10 +1390,10 @@ class View3DHandler extends Area {
     editor.on_active(this);
     editor.gl = this.gl;
     
-    for (var c in list(this.cols)) {
+    for (var c of list(this.cols)) {
       this.remove(c);
     }
-    for (var c in list(this.rows)) {
+    for (var c of list(this.rows)) {
       this.remove(c);
     }
     
