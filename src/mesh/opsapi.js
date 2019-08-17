@@ -59,11 +59,11 @@ class element_filter {
     this.typemask = typemask;
   }
   
-  __iterator__() {
+  [Symbol.iterator]() {
     if (this.mesh != undefined) //necassary for redo
       this.iter.mesh = this.mesh;
     
-    return new element_filter_iter(this.iter.__iterator__(), this.typemask);
+    return new element_filter_iter(this.iter[Symbol.iterator](), this.typemask);
   }
 }
 
@@ -90,7 +90,7 @@ class selectiter {
       throw new Error("Invalid element type mask in selectiter.reset() " + this.mask);
   }
 
-  __iterator__() {
+  [Symbol.iterator]() {
     return this;
   }
 
@@ -289,7 +289,7 @@ class flagiterobj {
     this.flag = flag;
   }
   
-  __iterator__() {
+  [Symbol.iterator]() {
     return new flagiter(this.mesh, this.typemask, this.flag);
   }
 }
@@ -998,7 +998,7 @@ class DeleteVertsOp extends MeshOp {
   }
 
   exec(op, mesh) {
-    var iter = this.inputs.verts.__iterator__();
+    var iter = this.inputs.verts[Symbol.iterator]();
     //this.inputs.verts.reset();
     var verts = list(this.inputs.verts);
     for (var v of verts) {
@@ -1023,7 +1023,7 @@ class DeleteEdgesOp extends MeshOp {
   }
 
   exec(op, mesh) {
-    var iter = this.inputs.edges.__iterator__();
+    var iter = this.inputs.edges[Symbol.iterator]();
     //this.inputs.edges.reset();
     var edges = list(this.inputs.edges);
     for (var v of edges) {
@@ -1046,7 +1046,7 @@ class DeleteFacesOp extends MeshOp {
   }
 
   exec(op, mesh) {
-    var iter = this.inputs.faces.__iterator__();
+    var iter = this.inputs.faces[Symbol.iterator]();
     //this.inputs.faces.reset();
     var faces = list(this.inputs.faces);
     for (var v of faces) {
@@ -1069,7 +1069,7 @@ class DeleteFaceRegionOp extends MeshOp {
   }
 
   exec(op, mesh) {
-    var iter = this.inputs.faces.__iterator__();
+    var iter = this.inputs.faces[Symbol.iterator]();
     //this.inputs.faces.reset();
     var fset = new set();
     var delfset = new set();

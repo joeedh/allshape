@@ -679,7 +679,7 @@ function test_face_fill() {
   var mesh1 = new Context().mesh;
   var tess = new TessCDT();
   
-  var eid = mesh1.faces.__iterator__().next().value.eid; //2681;
+  var eid = mesh1.faces[Symbol.iterator]().next().value.eid; //2681;
   var mesh2 = tess.face_fill(mesh1.faces.get(eid), new GArray());
     
   mesh2.render = new render();

@@ -62,7 +62,7 @@ class DataBlockData extends DBDataMember {
     this.members = {};
   }
   
-  __iterator__() : DBDataIter {
+  [Symbol.iterator]() : DBDataIter {
     return new DBDataIter(this);
   }
   

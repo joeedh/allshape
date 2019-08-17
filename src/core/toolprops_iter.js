@@ -20,7 +20,7 @@
   lookup values like eid's, dataref's, etc.
   
   To make things even more complicated, we are not going to have
-  separate iterator factory objects (e.g. with their own .__iterator__ methods).
+  separate iterator factory objects (e.g. with their own [Symbol.iterator] methods).
   Instead, each iter class will iterate on it own, as well as be able to 
   spawn copies of itself for nested iteration.
   
@@ -36,7 +36,7 @@ class TPropIterable {
   constructor() {
   }
   
-  __iterator__() : ToolIter { }
+  [Symbol.iterator]() : ToolIter { }
 }
 
 class TCanSafeIter {
@@ -80,7 +80,7 @@ class ToolIter extends TPropIterable {
     }
   }
   
-  __iterator__() {
+  [Symbol.iterator]() {
     return this;
   }
   
@@ -109,7 +109,7 @@ class MSelectIter extends ToolIter {
     this.iter = undefined;
   }
   
-  __iterator__() {
+  [Symbol.iterator]() {
     if (this.init) {
       return this;
     } else { //detect nested iterator cases
@@ -165,7 +165,7 @@ class element_iter_convert extends ToolIter {
     }
     
     this.vset = new set();
-    this.iter = iter.__iterator__();
+    this.iter = iter[Symbol.iterator]();
     this.subiter = undefined;
     
     if (type == MeshTypes.VERT)
@@ -186,7 +186,7 @@ class element_iter_convert extends ToolIter {
     this.iter.ctx = this.ctx;
   }
   
-  __iterator__() {
+  [Symbol.iterator]() {
     return this;
   }
   
@@ -221,7 +221,7 @@ class element_iter_convert extends ToolIter {
       if (next.value.constructor.name == this.type.name)
         return next;
       
-      this.subiter = next.value.verts.__iterator__();
+      this.subiter = next.value.verts[Symbol.iterator]();
     }
     
     var vset = this.vset;

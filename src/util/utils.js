@@ -12,7 +12,7 @@ class Iter {
 }
 
 class CanIter {
-  __iterator__() : Iter {
+  [Symbol.iterator]() : Iter {
   }
 }
 
@@ -61,7 +61,7 @@ class GArray extends Array {
     return this.indexOf(item) >= 0;
   }
   
-  __iterator__() : GArrayIter<T> {
+  [Symbol.iterator]() : GArrayIter<T> {
     return new GArrayIter<T>(this);
   }
     
@@ -205,7 +205,7 @@ function obj_value_iter(Object obj) {
     return reti;
   }
   
-  this.__iterator__ = function() {
+  this[Symbol.iterator] = function() {
     return this;
   }
 }
@@ -299,7 +299,7 @@ class SafeSetIter {
     this.nextitem = undefined;
   }
   
-  __iterator__() : SafeSetIter<T> {
+  [Symbol.iterator]() : SafeSetIter<T> {
     return this;    
   }
   
@@ -327,7 +327,7 @@ function SafeSetIter<T>(set) {
   this.arr = list(set);
   this.cur = 0;
   
-  this.__iterator__ = function() : SafeSetIter<T> {
+  this[Symbol.iterator] = function() : SafeSetIter<T> {
     return this;    
   }
   
@@ -435,7 +435,7 @@ class set extends ES5Iter {
     return new SafeSetIter<T>(this);
   }
 
-  __iterator__() : SetIter {
+  [Symbol.iterator]() : SetIter {
     return new SetIter<T>(this);
   }
 
@@ -544,7 +544,7 @@ class hashtable extends ES5Iter {
     this.length -= 1;
   }
 
-  __iterator__() : HashKeyIter {
+  [Symbol.iterator]() : HashKeyIter {
     return new HashKeyIter(this)
   }
 

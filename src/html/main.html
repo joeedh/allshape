@@ -1242,7 +1242,7 @@ function arr_iter(keys)
   this.keys = keys;
   this.cur = 0;
   
-  this.__iterator__ = function() {
+  this[Symbol.iterator] = function() {
     return this;
   }
   
@@ -1314,8 +1314,8 @@ function __get_iter(obj)
   }
 
   if (obj[Symbol.iterator]) {
-  //if (obj.__proto__.hasOwnProperty("__iterator__") || obj.hasOwnProperty("__iterator__")) {
-    //return obj.__iterator__();
+  //if (obj.__proto__.hasOwnProperty("[Symbol.iterator]") || obj.hasOwnProperty("[Symbol.iterator]")) {
+    //return obj[Symbol.iterator]();
     return obj[Symbol.iterator]();
   } else {
     keys = [];
@@ -1328,8 +1328,8 @@ function __get_iter(obj)
 
 function _KeyValIterator(obj)
 {
-  if (obj.__proto__.hasOwnProperty("__iterator__") || obj.hasOwnProperty("__iterator__")) {
-    return obj.__iterator__();
+  if (obj[Symbol.iterator]) { //.__proto__.hasOwnProperty("[Symbol.iterator]") || obj.hasOwnProperty("[Symbol.iterator]")) {
+    return obj[Symbol.iterator]();
   } else {
     var keys = []
     for (var k in obj) {

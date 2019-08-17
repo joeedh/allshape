@@ -37,8 +37,8 @@ class DagSocket {
     }
   }
   
-  __iterator__() {
-    return this.edges.__iterator__();
+  [Symbol.iterator]() {
+    return this.edges[Symbol.iterator]();
   }
   
   //get the data from an (output) socket.

@@ -12,7 +12,7 @@ class MeshIterAbstract extends ES5Iter {
     this.done = false; //done flag
   }
   
-  __iterator__() {
+  [Symbol.iterator]() {
     return this;
   }
   
@@ -377,7 +377,7 @@ class MeshIterate extends ES5Iter {
     this.flag = 0;
   }
   
-  __iterator__() : Iterator {
+  [Symbol.iterator]() : Iterator {
     if (this.type == MeshIter.FACE_VERTS)
       return new FaceVertIter(this.data);
     else if (this.type == MeshIter.VERT_EDGES)
@@ -402,7 +402,7 @@ class MeshIterate extends ES5Iter {
 var _cent = new Vector3();
 var _mapi_frn_n1 = new Vector3();
 /*function recalc_normals_job(m2, use_sco) {
-  this.__iterator__ = function() {
+  this[Symbol.iterator] = function() {
     return this;
   }
   this.next = function() {
@@ -414,7 +414,7 @@ function recalc_normals_job(Mesh m2, Boolean use_sco) //use_sco is optional
   this.iter = new recalc_normals_job_intern(m2, use_sco);
   this.i = 0;
   
-  this.__iterator__ = function() {
+  this[Symbol.iterator] = function() {
     return this;
   }
   
@@ -1536,8 +1536,8 @@ function MeshAPI(Mesh mesh) {
       
       var nf = mesh.make_face_complex(vlists);
       
-      var iter1 = f.loops.__iterator__();
-      var iter2 = nf.loops.__iterator__();
+      var iter1 = f.loops[Symbol.iterator]();
+      var iter2 = nf.loops[Symbol.iterator]();
       
       mesh.copy_face_data(nf, f);
       

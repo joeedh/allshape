@@ -1397,7 +1397,7 @@ function render_points(WebGLRenderingContext gl, Float32Array floatbuf,
 
 function render_mesh(WebGLRenderingContext gl, View3DHandler view3d, Mesh mesh1, DrawMats drawmats, Boolean draw_overlay) {
   if (DEBUG.tesselator) {
-    var eid = mesh1.faces.__iterator__().next().value.eid; //2681;
+    var eid = mesh1.faces[Symbol.iterator]().next().value.eid; //2681;
     var mesh2 = face_fill(mesh1.faces.get(eid), new GArray());
     
     mesh2.render = new render();

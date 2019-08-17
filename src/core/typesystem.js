@@ -712,7 +712,7 @@ function arr_iter(keys)
   this.keys = keys;
   this.cur = 0;
   
-  this.__iterator__ = function() {
+  this[Symbol.iterator] = function() {
     return this;
   }
   
@@ -738,8 +738,8 @@ function __get_iter(obj)
     throw new Error("Invalid iteration over undefined value")
   }
   
-  if ("__iterator__" in obj) {
-    return obj.__iterator__();
+  if (obj[Symbol.iterator]) {
+    return obj[Symbol.iterator]();
   } else {
     var keys = []
     for (var k in obj) {
@@ -756,7 +756,7 @@ var arr_iter = function(keys)
   this.keys = keys;
   this.cur = 0;
   
-  this.__iterator__ = function() {
+  this[Symbol.iterator] = function() {
     return this;
   }
   
@@ -781,7 +781,7 @@ class _KeyValIterator {
     this.keys = Object.keys(obj);
   }
   
-  __iterator__() {
+  [Symbol.iterator]() {
     return this;
   }
   
@@ -805,8 +805,8 @@ class _KeyValIterator {
 }
 
 var Iterator = function(obj) {
-  if ("__iterator__" in obj) {
-    return obj.__iterator__();
+  if (obj[Symbol.iterator]) {
+    return obj[Symbol.iterator]();
   } else {
     return new _KeyValIterator(obj);
   }

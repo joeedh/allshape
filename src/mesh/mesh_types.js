@@ -322,7 +322,7 @@ class LoopList {
     this.loop = loop;
     this.length = 0;
   }
-  __iterator__() : LoopIter {
+  [Symbol.iterator]() : LoopIter {
     return new LoopIter(this);
   }
 }
@@ -365,12 +365,12 @@ class Face extends Element{
   
   get loops() {
     if (this._liter == undefined) {
-      this._liter = new MeshIterate(MeshIter.FACE_ALL_LOOPS, this).__iterator__();
+      this._liter = new MeshIterate(MeshIter.FACE_ALL_LOOPS, this)[Symbol.iterator]();
       return this._liter;
     }
     
     if (!this._liter.done) {
-      return new MeshIterate(MeshIter.FACE_ALL_LOOPS, this).__iterator__();
+      return new MeshIterate(MeshIter.FACE_ALL_LOOPS, this)[Symbol.iterator]();
     } else {
       this._liter.reset();
       return this._liter;
@@ -379,12 +379,12 @@ class Face extends Element{
   
   get edges() {
     if (this._eiter == undefined) {
-      this._eiter = new MeshIterate(MeshIter.FACE_EDGES, this).__iterator__();
+      this._eiter = new MeshIterate(MeshIter.FACE_EDGES, this)[Symbol.iterator]();
       return this._eiter;
     }
     
     if (!this._eiter.done) {
-      return new MeshIterate(MeshIter.FACE_EDGES, this).__iterator__();
+      return new MeshIterate(MeshIter.FACE_EDGES, this)[Symbol.iterator]();
     } else {
       this._eiter.reset();
       return this._eiter;
@@ -392,17 +392,17 @@ class Face extends Element{
   }
 
   get bounds() {
-    return new MeshIterate(MeshIter.FACE_LISTS, this).__iterator__();
+    return new MeshIterate(MeshIter.FACE_LISTS, this)[Symbol.iterator]();
   }
   
   get verts() {
     if (this._viter == undefined) {
-      this._viter = new MeshIterate(MeshIter.FACE_VERTS, this).__iterator__();
+      this._viter = new MeshIterate(MeshIter.FACE_VERTS, this)[Symbol.iterator]();
       return this._viter;
     }
     
     if (!this._viter.done) {
-      return new MeshIterate(MeshIter.FACE_VERTS, this).__iterator__();
+      return new MeshIterate(MeshIter.FACE_VERTS, this)[Symbol.iterator]();
     } else {
       this._viter.reset();
       return this._viter;
@@ -633,7 +633,7 @@ class AllTypesSelectIter extends TCanSafeIter {
     return new MSelectIter(mask, this.mesh);
   }
   
-  __iterator__() {
+  [Symbol.iterator]() {
     return this;
   }
   
@@ -647,7 +647,7 @@ class AllTypesSelectIter extends TCanSafeIter {
     //don't initialize iter in reset function, not only can
     //it mess up opsapi state, it will also mess with the GC
     if (this.iter == undefined) {
-      this.iter = this.mesh.verts.selected.__iterator__();
+      this.iter = this.mesh.verts.selected[Symbol.iterator]();
     }
     
     var iret;
@@ -656,12 +656,12 @@ class AllTypesSelectIter extends TCanSafeIter {
     } else {
       if (this.type == MeshTypes.VERT) {
         this.type = MeshTypes.EDGE;
-        this.iter = this.mesh.edges.selected.__iterator__();
+        this.iter = this.mesh.edges.selected[Symbol.iterator]();
         
         return this.next();
       } else if (this.type == MeshTypes.EDGE) {
         this.type = MeshTypes.FACE;
-        this.iter = this.mesh.faces.selected.__iterator__();
+        this.iter = this.mesh.faces.selected[Symbol.iterator]();
         
         return this.next();
       } else {
@@ -704,7 +704,7 @@ class GeoArray<T> extends ES5Iter {
     return this._totsel;
   }
   
-  __iterator__() : GeoArrayIter<T> {
+  [Symbol.iterator]() : GeoArrayIter<T> {
     if (this.iter.cur != 0)
       return new GeoArrayIter<T>(this);
     else

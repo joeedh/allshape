@@ -78,8 +78,8 @@ class CSGTreeList {
     return ob.lib_id in this.nodemap;
   }
   
-  __iterator__(self) {
-    return this.flatlist.__iterator__();
+  [Symbol.iterator](self) {
+    return this.flatlist[Symbol.iterator]();
   }
   
   get(ASObject ob) : CSGNode{

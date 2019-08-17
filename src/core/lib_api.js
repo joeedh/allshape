@@ -186,8 +186,8 @@ class DataList<T> extends ES5Iter {
     return this.namemap[name];
   }
 
-  __iterator__() : GArrayIter {
-    return this.list.__iterator__();
+  [Symbol.iterator]() : GArrayIter {
+    return this.list[Symbol.iterator]();
   }
 }
 

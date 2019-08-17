@@ -88,7 +88,7 @@ class DataStructIter {
     this.value = undefined;
   }
   
-  __iterator__() { return this; }
+  [Symbol.iterator]() { return this; }
   
   reset() {
     this.cur = 0;
@@ -148,7 +148,7 @@ class DataStruct {
     this.type = DataPathTypes.STRUCT;
   }
 
-  __iterator__() {
+  [Symbol.iterator]() {
     return new DataStructIter(this);
   }
   
